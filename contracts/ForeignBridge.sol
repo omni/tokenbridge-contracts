@@ -2,81 +2,83 @@ pragma solidity 0.4.19;
 import "./libraries/Helpers.sol";
 import "./libraries/Message.sol";
 import "./libraries/MessageSigning.sol";
-import "./libraries/SafeMath.sol";
+// import "./libraries/SafeMath.sol";
+import "./IBurnableMintableERC827Token.sol";
+import "./POA20.sol";
 
 contract ForeignBridge {
     // following is the part of ForeignBridge that implements an ERC20 token.
     // ERC20 spec: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20-token-standard.md
 
-    uint public totalSupply;
+    // uint public totalSupply;
 
-    string public name = "POA ERC20 Foundation";
-    string public symbol = "POA20";
-    /// maps addresses to their token balances
-    mapping (address => uint) public balances;
+    // string public name = "POA ERC20 Foundation";
+    // string public symbol = "POA20";
+    // /// maps addresses to their token balances
+    // mapping (address => uint) public balances;
 
-    // owner of account approves the transfer of an amount by another account
-    mapping(address => mapping (address => uint)) allowed;
+    // // owner of account approves the transfer of an amount by another account
+    // mapping(address => mapping (address => uint)) allowed;
 
-    /// Event created on money transfer
-    event Transfer(address indexed from, address indexed to, uint tokens);
+    // /// Event created on money transfer
+    // event Transfer(address indexed from, address indexed to, uint tokens);
 
-    // returns the ERC20 token balance of the given address
-    function balanceOf(address tokenOwner) public view returns (uint) {
-        return balances[tokenOwner];
-    }
+    // // returns the ERC20 token balance of the given address
+    // function balanceOf(address tokenOwner) public view returns (uint) {
+    //     return balances[tokenOwner];
+    // }
 
-    /// Transfer `value` to `recipient` on this `foreign` chain.
-    ///
-    /// does not affect `home` chain. does not do a relay.
-    /// as specificed in ERC20 this doesn't fail if tokens == 0.
-    function transfer(address recipient, uint tokens) public returns (bool) {
-        require(balances[msg.sender] >= tokens);
-        // fails if there is an overflow
-        require(balances[recipient] + tokens >= balances[recipient]);
+    // /// Transfer `value` to `recipient` on this `foreign` chain.
+    // ///
+    // /// does not affect `home` chain. does not do a relay.
+    // /// as specificed in ERC20 this doesn't fail if tokens == 0.
+    // function transfer(address recipient, uint tokens) public returns (bool) {
+    //     require(balances[msg.sender] >= tokens);
+    //     // fails if there is an overflow
+    //     require(balances[recipient] + tokens >= balances[recipient]);
 
-        balances[msg.sender] -= tokens;
-        balances[recipient] += tokens;
-        Transfer(msg.sender, recipient, tokens);
-        return true;
-    }
+    //     balances[msg.sender] -= tokens;
+    //     balances[recipient] += tokens;
+    //     Transfer(msg.sender, recipient, tokens);
+    //     return true;
+    // }
 
-    // following is the part of ForeignBridge that is concerned
-    // with the part of the ERC20 standard responsible for giving others spending rights
-    // and spending others tokens
+    // // following is the part of ForeignBridge that is concerned
+    // // with the part of the ERC20 standard responsible for giving others spending rights
+    // // and spending others tokens
 
-    // created when `approve` is executed to mark that
-    // `tokenOwner` has approved `spender` to spend `tokens` of his tokens
-    event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
+    // // created when `approve` is executed to mark that
+    // // `tokenOwner` has approved `spender` to spend `tokens` of his tokens
+    // event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
 
-    // allow `spender` to withdraw from your account, multiple times, up to the `tokens` amount.
-    // calling this function repeatedly overwrites the current allowance.
-    function approve(address spender, uint tokens) public returns (bool) {
-        allowed[msg.sender][spender] = tokens;
-        Approval(msg.sender, spender, tokens);
-        return true;
-    }
+    // // allow `spender` to withdraw from your account, multiple times, up to the `tokens` amount.
+    // // calling this function repeatedly overwrites the current allowance.
+    // function approve(address spender, uint tokens) public returns (bool) {
+    //     allowed[msg.sender][spender] = tokens;
+    //     Approval(msg.sender, spender, tokens);
+    //     return true;
+    // }
 
-    // returns how much `spender` is allowed to spend of `owner`s tokens
-    function allowance(address owner, address spender) public view returns (uint256) {
-        return allowed[owner][spender];
-    }
+    // // returns how much `spender` is allowed to spend of `owner`s tokens
+    // function allowance(address owner, address spender) public view returns (uint256) {
+    //     return allowed[owner][spender];
+    // }
 
-    function transferFrom(address from, address to, uint tokens) public returns (bool) {
-        // `from` has enough tokens
-        require(balances[from] >= tokens);
-        // `sender` is allowed to move `tokens` from `from`
-        require(allowed[from][msg.sender] >= tokens);
-        // fails if there is an overflow
-        require(balances[to] + tokens >= balances[to]);
+    // function transferFrom(address from, address to, uint tokens) public returns (bool) {
+    //     // `from` has enough tokens
+    //     require(balances[from] >= tokens);
+    //     // `sender` is allowed to move `tokens` from `from`
+    //     require(allowed[from][msg.sender] >= tokens);
+    //     // fails if there is an overflow
+    //     require(balances[to] + tokens >= balances[to]);
 
-        balances[to] += tokens;
-        balances[from] -= tokens;
-        allowed[from][msg.sender] -= tokens;
+    //     balances[to] += tokens;
+    //     balances[from] -= tokens;
+    //     allowed[from][msg.sender] -= tokens;
 
-        Transfer(from, to, tokens);
-        return true;
-    }
+    //     Transfer(from, to, tokens);
+    //     return true;
+    // }
 
     // following is the part of ForeignBridge that is
     // no longer part of ERC20 and is concerned with
@@ -105,6 +107,9 @@ contract ForeignBridge {
     /// Pending signatures and authorities who confirmed them
     mapping (bytes32 => SignaturesCollection) signatures;
 
+    /// Token contract which the bridge has full ownership to burn and mint
+    POA20 public token;
+
     /// triggered when relay of deposit from HomeBridge is complete
     event Deposit(address recipient, uint value);
 
@@ -116,13 +121,16 @@ contract ForeignBridge {
 
     function ForeignBridge(
         uint _requiredSignatures,
-        address[] _authorities
+        address[] _authorities, 
+        address _token
     ) public
     {
         require(_requiredSignatures != 0);
         require(_requiredSignatures <= _authorities.length);
+        require(_token != address(0));
         requiredSignatures = _requiredSignatures;
         authorities = _authorities;
+        token = POA20(_token);
     }
 
     /// require that sender is an authority
@@ -146,13 +154,7 @@ contract ForeignBridge {
         deposits[hash].push(msg.sender);
         // TODO: this may cause troubles if requiredSignatures len is changed
         if (deposits[hash].length == requiredSignatures) {
-            balances[recipient] += value;
-            // mints tokens
-            totalSupply += value;
-            // ERC20 specifies: a token contract which creates new tokens
-            // SHOULD trigger a Transfer event with the _from address
-            // set to 0x0 when tokens are created.
-            Transfer(0x0, recipient, value);
+            token.mint(recipient, value);
             Deposit(recipient, value);
         }
     }
@@ -166,18 +168,7 @@ contract ForeignBridge {
     /// once `requiredSignatures` are collected a `CollectedSignatures` event will be emitted.
     /// an authority will pick up `CollectedSignatures` an call `HomeBridge.withdraw`
     /// which transfers `value - relayCost` to `recipient` completing the transfer.
-    function transferHomeViaRelay(address recipient, uint value) public {
-        require(balances[msg.sender] >= value);
-        // don't allow 0 value transfers to home
-        require(value > 0);
-
-        balances[msg.sender] -= value;
-        // burns tokens
-        totalSupply -= value;
-        // in line with the transfer event from `0x0` on token creation
-        // recommended by ERC20 (see implementation of `deposit` above)
-        // we trigger a Transfer event to `0x0` on token destruction
-        Transfer(msg.sender, 0x0, value);
+    function transferHomeViaRelay(address recipient, uint256 value) public {
         Withdraw(recipient, value);
     }
 

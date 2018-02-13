@@ -8,7 +8,11 @@
   },
   "author": "",
   "license": "ISC",
+  "scripts": {
+    "test": "truffle test"
+  },
   "dependencies": {
-    "truffle": "^4.0.6"
+    "truffle": "^4.0.6",
+    "zeppelin-solidity": "^1.6.0"
   }
 }

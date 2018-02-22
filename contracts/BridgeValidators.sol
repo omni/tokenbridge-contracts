@@ -8,37 +8,37 @@ contract BridgeValidators is Ownable {
 	event ValidatorAdded (address validator);
 	event ValidatorRemoved (address validator);
 	uint8 requiredValidators = 0;
-  uint256 public validatorCount = 0;
+	uint256 public validatorCount = 0;
 
 	mapping (address => bool) public validators;
 
 	function BridgeValidators(uint8 _requiredValidators,address[] _initialValidators) public {
-    require(_requiredValidators != 0);
-		require(_initialValidators.length >= _requiredValidators);
-		setRequiredValidators(_requiredValidators);
-    for (uint i = 0; i < _initialValidators.length; i++) {
-      require(!isValidator(_initialValidators[i]) && _initialValidators[i] != address(0));
-      addValidator(_initialValidators[i]);
-    }
-    validatorCount = _initialValidators.length;
+	    require(_requiredValidators != 0);
+	    require(_initialValidators.length >= _requiredValidators);
+	    setRequiredValidators(_requiredValidators);
+	    for (uint i = 0; i < _initialValidators.length; i++) {
+		require(!isValidator(_initialValidators[i]) && _initialValidators[i] != address(0));
+		addValidator(_initialValidators[i]);
+    	    }
+	    validatorCount = _initialValidators.length;
 	}
 
 	function addValidator(address _validator)  public onlyOwner {
 		assert(validators[_validator] != true);
-    validatorCount++;
+		validatorCount++;
 		validators[_validator] = true;
 		ValidatorAdded(_validator);
 	}
 
 	function removeValidator(address _validator) public onlyOwner {
-    require(validatorCount > requiredValidators);
+		require(validatorCount > requiredValidators);
 		validators[_validator] = false;
-    validatorCount--;
+		validatorCount--;
 		ValidatorRemoved(_validator);
 	}
 
 	function setRequiredValidators(uint8 _requiredValidators) public onlyOwner {
-    require(validatorCount >= _requiredValidators);
+		require(validatorCount >= _requiredValidators);
 		requiredValidators = _requiredValidators;
 	}
 

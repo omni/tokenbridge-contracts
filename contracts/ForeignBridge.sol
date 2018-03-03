@@ -37,6 +37,9 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
 
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
 
+    event SignedForDeposit(address indexed signer, bytes32 message);
+    event SignedForWithdraw(address indexed signer, bytes32 message);
+
     function ForeignBridge(
         address _validatorContract,
         address _erc677token
@@ -76,6 +79,7 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
             erc677token.mint(recipient, value);
             Deposit(recipient, value);
         }
+        SignedForDeposit(msg.sender, transactionHash);
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
@@ -124,6 +128,7 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
         if (signed == validatorContract.requiredSignatures()) {
             CollectedSignatures(msg.sender, hash);
         }
+        SignedForWithdraw(msg.sender, hash);
     }
 
     function signature(bytes32 hash, uint index) public view returns (bytes) {

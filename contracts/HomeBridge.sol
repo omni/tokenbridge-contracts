@@ -1,7 +1,7 @@
 pragma solidity ^0.4.19;
 import "./libraries/SafeMath.sol";
+import "./libraries/Helpers.sol";
 import "./libraries/Message.sol";
-import "./libraries/MessageSigning.sol";
 import "./IBridgeValidators.sol";
 import "./Validatable.sol";
 import "./BridgeDeploymentAddressStorage.sol";
@@ -27,10 +27,11 @@ contract HomeBridge is Validatable, BridgeDeploymentAddressStorage {
         Deposit(msg.sender, msg.value);
     }
 
-    function setGasLimitWithdrawRelay(uint256 _gas) public onlyValidator {
+    function setGasLimitWithdrawRelay(uint256 _gas) public onlyOwner {
         gasLimitWithdrawRelay = _gas;
         GasConsumptionLimitsUpdated(gasLimitWithdrawRelay);
     }
+
 
     function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
         require(message.length == 116);

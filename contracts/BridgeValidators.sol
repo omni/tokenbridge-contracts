@@ -51,4 +51,8 @@ contract BridgeValidators is Ownable, IBridgeValidators {
     function requiredSignatures() public view returns(uint8) {
         return requiredValidators;
     }
+
+    function currentOwner() public view returns(address) {
+        return owner;
+    }
 }

@@ -1,4 +1,4 @@
-pragma solidity 0.4.20;
+pragma solidity 0.4.19;
 
 // File: contracts/BridgeDeploymentAddressStorage.sol
 
@@ -21,6 +21,7 @@ contract ERC677Receiver {
 interface IBridgeValidators {
     function isValidator(address _validator) public view returns(bool);
     function requiredSignatures() public view returns(uint8);
+    function currentOwner() public view returns(address);
 }
 
 // File: zeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol
@@ -55,7 +56,7 @@ contract ERC20 is ERC20Basic {
 contract ERC677 is ERC20 {
     event Transfer(address indexed from, address indexed to, uint value, bytes data);
 
-    function transferAndCall(address, uint, bytes) returns (bool);
+    function transferAndCall(address, uint, bytes) public returns (bool);
 
 }
 
@@ -76,88 +77,14 @@ contract Validatable {
         _;
     }
 
+    modifier onlyOwner() {
+        require(validatorContract.currentOwner() == msg.sender);
+        _;
+    }
+
     function Validatable(address _validatorContract) public {
         require(_validatorContract != address(0));
         validatorContract = IBridgeValidators(_validatorContract);
-    }
-}
-
-// File: contracts/libraries/MessageSigning.sol
-
-// import "./Helpers.sol";
-library Helpers {
-    function addressArrayContains(address[] array, address value) internal pure returns (bool) {
-        for (uint256 i = 0; i < array.length; i++) {
-            if (array[i] == value) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function uintToString(uint256 inputValue) internal pure returns (string) {
-        // figure out the length of the resulting string
-        uint256 length = 0;
-        uint256 currentValue = inputValue;
-        do {
-            length++;
-            currentValue /= 10;
-        } while (currentValue != 0);
-        // allocate enough memory
-        bytes memory result = new bytes(length);
-        // construct the string backwards
-        uint256 i = length - 1;
-        currentValue = inputValue;
-        do {
-            result[i--] = byte(48 + currentValue % 10);
-            currentValue /= 10;
-        } while (currentValue != 0);
-        return string(result);
-    }
-
-    function hasEnoughValidSignatures(
-        bytes _message,
-        uint8[] _vs,
-        bytes32[] _rs,
-        bytes32[] _ss,
-        IBridgeValidators _validatorContract) internal view returns (bool) {
-        uint8 _requiredSignatures = _validatorContract.requiredSignatures();
-        require(_vs.length < _requiredSignatures);
-        bytes32 hash = MessageSigning.hashMessage(_message);
-        address[] memory encounteredAddresses = new address[](_requiredSignatures);
-
-        for (uint8 i = 0; i < _requiredSignatures; i++) {
-            address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
-            // only signatures by addresses in `addresses` are allowed
-            require(_validatorContract.isValidator(recoveredAddress));
-            // duplicate signatures are not allowed
-            if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
-                return false;
-            }
-            encounteredAddresses[i] = recoveredAddress;
-        }
-        return true;
-    }
-}
-
-library MessageSigning {
-    function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
-        require(signature.length == 65);
-        bytes32 r;
-        bytes32 s;
-        bytes1 v;
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := mload(add(signature, 0x60))
-        }
-        return ecrecover(hashMessage(message), uint8(v), r, s);
-    }
-
-    function hashMessage(bytes message) internal pure returns (bytes32) {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        return keccak256(prefix, Helpers.uintToString(message.length), message);
     }
 }
 
@@ -215,6 +142,28 @@ library Helpers {
             encounteredAddresses[i] = recoveredAddress;
         }
         return true;
+    }
+}
+
+
+library MessageSigning {
+    function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
+        require(signature.length == 65);
+        bytes32 r;
+        bytes32 s;
+        bytes1 v;
+        // solium-disable-next-line security/no-inline-assembly
+        assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := mload(add(signature, 0x60))
+        }
+        return ecrecover(hashMessage(message), uint8(v), r, s);
+    }
+
+    function hashMessage(bytes message) internal pure returns (bytes32) {
+        bytes memory prefix = "\x19Ethereum Signed Message:\n";
+        return keccak256(prefix, Helpers.uintToString(message.length), message);
     }
 }
 
@@ -285,12 +234,9 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
     mapping (bytes32 => bytes) messages;
     mapping (bytes32 => bytes) signatures;
     mapping (bytes32 => bool) messages_signed;
-    mapping (bytes32 => uint) num_messages_signed;
+    mapping (bytes32 => uint256) num_messages_signed;
     mapping (bytes32 => bool) deposits_signed;
-    mapping (bytes32 => uint) num_deposits_signed;
-
-    mapping (bytes32 => bool) tokenAddressApprovalSigns;
-    mapping (address => uint256) public numTokenAddressApprovalSigns;
+    mapping (bytes32 => uint256) num_deposits_signed;
 
     IBurnableMintableERC677Token public erc677token;
 
@@ -303,9 +249,10 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
     /// Collected signatures which should be relayed to home chain.
     event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash);
 
-    event TokenAddress(address token);
-
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
+
+    event SignedForDeposit(address indexed signer, bytes32 message);
+    event SignedForWithdraw(address indexed signer, bytes32 message);
 
     function ForeignBridge(
         address _validatorContract,
@@ -314,13 +261,13 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
         erc677token = IBurnableMintableERC677Token(_erc677token);
     }
 
-    function setGasLimitDepositRelay(uint256 gas) onlyValidator {
-        gasLimitDepositRelay = gas;
+    function setGasLimitDepositRelay(uint256 _gas) public onlyOwner {
+        gasLimitDepositRelay = _gas;
 
         GasConsumptionLimitsUpdated(gasLimitDepositRelay, gasLimitWithdrawConfirm);
     }
 
-    function setGasLimitWithdrawConfirm(uint256 gas) onlyValidator {
+    function setGasLimitWithdrawConfirm(uint256 gas) public onlyOwner {
         gasLimitWithdrawConfirm = gas;
 
         GasConsumptionLimitsUpdated(gasLimitDepositRelay, gasLimitWithdrawConfirm);
@@ -337,8 +284,10 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
         require(!deposits_signed[hash_sender]);
         deposits_signed[hash_sender] = true;
 
-        uint signed = num_deposits_signed[hash_msg] + 1;
+        uint256 signed = num_deposits_signed[hash_msg] + 1;
         num_deposits_signed[hash_msg] = signed;
+
+        SignedForDeposit(msg.sender, transactionHash);
 
         if (signed == validatorContract.requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
@@ -346,6 +295,7 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
             erc677token.mint(recipient, value);
             Deposit(recipient, value);
         }
+
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
@@ -391,6 +341,7 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
         num_messages_signed[hash_sender] = signed;
 
         // TODO: this may cause troubles if requiredSignatures len is changed
+        SignedForWithdraw(msg.sender, hash);
         if (signed == validatorContract.requiredSignatures()) {
             CollectedSignatures(msg.sender, hash);
         }

@@ -1,10 +1,11 @@
-pragma solidity 0.4.20;
+pragma solidity ^0.4.19;
 
 // File: contracts/IBridgeValidators.sol
 
 interface IBridgeValidators {
     function isValidator(address _validator) public view returns(bool);
     function requiredSignatures() public view returns(uint8);
+    function currentOwner() public view returns(address);
 }
 
 // File: zeppelin-solidity/contracts/ownership/Ownable.sol
@@ -97,5 +98,9 @@ contract BridgeValidators is Ownable, IBridgeValidators {
 
     function requiredSignatures() public view returns(uint8) {
         return requiredValidators;
+    }
+
+    function currentOwner() public view returns(address) {
+        return owner;
     }
 }

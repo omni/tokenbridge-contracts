@@ -1,4 +1,4 @@
-pragma solidity 0.4.20;
+pragma solidity 0.4.19;
 
 // File: contracts/ERC677Receiver.sol
 
@@ -38,7 +38,7 @@ contract ERC20 is ERC20Basic {
 contract ERC677 is ERC20 {
     event Transfer(address indexed from, address indexed to, uint value, bytes data);
 
-    function transferAndCall(address, uint, bytes) returns (bool);
+    function transferAndCall(address, uint, bytes) public returns (bool);
 
 }
 

@@ -1,7 +1,6 @@
 pragma solidity 0.4.19;
 import "./libraries/Helpers.sol";
 import "./libraries/Message.sol";
-import "./libraries/MessageSigning.sol";
 import "./IBridgeValidators.sol";
 import "./Validatable.sol";
 import "./BridgeDeploymentAddressStorage.sol";
@@ -15,12 +14,9 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
     mapping (bytes32 => bytes) messages;
     mapping (bytes32 => bytes) signatures;
     mapping (bytes32 => bool) messages_signed;
-    mapping (bytes32 => uint) num_messages_signed;
+    mapping (bytes32 => uint256) num_messages_signed;
     mapping (bytes32 => bool) deposits_signed;
-    mapping (bytes32 => uint) num_deposits_signed;
-
-    mapping (bytes32 => bool) tokenAddressApprovalSigns;
-    mapping (address => uint256) public numTokenAddressApprovalSigns;
+    mapping (bytes32 => uint256) num_deposits_signed;
 
     IBurnableMintableERC677Token public erc677token;
 
@@ -32,8 +28,6 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
 
     /// Collected signatures which should be relayed to home chain.
     event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash);
-
-    event TokenAddress(address token);
 
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
 
@@ -47,13 +41,13 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
         erc677token = IBurnableMintableERC677Token(_erc677token);
     }
 
-    function setGasLimitDepositRelay(uint256 gas) onlyValidator {
-        gasLimitDepositRelay = gas;
+    function setGasLimitDepositRelay(uint256 _gas) public onlyOwner {
+        gasLimitDepositRelay = _gas;
 
         GasConsumptionLimitsUpdated(gasLimitDepositRelay, gasLimitWithdrawConfirm);
     }
 
-    function setGasLimitWithdrawConfirm(uint256 gas) onlyValidator {
+    function setGasLimitWithdrawConfirm(uint256 gas) public onlyOwner {
         gasLimitWithdrawConfirm = gas;
 
         GasConsumptionLimitsUpdated(gasLimitDepositRelay, gasLimitWithdrawConfirm);
@@ -70,8 +64,10 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
         require(!deposits_signed[hash_sender]);
         deposits_signed[hash_sender] = true;
 
-        uint signed = num_deposits_signed[hash_msg] + 1;
+        uint256 signed = num_deposits_signed[hash_msg] + 1;
         num_deposits_signed[hash_msg] = signed;
+
+        SignedForDeposit(msg.sender, transactionHash);
 
         if (signed == validatorContract.requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
@@ -79,7 +75,7 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
             erc677token.mint(recipient, value);
             Deposit(recipient, value);
         }
-        SignedForDeposit(msg.sender, transactionHash);
+
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
@@ -125,10 +121,10 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
         num_messages_signed[hash_sender] = signed;
 
         // TODO: this may cause troubles if requiredSignatures len is changed
+        SignedForWithdraw(msg.sender, hash);
         if (signed == validatorContract.requiredSignatures()) {
             CollectedSignatures(msg.sender, hash);
         }
-        SignedForWithdraw(msg.sender, hash);
     }
 
     function signature(bytes32 hash, uint index) public view returns (bytes) {

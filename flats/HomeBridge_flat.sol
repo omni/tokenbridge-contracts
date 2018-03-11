@@ -230,19 +230,29 @@ contract HomeBridge is Validatable, BridgeDeploymentAddressStorage {
     using SafeMath for uint256;
     uint256 public gasLimitWithdrawRelay;
     uint256 public estimatedGasCostOfWithdraw;
+    uint256 public homeDailyLimit;
+    mapping (uint256 => uint256) totalSpentPerDay;
     mapping (bytes32 => bool) withdraws;
 
     event GasConsumptionLimitsUpdated(uint256 gas);
     event Deposit (address recipient, uint256 value);
     event Withdraw (address recipient, uint256 value);
+    event DailyLimit(uint256 newLimit);
 
     function HomeBridge (
-        address _validatorContract
+        address _validatorContract,
+        uint256 _homeDailyLimit
     ) public Validatable(_validatorContract) {
+        require(_homeDailyLimit > 0);
+        homeDailyLimit = _homeDailyLimit;
+        DailyLimit(homeDailyLimit);
     }
 
     /// Should be used to deposit money.
     function () public payable {
+        require(msg.value > 0);
+        require(withinLimit(msg.value));
+        totalSpentPerDay[getCurrentDay()] = totalSpentPerDay[getCurrentDay()].add(msg.value);
         Deposit(msg.sender, msg.value);
     }
 
@@ -277,5 +287,20 @@ contract HomeBridge is Validatable, BridgeDeploymentAddressStorage {
         msg.sender.transfer(estimatedWeiCostOfWithdraw);
 
         Withdraw(recipient, valueRemainingAfterSubtractingCost);
+    }
+
+    function setDailyLimit(uint256 _homeDailyLimit) public onlyOwner {
+        require(_homeDailyLimit > 0);
+        homeDailyLimit = _homeDailyLimit;
+        DailyLimit(homeDailyLimit);
+    }
+
+    function getCurrentDay() public view returns(uint256) {
+        return now / 1 days;
+    }
+
+    function withinLimit(uint256 _amount) public view returns(bool) {
+        uint256 nextLimit = totalSpentPerDay[getCurrentDay()].add(_amount);
+        return homeDailyLimit >= nextLimit;
     }
 }

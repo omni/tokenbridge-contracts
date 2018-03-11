@@ -103,4 +103,5 @@ contract BridgeValidators is Ownable, IBridgeValidators {
     function currentOwner() public view returns(address) {
         return owner;
     }
+
 }

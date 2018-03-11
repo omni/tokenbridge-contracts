@@ -1,4 +1,5 @@
 pragma solidity 0.4.19;
+import "./libraries/SafeMath.sol";
 import "./libraries/Helpers.sol";
 import "./libraries/Message.sol";
 import "./IBridgeValidators.sol";
@@ -8,15 +9,18 @@ import "./IBurnableMintableERC677Token.sol";
 import "./ERC677Receiver.sol";
 
 contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressStorage {
+    using SafeMath for uint256;
     uint256 public gasLimitDepositRelay;
     uint256 public gasLimitWithdrawConfirm;
     uint256 homeGasPrice = 1000000000 wei;
+    uint256 public foreignDailyLimit;
     mapping (bytes32 => bytes) messages;
     mapping (bytes32 => bytes) signatures;
     mapping (bytes32 => bool) messages_signed;
     mapping (bytes32 => uint256) num_messages_signed;
     mapping (bytes32 => bool) deposits_signed;
     mapping (bytes32 => uint256) num_deposits_signed;
+    mapping (uint256 => uint256) totalSpentPerDay;
 
     IBurnableMintableERC677Token public erc677token;
 
@@ -33,12 +37,16 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
 
     event SignedForDeposit(address indexed signer, bytes32 message);
     event SignedForWithdraw(address indexed signer, bytes32 message);
+    event DailyLimit(uint256 newLimit);
 
     function ForeignBridge(
         address _validatorContract,
-        address _erc677token
+        address _erc677token,
+        uint256 _foreignDailyLimit
     ) public Validatable(_validatorContract) {
+        require(_foreignDailyLimit > 0);
         erc677token = IBurnableMintableERC677Token(_erc677token);
+        foreignDailyLimit = _foreignDailyLimit;
     }
 
     function setGasLimitDepositRelay(uint256 _gas) public onlyOwner {
@@ -81,6 +89,8 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
         require(erc677token != address(0x0));
         require(msg.sender == address(erc677token));
+        require(withinLimit(_value));
+        totalSpentPerDay[getCurrentDay()] = totalSpentPerDay[getCurrentDay()].add(_value);
         erc677token.burn(_value);
         Withdraw(_from, _value, homeGasPrice);
         return true;
@@ -135,6 +145,21 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
     /// Get message
     function message(bytes32 hash) public view returns (bytes) {
         return messages[hash];
+    }
+
+    function getCurrentDay() public view returns(uint256) {
+        return now / 1 days;
+    }
+
+    function setDailyLimit(uint256 _foreignDailyLimit) public onlyOwner {
+        require(_foreignDailyLimit > 0);
+        foreignDailyLimit = _foreignDailyLimit;
+        DailyLimit(foreignDailyLimit);
+    }
+
+    function withinLimit(uint256 _amount) public view returns(bool) {
+        uint256 nextLimit = totalSpentPerDay[getCurrentDay()].add(_amount);
+        return foreignDailyLimit >= nextLimit;
     }
 
 }

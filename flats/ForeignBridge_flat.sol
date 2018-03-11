@@ -225,18 +225,69 @@ library Message {
     }
 }
 
+// File: contracts/libraries/SafeMath.sol
+
+/**
+ * @title SafeMath
+ * @dev Math operations with safety checks that throw on error
+ */
+library SafeMath {
+
+  /**
+  * @dev Multiplies two numbers, throws on overflow.
+  */
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  /**
+  * @dev Integer division of two numbers, truncating the quotient.
+  */
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+    return c;
+  }
+
+  /**
+  * @dev Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  */
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  /**
+  * @dev Adds two numbers, throws on overflow.
+  */
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
 // File: contracts/ForeignBridge.sol
 
 contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressStorage {
+    using SafeMath for uint256;
     uint256 public gasLimitDepositRelay;
     uint256 public gasLimitWithdrawConfirm;
     uint256 homeGasPrice = 1000000000 wei;
+    uint256 public foreignDailyLimit;
     mapping (bytes32 => bytes) messages;
     mapping (bytes32 => bytes) signatures;
     mapping (bytes32 => bool) messages_signed;
     mapping (bytes32 => uint256) num_messages_signed;
     mapping (bytes32 => bool) deposits_signed;
     mapping (bytes32 => uint256) num_deposits_signed;
+    mapping (uint256 => uint256) totalSpentPerDay;
 
     IBurnableMintableERC677Token public erc677token;
 
@@ -253,12 +304,16 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
 
     event SignedForDeposit(address indexed signer, bytes32 message);
     event SignedForWithdraw(address indexed signer, bytes32 message);
+    event DailyLimit(uint256 newLimit);
 
     function ForeignBridge(
         address _validatorContract,
-        address _erc677token
+        address _erc677token,
+        uint256 _foreignDailyLimit
     ) public Validatable(_validatorContract) {
+        require(_foreignDailyLimit > 0);
         erc677token = IBurnableMintableERC677Token(_erc677token);
+        foreignDailyLimit = _foreignDailyLimit;
     }
 
     function setGasLimitDepositRelay(uint256 _gas) public onlyOwner {
@@ -301,6 +356,8 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
         require(erc677token != address(0x0));
         require(msg.sender == address(erc677token));
+        require(withinLimit(_value));
+        totalSpentPerDay[getCurrentDay()] = totalSpentPerDay[getCurrentDay()].add(_value);
         erc677token.burn(_value);
         Withdraw(_from, _value, homeGasPrice);
         return true;
@@ -355,6 +412,21 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
     /// Get message
     function message(bytes32 hash) public view returns (bytes) {
         return messages[hash];
+    }
+
+    function getCurrentDay() public view returns(uint256) {
+        return now / 1 days;
+    }
+
+    function setDailyLimit(uint256 _foreignDailyLimit) public onlyOwner {
+        require(_foreignDailyLimit > 0);
+        foreignDailyLimit = _foreignDailyLimit;
+        DailyLimit(foreignDailyLimit);
+    }
+
+    function withinLimit(uint256 _amount) public view returns(bool) {
+        uint256 nextLimit = totalSpentPerDay[getCurrentDay()].add(_amount);
+        return foreignDailyLimit >= nextLimit;
     }
 
 }

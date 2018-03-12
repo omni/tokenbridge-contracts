@@ -227,7 +227,6 @@ library SafeMath {
 contract HomeBridge is Validatable, BridgeDeploymentAddressStorage {
     using SafeMath for uint256;
     uint256 public gasLimitWithdrawRelay;
-    uint256 public estimatedGasCostOfWithdraw;
     uint256 public homeDailyLimit;
     mapping (uint256 => uint256) totalSpentPerDay;
     mapping (bytes32 => bool) withdraws;
@@ -266,24 +265,14 @@ contract HomeBridge is Validatable, BridgeDeploymentAddressStorage {
         address recipient = Message.getRecipient(message);
         uint256 value = Message.getValue(message);
         bytes32 hash = Message.getTransactionHash(message);
-        uint256 homeGasPrice = Message.getHomeGasPrice(message);
-        require((recipient == msg.sender) || (tx.gasprice == homeGasPrice));
         require(!withdraws[hash]);
         // Order of operations below is critical to avoid TheDAO-like re-entry bug
         withdraws[hash] = true;
 
-        uint256 estimatedWeiCostOfWithdraw = estimatedGasCostOfWithdraw.mul(homeGasPrice);
-
-        // charge recipient for relay cost
-        uint256 valueRemainingAfterSubtractingCost = value.sub(estimatedWeiCostOfWithdraw);
-
         // pay out recipient
-        recipient.transfer(valueRemainingAfterSubtractingCost);
+        recipient.transfer(value);
 
-        // refund relay cost to relaying authority
-        msg.sender.transfer(estimatedWeiCostOfWithdraw);
-
-        Withdraw(recipient, valueRemainingAfterSubtractingCost);
+        Withdraw(recipient, value);
     }
 
     function setDailyLimit(uint256 _homeDailyLimit) public onlyOwner {

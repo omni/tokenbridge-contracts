@@ -42,10 +42,9 @@ contract HomeBridge is Validatable, BridgeDeploymentAddressStorage {
         GasConsumptionLimitsUpdated(gasLimitWithdrawRelay);
     }
 
-
     function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
         require(message.length == 116);
-        // require(Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract));
+        require(Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract));
 
         address recipient = Message.getRecipient(message);
         uint256 value = Message.getValue(message);

@@ -77,16 +77,14 @@ library Helpers {
         bytes32[] _rs,
         bytes32[] _ss,
         IBridgeValidators _validatorContract) internal view returns (bool) {
-        uint8 _requiredSignatures = _validatorContract.requiredSignatures();
-        require(_vs.length < _requiredSignatures);
+        uint8 requiredSignatures = _validatorContract.requiredSignatures();
+        require(_vs.length <= requiredSignatures);
         bytes32 hash = MessageSigning.hashMessage(_message);
-        address[] memory encounteredAddresses = new address[](_requiredSignatures);
+        address[] memory encounteredAddresses = new address[](requiredSignatures);
 
-        for (uint8 i = 0; i < _requiredSignatures; i++) {
+        for (uint8 i = 0; i < requiredSignatures; i++) {
             address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
-            // only signatures by addresses in `addresses` are allowed
             require(_validatorContract.isValidator(recoveredAddress));
-            // duplicate signatures are not allowed
             if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
                 return false;
             }
@@ -261,10 +259,9 @@ contract HomeBridge is Validatable, BridgeDeploymentAddressStorage {
         GasConsumptionLimitsUpdated(gasLimitWithdrawRelay);
     }
 
-
     function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
         require(message.length == 116);
-        // require(Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract));
+        require(Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract));
 
         address recipient = Message.getRecipient(message);
         uint256 value = Message.getValue(message);

@@ -3,10 +3,11 @@ pragma solidity 0.4.19;
 
 library Message {
     // layout of message :: bytes:
-    // offset  0: 32 bytes :: uint (little endian) - message length
+    // offset  0: 32 bytes :: uint256 - message length
     // offset 32: 20 bytes :: address - recipient address
-    // offset 52: 32 bytes :: uint (little endian) - value
+    // offset 52: 32 bytes :: uint256 - value
     // offset 84: 32 bytes :: bytes32 - transaction hash
+    // offset 116: 32 bytes :: uint256 - home gas price
 
     // bytes 1 to 32 are 0 because message length is stored as little endian.
     // mload always reads 32 bytes.
@@ -28,8 +29,8 @@ library Message {
         return recipient;
     }
 
-    function getValue(bytes message) internal pure returns (uint) {
-        uint value;
+    function getValue(bytes message) internal pure returns (uint256) {
+        uint256 value;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
             value := mload(add(message, 52))

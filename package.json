@@ -4,15 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "truffle test",
+    "deploy": "truffle migrate --reset --network $NETWORK",
+    "flatten": "bash flatten.sh"
   },
   "author": "",
   "license": "ISC",
-  "scripts": {
-    "test": "truffle test"
-  },
   "dependencies": {
     "truffle": "^4.0.6",
     "zeppelin-solidity": "^1.6.0"
+  },
+  "devDependencies": {
+    "truffle-flattener": "^1.2.3"
   }
 }

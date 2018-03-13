@@ -1,8 +1,8 @@
 pragma solidity 0.4.19;
-import "zeppelin-solidity/contracts/token/ERC827/ERC827.sol";
+import "./ERC677.sol";
 
 
-contract IBurnableMintableERC827Token is ERC827 {
+contract IBurnableMintableERC677Token is ERC677 {
     function mint(address, uint256) public returns (bool);
     function burn(uint256 _value) public;
 }

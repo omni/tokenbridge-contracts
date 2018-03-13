@@ -46,13 +46,4 @@ library Message {
         }
         return hash;
     }
-
-    function getHomeGasPrice(bytes message) internal pure returns (uint256) {
-        uint256 gasPrice;
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            gasPrice := mload(add(message, 116))
-        }
-        return gasPrice;
-    }
 }

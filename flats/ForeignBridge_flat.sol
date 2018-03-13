@@ -127,7 +127,7 @@ library Helpers {
         bytes32[] _ss,
         IBridgeValidators _validatorContract) internal view returns (bool) {
         uint8 requiredSignatures = _validatorContract.requiredSignatures();
-        require(_vs.length <= requiredSignatures);
+        require(_vs.length >= requiredSignatures);
         bytes32 hash = MessageSigning.hashMessage(_message);
         address[] memory encounteredAddresses = new address[](requiredSignatures);
 
@@ -211,15 +211,6 @@ library Message {
             hash := mload(add(message, 84))
         }
         return hash;
-    }
-
-    function getHomeGasPrice(bytes message) internal pure returns (uint256) {
-        uint256 gasPrice;
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            gasPrice := mload(add(message, 116))
-        }
-        return gasPrice;
     }
 }
 

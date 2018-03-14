@@ -11,15 +11,17 @@ contract BridgeValidators is IBridgeValidators, Ownable, OwnedUpgradeabilityStor
     event ValidatorAdded (address validator);
     event ValidatorRemoved (address validator);
 
-    function BridgeValidators(uint8 _requiredSignatures, address[] _initialValidators) public Ownable() {
+    function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner) public {
+        require(!isInitialized());
+        setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
-        setValidatorCount(_initialValidators.length);
         for (uint i = 0; i < _initialValidators.length; i++) {
             require(!isValidator(_initialValidators[i]) && _initialValidators[i] != address(0));
             addValidator(_initialValidators[i]);
         }
         setRequiredSignatures(_requiredSignatures);
+        setInitialize(true);
     }
 
     function addValidator(address _validator) public onlyOwner {
@@ -57,11 +59,19 @@ contract BridgeValidators is IBridgeValidators, Ownable, OwnedUpgradeabilityStor
         return validators(_validator) == true;
     }
 
+    function isInitialized() public view returns(bool) {
+        return boolStorage[keccak256("isInitialized")];
+    }
+
     function setValidatorCount(uint256 _validatorCount) private {
         uintStorage[keccak256("validatorCount")] = _validatorCount;
     }
 
     function setValidator(address _validator, bool _status) private {
         boolStorage[keccak256("validators", _validator)] = _status;
+    }
+
+    function setInitialize(bool _status) private {
+        boolStorage[keccak256("isInitialized")] = _status;
     }
 }

@@ -38,7 +38,7 @@ library Helpers {
         bytes32[] _rs,
         bytes32[] _ss,
         IBridgeValidators _validatorContract) internal view returns (bool) {
-        uint8 requiredSignatures = _validatorContract.requiredSignatures();
+        uint256 requiredSignatures = _validatorContract.requiredSignatures();
         require(_vs.length >= requiredSignatures);
         bytes32 hash = MessageSigning.hashMessage(_message);
         address[] memory encounteredAddresses = new address[](requiredSignatures);

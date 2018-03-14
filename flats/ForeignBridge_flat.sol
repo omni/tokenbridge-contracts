@@ -1,27 +1,9 @@
 pragma solidity 0.4.19;
 
-// File: contracts/BridgeDeploymentAddressStorage.sol
-
-contract BridgeDeploymentAddressStorage {
-    uint256 public deployedAtBlock;
-
-    function BridgeDeploymentAddressStorage() public {
-        deployedAtBlock = block.number;
-    }
-}
-
 // File: contracts/ERC677Receiver.sol
 
 contract ERC677Receiver {
   function onTokenTransfer(address _from, uint _value, bytes _data) external returns(bool);
-}
-
-// File: contracts/IBridgeValidators.sol
-
-interface IBridgeValidators {
-    function isValidator(address _validator) public view returns(bool);
-    function requiredSignatures() public view returns(uint8);
-    function currentOwner() public view returns(address);
 }
 
 // File: zeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol
@@ -67,25 +49,12 @@ contract IBurnableMintableERC677Token is ERC677 {
     function burn(uint256 _value) public;
 }
 
-// File: contracts/Validatable.sol
+// File: contracts/IBridgeValidators.sol
 
-contract Validatable {
-    IBridgeValidators public validatorContract;
-
-    modifier onlyValidator() {
-        require(validatorContract.isValidator(msg.sender));
-        _;
-    }
-
-    modifier onlyOwner() {
-        require(validatorContract.currentOwner() == msg.sender);
-        _;
-    }
-
-    function Validatable(address _validatorContract) public {
-        require(_validatorContract != address(0));
-        validatorContract = IBridgeValidators(_validatorContract);
-    }
+interface IBridgeValidators {
+    function isValidator(address _validator) public view returns(bool);
+    function requiredSignatures() public view returns(uint256);
+    function owner() public view returns(address);
 }
 
 // File: contracts/libraries/Helpers.sol
@@ -126,7 +95,7 @@ library Helpers {
         bytes32[] _rs,
         bytes32[] _ss,
         IBridgeValidators _validatorContract) internal view returns (bool) {
-        uint8 requiredSignatures = _validatorContract.requiredSignatures();
+        uint256 requiredSignatures = _validatorContract.requiredSignatures();
         require(_vs.length >= requiredSignatures);
         bytes32 hash = MessageSigning.hashMessage(_message);
         address[] memory encounteredAddresses = new address[](requiredSignatures);
@@ -262,24 +231,119 @@ library SafeMath {
   }
 }
 
-// File: contracts/ForeignBridge.sol
+// File: contracts/upgradeability/EternalStorage.sol
 
-contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressStorage {
+/**
+ * @title EternalStorage
+ * @dev This contract holds all the necessary state variables to carry out the storage of any contract.
+ */
+contract EternalStorage {
+
+    mapping(bytes32 => uint256) internal uintStorage;
+    mapping(bytes32 => string) internal stringStorage;
+    mapping(bytes32 => address) internal addressStorage;
+    mapping(bytes32 => bytes) internal bytesStorage;
+    mapping(bytes32 => bool) internal boolStorage;
+    mapping(bytes32 => int256) internal intStorage;
+
+}
+
+// File: contracts/upgradeability/UpgradeabilityOwnerStorage.sol
+
+/**
+ * @title UpgradeabilityOwnerStorage
+ * @dev This contract keeps track of the upgradeability owner
+ */
+contract UpgradeabilityOwnerStorage {
+    // Owner of the contract
+    address private _upgradeabilityOwner;
+
+    /**
+    * @dev Tells the address of the owner
+    * @return the address of the owner
+    */
+    function upgradeabilityOwner() public view returns (address) {
+        return _upgradeabilityOwner;
+    }
+
+    /**
+    * @dev Sets the address of the owner
+    */
+    function setUpgradeabilityOwner(address newUpgradeabilityOwner) internal {
+        _upgradeabilityOwner = newUpgradeabilityOwner;
+    }
+}
+
+// File: contracts/upgradeability/UpgradeabilityStorage.sol
+
+/**
+ * @title UpgradeabilityStorage
+ * @dev This contract holds all the necessary state variables to support the upgrade functionality
+ */
+contract UpgradeabilityStorage {
+    // Version name of the current implementation
+    string internal _version;
+
+    // Address of the current implementation
+    address internal _implementation;
+
+    /**
+    * @dev Tells the version name of the current implementation
+    * @return string representing the name of the current version
+    */
+    function version() public view returns (string) {
+        return _version;
+    }
+
+    /**
+    * @dev Tells the address of the current implementation
+    * @return address of the current implementation
+    */
+    function implementation() public view returns (address) {
+        return _implementation;
+    }
+}
+
+// File: contracts/upgradeability/OwnedUpgradeabilityStorage.sol
+
+/**
+ * @title OwnedUpgradeabilityStorage
+ * @dev This is the storage necessary to perform upgradeable contracts.
+ * This means, required state variables for upgradeability purpose and eternal storage per se.
+ */
+contract OwnedUpgradeabilityStorage is UpgradeabilityOwnerStorage, UpgradeabilityStorage, EternalStorage {}
+
+// File: contracts/upgradeable_contracts/U_Validatable.sol
+
+contract Validatable is OwnedUpgradeabilityStorage {
+
+    function validatorContract() public view returns(IBridgeValidators) {
+        return IBridgeValidators(addressStorage[keccak256("validatorContract")]);
+    }
+
+    modifier onlyValidator() {
+        require(validatorContract().isValidator(msg.sender));
+        _;
+    }
+
+    modifier onlyOwner() {
+        require(validatorContract().owner() == msg.sender);
+        _;
+    }
+
+}
+
+// File: contracts/upgradeable_contracts/U_ForeignBridge.sol
+
+// import "./IBridgeValidators.sol";
+
+// import "./BridgeDeploymentAddressStorage.sol";
+
+
+
+
+contract ForeignBridge is ERC677Receiver, Validatable {
     using SafeMath for uint256;
-    uint256 public gasLimitDepositRelay;
-    uint256 public gasLimitWithdrawConfirm;
-    uint256 homeGasPrice = 1000000000 wei;
-    uint256 public foreignDailyLimit;
-    mapping (bytes32 => bytes) messages;
-    mapping (bytes32 => bytes) signatures;
-    mapping (bytes32 => bool) messages_signed;
-    mapping (bytes32 => uint256) num_messages_signed;
-    mapping (bytes32 => bool) deposits_signed;
-    mapping (bytes32 => uint256) num_deposits_signed;
-    mapping (uint256 => uint256) totalSpentPerDay;
-
-    IBurnableMintableERC677Token public erc677token;
-
     /// triggered when relay of deposit from HomeBridge is complete
     event Deposit(address recipient, uint value);
 
@@ -295,61 +359,83 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
     event SignedForWithdraw(address indexed signer, bytes32 message);
     event DailyLimit(uint256 newLimit);
 
-    function ForeignBridge(
+    function initialize(
         address _validatorContract,
         address _erc677token,
         uint256 _foreignDailyLimit
-    ) public Validatable(_validatorContract) {
+    ) public {
+        require(!isInitialized());
+        require(_validatorContract != address(0));
         require(_foreignDailyLimit > 0);
-        erc677token = IBurnableMintableERC677Token(_erc677token);
-        foreignDailyLimit = _foreignDailyLimit;
-    }
-
-    function setGasLimitDepositRelay(uint256 _gas) public onlyOwner {
-        gasLimitDepositRelay = _gas;
-
-        GasConsumptionLimitsUpdated(gasLimitDepositRelay, gasLimitWithdrawConfirm);
-    }
-
-    function setGasLimitWithdrawConfirm(uint256 gas) public onlyOwner {
-        gasLimitWithdrawConfirm = gas;
-
-        GasConsumptionLimitsUpdated(gasLimitDepositRelay, gasLimitWithdrawConfirm);
-    }
-
-    function deposit(address recipient, uint value, bytes32 transactionHash) public onlyValidator {
-        require(erc677token != address(0x0));
-
-        // Protection from misbehaing authority
-        bytes32 hash_msg = keccak256(recipient, value, transactionHash);
-        bytes32 hash_sender = keccak256(msg.sender, hash_msg);
-
-        // Duplicated deposits
-        require(!deposits_signed[hash_sender]);
-        deposits_signed[hash_sender] = true;
-
-        uint256 signed = num_deposits_signed[hash_msg] + 1;
-        num_deposits_signed[hash_msg] = signed;
-
-        SignedForDeposit(msg.sender, transactionHash);
-
-        if (signed == validatorContract.requiredSignatures()) {
-            // If the bridge contract does not own enough tokens to transfer
-            // it will couse funds lock on the home side of the bridge
-            erc677token.mint(recipient, value);
-            Deposit(recipient, value);
-        }
-
+        addressStorage[keccak256("validatorContract")] = _validatorContract;
+        setErc677token(_erc677token);
+        setForeignDailyLimit(_foreignDailyLimit);
+        uintStorage[keccak256("deployedAtBlock")] = block.number;
+        setInitialize(true);
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
-        require(erc677token != address(0x0));
-        require(msg.sender == address(erc677token));
+        require(address(erc677token()) != address(0x0));
+        require(msg.sender == address(erc677token()));
         require(withinLimit(_value));
-        totalSpentPerDay[getCurrentDay()] = totalSpentPerDay[getCurrentDay()].add(_value);
-        erc677token.burn(_value);
-        Withdraw(_from, _value, homeGasPrice);
+        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        erc677token().burn(_value);
+        Withdraw(_from, _value, homeGasPrice());
         return true;
+    }
+
+    function totalSpentPerDay(uint256 _day) public view returns(uint256) {
+        return uintStorage[keccak256("totalSpentPerDay", _day)];
+    }
+
+    function deployedAtBlock() public view returns(uint256) {
+        return uintStorage[keccak256("deployedAtBlock")];
+    }
+
+    function gasLimitDepositRelay() public view returns(uint256) {
+        return uintStorage[keccak256("gasLimitDepositRelay")];
+    }
+
+    function gasLimitWithdrawConfirm() public view returns(uint256) {
+        return uintStorage[keccak256("gasLimitWithdrawConfirm")];
+    }
+
+    function foreignDailyLimit() public view returns(uint256) {
+        return uintStorage[keccak256("foreignDailyLimit")];
+    }
+
+    function erc677token() public view returns(IBurnableMintableERC677Token) {
+        return IBurnableMintableERC677Token(addressStorage[keccak256("erc677token")]);
+    }
+
+    function setGasLimits(uint256 _gasLimitDepositRelay, uint256 _gasLimitWithdrawConfirm) public onlyOwner {
+        uintStorage[keccak256("gasLimitDepositRelay")] = _gasLimitDepositRelay;
+        uintStorage[keccak256("gasLimitWithdrawConfirm")] = _gasLimitWithdrawConfirm;
+        GasConsumptionLimitsUpdated(gasLimitDepositRelay(), gasLimitWithdrawConfirm());
+    }
+
+    function deposit(address recipient, uint value, bytes32 transactionHash) public onlyValidator {
+        require(address(erc677token()) != address(0x0));
+
+        // Protection from misbehaing authority
+        bytes32 hashMsg = keccak256(recipient, value, transactionHash);
+        bytes32 hashSender = keccak256(msg.sender, hashMsg);
+
+        // Duplicated deposits
+        require(!depositsSigned(hashSender));
+        setDepositsSigned(hashSender, true);
+
+        uint256 signed = numDepositsSigned(hashMsg).add(1);
+        setNumDepositsSigned(hashMsg, signed);
+
+        SignedForDeposit(msg.sender, transactionHash);
+
+        if (signed == validatorContract().requiredSignatures()) {
+            // If the bridge contract does not own enough tokens to transfer
+            // it will couse funds lock on the home side of the bridge
+            erc677token().mint(recipient, value);
+            Deposit(recipient, value);
+        }
     }
 
     /// Should be used as sync tool
@@ -366,56 +452,123 @@ contract ForeignBridge is ERC677Receiver, Validatable, BridgeDeploymentAddressSt
 
         require(message.length == 116);
         bytes32 hash = keccak256(message);
-        bytes32 hash_sender = keccak256(msg.sender, hash);
+        bytes32 hashSender = keccak256(msg.sender, hash);
 
-        uint signed = num_messages_signed[hash_sender] + 1;
+        uint signed = numMessagesSigned(hashSender) + 1;
 
         if (signed > 1) {
             // Duplicated signatures
-            require(!messages_signed[hash_sender]);
-        }
-        else {
+            require(!messagesSigned(hashSender));
+        } else {
             // check if it will really reduce gas usage in case of the second transaction
             // with the same hash
-            messages[hash] = message;
+            setMessages(hash, message);
         }
-        messages_signed[hash_sender] = true;
+        setMessagesSigned(hashSender, true);
 
-        bytes32 sign_idx = keccak256(hash, (signed-1));
-        signatures[sign_idx] = signature;
+        bytes32 signIdx = keccak256(hash, (signed-1));
+        setSignatures(signIdx, signature);
 
-        num_messages_signed[hash_sender] = signed;
+        setNumMessagesSigned(hashSender, signed);
 
-        // TODO: this may cause troubles if requiredSignatures len is changed
         SignedForWithdraw(msg.sender, hash);
-        if (signed == validatorContract.requiredSignatures()) {
+        if (signed == validatorContract().requiredSignatures()) {
             CollectedSignatures(msg.sender, hash);
         }
     }
 
-    function signature(bytes32 hash, uint index) public view returns (bytes) {
-        bytes32 sign_idx = keccak256(hash, index);
-        return signatures[sign_idx];
+    function signature(bytes32 _hash, uint256 _index) public view returns (bytes) {
+        bytes32 signIdx = keccak256(_hash, _index);
+        return signatures(signIdx);
     }
 
     /// Get message
-    function message(bytes32 hash) public view returns (bytes) {
-        return messages[hash];
+    function message(bytes32 _hash) public view returns (bytes) {
+        return messages(_hash);
     }
 
     function getCurrentDay() public view returns(uint256) {
         return now / 1 days;
     }
 
-    function setDailyLimit(uint256 _foreignDailyLimit) public onlyOwner {
+    function setForeignDailyLimit(uint256 _foreignDailyLimit) public onlyOwner {
         require(_foreignDailyLimit > 0);
-        foreignDailyLimit = _foreignDailyLimit;
-        DailyLimit(foreignDailyLimit);
+        uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
+        DailyLimit(_foreignDailyLimit);
     }
 
     function withinLimit(uint256 _amount) public view returns(bool) {
-        uint256 nextLimit = totalSpentPerDay[getCurrentDay()].add(_amount);
-        return foreignDailyLimit >= nextLimit;
+        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
+        return foreignDailyLimit() >= nextLimit;
+    }
+
+    function isInitialized() public view returns(bool) {
+        return boolStorage[keccak256("isInitialized")];
+    }
+
+    function homeGasPrice() internal view returns(uint256) {
+        return 1000000000 wei;
+    }
+
+    function messages(bytes32 _hash) private view returns(bytes) {
+        return bytesStorage[keccak256("messages", _hash)];
+    }
+
+    function setMessages(bytes32 _hash, bytes _message) private {
+        bytesStorage[keccak256("messages", _hash)] = _message;
+    }
+
+    function signatures(bytes32 _hash) private view returns(bytes) {
+        return bytesStorage[keccak256("signatures", _hash)];
+    }
+
+    function setSignatures(bytes32 _hash, bytes _signature) private {
+        bytesStorage[keccak256("signatures", _hash)] = _signature;
+    }
+
+    function messagesSigned(bytes32 _message) private view returns(bool) {
+        return boolStorage[keccak256("messagesSigned", _message)];
+    }
+
+    function depositsSigned(bytes32 _deposit) private view returns(bool) {
+        return boolStorage[keccak256("depositsSigned", _deposit)];
+    }
+
+    function numMessagesSigned(bytes32 _message) private view returns(uint256) {
+        return uintStorage[keccak256("numMessagesSigned", _message)];
+    }
+
+    function numDepositsSigned(bytes32 _deposit) private view returns(uint256) {
+        return uintStorage[keccak256("numDepositsSigned", _deposit)];
+    }
+
+    function setMessagesSigned(bytes32 _hash, bool _status) private {
+        boolStorage[keccak256("messagesSigned", _hash)] = _status;
+    }
+
+    function setDepositsSigned(bytes32 _deposit, bool _status) private {
+        boolStorage[keccak256("depositsSigned", _deposit)] = _status;
+    }
+
+    function setNumMessagesSigned(bytes32 _message, uint256 _number) private {
+        uintStorage[keccak256("numMessagesSigned", _message)] = _number;
+    }
+
+    function setNumDepositsSigned(bytes32 _deposit, uint256 _number) private {
+        uintStorage[keccak256("numDepositsSigned", _deposit)] = _number;
+    }
+
+    function setTotalSpentPerDay(uint256 _day, uint256 _value) private {
+        uintStorage[keccak256("totalSpentPerDay", _day)] = _value;
+    }
+
+    function setErc677token(address _token) private {
+        require(_token != address(0));
+        addressStorage[keccak256("erc677token")] = _token;
+    }
+
+    function setInitialize(bool _status) private {
+        boolStorage[keccak256("isInitialized")] = _status;
     }
 
 }

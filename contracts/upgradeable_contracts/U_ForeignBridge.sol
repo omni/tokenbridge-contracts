@@ -12,7 +12,7 @@ import "../ERC677Receiver.sol";
 contract ForeignBridge is ERC677Receiver, Validatable {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
-    event Deposit(address recipient, uint value);
+    event Deposit(address recipient, uint value, bytes32 transactionHash);
 
     /// Event created on money withdraw.
     event Withdraw(address recipient, uint256 value, uint256 homeGasPrice);
@@ -101,7 +101,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
             erc677token().mint(recipient, value);
-            Deposit(recipient, value);
+            Deposit(recipient, value, transactionHash);
         }
     }
 

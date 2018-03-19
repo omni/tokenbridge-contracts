@@ -13,7 +13,7 @@ contract HomeBridge is OwnedUpgradeabilityStorage, Validatable {
     using SafeMath for uint256;
     event GasConsumptionLimitsUpdated(uint256 gas);
     event Deposit (address recipient, uint256 value);
-    event Withdraw (address recipient, uint256 value);
+    event Withdraw (address recipient, uint256 value, bytes32 transactionHash);
     event DailyLimit(uint256 newLimit);
 
     function initialize (
@@ -75,7 +75,7 @@ contract HomeBridge is OwnedUpgradeabilityStorage, Validatable {
         // pay out recipient
         recipient.transfer(value);
 
-        Withdraw(recipient, value);
+        Withdraw(recipient, value, hash);
     }
 
     function setHomeDailyLimit(uint256 _homeDailyLimit) public onlyOwner {

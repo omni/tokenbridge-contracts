@@ -345,7 +345,7 @@ contract Validatable is OwnedUpgradeabilityStorage {
 contract ForeignBridge is ERC677Receiver, Validatable {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
-    event Deposit(address recipient, uint value);
+    event Deposit(address recipient, uint value, bytes32 transactionHash);
 
     /// Event created on money withdraw.
     event Withdraw(address recipient, uint256 value, uint256 homeGasPrice);
@@ -355,8 +355,8 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
 
-    event SignedForDeposit(address indexed signer, bytes32 message);
-    event SignedForWithdraw(address indexed signer, bytes32 message);
+    event SignedForDeposit(address indexed signer, bytes32 transactionHash);
+    event SignedForWithdraw(address indexed signer, bytes32 messageHash);
     event DailyLimit(uint256 newLimit);
 
     function initialize(
@@ -434,7 +434,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
             erc677token().mint(recipient, value);
-            Deposit(recipient, value);
+            Deposit(recipient, value, transactionHash);
         }
     }
 

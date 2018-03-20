@@ -23,7 +23,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
 
     event SignedForDeposit(address indexed signer, bytes32 transactionHash);
-    event SignedForWithdraw(address indexed signer, bytes32 message);
+    event SignedForWithdraw(address indexed signer, bytes32 messageHash);
     event DailyLimit(uint256 newLimit);
 
     function initialize(

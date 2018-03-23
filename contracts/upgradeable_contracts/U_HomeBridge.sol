@@ -2,9 +2,6 @@ pragma solidity ^0.4.19;
 import "../libraries/SafeMath.sol";
 import "../libraries/Helpers.sol";
 import "../libraries/Message.sol";
-// import "./IBridgeValidators.sol";
-// import "./Validatable.sol";
-// import "./BridgeDeploymentAddressStorage.sol";
 import "./U_Validatable.sol";
 import "../upgradeability/OwnedUpgradeabilityStorage.sol";
 

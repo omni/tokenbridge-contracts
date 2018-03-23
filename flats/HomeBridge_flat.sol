@@ -286,13 +286,6 @@ contract Validatable is OwnedUpgradeabilityStorage {
 
 // File: contracts/upgradeable_contracts/U_HomeBridge.sol
 
-// import "./IBridgeValidators.sol";
-// import "./Validatable.sol";
-// import "./BridgeDeploymentAddressStorage.sol";
-
-
-
-
 contract HomeBridge is OwnedUpgradeabilityStorage, Validatable {
     using SafeMath for uint256;
     event GasConsumptionLimitsUpdated(uint256 gas);

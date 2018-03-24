@@ -6,15 +6,20 @@
   "scripts": {
     "test": "truffle test",
     "deploy": "truffle migrate --reset --network $NETWORK",
-    "flatten": "bash flatten.sh"
+    "flatten": "bash flatten.sh",
+    "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "nodemon": "^1.17.2",
     "truffle": "^4.0.6",
     "zeppelin-solidity": "^1.6.0"
   },
   "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^2.0.2",
     "truffle-flattener": "^1.2.3"
   }
 }

@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ganache-cli": "^6.1.0",
     "nodemon": "^1.17.2",
     "truffle": "^4.0.6",
     "zeppelin-solidity": "^1.6.0"

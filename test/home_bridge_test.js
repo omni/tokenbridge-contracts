@@ -19,19 +19,26 @@ contract('HomeBridge', async (accounts) => {
       ZERO_ADDRESS.should.be.equal(await homeContract.validatorContract())
       '0'.should.be.bignumber.equal(await homeContract.deployedAtBlock())
       '0'.should.be.bignumber.equal(await homeContract.homeDailyLimit())
+      '0'.should.be.bignumber.equal(await homeContract.maxPerTx())
       false.should.be.equal(await homeContract.isInitialized())
-      await homeContract.initialize(validatorContract.address, '1')
+      await homeContract.initialize(validatorContract.address, '2', '1').should.be.fulfilled;
       true.should.be.equal(await homeContract.isInitialized())
       validatorContract.address.should.be.equal(await homeContract.validatorContract());
       (await homeContract.deployedAtBlock()).should.be.bignumber.above(0);
-      '1'.should.be.bignumber.equal(await homeContract.homeDailyLimit())
+      '2'.should.be.bignumber.equal(await homeContract.homeDailyLimit())
+      '1'.should.be.bignumber.equal(await homeContract.maxPerTx())
+    })
+    it('cant set maxPerTx > homeDailyLimit', async () => {
+      false.should.be.equal(await homeContract.isInitialized())
+      await homeContract.initialize(validatorContract.address, '1', '2').should.be.rejectedWith(ERROR_MSG);
+      false.should.be.equal(await homeContract.isInitialized())
     })
   })
 
   describe('#fallback', async () => {
-    before(async () => {
+    beforeEach(async () => {
       homeContract = await HomeBridge.new()
-      await homeContract.initialize(validatorContract.address, '1')
+      await homeContract.initialize(validatorContract.address, '2', '1')
     })
     it('should accept POA', async () => {
       const currentDay = await homeContract.getCurrentDay()
@@ -43,30 +50,56 @@ contract('HomeBridge', async (accounts) => {
       '1'.should.be.bignumber.equal(await homeContract.totalSpentPerDay(currentDay))
       await homeContract.sendTransaction({
         from: accounts[1],
-        value: 1
+        value: 2
       }).should.be.rejectedWith(ERROR_MSG);
       logs[0].event.should.be.equal('Deposit')
       logs[0].args.should.be.deep.equal({
         recipient: accounts[1],
         value: new web3.BigNumber(1)
       })
-      await homeContract.setHomeDailyLimit(2).should.be.fulfilled;
+      await homeContract.setHomeDailyLimit(3).should.be.fulfilled;
       await homeContract.sendTransaction({
         from: accounts[1],
         value: 1
       }).should.be.fulfilled
       '2'.should.be.bignumber.equal(await homeContract.totalSpentPerDay(currentDay))
     })
+
+    it('doesnt let you send more than max amount per tx', async () => {
+      await homeContract.sendTransaction({
+        from: accounts[1],
+        value: 1
+      }).should.be.fulfilled
+      await homeContract.sendTransaction({
+        from: accounts[1],
+        value: 2
+      }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.setHomeDailyLimit(100).should.be.fulfilled;
+      await homeContract.setMaxPerTx(99).should.be.fulfilled;
+      //meets max per tx and daily limit
+      await homeContract.sendTransaction({
+        from: accounts[1],
+        value: 99
+      }).should.be.fulfilled
+      //above daily limit
+      await homeContract.sendTransaction({
+        from: accounts[1],
+        value: 1
+      }).should.be.rejectedWith(ERROR_MSG)
+
+    })
   })
   describe('#withdraw', async () => {
     beforeEach(async () => {
       homeContract = await HomeBridge.new()
       const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-      await homeContract.initialize(validatorContract.address, oneEther);
+      const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      await homeContract.initialize(validatorContract.address, oneEther, halfEther);
       oneEther.should.be.bignumber.equal(await homeContract.homeDailyLimit());
       await homeContract.sendTransaction({
         from: accounts[1],
-        value: oneEther
+        value: halfEther
       }).should.be.fulfilled
     })
     it('should allow to withdraw', async () => {
@@ -96,7 +129,7 @@ contract('HomeBridge', async (accounts) => {
       const balanceBefore = await web3.eth.getBalance(recipientAccount)
       const homeBalanceBefore = await web3.eth.getBalance(homeContract.address)
       // tx 1
-      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
       var homeGasPrice = web3.toBigNumber(0);
       var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
@@ -123,6 +156,7 @@ contract('HomeBridge', async (accounts) => {
       true.should.be.equal(await homeContract.withdraws(transactionHash))
       true.should.be.equal(await homeContract.withdraws(transactionHash2))
     })
+
     it('should not allow if there are not enough funds in the contract', async () => {
       var recipientAccount = accounts[3];
       const balanceBefore = await web3.eth.getBalance(recipientAccount)
@@ -166,13 +200,14 @@ contract('HomeBridge', async (accounts) => {
       multisigValidatorContract = await BridgeValidators.new()
       twoAuthorities = [accounts[0], accounts[1]];
       ownerOfValidatorContract = accounts[3]
+      const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {from: ownerOfValidatorContract})
       homeContractWithMultiSignatures = await HomeBridge.new()
       const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-      await homeContractWithMultiSignatures.initialize(multisigValidatorContract.address, oneEther, {from: ownerOfValidatorContract});
+      await homeContractWithMultiSignatures.initialize(multisigValidatorContract.address, oneEther,halfEther, {from: ownerOfValidatorContract});
       await homeContractWithMultiSignatures.sendTransaction({
         from: accounts[1],
-        value: oneEther
+        value: halfEther
       }).should.be.fulfilled
     })
     it('withdraw should fail if not enough signatures are provided', async () => {

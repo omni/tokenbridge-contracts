@@ -6,3 +6,4 @@ require('chai')
   .should();
 
 exports.ERROR_MSG = 'VM Exception while processing transaction: revert';
+exports.ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'

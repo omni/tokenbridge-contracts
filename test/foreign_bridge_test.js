@@ -160,4 +160,52 @@ contract('ForeignBridge', async (accounts) => {
       })
     })
   })
+
+  describe('#submitSignature', async () => {
+    let validatorContractWith2Signatures,authoritiesTwoAccs,ownerOfValidators,tokenPOA20,foreignBridgeWithTwoSigs
+    beforeEach(async () => {
+      validatorContractWith2Signatures = await BridgeValidators.new()
+      authoritiesTwoAccs = [accounts[1], accounts[2], accounts[3]];
+      ownerOfValidators = accounts[0]
+      await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
+      tokenPOA20 = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+      foreignBridgeWithTwoSigs = await ForeignBridge.new();
+      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther);
+      await tokenPOA20.transferOwnership(foreignBridgeWithTwoSigs.address)
+
+    })
+    it('allows a validator to submit a signature', async () => {
+      var recipientAccount = accounts[8]
+      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      var homeGasPrice = web3.toBigNumber(0);
+      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var signature = await sign(authoritiesTwoAccs[0], message)
+      const {logs} = await foreignBridgeWithTwoSigs.submitSignature(signature, message, {from: authorities[0]}).should.be.fulfilled;
+      logs[0].event.should.be.equal('SignedForWithdraw')
+      const msgHashFromLog = logs[0].args.messageHash
+      const signatureFromContract = await foreignBridgeWithTwoSigs.signature(msgHashFromLog, 0);
+      const messageFromContract = await foreignBridgeWithTwoSigs.message(msgHashFromLog);
+      signature.should.be.equal(signatureFromContract);
+      messageFromContract.should.be.equal(messageFromContract);
+
+    })
+    it('when enough requiredSignatures are collected, CollectedSignatures event is emitted', async () => {
+      var recipientAccount = accounts[8]
+      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      var homeGasPrice = web3.toBigNumber(0);
+      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var signature = await sign(authoritiesTwoAccs[0], message)
+      var signature2 = await sign(authoritiesTwoAccs[1], message)
+      '2'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
+      await foreignBridgeWithTwoSigs.submitSignature(signature, message, {from: authorities[0]}).should.be.fulfilled;
+      await foreignBridgeWithTwoSigs.submitSignature(signature, message, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridgeWithTwoSigs.submitSignature(signature, message, {from: authorities[1]}).should.be.rejectedWith(ERROR_MSG);
+      const {logs} = await foreignBridgeWithTwoSigs.submitSignature(signature2, message, {from: authorities[1]}).should.be.fulfilled;
+      logs.length.should.be.equal(2)
+      logs[1].event.should.be.equal('CollectedSignatures')
+      logs[1].args.authorityResponsibleForRelay.should.be.equal(authorities[1])
+    })
+  })
 })

@@ -454,7 +454,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         bytes32 hash = keccak256(message);
         bytes32 hashSender = keccak256(msg.sender, hash);
 
-        uint signed = numMessagesSigned(hashSender) + 1;
+        uint signed = numMessagesSigned(hash) + 1;
 
         if (signed > 1) {
             // Duplicated signatures
@@ -469,7 +469,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         bytes32 signIdx = keccak256(hash, (signed-1));
         setSignatures(signIdx, signature);
 
-        setNumMessagesSigned(hashSender, signed);
+        setNumMessagesSigned(hash, signed);
 
         SignedForWithdraw(msg.sender, hash);
         if (signed == validatorContract().requiredSignatures()) {

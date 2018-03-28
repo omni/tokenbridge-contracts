@@ -362,15 +362,18 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     function initialize(
         address _validatorContract,
         address _erc677token,
-        uint256 _foreignDailyLimit
+        uint256 _foreignDailyLimit,
+        uint256 _maxPerTx
     ) public {
         require(!isInitialized());
         require(_validatorContract != address(0));
         require(_foreignDailyLimit > 0);
+        require(_maxPerTx > 0);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
         setForeignDailyLimit(_foreignDailyLimit);
         uintStorage[keccak256("deployedAtBlock")] = block.number;
+        setMaxPerTx(_maxPerTx);
         setInitialize(true);
     }
 
@@ -382,6 +385,15 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         erc677token().burn(_value);
         Withdraw(_from, _value, homeGasPrice());
         return true;
+    }
+
+    function setMaxPerTx(uint256 _maxPerTx) public onlyOwner {
+        require(_maxPerTx < foreignDailyLimit());
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+    }
+
+    function maxPerTx() public view returns(uint256) {
+        return uintStorage[keccak256("maxPerTx")];
     }
 
     function totalSpentPerDay(uint256 _day) public view returns(uint256) {
@@ -499,7 +511,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
     function withinLimit(uint256 _amount) public view returns(bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
-        return foreignDailyLimit() >= nextLimit;
+        return foreignDailyLimit() >= nextLimit && _amount <= maxPerTx();
     }
 
     function isInitialized() public view returns(bool) {

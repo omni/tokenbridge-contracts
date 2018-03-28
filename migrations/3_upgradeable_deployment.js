@@ -63,7 +63,8 @@ module.exports = async function(deployer, network, accounts) {
     const foreignBridgeImplementation = await ForeignBridge.deployed();
     var foreignBridgeWeb3 = web3.eth.contract(ForeignBridge.abi);
     var foreignBridgeWeb3Instance = foreignBridgeWeb3.at(foreignBridgeImplementation.address);
-    var initializeDataForeign = foreignBridgeWeb3Instance.initialize.getData(storageBridgeValidators.address, erc677token.address, foreignDailyLimit);
+    var initializeDataForeign = foreignBridgeWeb3Instance.initialize
+      .getData(storageBridgeValidators.address, erc677token.address, foreignDailyLimit, MAX_AMOUNT_PER_TX);
     await foreignBridgeUpgradeable.upgradeTo('0', foreignBridgeImplementation.address, {from: PROXY_OWNER});
 
     await web3.eth.sendTransaction({

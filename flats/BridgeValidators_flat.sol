@@ -213,6 +213,7 @@ contract BridgeValidators is IBridgeValidators, Ownable, OwnedUpgradeabilityStor
     }
 
     function addValidator(address _validator) public onlyOwner {
+        require(_validator != address(0));
         assert(validators(_validator) != true);
         setValidatorCount(validatorCount().add(1));
         setValidator(_validator, true);
@@ -221,6 +222,7 @@ contract BridgeValidators is IBridgeValidators, Ownable, OwnedUpgradeabilityStor
 
     function removeValidator(address _validator) public onlyOwner {
         require(validatorCount() > requiredSignatures());
+        require(isValidator(_validator));
         setValidator(_validator, false);
         setValidatorCount(validatorCount().sub(1));
         ValidatorRemoved(_validator);

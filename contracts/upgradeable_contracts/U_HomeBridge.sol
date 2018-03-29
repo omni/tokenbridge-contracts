@@ -15,14 +15,17 @@ contract HomeBridge is OwnedUpgradeabilityStorage, Validatable {
 
     function initialize (
         address _validatorContract,
-        uint256 _homeDailyLimit
+        uint256 _homeDailyLimit,
+        uint256 _maxPerTx
     ) public {
         require(!isInitialized());
         require(_validatorContract != address(0));
         require(_homeDailyLimit > 0);
+        require(_maxPerTx > 0);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         setHomeDailyLimit(_homeDailyLimit);
+        setMaxPerTx(_maxPerTx);
         setInitialize(true);
     }
 
@@ -80,13 +83,22 @@ contract HomeBridge is OwnedUpgradeabilityStorage, Validatable {
         DailyLimit(_homeDailyLimit);
     }
 
+    function setMaxPerTx(uint256 _maxPerTx) public onlyOwner {
+        require(_maxPerTx < homeDailyLimit());
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+    }
+
     function getCurrentDay() public view returns(uint256) {
         return now / 1 days;
     }
 
+    function maxPerTx() public view returns(uint256) {
+        return uintStorage[keccak256("maxPerTx")];
+    }
+
     function withinLimit(uint256 _amount) public view returns(bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
-        return homeDailyLimit() >= nextLimit;
+        return homeDailyLimit() >= nextLimit && _amount <= maxPerTx();
     }
 
     function isInitialized() public view returns(bool) {

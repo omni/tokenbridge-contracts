@@ -1,3 +1,24 @@
+# POA bridge smart contracts
+The goal of these contracts is to allow users to tokenize native POA coin into ERC20 token on ethereum mainnet.
+Home Bridge is a smart contract that should be deployed in POA.network
+Foreign Bridge is a smart contract that should be deployed in Ethereum Mainnet
+
+Responsibilities and roles of the bridge:
+- Administrator Role(representation of a multisig contract):
+  - add/remove validators
+  - set daily limits on both bridges
+  - set maximum per transaction limit on both bridges
+  - upgrade contracts in case of vulnerability
+  - set minimum required signatures from validators in order to relay a user's transaction
+- Validator Role :
+  - provide 100% uptime to relay transactions
+  - listen for Deposit events on Home bridge to mint erc20 token on Foreign bridge
+  - listen for Withdraw events on Foreign bridge to unlock funds on Home Bridge
+- User role:
+  - sends POA coins to Home bridge in order to receive ERC20 token on Foreign Bridge
+  - sends ERC20 POA20 token on Foreign Bridge in order to receive POA coins on Home Bridge
+
+
 # Dependencies
 ```bash
 npm install
@@ -28,9 +49,10 @@ that will be used as Home Bridge Proxy contract.  Example address: `0x04`
 7. Call `upgradeTo` of EternalStorageProxy that is used as  Home Bridge Proxy(step#6) with 2 parameters:
 - 0 - version of implementation contract
 - address of implementation which is the address of step#5 HomeBridge deployed contract. (`0x03`)
-8. Call `initialize` method at Home Bridge Proxy address with 2 parameters:
+8. Call `initialize` method at Home Bridge Proxy address with 3 parameters:
 - address of Home Bridge **Validators** address Proxy ( step# 1) `0x01`
 - Daily Limit in wei: Example `1000000000000000000` == 1 ether
+- Maximum Per Transaction Limit in wei: Example `100000000000000000` == 0.1 ether. Should be less than Daily Limit
 
 =====
 ## Foreign Deployment on Kovan
@@ -52,10 +74,11 @@ that will be used as Foreign Bridge Proxy contract. Example `0x08`
 16. Call `upgradeTo` of EternalStorageProxy(`0x08`) that is used as  Foreign Bridge Proxy(step#14) with 2 parameters:
 - 0 - version of implementation contract
 - address of implementation which is the address of step#15 Foreign Bridge deployed contract. (`0x09`)
-17. Call `initialize` method at Foreign Bridge Proxy(`0x08`) address with 2 parameters:
+17. Call `initialize` method at Foreign Bridge Proxy(`0x08`) address with 4 parameters:
 - address of Foreign Bridge **Validators** address Proxy ( step# 10) `0x06`
 - address of POA20 token contract. Step#9 `0x05`
 - Daily Limit in wei: Example `1000000000000000000` == 1 ether
+- Maximum Per Transaction Limit in wei: Example `100000000000000000` == 0.1 ether. Should be less than Daily Limit
 18. Call `transferOwnership` of POA20 contract(0x05) with 1 parameter:
 - address of Foreign Bridge Proxy (`0x08`) from step#14
 

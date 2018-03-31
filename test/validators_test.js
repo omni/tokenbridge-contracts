@@ -97,7 +97,7 @@ contract('BridgeValidators', async (accounts) => {
     })
   })
 
-  describe.only('#setRequiredSignatures', async () => {
+  describe('#setRequiredSignatures', async () => {
     let owner = accounts[2];
     let validators = [accounts[0], accounts[1], accounts[3]];
     let requiredSignatures = 2;

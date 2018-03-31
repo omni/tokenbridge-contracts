@@ -3,10 +3,10 @@ import "../libraries/SafeMath.sol";
 import "../libraries/Helpers.sol";
 import "../libraries/Message.sol";
 import "./U_Validatable.sol";
-import "../upgradeability/OwnedUpgradeabilityStorage.sol";
+import "../upgradeability/EternalStorage.sol";
 
 
-contract HomeBridge is OwnedUpgradeabilityStorage, Validatable {
+contract HomeBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
     event GasConsumptionLimitsUpdated(uint256 gas);
     event Deposit (address recipient, uint256 value);

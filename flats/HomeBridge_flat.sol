@@ -199,74 +199,9 @@ contract EternalStorage {
 
 }
 
-// File: contracts/upgradeability/UpgradeabilityOwnerStorage.sol
-
-/**
- * @title UpgradeabilityOwnerStorage
- * @dev This contract keeps track of the upgradeability owner
- */
-contract UpgradeabilityOwnerStorage {
-    // Owner of the contract
-    address private _upgradeabilityOwner;
-
-    /**
-    * @dev Tells the address of the owner
-    * @return the address of the owner
-    */
-    function upgradeabilityOwner() public view returns (address) {
-        return _upgradeabilityOwner;
-    }
-
-    /**
-    * @dev Sets the address of the owner
-    */
-    function setUpgradeabilityOwner(address newUpgradeabilityOwner) internal {
-        _upgradeabilityOwner = newUpgradeabilityOwner;
-    }
-}
-
-// File: contracts/upgradeability/UpgradeabilityStorage.sol
-
-/**
- * @title UpgradeabilityStorage
- * @dev This contract holds all the necessary state variables to support the upgrade functionality
- */
-contract UpgradeabilityStorage {
-    // Version name of the current implementation
-    string internal _version;
-
-    // Address of the current implementation
-    address internal _implementation;
-
-    /**
-    * @dev Tells the version name of the current implementation
-    * @return string representing the name of the current version
-    */
-    function version() public view returns (string) {
-        return _version;
-    }
-
-    /**
-    * @dev Tells the address of the current implementation
-    * @return address of the current implementation
-    */
-    function implementation() public view returns (address) {
-        return _implementation;
-    }
-}
-
-// File: contracts/upgradeability/OwnedUpgradeabilityStorage.sol
-
-/**
- * @title OwnedUpgradeabilityStorage
- * @dev This is the storage necessary to perform upgradeable contracts.
- * This means, required state variables for upgradeability purpose and eternal storage per se.
- */
-contract OwnedUpgradeabilityStorage is UpgradeabilityOwnerStorage, UpgradeabilityStorage, EternalStorage {}
-
 // File: contracts/upgradeable_contracts/U_Validatable.sol
 
-contract Validatable is OwnedUpgradeabilityStorage {
+contract Validatable is EternalStorage {
 
     function validatorContract() public view returns(IBridgeValidators) {
         return IBridgeValidators(addressStorage[keccak256("validatorContract")]);
@@ -286,7 +221,7 @@ contract Validatable is OwnedUpgradeabilityStorage {
 
 // File: contracts/upgradeable_contracts/U_HomeBridge.sol
 
-contract HomeBridge is OwnedUpgradeabilityStorage, Validatable {
+contract HomeBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
     event GasConsumptionLimitsUpdated(uint256 gas);
     event Deposit (address recipient, uint256 value);

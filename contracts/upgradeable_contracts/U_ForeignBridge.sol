@@ -2,9 +2,7 @@ pragma solidity ^0.4.19;
 import "../libraries/SafeMath.sol";
 import "../libraries/Helpers.sol";
 import "../libraries/Message.sol";
-// import "./IBridgeValidators.sol";
 import "./U_Validatable.sol";
-// import "./BridgeDeploymentAddressStorage.sol";
 import "../IBurnableMintableERC677Token.sol";
 import "../ERC677Receiver.sol";
 

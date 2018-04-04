@@ -1,9 +1,9 @@
 pragma solidity ^0.4.19;
 import "../IBridgeValidators.sol";
-import "../upgradeability/OwnedUpgradeabilityStorage.sol";
+import "../upgradeability/EternalStorage.sol";
 
 
-contract Validatable is OwnedUpgradeabilityStorage {
+contract Validatable is EternalStorage {
 
     function validatorContract() public view returns(IBridgeValidators) {
         return IBridgeValidators(addressStorage[keccak256("validatorContract")]);

@@ -4,7 +4,7 @@
   "description": "",
   "main": "deploy.js",
   "scripts": {
-    "compile": "pkg deploy.js --out-path build"
+    "compile": "pkg deploy.js --out-path build/tmp_build"
   },
   "author": "",
   "license": "ISC",

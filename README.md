@@ -8,6 +8,7 @@ Responsibilities and roles of the bridge:
   - add/remove validators
   - set daily limits on both bridges
   - set maximum per transaction limit on both bridges
+  - set minimum per transaction limit on both bridges
   - upgrade contracts in case of vulnerability
   - set minimum required signatures from validators in order to relay a user's transaction
 - Validator Role :
@@ -53,7 +54,7 @@ that will be used as Home Bridge Proxy contract.  Example address: `0x04`
 - address of Home Bridge **Validators** address Proxy ( step# 1) `0x01`
 - Daily Limit in wei: Example `1000000000000000000` == 1 ether
 - Maximum Per Transaction Limit in wei: Example `100000000000000000` == 0.1 ether. Should be less than Daily Limit
-
+- Minimum Per Transaction Limit in wei: Example `10000000000000000` == 0.01 ether. Should be less than Daily Limit and less than MaxPerTx
 =====
 ## Foreign Deployment on Kovan
 =====
@@ -79,6 +80,7 @@ that will be used as Foreign Bridge Proxy contract. Example `0x08`
 - address of POA20 token contract. Step#9 `0x05`
 - Daily Limit in wei: Example `1000000000000000000` == 1 ether
 - Maximum Per Transaction Limit in wei: Example `100000000000000000` == 0.1 ether. Should be less than Daily Limit
+- Minimum Per Transaction Limit in wei: Example `10000000000000000` == 0.01 ether. Should be less than Daily Limit and less than MaxPerTx
 18. Call `transferOwnership` of POA20 contract(0x05) with 1 parameter:
 - address of Foreign Bridge Proxy (`0x08`) from step#14
 

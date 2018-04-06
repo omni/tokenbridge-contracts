@@ -5,6 +5,7 @@ const HOME_REQUIRED_NUMBER_OF_VALIDATORS = process.env.HOME_REQUIRED_NUMBER_OF_V
 const HOME_VALIDATORS = process.env.HOME_VALIDATORS.split(" ")
 const HOME_DAILY_LIMIT = process.env.HOME_DAILY_LIMIT || '1000000000000000000' // 1 ether
 const HOME_MAX_AMOUNT_PER_TX = process.env.HOME_MAX_AMOUNT_PER_TX || '100000000000000000' // 0.1 ether
+const HOME_MIN_AMOUNT_PER_TX = process.env.HOME_MIN_AMOUNT_PER_TX || '10000000000000000' // 0.01 ether
 
 const FOREIGN_RPC_URL = process.env.FOREIGN_RPC_URL;
 const FOREIGN_PROXY_OWNER = process.env.FOREIGN_PROXY_OWNER;
@@ -12,6 +13,7 @@ const FOREIGN_REQUIRED_NUMBER_OF_VALIDATORS = process.env.FOREIGN_REQUIRED_NUMBE
 const FOREIGN_VALIDATORS = process.env.FOREIGN_VALIDATORS.split(" ")
 const FOREIGN_DAILY_LIMIT = process.env.FOREIGN_DAILY_LIMIT || '1000000000000000000' // 1 ether
 const FOREIGN_MAX_AMOUNT_PER_TX = process.env.FOREIGN_MAX_AMOUNT_PER_TX || '100000000000000000' // 0.1 ether
+const FOREIGN_MIN_AMOUNT_PER_TX = process.env.FOREIGN_MIN_AMOUNT_PER_TX || '10000000000000000' // 0.01 ether
 
 
 const POA20 = require('../build/contracts/POA20.json');
@@ -67,10 +69,14 @@ async function deployHome() {
   console.log('[Home] TxHash: ' , txUpgradeToHomeBridge.transactionHash)
 
   console.log('\ninitializing Home Bridge with following parameters:')
-  console.log(`\t Home Validators: ${storageValidatorsHome.options.address}, HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth, HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth`)
+  console.log(`\t Home Validators: ${storageValidatorsHome.options.address},
+  HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
+  `)
   homeBridgeImplementation.options.address = homeBridgeStorage.options.address
   const txInitializeHomeBridge = await homeBridgeImplementation.methods.initialize(
-    storageValidatorsHome.options.address, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX
+    storageValidatorsHome.options.address, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX
   ).send({from: HOME_PROXY_OWNER})
   console.log('[Home] TxHash: ',txInitializeHomeBridge.transactionHash)
 
@@ -125,10 +131,14 @@ async function deployForeign() {
   console.log('[Foreign] TxHash: ' , txUpgradeToForeignBridge.transactionHash)
 
   console.log('\ninitializing Foreign Bridge with following parameters:')
-  console.log(`\t Foreign Validators: ${storageValidatorsForeign.options.address}, FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth, FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(FOREIGN_MAX_AMOUNT_PER_TX)} in eth`)
+  console.log(`\t Foreign Validators: ${storageValidatorsForeign.options.address},
+  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
+  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(FOREIGN_MAX_AMOUNT_PER_TX)} in eth,
+  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(FOREIGN_MIN_AMOUNT_PER_TX)} in eth
+  `)
   foreignBridgeImplementation.options.address = foreignBridgeStorage.options.address
   const txInitializeBridge = await foreignBridgeImplementation.methods.initialize(
-    storageValidatorsForeign.options.address, poa20foreign.options.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX
+    storageValidatorsForeign.options.address, poa20foreign.options.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX
   ).send({from: FOREIGN_PROXY_OWNER})
   console.log('[Foreign] TxHash: ',txInitializeBridge.transactionHash)
 

@@ -5,6 +5,7 @@ const {ERROR_MSG, ZERO_ADDRESS} = require('./setup');
 const {createMessage, sign, signatureToVRS} = require('./helpers/helpers');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
+const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
 
 const getEvents = function(contract, filter) {
   return new Promise((resolve, reject) => {
@@ -39,13 +40,14 @@ contract('ForeignBridge', async (accounts) => {
       '0'.should.be.bignumber.equal(await foreignBridge.foreignDailyLimit())
       '0'.should.be.bignumber.equal(await foreignBridge.maxPerTx())
       false.should.be.equal(await foreignBridge.isInitialized())
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
 
       true.should.be.equal(await foreignBridge.isInitialized())
       validatorContract.address.should.be.equal(await foreignBridge.validatorContract());
       (await foreignBridge.deployedAtBlock()).should.be.bignumber.above(0);
       oneEther.should.be.bignumber.equal(await foreignBridge.foreignDailyLimit())
       halfEther.should.be.bignumber.equal(await foreignBridge.maxPerTx())
+      minPerTx.should.be.bignumber.equal(await foreignBridge.minPerTx())
     })
   })
 
@@ -54,7 +56,7 @@ contract('ForeignBridge', async (accounts) => {
     beforeEach(async () => {
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
       await token.transferOwnership(foreignBridge.address)
     })
     it('should allow validator to deposit', async () => {
@@ -83,7 +85,7 @@ contract('ForeignBridge', async (accounts) => {
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       let tokenPOA20 = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       let foreignBridgeWithTwoSigs = await ForeignBridge.new();
-      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther);
+      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx);
       await tokenPOA20.transferOwnership(foreignBridgeWithTwoSigs.address)
 
       const recipient = accounts[5];
@@ -132,7 +134,7 @@ contract('ForeignBridge', async (accounts) => {
       const user = accounts[4]
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
       await token.mint(user, halfEther, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
       await foreignBridge.onTokenTransfer(user, halfEther, '0x00', {from: owner}).should.be.rejectedWith(ERROR_MSG);
@@ -146,7 +148,7 @@ contract('ForeignBridge', async (accounts) => {
       const valueMoreThanLimit = halfEther.add(1);
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
       await token.mint(user, valueMoreThanLimit, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
       await token.transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
@@ -168,7 +170,7 @@ contract('ForeignBridge', async (accounts) => {
       const valueMoreThanLimit = halfEther.add(1);
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
       await token.mint(user, oneEther.add(1), {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
       await token.transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
@@ -182,6 +184,23 @@ contract('ForeignBridge', async (accounts) => {
       '1'.should.be.bignumber.equal(await token.balanceOf(user));
       await token.transferAndCall(foreignBridge.address, '1', '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
     })
+
+    it('should not let to withdraw less than minPerTx', async () => {
+      const owner = accounts[3]
+      const user = accounts[4]
+      const valueLessThanMinPerTx = minPerTx.sub(1);
+      token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
+      foreignBridge = await ForeignBridge.new();
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await token.mint(user, oneEther, {from: owner }).should.be.fulfilled;
+      await token.transferOwnership(foreignBridge.address, {from: owner});
+      await token.transferAndCall(foreignBridge.address, valueLessThanMinPerTx, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
+      oneEther.should.be.bignumber.equal(await token.totalSupply());
+      oneEther.should.be.bignumber.equal(await token.balanceOf(user));
+      await token.transferAndCall(foreignBridge.address, minPerTx, '0x00', {from: user}).should.be.fulfilled;
+      oneEther.sub(minPerTx).should.be.bignumber.equal(await token.totalSupply());
+      oneEther.sub(minPerTx).should.be.bignumber.equal(await token.balanceOf(user));
+    })
   })
 
   describe('#submitSignature', async () => {
@@ -193,7 +212,7 @@ contract('ForeignBridge', async (accounts) => {
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       tokenPOA20 = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       foreignBridgeWithTwoSigs = await ForeignBridge.new();
-      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther);
+      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx);
       await tokenPOA20.transferOwnership(foreignBridgeWithTwoSigs.address)
 
     })
@@ -229,6 +248,29 @@ contract('ForeignBridge', async (accounts) => {
       logs.length.should.be.equal(2)
       logs[1].event.should.be.equal('CollectedSignatures')
       logs[1].args.authorityResponsibleForRelay.should.be.equal(authorities[1])
+    })
+  })
+
+  describe('#setting limits', async () => {
+    let foreignBridge;
+    beforeEach(async () => {
+      token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+      foreignBridge = await ForeignBridge.new();
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await token.transferOwnership(foreignBridge.address)
+    })
+    it('#setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
+      await foreignBridge.setMaxPerTx(halfEther, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.setMaxPerTx(halfEther, {from: owner}).should.be.fulfilled;
+
+      await foreignBridge.setMaxPerTx(oneEther, {from: owner}).should.be.rejectedWith(ERROR_MSG);
+    })
+
+    it('#setMinPerTx allows to set only to owner and cannot be more than daily limit and should be less than maxPerTx', async () => {
+      await foreignBridge.setMinPerTx(minPerTx, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.setMinPerTx(minPerTx, {from: owner}).should.be.fulfilled;
+
+      await foreignBridge.setMinPerTx(oneEther, {from: owner}).should.be.rejectedWith(ERROR_MSG);
     })
   })
 })

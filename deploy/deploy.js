@@ -1,3 +1,4 @@
+const fs = require('fs');
 require('dotenv').config();
 const Tx = require('ethereumjs-tx');
 
@@ -125,7 +126,7 @@ async function deployHome(homeNonce) {
   console.log('[Home] TxHash: ',txInitializeHomeBridge.transactionHash)
 
   console.log('\nHome Deployment Bridge is complete\n')
-  return homeBridgeStorage.options.address
+  return {address: homeBridgeStorage.options.address, deployedBlockNumber: homeBridgeStorage.deployedBlockNumber}
 
 }
 
@@ -236,20 +237,30 @@ async function deployForeign(foreignNonce) {
   foreignNonce++;
   console.log('[Foreign] TxHash: ', txOwnership.transactionHash)
   return {
-    foreignBridgeStorageAddress: foreignBridgeStorage.options.address,
-    poa20foreignAddress: poa20foreign.options.address
+    foreignBridge: {address: foreignBridgeStorage.options.address, deployedBlockNumber: foreignBridgeStorage.deployedBlockNumber},
+    erc677: {address: poa20foreign.options.address}
   }
 }
 
 async function main() {
   let homeNonce = await web3Home.eth.getTransactionCount(HOME_PROXY_OWNER);
   let foreignNonce = await web3Foreign.eth.getTransactionCount(FOREIGN_PROXY_OWNER);
-  const homeBridgeStorageAddress = await deployHome(homeNonce)
-  const {foreignBridgeStorageAddress, poa20foreignAddress} = await deployForeign(foreignNonce);
+  const homeBridge = await deployHome(homeNonce)
+  const {foreignBridge, erc677} = await deployForeign(foreignNonce);
   console.log("\nDeployment has been completed.\n\n")
-  console.log('[   Home  ] HomeBridge: ', homeBridgeStorageAddress)
-  console.log('[ Foreign ] ForeignBridge: ', foreignBridgeStorageAddress)
-  console.log('[ Foreign ] POA20: ', poa20foreignAddress)
+  console.log('[   Home  ] HomeBridge: ', homeBridge.address)
+  console.log('[ Foreign ] ForeignBridge: ', foreignBridge.address)
+  console.log('[ Foreign ] POA20: ', erc677.address)
+  fs.writeFileSync('./bridgeDeploymentResults.json', JSON.stringify({
+    homeBridge: {
+      ...homeBridge,
+      bytecode: HomeBridge.bytecode.substr(2)
+    },foreignBridge: {
+      ...foreignBridge,
+      bytecode: ForeignBridge.bytecode.substr(2)
+    },erc677
+  },null,4));
+  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
 }
 
 
@@ -272,7 +283,11 @@ async function deployContract(contractJson, args, {from, network, nonce}) {
     privateKey,
     web3
   })
+  if(tx.status !== '0x1'){
+    throw new Error('Tx failed');
+  }
   instance.options.address = tx.contractAddress;
+  instance.deployedBlockNumber = tx.blockNumber
   return instance;
 }
 

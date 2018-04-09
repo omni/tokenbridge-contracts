@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "truffle test",
+    "test": "truffle test --network test",
     "deploy": "truffle migrate --reset --network $NETWORK",
     "flatten": "bash flatten.sh",
     "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test"

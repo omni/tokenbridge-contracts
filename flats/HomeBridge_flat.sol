@@ -231,16 +231,18 @@ contract HomeBridge is EternalStorage, Validatable {
     function initialize (
         address _validatorContract,
         uint256 _homeDailyLimit,
-        uint256 _maxPerTx
+        uint256 _maxPerTx,
+        uint256 _minPerTx
     ) public {
         require(!isInitialized());
         require(_validatorContract != address(0));
         require(_homeDailyLimit > 0);
-        require(_maxPerTx > 0);
+        require(_maxPerTx > 0 && _minPerTx > 0);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         setHomeDailyLimit(_homeDailyLimit);
         setMaxPerTx(_maxPerTx);
+        setMinPerTx(_minPerTx);
         setInitialize(true);
     }
 
@@ -303,6 +305,15 @@ contract HomeBridge is EternalStorage, Validatable {
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
     }
 
+    function setMinPerTx(uint256 _minPerTx) public onlyOwner {
+        require(_minPerTx < homeDailyLimit() && _minPerTx < maxPerTx());
+        uintStorage[keccak256("minPerTx")] = _minPerTx;
+    }
+
+    function minPerTx() public view returns(uint256) {
+        return uintStorage[keccak256("minPerTx")];
+    }
+
     function getCurrentDay() public view returns(uint256) {
         return now / 1 days;
     }
@@ -313,7 +324,7 @@ contract HomeBridge is EternalStorage, Validatable {
 
     function withinLimit(uint256 _amount) public view returns(bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
-        return homeDailyLimit() >= nextLimit && _amount <= maxPerTx();
+        return homeDailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
     }
 
     function isInitialized() public view returns(bool) {

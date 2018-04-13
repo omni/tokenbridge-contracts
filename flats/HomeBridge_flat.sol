@@ -51,7 +51,7 @@ library Helpers {
         bytes32 hash = MessageSigning.hashMessage(_message);
         address[] memory encounteredAddresses = new address[](requiredSignatures);
 
-        for (uint8 i = 0; i < requiredSignatures; i++) {
+        for (uint256 i = 0; i < requiredSignatures; i++) {
             address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
             require(_validatorContract.isValidator(recoveredAddress));
             if (addressArrayContains(encounteredAddresses, recoveredAddress)) {

@@ -13,6 +13,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
 
     function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner) public {
         require(!isInitialized());
+        require(_owner != address(0));
         setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);

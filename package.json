@@ -6,6 +6,7 @@
   "scripts": {
     "test": "truffle test --network test",
     "deploy": "truffle migrate --reset --network $NETWORK",
+    "compile": "truffle compile",
     "flatten": "bash flatten.sh",
     "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test"
   },
@@ -21,6 +22,8 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
+    "mochawesome": "^3.0.2",
+    "solidity-coverage": "^0.4.15",
     "truffle-flattener": "^1.2.3"
   }
 }

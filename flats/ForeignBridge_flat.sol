@@ -100,7 +100,7 @@ library Helpers {
         bytes32 hash = MessageSigning.hashMessage(_message);
         address[] memory encounteredAddresses = new address[](requiredSignatures);
 
-        for (uint8 i = 0; i < requiredSignatures; i++) {
+        for (uint256 i = 0; i < requiredSignatures; i++) {
             address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
             require(_validatorContract.isValidator(recoveredAddress));
             if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
@@ -296,8 +296,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     ) public {
         require(!isInitialized());
         require(_validatorContract != address(0));
-        require(_foreignDailyLimit > 0);
-        require(_maxPerTx > 0 && _minPerTx > 0);
+        require(_minPerTx > 0 && _maxPerTx > _minPerTx);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
         setForeignDailyLimit(_foreignDailyLimit);
@@ -443,7 +442,6 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     }
 
     function setForeignDailyLimit(uint256 _foreignDailyLimit) public onlyOwner {
-        require(_foreignDailyLimit > 0);
         uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
         DailyLimit(_foreignDailyLimit);
     }

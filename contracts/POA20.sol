@@ -1,6 +1,5 @@
 pragma solidity ^0.4.19;
 
-import "zeppelin-solidity/contracts/token/ERC20/PausableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
@@ -12,8 +11,7 @@ contract POA20 is
     IBurnableMintableERC677Token,
     DetailedERC20,
     BurnableToken,
-    MintableToken,
-    PausableToken {
+    MintableToken {
     function POA20(
         string _name,
         string _symbol,

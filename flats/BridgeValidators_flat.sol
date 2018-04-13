@@ -122,6 +122,7 @@ contract Ownable is EternalStorage {
     * @dev Sets a new owner address
     */
     function setOwner(address newOwner) internal {
+        require(newOwner != address(0));
         OwnershipTransferred(owner(), newOwner);
         addressStorage[keccak256("owner")] = newOwner;
     }
@@ -140,7 +141,6 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
         for (uint i = 0; i < _initialValidators.length; i++) {
-            require(!isValidator(_initialValidators[i]) && _initialValidators[i] != address(0));
             addValidator(_initialValidators[i]);
         }
         setRequiredSignatures(_requiredSignatures);

@@ -21,8 +21,7 @@ contract HomeBridge is EternalStorage, Validatable {
     ) public {
         require(!isInitialized());
         require(_validatorContract != address(0));
-        require(_homeDailyLimit > 0);
-        require(_maxPerTx > 0 && _minPerTx > 0);
+        require(_minPerTx > 0 && _maxPerTx > _minPerTx);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         setHomeDailyLimit(_homeDailyLimit);
@@ -71,7 +70,6 @@ contract HomeBridge is EternalStorage, Validatable {
         uint256 value = Message.getValue(message);
         bytes32 hash = Message.getTransactionHash(message);
         require(!withdraws(hash));
-        // Order of operations below is critical to avoid TheDAO-like re-entry bug
         setWithdraws(hash, true);
 
         // pay out recipient

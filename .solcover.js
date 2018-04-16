@@ -5,5 +5,6 @@ module.exports = {
     skipFiles: [
         'Migrations.sol',
         'testContracts'
-    ]
+    ],
+    copyNodeModules: true
 }

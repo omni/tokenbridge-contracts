@@ -16,7 +16,7 @@ cleanup() {
 if [ "$SOLIDITY_COVERAGE" = true ]; then
   ganache_port=8555
 else
-  ganache_port=7545
+  ganache_port=8545
 fi
 
 ganache_running() {
@@ -61,5 +61,5 @@ if [ "$SOLIDITY_COVERAGE" = true ]; then
     cat coverage/lcov.info | node_modules/.bin/coveralls
   fi
 else
-  node_modules/.bin/truffle test "$@"
+  node_modules/.bin/truffle test "$@" --network ganache
 fi

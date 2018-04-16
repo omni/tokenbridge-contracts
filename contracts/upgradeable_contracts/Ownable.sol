@@ -1,6 +1,4 @@
-// Roman Storm Multi Sender
-// To Use this Dapp: https://poanetwork.github.io/multisender
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 import "../upgradeability/EternalStorage.sol";
 
@@ -46,7 +44,7 @@ contract Ownable is EternalStorage {
     * @dev Sets a new owner address
     */
     function setOwner(address newOwner) internal {
-        OwnershipTransferred(owner(), newOwner);
+        emit OwnershipTransferred(owner(), newOwner);
         addressStorage[keccak256("owner")] = newOwner;
     }
 }

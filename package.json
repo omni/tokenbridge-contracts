@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "truffle test --network test",
+    "test": "scripts/test.sh",
     "deploy": "truffle migrate --reset --network $NETWORK",
+    "compile": "truffle compile",
     "flatten": "bash flatten.sh",
     "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test"
   },
@@ -14,13 +15,15 @@
   "dependencies": {
     "ganache-cli": "^6.1.0",
     "nodemon": "^1.17.2",
-    "truffle": "^4.0.6",
+    "truffle": "^4.1.6",
     "zeppelin-solidity": "^1.6.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
+    "mochawesome": "^3.0.2",
+    "solidity-coverage": "^0.4.15",
     "truffle-flattener": "^1.2.3"
   }
 }

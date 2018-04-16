@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 // File: contracts/ERC677Receiver.sol
 
@@ -390,7 +390,7 @@ contract POA20 is
         public validRecipient(_to) returns (bool)
     {
         super.transfer(_to, _value);
-        Transfer(msg.sender, _to, _value, _data);
+        emit Transfer(msg.sender, _to, _value, _data);
         if (isContract(_to)) {
             contractFallback(_to, _value, _data);
         }

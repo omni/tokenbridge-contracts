@@ -77,18 +77,6 @@ contract('POA20', async (accounts) => {
     })
   })
 
-  describe('#pause', async () => {
-    it('owner can stop transfer', async () => {
-      await token.mint(user, 1, {from: owner }).should.be.fulfilled;
-      await token.pause({ from: user }).should.be.rejectedWith(ERROR_MSG);
-      await token.pause({ from: owner }).should.be.fulfilled;
-      await token.transfer(owner, 1, {from: user}).should.be.rejectedWith(ERROR_MSG);
-      await token.unpause({ from: user }).should.be.rejectedWith(ERROR_MSG);
-      await token.unpause({ from: owner }).should.be.fulfilled;
-      await token.transfer(owner, 1, {from: user}).should.be.fulfilled;
-    })
-  })
-
   describe('#transferAndCall', () => {
     it('calls contractFallback', async () => {
       const receiver = await ERC677ReceiverTest.new();

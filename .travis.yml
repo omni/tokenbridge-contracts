@@ -1,0 +1,29 @@
+dist: trusty
+sudo: required
+group: beta
+language: node_js
+node_js:
+  - "8"
+cache:
+  yarn: true
+env:
+  - SOLIDITY_COVERAGE=false
+  - SOLIDITY_COVERAGE=true
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: SOLIDITY_COVERAGE=true
+script:
+  - yarn test
+
+deploy:
+  provider: pages
+  local_dir: mochawesome-report
+  target_branch: gh-pages
+  email: travis@ci.com
+  name: Deployment Bot
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+  on:
+    branch: master
+    condition: "$SOLIDITY_COVERAGE = false"

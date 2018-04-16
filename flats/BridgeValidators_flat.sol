@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 // File: contracts/IBridgeValidators.sol
 
@@ -75,12 +75,6 @@ contract EternalStorage {
 
 // File: contracts/upgradeable_contracts/Ownable.sol
 
-// Roman Storm Multi Sender
-// To Use this Dapp: https://poanetwork.github.io/multisender
-pragma solidity 0.4.19;
-
-
-
 /**
  * @title Ownable
  * @dev This contract has an owner address providing basic authorization control
@@ -122,7 +116,7 @@ contract Ownable is EternalStorage {
     * @dev Sets a new owner address
     */
     function setOwner(address newOwner) internal {
-        OwnershipTransferred(owner(), newOwner);
+        emit OwnershipTransferred(owner(), newOwner);
         addressStorage[keccak256("owner")] = newOwner;
     }
 }
@@ -152,7 +146,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         assert(validators(_validator) != true);
         setValidatorCount(validatorCount().add(1));
         setValidator(_validator, true);
-        ValidatorAdded(_validator);
+        emit ValidatorAdded(_validator);
     }
 
     function removeValidator(address _validator) public onlyOwner {
@@ -160,7 +154,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         require(isValidator(_validator));
         setValidator(_validator, false);
         setValidatorCount(validatorCount().sub(1));
-        ValidatorRemoved(_validator);
+        emit ValidatorRemoved(_validator);
     }
 
     function setRequiredSignatures(uint256 _requiredSignatures) public onlyOwner {

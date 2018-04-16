@@ -1,5 +1,8 @@
 const ForeignBridge = artifacts.require("ForeignBridge.sol");
+const ForeignBridgeV2 = artifacts.require("ForeignBridgeV2.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
+const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
+
 const POA20 = artifacts.require("POA20.sol");
 const {ERROR_MSG, ZERO_ADDRESS} = require('./setup');
 const {createMessage, sign, signatureToVRS} = require('./helpers/helpers');
@@ -271,6 +274,50 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridge.setMinPerTx(minPerTx, {from: owner}).should.be.fulfilled;
 
       await foreignBridge.setMinPerTx(oneEther, {from: owner}).should.be.rejectedWith(ERROR_MSG);
+    })
+  })
+
+  describe('#upgradeable', async () => {
+    it('can be upgraded', async () => {
+      const REQUIRED_NUMBER_OF_VALIDATORS = 1
+      const VALIDATORS = [accounts[1]]
+      const PROXY_OWNER  = accounts[0]
+      const FOREIGN_DAILY_LIMIT = oneEther;
+      const FOREIGN_MAX_AMOUNT_PER_TX = halfEther;
+      const FOREIGN_MIN_AMOUNT_PER_TX = minPerTx;
+      // Validators Contract
+      let validatorsProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      const validatorsContractImpl = await BridgeValidators.new().should.be.fulfilled;
+      await validatorsProxy.upgradeTo('0', validatorsContractImpl.address).should.be.fulfilled;
+      validatorsContractImpl.address.should.be.equal(await validatorsProxy.implementation())
+
+      validatorsProxy = await BridgeValidators.at(validatorsProxy.address);
+      await validatorsProxy.initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER).should.be.fulfilled;
+      // POA20
+      let token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+
+      // ForeignBridge V1 Contract
+
+      let foreignBridgeProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      const foreignBridgeImpl = await ForeignBridge.new().should.be.fulfilled;
+      await foreignBridgeProxy.upgradeTo('0', foreignBridgeImpl.address).should.be.fulfilled;
+
+      foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address);
+      await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX)
+      await token.transferOwnership(foreignBridgeProxy.address).should.be.fulfilled;
+
+      foreignBridgeProxy.address.should.be.equal(await token.owner());
+
+      // Deploy V2
+      let foreignImplV2 = await ForeignBridgeV2.new();
+      let foreignBridgeProxyUpgrade = await EternalStorageProxy.at(foreignBridgeProxy.address);
+      await foreignBridgeProxyUpgrade.upgradeTo('1', foreignImplV2.address).should.be.fulfilled;
+      foreignImplV2.address.should.be.equal(await foreignBridgeProxyUpgrade.implementation())
+
+      let foreignBridgeV2Proxy = await ForeignBridgeV2.at(foreignBridgeProxy.address)
+      await foreignBridgeV2Proxy.changeTokenOwnership(accounts[2], {from: accounts[4]}).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridgeV2Proxy.changeTokenOwnership(accounts[2], {from: PROXY_OWNER}).should.be.fulfilled;
+      await token.transferOwnership(foreignBridgeProxy.address, {from: accounts[2]}).should.be.fulfilled;
     })
   })
 })

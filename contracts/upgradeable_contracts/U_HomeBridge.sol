@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity 0.4.21;
 import "../libraries/SafeMath.sol";
 import "../libraries/Helpers.sol";
 import "../libraries/Message.sol";
@@ -34,7 +34,7 @@ contract HomeBridge is EternalStorage, Validatable {
         require(msg.value > 0);
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
-        Deposit(msg.sender, msg.value);
+        emit Deposit(msg.sender, msg.value);
     }
 
     function gasLimitWithdrawRelay() public view returns(uint256) {
@@ -59,7 +59,7 @@ contract HomeBridge is EternalStorage, Validatable {
 
     function setGasLimitWithdrawRelay(uint256 _gas) public onlyOwner {
         uintStorage[keccak256("gasLimitWithdrawRelay")] = _gas;
-        GasConsumptionLimitsUpdated(_gas);
+        emit GasConsumptionLimitsUpdated(_gas);
     }
 
     function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
@@ -75,12 +75,12 @@ contract HomeBridge is EternalStorage, Validatable {
         // pay out recipient
         recipient.transfer(value);
 
-        Withdraw(recipient, value, hash);
+        emit Withdraw(recipient, value, hash);
     }
 
     function setHomeDailyLimit(uint256 _homeDailyLimit) public onlyOwner {
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
-        DailyLimit(_homeDailyLimit);
+        emit DailyLimit(_homeDailyLimit);
     }
 
     function setMaxPerTx(uint256 _maxPerTx) public onlyOwner {

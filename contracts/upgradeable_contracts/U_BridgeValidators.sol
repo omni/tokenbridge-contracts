@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity 0.4.21;
 
 import "./Ownable.sol";
 import "../IBridgeValidators.sol";
@@ -29,7 +29,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         assert(validators(_validator) != true);
         setValidatorCount(validatorCount().add(1));
         setValidator(_validator, true);
-        ValidatorAdded(_validator);
+        emit ValidatorAdded(_validator);
     }
 
     function removeValidator(address _validator) public onlyOwner {
@@ -37,7 +37,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         require(isValidator(_validator));
         setValidator(_validator, false);
         setValidatorCount(validatorCount().sub(1));
-        ValidatorRemoved(_validator);
+        emit ValidatorRemoved(_validator);
     }
 
     function setRequiredSignatures(uint256 _requiredSignatures) public onlyOwner {

@@ -278,7 +278,7 @@ contract('ForeignBridge', async (accounts) => {
   })
 
   describe('#upgradeable', async () => {
-    it.only('can be upgraded', async () => {
+    it('can be upgraded', async () => {
       const REQUIRED_NUMBER_OF_VALIDATORS = 1
       const VALIDATORS = [accounts[1]]
       const PROXY_OWNER  = accounts[0]

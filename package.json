@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "truffle test --network test",
+    "test": "scripts/test.sh",
     "deploy": "truffle migrate --reset --network $NETWORK",
     "compile": "truffle compile",
     "flatten": "bash flatten.sh",

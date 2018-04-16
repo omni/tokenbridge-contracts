@@ -25,6 +25,6 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
         require(_implementation != implementation);
         _version = version;
         _implementation = implementation;
-        Upgraded(version, implementation);
+        emit Upgraded(version, implementation);
     }
 }

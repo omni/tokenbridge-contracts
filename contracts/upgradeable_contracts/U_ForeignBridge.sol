@@ -49,7 +49,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
         erc677token().burn(_value);
-        Withdraw(_from, _value, homeGasPrice());
+        emit Withdraw(_from, _value, homeGasPrice());
         return true;
     }
 
@@ -98,10 +98,10 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     function setGasLimits(uint256 _gasLimitDepositRelay, uint256 _gasLimitWithdrawConfirm) public onlyOwner {
         uintStorage[keccak256("gasLimitDepositRelay")] = _gasLimitDepositRelay;
         uintStorage[keccak256("gasLimitWithdrawConfirm")] = _gasLimitWithdrawConfirm;
-        GasConsumptionLimitsUpdated(gasLimitDepositRelay(), gasLimitWithdrawConfirm());
+        emit GasConsumptionLimitsUpdated(gasLimitDepositRelay(), gasLimitWithdrawConfirm());
     }
 
-    function deposit(address recipient, uint value, bytes32 transactionHash) public onlyValidator {
+    function deposit(address recipient, uint256 value, bytes32 transactionHash) public onlyValidator {
         require(address(erc677token()) != address(0x0));
 
         // Protection from misbehaing authority
@@ -115,13 +115,13 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         uint256 signed = numDepositsSigned(hashMsg).add(1);
         setNumDepositsSigned(hashMsg, signed);
 
-        SignedForDeposit(msg.sender, transactionHash);
+        emit SignedForDeposit(msg.sender, transactionHash);
 
         if (signed == validatorContract().requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
             erc677token().mint(recipient, value);
-            Deposit(recipient, value, transactionHash);
+            emit Deposit(recipient, value, transactionHash);
         }
     }
 
@@ -141,7 +141,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         bytes32 hash = keccak256(message);
         bytes32 hashSender = keccak256(msg.sender, hash);
 
-        uint signed = numMessagesSigned(hash) + 1;
+        uint256 signed = numMessagesSigned(hash) + 1;
 
         if (signed > 1) {
             // Duplicated signatures
@@ -158,9 +158,9 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
         setNumMessagesSigned(hash, signed);
 
-        SignedForWithdraw(msg.sender, hash);
+        emit SignedForWithdraw(msg.sender, hash);
         if (signed == validatorContract().requiredSignatures()) {
-            CollectedSignatures(msg.sender, hash);
+            emit CollectedSignatures(msg.sender, hash);
         }
     }
 
@@ -180,7 +180,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
     function setForeignDailyLimit(uint256 _foreignDailyLimit) public onlyOwner {
         uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
-        DailyLimit(_foreignDailyLimit);
+        emit DailyLimit(_foreignDailyLimit);
     }
 
     function withinLimit(uint256 _amount) public view returns(bool) {

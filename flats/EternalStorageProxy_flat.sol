@@ -133,7 +133,7 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
         require(_implementation != implementation);
         _version = version;
         _implementation = implementation;
-        Upgraded(version, implementation);
+        emit Upgraded(version, implementation);
     }
 }
 
@@ -180,7 +180,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     */
     function transferProxyOwnership(address newOwner) public onlyProxyOwner {
         require(newOwner != address(0));
-        ProxyOwnershipTransferred(proxyOwner(), newOwner);
+        emit ProxyOwnershipTransferred(proxyOwner(), newOwner);
         setUpgradeabilityOwner(newOwner);
     }
 

@@ -370,7 +370,6 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         // Protection from misbehaing authority
         bytes32 hashMsg = keccak256(recipient, value, transactionHash);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
-
         // Duplicated deposits
         require(!depositsSigned(hashSender));
         setDepositsSigned(hashSender, true);
@@ -479,7 +478,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         return boolStorage[keccak256("messagesSigned", _message)];
     }
 
-    function depositsSigned(bytes32 _deposit) private view returns(bool) {
+    function depositsSigned(bytes32 _deposit) public view returns(bool) {
         return boolStorage[keccak256("depositsSigned", _deposit)];
     }
 

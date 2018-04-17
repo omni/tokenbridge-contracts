@@ -80,7 +80,7 @@ library SafeMath {
   }
 
   /**
-  * @dev Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
   */
   function sub(uint256 a, uint256 b) internal pure returns (uint256) {
     assert(b <= a);
@@ -167,6 +167,7 @@ contract BurnableToken is BasicToken {
     balances[burner] = balances[burner].sub(_value);
     totalSupply_ = totalSupply_.sub(_value);
     Burn(burner, _value);
+    Transfer(burner, address(0), _value);
   }
 }
 

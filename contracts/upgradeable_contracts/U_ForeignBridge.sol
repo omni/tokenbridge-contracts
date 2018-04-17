@@ -211,7 +211,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         bytesStorage[keccak256("signatures", _hash)] = _signature;
     }
 
-    function messagesSigned(bytes32 _message) private view returns(bool) {
+    function messagesSigned(bytes32 _message) public view returns(bool) {
         return boolStorage[keccak256("messagesSigned", _message)];
     }
 

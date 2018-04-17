@@ -238,7 +238,9 @@ contract('ForeignBridge', async (accounts) => {
       const messageFromContract = await foreignBridgeWithTwoSigs.message(msgHashFromLog);
       signature.should.be.equal(signatureFromContract);
       messageFromContract.should.be.equal(messageFromContract);
-
+      const hashMsg = Web3Utils.soliditySha3(message);
+      const hashSenderMsg = Web3Utils.soliditySha3(authorities[0], hashMsg)
+      true.should.be.equal(await foreignBridgeWithTwoSigs.messagesSigned(hashSenderMsg));
     })
     it('when enough requiredSignatures are collected, CollectedSignatures event is emitted', async () => {
       var recipientAccount = accounts[8]

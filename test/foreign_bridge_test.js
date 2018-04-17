@@ -5,10 +5,11 @@ const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 
 const POA20 = artifacts.require("POA20.sol");
 const {ERROR_MSG, ZERO_ADDRESS} = require('./setup');
-const {createMessage, sign, signatureToVRS} = require('./helpers/helpers');
+const {createMessage, sign, signatureToVRS, strip0x} = require('./helpers/helpers');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
+const Web3Utils = require('web3-utils');
 
 const getEvents = function(contract, filter) {
   return new Promise((resolve, reject) => {
@@ -80,6 +81,10 @@ contract('ForeignBridge', async (accounts) => {
       })
       oneEther.should.be.bignumber.equal(await token.totalSupply());
       oneEther.should.be.bignumber.equal(await token.balanceOf(recipient));
+
+      const msgHash = Web3Utils.soliditySha3(recipient, value, transactionHash);
+      const senderHash = Web3Utils.soliditySha3(authorities[0], msgHash)
+      true.should.be.equal(await foreignBridge.depositsSigned(senderHash))
     })
     it('test with 2 signatures required', async () => {
       let validatorContractWith2Signatures = await BridgeValidators.new()

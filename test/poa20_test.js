@@ -45,14 +45,6 @@ contract('POA20', async (accounts) => {
       (await token.totalSupply()).should.be.bignumber.equal(0);
       (await token.balanceOf(user)).should.be.bignumber.equal(0);
     })
-
-    it('can stop minting by owner', async () => {
-      await token.finishMinting({from: user}).should.be.rejectedWith(ERROR_MSG);
-      await token.finishMinting({from: owner}).should.be.fulfilled;
-      await token.finishMinting({from: owner}).should.be.rejectedWith(ERROR_MSG);
-      (true).should.be.equal(await token.mintingFinished());
-      await token.mint(user, 1, {from: owner }).should.be.rejectedWith(ERROR_MSG);
-    })
   })
 
   describe('#transfer', async() => {

@@ -415,7 +415,7 @@ contract POA20 is
         return length > 0;
     }
 
-    function finishMinting() onlyOwner canMint public returns (bool) {
+    function finishMinting() public returns (bool) {
         revert();
     }
 

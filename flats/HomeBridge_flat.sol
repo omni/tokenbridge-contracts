@@ -233,16 +233,19 @@ contract HomeBridge is EternalStorage, Validatable {
         uint256 _homeDailyLimit,
         uint256 _maxPerTx,
         uint256 _minPerTx
-    ) public {
+    ) public
+      returns(bool)
+    {
         require(!isInitialized());
         require(_validatorContract != address(0));
-        require(_minPerTx > 0 && _maxPerTx > _minPerTx);
+        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _homeDailyLimit > _maxPerTx);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
-        setHomeDailyLimit(_homeDailyLimit);
-        setMaxPerTx(_maxPerTx);
-        setMinPerTx(_minPerTx);
+        uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+        uintStorage[keccak256("minPerTx")] = _minPerTx;
         setInitialize(true);
+        return isInitialized();
     }
 
     function () public payable {

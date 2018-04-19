@@ -1,4 +1,5 @@
 const HomeBridge = artifacts.require("HomeBridge.sol");
+const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const {ERROR_MSG, ZERO_ADDRESS} = require('./setup');
 const {createMessage, sign, signatureToVRS} = require('./helpers/helpers');
@@ -35,6 +36,18 @@ contract('HomeBridge', async (accounts) => {
       await homeContract.initialize(validatorContract.address, '1', '2', '1').should.be.rejectedWith(ERROR_MSG);
       await homeContract.initialize(validatorContract.address, '3', '2', '2').should.be.rejectedWith(ERROR_MSG);
       false.should.be.equal(await homeContract.isInitialized())
+    })
+
+    it('can be deployed via upgradeToAndCall', async () => {
+      let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      let data = homeContract.initialize.request(validatorContract.address, "3", "2", "1").params[0].data
+      await storageProxy.upgradeToAndCall('0', homeContract.address, data).should.be.fulfilled;
+      let finalContract = await HomeBridge.at(storageProxy.address);
+      true.should.be.equal(await finalContract.isInitialized());
+      validatorContract.address.should.be.equal(await finalContract.validatorContract())
+      "3".should.be.bignumber.equal(await finalContract.homeDailyLimit())
+      "2".should.be.bignumber.equal(await finalContract.maxPerTx())
+      "1".should.be.bignumber.equal(await finalContract.minPerTx())
     })
   })
 

@@ -390,19 +390,20 @@ contract POA20 is
     function transferAndCall(address _to, uint _value, bytes _data)
         public validRecipient(_to) returns (bool)
     {
-        super.transfer(_to, _value);
+        bool result = super.transfer(_to, _value);
         emit Transfer(msg.sender, _to, _value, _data);
         if (isContract(_to)) {
-            contractFallback(_to, _value, _data);
+            result = contractFallback(_to, _value, _data);
         }
-        return true;
+        return result;
     }
 
     function contractFallback(address _to, uint _value, bytes _data)
         private
+        returns(bool)
     {
         ERC677Receiver receiver = ERC677Receiver(_to);
-        receiver.onTokenTransfer(msg.sender, _value, _data);
+        return receiver.onTokenTransfer(msg.sender, _value, _data);
     }
 
     function isContract(address _addr)
@@ -413,4 +414,9 @@ contract POA20 is
         assembly { length := extcodesize(_addr) }
         return length > 0;
     }
+
+    function finishMinting() public returns (bool) {
+        revert();
+    }
+
 }

@@ -30,17 +30,18 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         uint256 _foreignDailyLimit,
         uint256 _maxPerTx,
         uint256 _minPerTx
-    ) public {
+    ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0));
-        require(_minPerTx > 0 && _maxPerTx > _minPerTx);
+        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _foreignDailyLimit > _maxPerTx);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
-        setForeignDailyLimit(_foreignDailyLimit);
+        uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
-        setMaxPerTx(_maxPerTx);
-        setMinPerTx(_minPerTx);
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+        uintStorage[keccak256("minPerTx")] = _minPerTx;
         setInitialize(true);
+        return isInitialized();
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {

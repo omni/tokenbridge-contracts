@@ -11,17 +11,25 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     event ValidatorAdded (address validator);
     event ValidatorRemoved (address validator);
 
-    function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner) public {
+    function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
+      public returns(bool)
+    {
         require(!isInitialized());
         require(_owner != address(0));
         setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
-        for (uint i = 0; i < _initialValidators.length; i++) {
-            addValidator(_initialValidators[i]);
+        for (uint256 i = 0; i < _initialValidators.length; i++) {
+            require(_initialValidators[i] != address(0));
+            assert(validators(_initialValidators[i]) != true);
+            setValidatorCount(validatorCount().add(1));
+            setValidator(_initialValidators[i], true);
+            emit ValidatorAdded(_initialValidators[i]);
         }
-        setRequiredSignatures(_requiredSignatures);
+        require(validatorCount() >= _requiredSignatures);
+        uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
         setInitialize(true);
+        return isInitialized();
     }
 
     function addValidator(address _validator) public onlyOwner {

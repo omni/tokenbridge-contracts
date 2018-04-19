@@ -326,5 +326,24 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridgeV2Proxy.changeTokenOwnership(accounts[2], {from: PROXY_OWNER}).should.be.fulfilled;
       await token.transferOwnership(foreignBridgeProxy.address, {from: accounts[2]}).should.be.fulfilled;
     })
+    it('can be deployed via upgradeToAndCall', async () => {
+      const fakeTokenAddress = accounts[7]
+      const fakeValidatorsAddress = accounts[6]
+      const FOREIGN_DAILY_LIMIT = oneEther;
+      const FOREIGN_MAX_AMOUNT_PER_TX = halfEther;
+      const FOREIGN_MIN_AMOUNT_PER_TX = minPerTx;
+
+      let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      let foreignBridge =  await ForeignBridge.new();
+      let data = foreignBridge.initialize.request(
+        fakeValidatorsAddress, fakeTokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX).params[0].data
+      await storageProxy.upgradeToAndCall('0', foreignBridge.address, data).should.be.fulfilled;
+      let finalContract = await ForeignBridge.at(storageProxy.address);
+      true.should.be.equal(await finalContract.isInitialized());
+      fakeValidatorsAddress.should.be.equal(await finalContract.validatorContract())
+      FOREIGN_DAILY_LIMIT.should.be.bignumber.equal(await finalContract.foreignDailyLimit())
+      FOREIGN_MAX_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.maxPerTx())
+      FOREIGN_MIN_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.minPerTx())
+    })
   })
 })

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts)
+
 # POA bridge smart contracts
 The goal of these contracts is to allow users to tokenize native POA coin into ERC20 token on ethereum mainnet.
 Home Bridge is a smart contract that should be deployed in POA.network

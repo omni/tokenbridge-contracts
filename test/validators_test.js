@@ -1,4 +1,5 @@
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
+const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 const {ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS} = require('./setup');
 
 contract('BridgeValidators', async (accounts) => {
@@ -118,6 +119,24 @@ contract('BridgeValidators', async (accounts) => {
       requiredSignatures.should.be.bignumber.equal(await bridgeValidators.requiredSignatures());
       await bridgeValidators.setRequiredSignatures(newReqSig, {from: owner}).should.be.rejectedWith(ERROR_MSG)
       requiredSignatures.should.be.bignumber.equal(await bridgeValidators.requiredSignatures());
+    })
+  })
+  describe('#upgradable', async () => {
+    it('can be upgraded via upgradeToAndCall', async () => {
+      let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      let required_signatures = 2;
+      let validators = [accounts[0], accounts[1]];
+      let owner = accounts[2]
+      let data = bridgeValidators.initialize.request(required_signatures, validators, owner).params[0].data
+      await storageProxy.upgradeToAndCall('0', bridgeValidators.address, data).should.be.fulfilled;
+      let finalContract = await BridgeValidators.at(storageProxy.address);
+      true.should.be.equal(await finalContract.isInitialized());
+      required_signatures.should.be.bignumber.equal(await finalContract.requiredSignatures())
+
+      true.should.be.equal(await finalContract.isValidator(validators[0]))
+      true.should.be.equal(await finalContract.isValidator(validators[1]))
+      owner.should.be.equal(await finalContract.owner())
+      validators.length.should.be.bignumber.equal(await finalContract.validatorCount())
     })
   })
 })

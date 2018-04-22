@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 // File: contracts/IBridgeValidators.sol
 
@@ -75,12 +75,6 @@ contract EternalStorage {
 
 // File: contracts/upgradeable_contracts/Ownable.sol
 
-// Roman Storm Multi Sender
-// To Use this Dapp: https://poanetwork.github.io/multisender
-pragma solidity 0.4.19;
-
-
-
 /**
  * @title Ownable
  * @dev This contract has an owner address providing basic authorization control
@@ -122,7 +116,7 @@ contract Ownable is EternalStorage {
     * @dev Sets a new owner address
     */
     function setOwner(address newOwner) internal {
-        OwnershipTransferred(owner(), newOwner);
+        emit OwnershipTransferred(owner(), newOwner);
         addressStorage[keccak256("owner")] = newOwner;
     }
 }
@@ -134,17 +128,25 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     event ValidatorAdded (address validator);
     event ValidatorRemoved (address validator);
 
-    function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner) public {
+    function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
+      public returns(bool)
+    {
         require(!isInitialized());
+        require(_owner != address(0));
         setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
-        for (uint i = 0; i < _initialValidators.length; i++) {
-            require(!isValidator(_initialValidators[i]) && _initialValidators[i] != address(0));
-            addValidator(_initialValidators[i]);
+        for (uint256 i = 0; i < _initialValidators.length; i++) {
+            require(_initialValidators[i] != address(0));
+            assert(validators(_initialValidators[i]) != true);
+            setValidatorCount(validatorCount().add(1));
+            setValidator(_initialValidators[i], true);
+            emit ValidatorAdded(_initialValidators[i]);
         }
-        setRequiredSignatures(_requiredSignatures);
+        require(validatorCount() >= _requiredSignatures);
+        uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
         setInitialize(true);
+        return isInitialized();
     }
 
     function addValidator(address _validator) public onlyOwner {
@@ -152,7 +154,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         assert(validators(_validator) != true);
         setValidatorCount(validatorCount().add(1));
         setValidator(_validator, true);
-        ValidatorAdded(_validator);
+        emit ValidatorAdded(_validator);
     }
 
     function removeValidator(address _validator) public onlyOwner {
@@ -160,7 +162,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         require(isValidator(_validator));
         setValidator(_validator, false);
         setValidatorCount(validatorCount().sub(1));
-        ValidatorRemoved(_validator);
+        emit ValidatorRemoved(_validator);
     }
 
     function setRequiredSignatures(uint256 _requiredSignatures) public onlyOwner {

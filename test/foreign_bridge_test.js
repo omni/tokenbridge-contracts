@@ -1,11 +1,15 @@
 const ForeignBridge = artifacts.require("ForeignBridge.sol");
+const ForeignBridgeV2 = artifacts.require("ForeignBridgeV2.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
+const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
+
 const POA20 = artifacts.require("POA20.sol");
 const {ERROR_MSG, ZERO_ADDRESS} = require('./setup');
-const {createMessage, sign, signatureToVRS} = require('./helpers/helpers');
+const {createMessage, sign, signatureToVRS, strip0x} = require('./helpers/helpers');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
+const Web3Utils = require('web3-utils');
 
 const getEvents = function(contract, filter) {
   return new Promise((resolve, reject) => {
@@ -77,6 +81,10 @@ contract('ForeignBridge', async (accounts) => {
       })
       oneEther.should.be.bignumber.equal(await token.totalSupply());
       oneEther.should.be.bignumber.equal(await token.balanceOf(recipient));
+
+      const msgHash = Web3Utils.soliditySha3(recipient, value, transactionHash);
+      const senderHash = Web3Utils.soliditySha3(authorities[0], msgHash)
+      true.should.be.equal(await foreignBridge.depositsSigned(senderHash))
     })
     it('test with 2 signatures required', async () => {
       let validatorContractWith2Signatures = await BridgeValidators.new()
@@ -230,7 +238,9 @@ contract('ForeignBridge', async (accounts) => {
       const messageFromContract = await foreignBridgeWithTwoSigs.message(msgHashFromLog);
       signature.should.be.equal(signatureFromContract);
       messageFromContract.should.be.equal(messageFromContract);
-
+      const hashMsg = Web3Utils.soliditySha3(message);
+      const hashSenderMsg = Web3Utils.soliditySha3(authorities[0], hashMsg)
+      true.should.be.equal(await foreignBridgeWithTwoSigs.messagesSigned(hashSenderMsg));
     })
     it('when enough requiredSignatures are collected, CollectedSignatures event is emitted', async () => {
       var recipientAccount = accounts[8]
@@ -271,6 +281,69 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridge.setMinPerTx(minPerTx, {from: owner}).should.be.fulfilled;
 
       await foreignBridge.setMinPerTx(oneEther, {from: owner}).should.be.rejectedWith(ERROR_MSG);
+    })
+  })
+
+  describe('#upgradeable', async () => {
+    it('can be upgraded', async () => {
+      const REQUIRED_NUMBER_OF_VALIDATORS = 1
+      const VALIDATORS = [accounts[1]]
+      const PROXY_OWNER  = accounts[0]
+      const FOREIGN_DAILY_LIMIT = oneEther;
+      const FOREIGN_MAX_AMOUNT_PER_TX = halfEther;
+      const FOREIGN_MIN_AMOUNT_PER_TX = minPerTx;
+      // Validators Contract
+      let validatorsProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      const validatorsContractImpl = await BridgeValidators.new().should.be.fulfilled;
+      await validatorsProxy.upgradeTo('0', validatorsContractImpl.address).should.be.fulfilled;
+      validatorsContractImpl.address.should.be.equal(await validatorsProxy.implementation())
+
+      validatorsProxy = await BridgeValidators.at(validatorsProxy.address);
+      await validatorsProxy.initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER).should.be.fulfilled;
+      // POA20
+      let token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+
+      // ForeignBridge V1 Contract
+
+      let foreignBridgeProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      const foreignBridgeImpl = await ForeignBridge.new().should.be.fulfilled;
+      await foreignBridgeProxy.upgradeTo('0', foreignBridgeImpl.address).should.be.fulfilled;
+
+      foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address);
+      await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX)
+      await token.transferOwnership(foreignBridgeProxy.address).should.be.fulfilled;
+
+      foreignBridgeProxy.address.should.be.equal(await token.owner());
+
+      // Deploy V2
+      let foreignImplV2 = await ForeignBridgeV2.new();
+      let foreignBridgeProxyUpgrade = await EternalStorageProxy.at(foreignBridgeProxy.address);
+      await foreignBridgeProxyUpgrade.upgradeTo('1', foreignImplV2.address).should.be.fulfilled;
+      foreignImplV2.address.should.be.equal(await foreignBridgeProxyUpgrade.implementation())
+
+      let foreignBridgeV2Proxy = await ForeignBridgeV2.at(foreignBridgeProxy.address)
+      await foreignBridgeV2Proxy.changeTokenOwnership(accounts[2], {from: accounts[4]}).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridgeV2Proxy.changeTokenOwnership(accounts[2], {from: PROXY_OWNER}).should.be.fulfilled;
+      await token.transferOwnership(foreignBridgeProxy.address, {from: accounts[2]}).should.be.fulfilled;
+    })
+    it('can be deployed via upgradeToAndCall', async () => {
+      const fakeTokenAddress = accounts[7]
+      const fakeValidatorsAddress = accounts[6]
+      const FOREIGN_DAILY_LIMIT = oneEther;
+      const FOREIGN_MAX_AMOUNT_PER_TX = halfEther;
+      const FOREIGN_MIN_AMOUNT_PER_TX = minPerTx;
+
+      let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      let foreignBridge =  await ForeignBridge.new();
+      let data = foreignBridge.initialize.request(
+        fakeValidatorsAddress, fakeTokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX).params[0].data
+      await storageProxy.upgradeToAndCall('0', foreignBridge.address, data).should.be.fulfilled;
+      let finalContract = await ForeignBridge.at(storageProxy.address);
+      true.should.be.equal(await finalContract.isInitialized());
+      fakeValidatorsAddress.should.be.equal(await finalContract.validatorContract())
+      FOREIGN_DAILY_LIMIT.should.be.bignumber.equal(await finalContract.foreignDailyLimit())
+      FOREIGN_MAX_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.maxPerTx())
+      FOREIGN_MIN_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.minPerTx())
     })
   })
 })

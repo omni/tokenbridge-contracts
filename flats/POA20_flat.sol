@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 // File: contracts/ERC677Receiver.sol
 
@@ -80,7 +80,7 @@ library SafeMath {
   }
 
   /**
-  * @dev Substracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
+  * @dev Subtracts two numbers, throws on overflow (i.e. if subtrahend is greater than minuend).
   */
   function sub(uint256 a, uint256 b) internal pure returns (uint256) {
     assert(b <= a);
@@ -167,6 +167,7 @@ contract BurnableToken is BasicToken {
     balances[burner] = balances[burner].sub(_value);
     totalSupply_ = totalSupply_.sub(_value);
     Burn(burner, _value);
+    Transfer(burner, address(0), _value);
   }
 }
 
@@ -368,89 +369,13 @@ contract MintableToken is StandardToken, Ownable {
   }
 }
 
-// File: zeppelin-solidity/contracts/lifecycle/Pausable.sol
-
-/**
- * @title Pausable
- * @dev Base contract which allows children to implement an emergency stop mechanism.
- */
-contract Pausable is Ownable {
-  event Pause();
-  event Unpause();
-
-  bool public paused = false;
-
-
-  /**
-   * @dev Modifier to make a function callable only when the contract is not paused.
-   */
-  modifier whenNotPaused() {
-    require(!paused);
-    _;
-  }
-
-  /**
-   * @dev Modifier to make a function callable only when the contract is paused.
-   */
-  modifier whenPaused() {
-    require(paused);
-    _;
-  }
-
-  /**
-   * @dev called by the owner to pause, triggers stopped state
-   */
-  function pause() onlyOwner whenNotPaused public {
-    paused = true;
-    Pause();
-  }
-
-  /**
-   * @dev called by the owner to unpause, returns to normal state
-   */
-  function unpause() onlyOwner whenPaused public {
-    paused = false;
-    Unpause();
-  }
-}
-
-// File: zeppelin-solidity/contracts/token/ERC20/PausableToken.sol
-
-/**
- * @title Pausable token
- * @dev StandardToken modified with pausable transfers.
- **/
-contract PausableToken is StandardToken, Pausable {
-
-  function transfer(address _to, uint256 _value) public whenNotPaused returns (bool) {
-    return super.transfer(_to, _value);
-  }
-
-  function transferFrom(address _from, address _to, uint256 _value) public whenNotPaused returns (bool) {
-    return super.transferFrom(_from, _to, _value);
-  }
-
-  function approve(address _spender, uint256 _value) public whenNotPaused returns (bool) {
-    return super.approve(_spender, _value);
-  }
-
-  function increaseApproval(address _spender, uint _addedValue) public whenNotPaused returns (bool success) {
-    return super.increaseApproval(_spender, _addedValue);
-  }
-
-  function decreaseApproval(address _spender, uint _subtractedValue) public whenNotPaused returns (bool success) {
-    return super.decreaseApproval(_spender, _subtractedValue);
-  }
-}
-
 // File: contracts/POA20.sol
 
 contract POA20 is
     IBurnableMintableERC677Token,
     DetailedERC20,
     BurnableToken,
-    MintableToken,
-    PausableToken {
+    MintableToken {
     function POA20(
         string _name,
         string _symbol,
@@ -465,19 +390,20 @@ contract POA20 is
     function transferAndCall(address _to, uint _value, bytes _data)
         public validRecipient(_to) returns (bool)
     {
-        super.transfer(_to, _value);
-        Transfer(msg.sender, _to, _value, _data);
+        bool result = super.transfer(_to, _value);
+        emit Transfer(msg.sender, _to, _value, _data);
         if (isContract(_to)) {
-            contractFallback(_to, _value, _data);
+            result = contractFallback(_to, _value, _data);
         }
-        return true;
+        return result;
     }
 
     function contractFallback(address _to, uint _value, bytes _data)
         private
+        returns(bool)
     {
         ERC677Receiver receiver = ERC677Receiver(_to);
-        receiver.onTokenTransfer(msg.sender, _value, _data);
+        return receiver.onTokenTransfer(msg.sender, _value, _data);
     }
 
     function isContract(address _addr)
@@ -488,4 +414,9 @@ contract POA20 is
         assembly { length := extcodesize(_addr) }
         return length > 0;
     }
+
+    function finishMinting() public returns (bool) {
+        revert();
+    }
+
 }

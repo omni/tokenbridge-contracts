@@ -1,4 +1,4 @@
-pragma solidity 0.4.19;
+pragma solidity 0.4.21;
 
 // File: contracts/IBridgeValidators.sol
 
@@ -51,7 +51,7 @@ library Helpers {
         bytes32 hash = MessageSigning.hashMessage(_message);
         address[] memory encounteredAddresses = new address[](requiredSignatures);
 
-        for (uint8 i = 0; i < requiredSignatures; i++) {
+        for (uint256 i = 0; i < requiredSignatures; i++) {
             address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
             require(_validatorContract.isValidator(recoveredAddress));
             if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
@@ -233,24 +233,26 @@ contract HomeBridge is EternalStorage, Validatable {
         uint256 _homeDailyLimit,
         uint256 _maxPerTx,
         uint256 _minPerTx
-    ) public {
+    ) public
+      returns(bool)
+    {
         require(!isInitialized());
         require(_validatorContract != address(0));
-        require(_homeDailyLimit > 0);
-        require(_maxPerTx > 0 && _minPerTx > 0);
+        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _homeDailyLimit > _maxPerTx);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
-        setHomeDailyLimit(_homeDailyLimit);
-        setMaxPerTx(_maxPerTx);
-        setMinPerTx(_minPerTx);
+        uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+        uintStorage[keccak256("minPerTx")] = _minPerTx;
         setInitialize(true);
+        return isInitialized();
     }
 
     function () public payable {
         require(msg.value > 0);
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
-        Deposit(msg.sender, msg.value);
+        emit Deposit(msg.sender, msg.value);
     }
 
     function gasLimitWithdrawRelay() public view returns(uint256) {
@@ -275,7 +277,7 @@ contract HomeBridge is EternalStorage, Validatable {
 
     function setGasLimitWithdrawRelay(uint256 _gas) public onlyOwner {
         uintStorage[keccak256("gasLimitWithdrawRelay")] = _gas;
-        GasConsumptionLimitsUpdated(_gas);
+        emit GasConsumptionLimitsUpdated(_gas);
     }
 
     function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
@@ -286,18 +288,17 @@ contract HomeBridge is EternalStorage, Validatable {
         uint256 value = Message.getValue(message);
         bytes32 hash = Message.getTransactionHash(message);
         require(!withdraws(hash));
-        // Order of operations below is critical to avoid TheDAO-like re-entry bug
         setWithdraws(hash, true);
 
         // pay out recipient
         recipient.transfer(value);
 
-        Withdraw(recipient, value, hash);
+        emit Withdraw(recipient, value, hash);
     }
 
     function setHomeDailyLimit(uint256 _homeDailyLimit) public onlyOwner {
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
-        DailyLimit(_homeDailyLimit);
+        emit DailyLimit(_homeDailyLimit);
     }
 
     function setMaxPerTx(uint256 _maxPerTx) public onlyOwner {

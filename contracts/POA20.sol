@@ -1,6 +1,5 @@
-pragma solidity ^0.4.19;
+pragma solidity 0.4.21;
 
-import "zeppelin-solidity/contracts/token/ERC20/PausableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "zeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
@@ -12,8 +11,7 @@ contract POA20 is
     IBurnableMintableERC677Token,
     DetailedERC20,
     BurnableToken,
-    MintableToken,
-    PausableToken {
+    MintableToken {
     function POA20(
         string _name,
         string _symbol,
@@ -28,19 +26,20 @@ contract POA20 is
     function transferAndCall(address _to, uint _value, bytes _data)
         public validRecipient(_to) returns (bool)
     {
-        super.transfer(_to, _value);
-        Transfer(msg.sender, _to, _value, _data);
+        bool result = super.transfer(_to, _value);
+        emit Transfer(msg.sender, _to, _value, _data);
         if (isContract(_to)) {
-            contractFallback(_to, _value, _data);
+            result = contractFallback(_to, _value, _data);
         }
-        return true;
+        return result;
     }
 
     function contractFallback(address _to, uint _value, bytes _data)
         private
+        returns(bool)
     {
         ERC677Receiver receiver = ERC677Receiver(_to);
-        receiver.onTokenTransfer(msg.sender, _value, _data);
+        return receiver.onTokenTransfer(msg.sender, _value, _data);
     }
 
     function isContract(address _addr)
@@ -51,4 +50,9 @@ contract POA20 is
         assembly { length := extcodesize(_addr) }
         return length > 0;
     }
+
+    function finishMinting() public returns (bool) {
+        revert();
+    }
+
 }

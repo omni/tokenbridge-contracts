@@ -346,4 +346,48 @@ contract('ForeignBridge', async (accounts) => {
       FOREIGN_MIN_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.minPerTx())
     })
   })
+
+  describe('#claimTokens', async () => {
+    it('can send erc20', async () => {
+      const owner = accounts[0];
+      token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+      foreignBridge = await ForeignBridge.new();
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await token.transferOwnership(foreignBridge.address)
+
+      let tokenSecond = await POA20.new("Roman Token", "RST", 18);
+
+      await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled;
+      halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
+      await tokenSecond.transfer(foreignBridge.address, halfEther);
+      '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
+      halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
+
+      await foreignBridge.claimTokens(tokenSecond.address, accounts[3], {from: owner});
+      '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
+      halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
+
+    })
+    it('also calls claimTokens on tokenAddress', async () => {
+      const owner = accounts[0];
+      token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+      foreignBridge = await ForeignBridge.new();
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await token.transferOwnership(foreignBridge.address)
+
+      let tokenSecond = await POA20.new("Roman Token", "RST", 18);
+
+      await tokenSecond.mint(accounts[0], 500).should.be.fulfilled;
+      '500'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
+      await tokenSecond.transfer(foreignBridge.address, '350');
+      await tokenSecond.transfer(token.address, '150');
+      '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
+      '350'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
+      '150'.should.be.bignumber.equal(await tokenSecond.balanceOf(token.address))
+
+      await foreignBridge.claimTokens(tokenSecond.address, accounts[3], {from: owner});
+      '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
+      '500'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
+    })
+  })
 })

@@ -5,6 +5,7 @@ import "../libraries/Message.sol";
 import "./U_Validatable.sol";
 import "../IBurnableMintableERC677Token.sol";
 import "../ERC677Receiver.sol";
+import "zeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
 contract ForeignBridge is ERC677Receiver, Validatable {
@@ -62,6 +63,19 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     function setMinPerTx(uint256 _minPerTx) public onlyOwner {
         require(_minPerTx < foreignDailyLimit() && _minPerTx < maxPerTx());
         uintStorage[keccak256("minPerTx")] = _minPerTx;
+    }
+
+    function claimTokens(address _token, address _to) public onlyOwner {
+        require(_to != address(0));
+        if (_token == address(0)) {
+            _to.transfer(address(this).balance);
+            return;
+        }
+
+        ERC20Basic token = ERC20Basic(_token);
+        uint256 balance = token.balanceOf(this);
+        token.transfer(_to, balance);
+        erc677token().claimTokens(_token, _to);
     }
 
     function minPerTx() public view returns(uint256) {

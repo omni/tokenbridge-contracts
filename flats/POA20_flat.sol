@@ -391,7 +391,7 @@ contract POA20 is
     function transferAndCall(address _to, uint _value, bytes _data)
         public validRecipient(_to) returns (bool)
     {
-        bool result = super.transfer(_to, _value);
+        bool result = transfer(_to, _value);
         emit Transfer(msg.sender, _to, _value, _data);
         if (isContract(_to)) {
             result = contractFallback(_to, _value, _data);

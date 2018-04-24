@@ -4,7 +4,7 @@ const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 
 const POA20 = artifacts.require("POA20.sol");
-const {ERROR_MSG, ZERO_ADDRESS} = require('./setup');
+const {ERROR_MSG, ZERO_ADDRESS, ERROR_MSG_OPCODE} = require('./setup');
 const {createMessage, sign, signatureToVRS, strip0x} = require('./helpers/helpers');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
@@ -116,7 +116,7 @@ contract('ForeignBridge', async (accounts) => {
         value,
         transactionHash
       })
-      const thirdDeposit = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.fulfilled;
+      const thirdDeposit = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG_OPCODE);
       oneEther.should.be.bignumber.equal(await tokenPOA20.totalSupply());
       oneEther.should.be.bignumber.equal(await tokenPOA20.balanceOf(recipient));
     })
@@ -133,6 +133,41 @@ contract('ForeignBridge', async (accounts) => {
       const value = oneEther;
       const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
       await foreignBridge.deposit(recipient, value, transactionHash, {from: accounts[7]}).should.be.rejectedWith(ERROR_MSG);
+    })
+    it('doesnt allow to mint if requiredSignatures has changed', async () => {
+      let validatorContractWith2Signatures = await BridgeValidators.new()
+      let authoritiesTwoAccs = [accounts[1], accounts[2], accounts[3]];
+      let ownerOfValidators = accounts[0]
+      await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
+      let tokenPOA20 = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+      let foreignBridgeWithTwoSigs = await ForeignBridge.new();
+      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx);
+      await tokenPOA20.transferOwnership(foreignBridgeWithTwoSigs.address)
+
+      const recipient = accounts[5];
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs} = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[0]}).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForDeposit");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        transactionHash
+      });
+      '0'.should.be.bignumber.equal(await tokenPOA20.totalSupply());
+      '0'.should.be.bignumber.equal(await tokenPOA20.balanceOf(recipient));
+      const secondDeposit = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[1]}).should.be.fulfilled;
+      oneEther.should.be.bignumber.equal(await tokenPOA20.totalSupply());
+      oneEther.should.be.bignumber.equal(await tokenPOA20.balanceOf(recipient));
+      secondDeposit.logs[1].event.should.be.equal("Deposit");
+      secondDeposit.logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+      await validatorContractWith2Signatures.setRequiredSignatures(3).should.be.fulfilled;
+      const thirdDeposit = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG_OPCODE);
+      oneEther.should.be.bignumber.equal(await tokenPOA20.totalSupply());
+      oneEther.should.be.bignumber.equal(await tokenPOA20.balanceOf(recipient));
     })
   })
 
@@ -258,6 +293,27 @@ contract('ForeignBridge', async (accounts) => {
       logs.length.should.be.equal(2)
       logs[1].event.should.be.equal('CollectedSignatures')
       logs[1].args.authorityResponsibleForRelay.should.be.equal(authorities[1])
+    })
+    it('attack when changing requiredSignatures', async () => {
+      var recipientAccount = accounts[8]
+      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      var homeGasPrice = web3.toBigNumber(0);
+      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var signature = await sign(authoritiesTwoAccs[0], message)
+      var signature2 = await sign(authoritiesTwoAccs[1], message)
+      var signature3 = await sign(authoritiesTwoAccs[2], message)
+      '2'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
+      await foreignBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[0]}).should.be.fulfilled;
+      await foreignBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[0]}).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[1]}).should.be.rejectedWith(ERROR_MSG);
+      const {logs} = await foreignBridgeWithTwoSigs.submitSignature(signature2, message, {from: authoritiesTwoAccs[1]}).should.be.fulfilled;
+      logs.length.should.be.equal(2)
+      logs[1].event.should.be.equal('CollectedSignatures')
+      logs[1].args.authorityResponsibleForRelay.should.be.equal(authorities[1])
+      await validatorContractWith2Signatures.setRequiredSignatures(3).should.be.fulfilled;
+      '3'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
+      const attackerTx = await foreignBridgeWithTwoSigs.submitSignature(signature3, message, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG_OPCODE);
     })
   })
 

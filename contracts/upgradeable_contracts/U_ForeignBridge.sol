@@ -117,8 +117,6 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     }
 
     function deposit(address recipient, uint256 value, bytes32 transactionHash) public onlyValidator {
-        require(address(erc677token()) != address(0x0));
-
         // Protection from misbehaing authority
         bytes32 hashMsg = keccak256(recipient, value, transactionHash);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
@@ -134,6 +132,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         if (signed == validatorContract().requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
+            setNumDepositsSigned(hashMsg, 2**256-1);
             erc677token().mint(recipient, value);
             emit Deposit(recipient, value, transactionHash);
         }
@@ -155,7 +154,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         bytes32 hash = keccak256(message);
         bytes32 hashSender = keccak256(msg.sender, hash);
 
-        uint256 signed = numMessagesSigned(hash) + 1;
+        uint256 signed = numMessagesSigned(hash).add(1);
 
         if (signed > 1) {
             // Duplicated signatures
@@ -174,6 +173,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
         emit SignedForWithdraw(msg.sender, hash);
         if (signed == validatorContract().requiredSignatures()) {
+            setNumMessagesSigned(hash, 2**256-1);
             emit CollectedSignatures(msg.sender, hash);
         }
     }

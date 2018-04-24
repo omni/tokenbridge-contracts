@@ -6,7 +6,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy')
 
 module.exports = async function(deployer, network, accounts) {
   if(network !== 'test'){
-    const VALIDATORS = process.env.VALIDATORS ? process.env.VALIDATORS.split(" ") : ["0xb8988b690910913c97a090c3a6f80fad8b3a4683"];
+    const VALIDATORS = process.env.VALIDATORS ? process.env.VALIDATORS.split(" ") : [accounts[0]];
     const REQUIRED_NUMBER_OF_VALIDATORS = process.env.REQUIRED_VALIDATORS || VALIDATORS.length
     const PROXY_OWNER = process.env.PROXY_OWNER || accounts[0];
     const homeDailyLimit = process.env.HOME_LIMIT || '1000000000000000000' // 1 ether

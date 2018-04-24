@@ -5,7 +5,7 @@ import "../../contracts/upgradeable_contracts/U_ForeignBridge.sol";
 
 
 interface OwnableToken {
-    function transferOwnership(address);
+    function transferOwnership(address) public;
 }
 
 contract ForeignBridgeV2 is ForeignBridge {

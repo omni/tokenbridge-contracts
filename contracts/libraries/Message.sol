@@ -24,7 +24,7 @@ library Message {
         address recipient;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            recipient := mload(add(message, 20))
+            recipient := and(mload(add(message, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
         }
         return recipient;
     }

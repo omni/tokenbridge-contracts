@@ -24,14 +24,14 @@ contract POA20 is
     }
 
     function transferAndCall(address _to, uint _value, bytes _data)
-        public validRecipient(_to) returns (bool)
+        external validRecipient(_to) returns (bool)
     {
-        bool result = transfer(_to, _value);
+        require(transfer(_to, _value));
         emit Transfer(msg.sender, _to, _value, _data);
         if (isContract(_to)) {
-            result = contractFallback(_to, _value, _data);
+            require(contractFallback(_to, _value, _data));
         }
-        return result;
+        return true;
     }
 
     function contractFallback(address _to, uint _value, bytes _data)
@@ -44,6 +44,7 @@ contract POA20 is
 
     function isContract(address _addr)
         private
+        view
         returns (bool hasCode)
     {
         uint length;

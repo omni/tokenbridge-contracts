@@ -351,7 +351,7 @@ contract('ForeignBridge', async (accounts) => {
       // Validators Contract
       let validatorsProxy = await EternalStorageProxy.new().should.be.fulfilled;
       const validatorsContractImpl = await BridgeValidators.new().should.be.fulfilled;
-      await validatorsProxy.upgradeTo('0', validatorsContractImpl.address).should.be.fulfilled;
+      await validatorsProxy.upgradeTo('1', validatorsContractImpl.address).should.be.fulfilled;
       validatorsContractImpl.address.should.be.equal(await validatorsProxy.implementation())
 
       validatorsProxy = await BridgeValidators.at(validatorsProxy.address);
@@ -363,7 +363,7 @@ contract('ForeignBridge', async (accounts) => {
 
       let foreignBridgeProxy = await EternalStorageProxy.new().should.be.fulfilled;
       const foreignBridgeImpl = await ForeignBridge.new().should.be.fulfilled;
-      await foreignBridgeProxy.upgradeTo('0', foreignBridgeImpl.address).should.be.fulfilled;
+      await foreignBridgeProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled;
 
       foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address);
       await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX)
@@ -374,7 +374,7 @@ contract('ForeignBridge', async (accounts) => {
       // Deploy V2
       let foreignImplV2 = await ForeignBridgeV2.new();
       let foreignBridgeProxyUpgrade = await EternalStorageProxy.at(foreignBridgeProxy.address);
-      await foreignBridgeProxyUpgrade.upgradeTo('1', foreignImplV2.address).should.be.fulfilled;
+      await foreignBridgeProxyUpgrade.upgradeTo('2', foreignImplV2.address).should.be.fulfilled;
       foreignImplV2.address.should.be.equal(await foreignBridgeProxyUpgrade.implementation())
 
       let foreignBridgeV2Proxy = await ForeignBridgeV2.at(foreignBridgeProxy.address)
@@ -393,7 +393,7 @@ contract('ForeignBridge', async (accounts) => {
       let foreignBridge =  await ForeignBridge.new();
       let data = foreignBridge.initialize.request(
         fakeValidatorsAddress, fakeTokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX).params[0].data
-      await storageProxy.upgradeToAndCall('0', foreignBridge.address, data).should.be.fulfilled;
+      await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
       let finalContract = await ForeignBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
       fakeValidatorsAddress.should.be.equal(await finalContract.validatorContract())

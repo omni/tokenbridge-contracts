@@ -71,8 +71,8 @@ contract Proxy {
             let size := returndatasize
 
             let ptr := mload(0x40)
+            mstore(0x40, add(ptr, size))
             returndatacopy(ptr, 0, size)
-
             switch result
             case 0 { revert(ptr, size) }
             default { return(ptr, size) }
@@ -88,7 +88,7 @@ contract Proxy {
  */
 contract UpgradeabilityStorage {
     // Version name of the current implementation
-    string internal _version;
+    uint256 internal _version;
 
     // Address of the current implementation
     address internal _implementation;
@@ -97,7 +97,7 @@ contract UpgradeabilityStorage {
     * @dev Tells the version name of the current implementation
     * @return string representing the name of the current version
     */
-    function version() public view returns (string) {
+    function version() public view returns (uint256) {
         return _version;
     }
 
@@ -122,15 +122,16 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
     * @param version representing the version name of the upgraded implementation
     * @param implementation representing the address of the upgraded implementation
     */
-    event Upgraded(string version, address indexed implementation);
+    event Upgraded(uint256 version, address indexed implementation);
 
     /**
     * @dev Upgrades the implementation address
     * @param version representing the version name of the new implementation to be set
     * @param implementation representing the address of the new implementation to be set
     */
-    function _upgradeTo(string version, address implementation) internal {
+    function _upgradeTo(uint256 version, address implementation) internal {
         require(_implementation != implementation);
+        require(version > _version);
         _version = version;
         _implementation = implementation;
         emit Upgraded(version, implementation);
@@ -189,7 +190,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @param version representing the version name of the new implementation to be set.
     * @param implementation representing the address of the new implementation to be set.
     */
-    function upgradeTo(string version, address implementation) public onlyProxyOwner {
+    function upgradeTo(uint256 version, address implementation) public onlyProxyOwner {
         _upgradeTo(version, implementation);
     }
 
@@ -201,7 +202,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @param data represents the msg.data to bet sent in the low level call. This parameter may include the function
     * signature of the implementation to be called with the needed payload
     */
-    function upgradeToAndCall(string version, address implementation, bytes data) payable public onlyProxyOwner {
+    function upgradeToAndCall(uint256 version, address implementation, bytes data) payable public onlyProxyOwner {
         upgradeTo(version, implementation);
         require(this.call.value(msg.value)(data));
     }

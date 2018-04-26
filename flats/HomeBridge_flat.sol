@@ -45,7 +45,8 @@ library Helpers {
         uint8[] _vs,
         bytes32[] _rs,
         bytes32[] _ss,
-        IBridgeValidators _validatorContract) internal view returns (bool) {
+        IBridgeValidators _validatorContract) internal view {
+        require(_message.length == 116);
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         require(_vs.length >= requiredSignatures);
         bytes32 hash = MessageSigning.hashMessage(_message);
@@ -55,11 +56,10 @@ library Helpers {
             address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
             require(_validatorContract.isValidator(recoveredAddress));
             if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
-                return false;
+                revert();
             }
             encounteredAddresses[i] = recoveredAddress;
         }
-        return true;
     }
 }
 
@@ -111,7 +111,7 @@ library Message {
         address recipient;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            recipient := mload(add(message, 20))
+            recipient := and(mload(add(message, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
         }
         return recipient;
     }
@@ -277,14 +277,13 @@ contract HomeBridge is EternalStorage, Validatable {
         return boolStorage[keccak256("withdraws", _withdraw)];
     }
 
-    function setGasLimitWithdrawRelay(uint256 _gas) public onlyOwner {
+    function setGasLimitWithdrawRelay(uint256 _gas) external onlyOwner {
         uintStorage[keccak256("gasLimitWithdrawRelay")] = _gas;
         emit GasConsumptionLimitsUpdated(_gas);
     }
 
-    function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
-        require(message.length == 116);
-        require(Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract()));
+    function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
+        Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
 
         address recipient = Message.getRecipient(message);
         uint256 value = Message.getValue(message);
@@ -298,17 +297,17 @@ contract HomeBridge is EternalStorage, Validatable {
         emit Withdraw(recipient, value, hash);
     }
 
-    function setHomeDailyLimit(uint256 _homeDailyLimit) public onlyOwner {
+    function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
         emit DailyLimit(_homeDailyLimit);
     }
 
-    function setMaxPerTx(uint256 _maxPerTx) public onlyOwner {
+    function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
         require(_maxPerTx < homeDailyLimit());
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
     }
 
-    function setMinPerTx(uint256 _minPerTx) public onlyOwner {
+    function setMinPerTx(uint256 _minPerTx) external onlyOwner {
         require(_minPerTx < homeDailyLimit() && _minPerTx < maxPerTx());
         uintStorage[keccak256("minPerTx")] = _minPerTx;
     }

@@ -7,7 +7,7 @@ pragma solidity 0.4.21;
  */
 contract UpgradeabilityStorage {
     // Version name of the current implementation
-    string internal _version;
+    uint256 internal _version;
 
     // Address of the current implementation
     address internal _implementation;
@@ -16,7 +16,7 @@ contract UpgradeabilityStorage {
     * @dev Tells the version name of the current implementation
     * @return string representing the name of the current version
     */
-    function version() public view returns (string) {
+    function version() public view returns (uint256) {
         return _version;
     }
 

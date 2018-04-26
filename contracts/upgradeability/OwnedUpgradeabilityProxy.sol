@@ -54,7 +54,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @param version representing the version name of the new implementation to be set.
     * @param implementation representing the address of the new implementation to be set.
     */
-    function upgradeTo(string version, address implementation) public onlyProxyOwner {
+    function upgradeTo(uint256 version, address implementation) public onlyProxyOwner {
         _upgradeTo(version, implementation);
     }
 
@@ -66,7 +66,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @param data represents the msg.data to bet sent in the low level call. This parameter may include the function
     * signature of the implementation to be called with the needed payload
     */
-    function upgradeToAndCall(string version, address implementation, bytes data) payable public onlyProxyOwner {
+    function upgradeToAndCall(uint256 version, address implementation, bytes data) payable public onlyProxyOwner {
         upgradeTo(version, implementation);
         require(this.call.value(msg.value)(data));
     }

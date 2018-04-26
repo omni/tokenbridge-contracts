@@ -27,8 +27,8 @@ contract Proxy {
             let size := returndatasize
 
             let ptr := mload(0x40)
+            mstore(0x40, add(ptr, size))
             returndatacopy(ptr, 0, size)
-
             switch result
             case 0 { revert(ptr, size) }
             default { return(ptr, size) }

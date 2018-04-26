@@ -61,14 +61,13 @@ contract HomeBridge is EternalStorage, Validatable {
         return boolStorage[keccak256("withdraws", _withdraw)];
     }
 
-    function setGasLimitWithdrawRelay(uint256 _gas) public onlyOwner {
+    function setGasLimitWithdrawRelay(uint256 _gas) external onlyOwner {
         uintStorage[keccak256("gasLimitWithdrawRelay")] = _gas;
         emit GasConsumptionLimitsUpdated(_gas);
     }
 
-    function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
-        require(message.length == 116);
-        require(Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract()));
+    function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
+        Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
 
         address recipient = Message.getRecipient(message);
         uint256 value = Message.getValue(message);
@@ -82,17 +81,17 @@ contract HomeBridge is EternalStorage, Validatable {
         emit Withdraw(recipient, value, hash);
     }
 
-    function setHomeDailyLimit(uint256 _homeDailyLimit) public onlyOwner {
+    function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
         emit DailyLimit(_homeDailyLimit);
     }
 
-    function setMaxPerTx(uint256 _maxPerTx) public onlyOwner {
+    function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
         require(_maxPerTx < homeDailyLimit());
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
     }
 
-    function setMinPerTx(uint256 _minPerTx) public onlyOwner {
+    function setMinPerTx(uint256 _minPerTx) external onlyOwner {
         require(_minPerTx < homeDailyLimit() && _minPerTx < maxPerTx());
         uintStorage[keccak256("minPerTx")] = _minPerTx;
     }

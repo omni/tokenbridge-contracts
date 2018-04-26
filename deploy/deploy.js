@@ -54,7 +54,7 @@ async function deployHome(homeNonce) {
   homeNonce++;
 
   console.log('\nhooking up eternal storage to BridgeValidators')
-  const upgradeToBridgeVHomeData = await storageValidatorsHome.methods.upgradeTo('0', bridgeValidatorsHome.options.address)
+  const upgradeToBridgeVHomeData = await storageValidatorsHome.methods.upgradeTo('1', bridgeValidatorsHome.options.address)
     .encodeABI({from: HOME_PROXY_OWNER});
   const txUpgradeToBridgeVHome = await sendRawTx({
     data: upgradeToBridgeVHomeData,
@@ -64,7 +64,6 @@ async function deployHome(homeNonce) {
     web3: web3Home
   })
   assert.equal(txUpgradeToBridgeVHome.status, '0x1', 'Transaction Failed');
-  console.log('txUpgradeToBridgeVHome', txUpgradeToBridgeVHome.status);
   homeNonce++;
   console.log('[Home] TxHash: ' , txUpgradeToBridgeVHome.transactionHash)
 
@@ -95,7 +94,7 @@ async function deployHome(homeNonce) {
   console.log('[Home] HomeBridge Implementation: ', homeBridgeImplementation.options.address)
 
   console.log('\nhooking up HomeBridge storage to HomeBridge implementation')
-  const upgradeToHomeBridgeData = await homeBridgeStorage.methods.upgradeTo('0', homeBridgeImplementation.options.address)
+  const upgradeToHomeBridgeData = await homeBridgeStorage.methods.upgradeTo('1', homeBridgeImplementation.options.address)
     .encodeABI({from: HOME_PROXY_OWNER});
   const txUpgradeToHomeBridge = await sendRawTx({
     data: upgradeToHomeBridgeData,
@@ -156,7 +155,7 @@ async function deployForeign(foreignNonce) {
   console.log('[Foreign] BridgeValidators Implementation: ', bridgeValidatorsForeign.options.address)
 
   console.log('\nhooking up eternal storage to BridgeValidators')
-  const upgradeToBridgeVForeignData = await storageValidatorsForeign.methods.upgradeTo('0', bridgeValidatorsForeign.options.address)
+  const upgradeToBridgeVForeignData = await storageValidatorsForeign.methods.upgradeTo('1', bridgeValidatorsForeign.options.address)
     .encodeABI({from: FOREIGN_PROXY_OWNER});
   const txUpgradeToBridgeVForeign = await sendRawTx({
     data: upgradeToBridgeVForeignData,
@@ -198,7 +197,7 @@ async function deployForeign(foreignNonce) {
   console.log('[Foreign] ForeignBridge Implementation: ', foreignBridgeImplementation.options.address)
 
   console.log('\nhooking up ForeignBridge storage to ForeignBridge implementation')
-  const upgradeToForeignBridgeData = await foreignBridgeStorage.methods.upgradeTo('0', foreignBridgeImplementation.options.address)
+  const upgradeToForeignBridgeData = await foreignBridgeStorage.methods.upgradeTo('1', foreignBridgeImplementation.options.address)
     .encodeABI({from: FOREIGN_PROXY_OWNER});
   const txUpgradeToForeignBridge = await sendRawTx({
     data: upgradeToForeignBridgeData,

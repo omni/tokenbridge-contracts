@@ -128,7 +128,7 @@ contract('BridgeValidators', async (accounts) => {
       let validators = [accounts[0], accounts[1]];
       let owner = accounts[2]
       let data = bridgeValidators.initialize.request(required_signatures, validators, owner).params[0].data
-      await storageProxy.upgradeToAndCall('0', bridgeValidators.address, data).should.be.fulfilled;
+      await storageProxy.upgradeToAndCall('1', bridgeValidators.address, data).should.be.fulfilled;
       let finalContract = await BridgeValidators.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
       required_signatures.should.be.bignumber.equal(await finalContract.requiredSignatures())

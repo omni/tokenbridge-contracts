@@ -46,7 +46,6 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
-        require(address(erc677token()) != address(0x0));
         require(msg.sender == address(erc677token()));
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
@@ -55,12 +54,12 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         return true;
     }
 
-    function setMaxPerTx(uint256 _maxPerTx) public onlyOwner {
+    function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
         require(_maxPerTx < foreignDailyLimit());
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
     }
 
-    function setMinPerTx(uint256 _minPerTx) public onlyOwner {
+    function setMinPerTx(uint256 _minPerTx) external onlyOwner {
         require(_minPerTx < foreignDailyLimit() && _minPerTx < maxPerTx());
         uintStorage[keccak256("minPerTx")] = _minPerTx;
     }
@@ -110,13 +109,13 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         return IBurnableMintableERC677Token(addressStorage[keccak256("erc677token")]);
     }
 
-    function setGasLimits(uint256 _gasLimitDepositRelay, uint256 _gasLimitWithdrawConfirm) public onlyOwner {
+    function setGasLimits(uint256 _gasLimitDepositRelay, uint256 _gasLimitWithdrawConfirm) external onlyOwner {
         uintStorage[keccak256("gasLimitDepositRelay")] = _gasLimitDepositRelay;
         uintStorage[keccak256("gasLimitWithdrawConfirm")] = _gasLimitWithdrawConfirm;
         emit GasConsumptionLimitsUpdated(gasLimitDepositRelay(), gasLimitWithdrawConfirm());
     }
 
-    function deposit(address recipient, uint256 value, bytes32 transactionHash) public onlyValidator {
+    function deposit(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
         bytes32 hashMsg = keccak256(recipient, value, transactionHash);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
         // Duplicated deposits
@@ -149,7 +148,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     /// withdrawal recipient (bytes20)
     /// withdrawal value (uint)
     /// foreign transaction hash (bytes32) // to avoid transaction duplication
-    function submitSignature(bytes signature, bytes message) public onlyValidator {
+    function submitSignature(bytes signature, bytes message) external onlyValidator {
         // ensure that `signature` is really `message` signed by `msg.sender`
         require(msg.sender == MessageSigning.recoverAddressFromSignedMessage(signature, message));
         bytes32 hashMsg = keccak256(message);

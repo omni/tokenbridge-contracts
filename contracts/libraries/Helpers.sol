@@ -37,7 +37,8 @@ library Helpers {
         uint8[] _vs,
         bytes32[] _rs,
         bytes32[] _ss,
-        IBridgeValidators _validatorContract) internal view returns (bool) {
+        IBridgeValidators _validatorContract) internal view {
+        require(_message.length == 116);
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         require(_vs.length >= requiredSignatures);
         bytes32 hash = MessageSigning.hashMessage(_message);
@@ -47,11 +48,10 @@ library Helpers {
             address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
             require(_validatorContract.isValidator(recoveredAddress));
             if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
-                return false;
+                revert();
             }
             encounteredAddresses[i] = recoveredAddress;
         }
-        return true;
     }
 }
 

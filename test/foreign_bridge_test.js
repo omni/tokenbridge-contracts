@@ -116,7 +116,7 @@ contract('ForeignBridge', async (accounts) => {
         value,
         transactionHash
       })
-      const thirdDeposit = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG_OPCODE);
+      const thirdDeposit = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG);
       oneEther.should.be.bignumber.equal(await tokenPOA20.totalSupply());
       oneEther.should.be.bignumber.equal(await tokenPOA20.balanceOf(recipient));
     })
@@ -165,7 +165,7 @@ contract('ForeignBridge', async (accounts) => {
         transactionHash
       })
       await validatorContractWith2Signatures.setRequiredSignatures(3).should.be.fulfilled;
-      const thirdDeposit = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG_OPCODE);
+      const thirdDeposit = await foreignBridgeWithTwoSigs.deposit(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG);
       oneEther.should.be.bignumber.equal(await tokenPOA20.totalSupply());
       oneEther.should.be.bignumber.equal(await tokenPOA20.balanceOf(recipient));
     })
@@ -313,7 +313,7 @@ contract('ForeignBridge', async (accounts) => {
       logs[1].args.authorityResponsibleForRelay.should.be.equal(authorities[1])
       await validatorContractWith2Signatures.setRequiredSignatures(3).should.be.fulfilled;
       '3'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
-      const attackerTx = await foreignBridgeWithTwoSigs.submitSignature(signature3, message, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG_OPCODE);
+      const attackerTx = await foreignBridgeWithTwoSigs.submitSignature(signature3, message, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG);
     })
   })
 

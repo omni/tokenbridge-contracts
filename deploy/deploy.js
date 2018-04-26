@@ -1,4 +1,5 @@
 const fs = require('fs');
+const assert = require('assert');
 require('dotenv').config();
 const Tx = require('ethereumjs-tx');
 
@@ -7,8 +8,9 @@ const HOME_PROXY_OWNER = process.env.HOME_PROXY_OWNER;
 const HOME_PROXY_OWNER_PRIVATE_KEY = process.env.HOME_PROXY_OWNER_PRIVATE_KEY;
 const homeProxyOwnerPrivateKey = Buffer.from(HOME_PROXY_OWNER_PRIVATE_KEY, 'hex')
 
-const HOME_REQUIRED_NUMBER_OF_VALIDATORS = process.env.HOME_REQUIRED_NUMBER_OF_VALIDATORS;
-const HOME_VALIDATORS = process.env.HOME_VALIDATORS.split(" ")
+const REQUIRED_NUMBER_OF_VALIDATORS = process.env.REQUIRED_NUMBER_OF_VALIDATORS;
+const VALIDATORS = process.env.VALIDATORS.split(" ")
+
 const HOME_DAILY_LIMIT = process.env.HOME_DAILY_LIMIT || '1000000000000000000' // 1 ether
 const HOME_MAX_AMOUNT_PER_TX = process.env.HOME_MAX_AMOUNT_PER_TX || '100000000000000000' // 0.1 ether
 const HOME_MIN_AMOUNT_PER_TX = process.env.HOME_MIN_AMOUNT_PER_TX || '10000000000000000' // 0.01 ether
@@ -18,8 +20,6 @@ const FOREIGN_PROXY_OWNER = process.env.FOREIGN_PROXY_OWNER;
 const FOREIGN_PROXY_OWNER_PRIVATE_KEY = process.env.FOREIGN_PROXY_OWNER_PRIVATE_KEY;
 const foreignProxyOwnerPrivateKey = Buffer.from(FOREIGN_PROXY_OWNER_PRIVATE_KEY, 'hex')
 
-const FOREIGN_REQUIRED_NUMBER_OF_VALIDATORS = process.env.FOREIGN_REQUIRED_NUMBER_OF_VALIDATORS;
-const FOREIGN_VALIDATORS = process.env.FOREIGN_VALIDATORS.split(" ")
 const FOREIGN_DAILY_LIMIT = process.env.FOREIGN_DAILY_LIMIT || '1000000000000000000' // 1 ether
 const FOREIGN_MAX_AMOUNT_PER_TX = process.env.FOREIGN_MAX_AMOUNT_PER_TX || '100000000000000000' // 0.1 ether
 const FOREIGN_MIN_AMOUNT_PER_TX = process.env.FOREIGN_MIN_AMOUNT_PER_TX || '10000000000000000' // 0.01 ether
@@ -63,14 +63,16 @@ async function deployHome(homeNonce) {
     privateKey: homeProxyOwnerPrivateKey,
     web3: web3Home
   })
+  assert.equal(txUpgradeToBridgeVHome.status, '0x1', 'Transaction Failed');
+  console.log('txUpgradeToBridgeVHome', txUpgradeToBridgeVHome.status);
   homeNonce++;
   console.log('[Home] TxHash: ' , txUpgradeToBridgeVHome.transactionHash)
 
   console.log('\ninitializing Home Bridge Validators with following parameters:')
-  console.log(`\tHOME_REQUIRED_NUMBER_OF_VALIDATORS: ${HOME_REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${HOME_VALIDATORS}`)
+  console.log(`\tREQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
   bridgeValidatorsHome.options.address = storageValidatorsHome.options.address
   const initializeData = await bridgeValidatorsHome.methods.initialize(
-    HOME_REQUIRED_NUMBER_OF_VALIDATORS, HOME_VALIDATORS, HOME_PROXY_OWNER
+    REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_PROXY_OWNER
   ).encodeABI({from: HOME_PROXY_OWNER})
   const txInitialize = await sendRawTx({
     data: initializeData,
@@ -102,6 +104,7 @@ async function deployHome(homeNonce) {
     privateKey: homeProxyOwnerPrivateKey,
     web3: web3Home
   })
+  assert.equal(txUpgradeToHomeBridge.status, '0x1', 'Transaction Failed');
   homeNonce++;
   console.log('[Home] TxHash: ' , txUpgradeToHomeBridge.transactionHash)
 
@@ -122,6 +125,7 @@ async function deployHome(homeNonce) {
     privateKey: homeProxyOwnerPrivateKey,
     web3: web3Home
   });
+  assert.equal(txInitializeHomeBridge.status, '0x1', 'Transaction Failed');
   homeNonce++;
   console.log('[Home] TxHash: ',txInitializeHomeBridge.transactionHash)
 
@@ -161,14 +165,15 @@ async function deployForeign(foreignNonce) {
     privateKey: foreignProxyOwnerPrivateKey,
     web3: web3Foreign
   });
+  assert.equal(txUpgradeToBridgeVForeign.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   console.log('[Foreign] TxHash: ' , txUpgradeToBridgeVForeign.transactionHash)
 
   console.log('\ninitializing Foreign Bridge Validators with following parameters:')
-  console.log(`\tFOREIGN_REQUIRED_NUMBER_OF_VALIDATORS: ${FOREIGN_REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${FOREIGN_VALIDATORS}`)
+  console.log(`\tREQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
   bridgeValidatorsForeign.options.address = storageValidatorsForeign.options.address
   const initializeForeignData = await bridgeValidatorsForeign.methods.initialize(
-    FOREIGN_REQUIRED_NUMBER_OF_VALIDATORS, FOREIGN_VALIDATORS, FOREIGN_PROXY_OWNER
+    REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_PROXY_OWNER
   ).encodeABI({from: FOREIGN_PROXY_OWNER});
   const txInitializeForeign = await sendRawTx({
     data: initializeForeignData,
@@ -177,6 +182,7 @@ async function deployForeign(foreignNonce) {
     privateKey: foreignProxyOwnerPrivateKey,
     web3: web3Foreign
   });
+  assert.equal(txInitializeForeign.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   console.log('[Foreign] TxHash: ',txInitializeForeign.transactionHash)
 
@@ -201,6 +207,7 @@ async function deployForeign(foreignNonce) {
     privateKey: foreignProxyOwnerPrivateKey,
     web3: web3Foreign
   });
+  assert.equal(txUpgradeToForeignBridge.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   console.log('[Foreign] TxHash: ' , txUpgradeToForeignBridge.transactionHash)
 
@@ -221,6 +228,7 @@ async function deployForeign(foreignNonce) {
     privateKey: foreignProxyOwnerPrivateKey,
     web3: web3Foreign
   });
+  assert.equal(txInitializeBridge.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   console.log('[Foreign] TxHash: ',txInitializeBridge.transactionHash)
 
@@ -234,6 +242,7 @@ async function deployForeign(foreignNonce) {
     privateKey: foreignProxyOwnerPrivateKey,
     web3: web3Foreign
   });
+  assert.equal(txOwnership.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   console.log('[Foreign] TxHash: ', txOwnership.transactionHash)
   return {

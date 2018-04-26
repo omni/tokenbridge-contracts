@@ -151,7 +151,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
 
     function addValidator(address _validator) public onlyOwner {
         require(_validator != address(0));
-        assert(validators(_validator) != true);
+        require(!isValidator(_validator));
         setValidatorCount(validatorCount().add(1));
         setValidator(_validator, true);
         emit ValidatorAdded(_validator);

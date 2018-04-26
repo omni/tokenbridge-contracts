@@ -52,7 +52,7 @@ contract('BridgeValidators', async (accounts) => {
 
     it('cannot add already existing validator', async () => {
       true.should.be.equal(await bridgeValidators.isValidator(validators[0]))
-      await bridgeValidators.addValidator(validators[0], {from: owner}).should.be.rejectedWith(ERROR_MSG_OPCODE)
+      await bridgeValidators.addValidator(validators[0], {from: owner}).should.be.rejectedWith(ERROR_MSG)
       await bridgeValidators.addValidator(ZERO_ADDRESS, {from: owner}).should.be.rejectedWith(ERROR_MSG)
       '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
     })

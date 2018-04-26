@@ -66,6 +66,7 @@ library Helpers {
 
 library MessageSigning {
     function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
+        require(message.length == 116);
         require(signature.length == 65);
         bytes32 r;
         bytes32 s;
@@ -250,6 +251,7 @@ contract HomeBridge is EternalStorage, Validatable {
 
     function () public payable {
         require(msg.value > 0);
+        require(msg.data.length == 0);
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         emit Deposit(msg.sender, msg.value);

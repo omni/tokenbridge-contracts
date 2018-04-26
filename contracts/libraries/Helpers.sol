@@ -58,6 +58,7 @@ library Helpers {
 
 library MessageSigning {
     function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
+        require(message.length == 116);
         require(signature.length == 65);
         bytes32 r;
         bytes32 s;

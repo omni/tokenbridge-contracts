@@ -1,6 +1,5 @@
 pragma solidity 0.4.21;
 import "../libraries/SafeMath.sol";
-import "../libraries/Helpers.sol";
 import "../libraries/Message.sol";
 import "./U_Validatable.sol";
 import "../IBurnableMintableERC677Token.sol";
@@ -123,7 +122,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         setDepositsSigned(hashSender, true);
 
         uint256 signed = numDepositsSigned(hashMsg);
-        require(!isDepositProcessed(signed));
+        require(!isAlreadyProcessed(signed));
         signed = signed.add(1);
 
         setNumDepositsSigned(hashMsg, signed);
@@ -133,8 +132,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         if (signed == validatorContract().requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
-            uint256 protectionNumber = signed | 2**255;
-            setNumDepositsSigned(hashMsg, protectionNumber);
+            setNumDepositsSigned(hashMsg, markAsProcessed(signed));
             erc677token().mint(recipient, value);
             emit Deposit(recipient, value, transactionHash);
         }
@@ -150,13 +148,15 @@ contract ForeignBridge is ERC677Receiver, Validatable {
     /// foreign transaction hash (bytes32) // to avoid transaction duplication
     function submitSignature(bytes signature, bytes message) external onlyValidator {
         // ensure that `signature` is really `message` signed by `msg.sender`
-        require(msg.sender == MessageSigning.recoverAddressFromSignedMessage(signature, message));
+        require(Message.isMessageValid(message));
+        require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message));
         bytes32 hashMsg = keccak256(message);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
 
         uint256 signed = numMessagesSigned(hashMsg);
-        require(!isDepositProcessed(signed));
-        signed = signed.add(1);
+        require(!isAlreadyProcessed(signed));
+        // the check above assumes that the case when the value could be overflew will not happen in the addition operation below
+        signed = signed + 1;
         if (signed > 1) {
             // Duplicated signatures
             require(!messagesSigned(hashSender));
@@ -172,13 +172,12 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
         emit SignedForWithdraw(msg.sender, hashMsg);
         if (signed == validatorContract().requiredSignatures()) {
-            uint256 protectionNumber = signed | 2**255;
-            setNumMessagesSigned(hashMsg, protectionNumber);
+            setNumMessagesSigned(hashMsg, markAsProcessed(signed));
             emit CollectedSignatures(msg.sender, hashMsg);
         }
     }
 
-    function isDepositProcessed(uint256 _number) public view returns(bool) {
+    function isAlreadyProcessed(uint256 _number) public view returns(bool) {
         return _number & 2**255 == 2**255;
     }
 
@@ -236,6 +235,10 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
     function depositsSigned(bytes32 _deposit) public view returns(bool) {
         return boolStorage[keccak256("depositsSigned", _deposit)];
+    }
+
+    function markAsProcessed(uint256 _v) private pure returns(uint256) {
+        return _v | 2 ** 255;
     }
 
     function numMessagesSigned(bytes32 _message) private view returns(uint256) {

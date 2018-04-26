@@ -446,4 +446,14 @@ contract('ForeignBridge', async (accounts) => {
       '500'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
     })
   })
+  describe('#isAlreadyProcessed', async () => {
+    it('returns ', async () => {
+      foreignBridge = await ForeignBridge.new();
+      const bn = new web3.BigNumber(2).pow(255);
+      const processedNumbers = [bn.add(1).toString(10), bn.add(100).toString(10)];
+      true.should.be.equal(await foreignBridge.isAlreadyProcessed(processedNumbers[0]));
+      true.should.be.equal(await foreignBridge.isAlreadyProcessed(processedNumbers[1]));
+      false.should.be.equal(await foreignBridge.isAlreadyProcessed(10));
+    })
+  })
 })

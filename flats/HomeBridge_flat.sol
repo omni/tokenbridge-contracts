@@ -8,19 +8,10 @@ interface IBridgeValidators {
     function owner() public view returns(address);
 }
 
-// File: contracts/libraries/Helpers.sol
+// File: contracts/libraries/Message.sol
 
-library Helpers {
-    function addressArrayContains(address[] array, address value) internal pure returns (bool) {
-        for (uint256 i = 0; i < array.length; i++) {
-            if (array[i] == value) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function uintToString(uint256 inputValue) internal pure returns (string) {
+library Message {
+     function uintToString(uint256 inputValue) internal pure returns (string) {
         // figure out the length of the resulting string
         uint256 length = 0;
         uint256 currentValue = inputValue;
@@ -40,55 +31,14 @@ library Helpers {
         return string(result);
     }
 
-    function hasEnoughValidSignatures(
-        bytes _message,
-        uint8[] _vs,
-        bytes32[] _rs,
-        bytes32[] _ss,
-        IBridgeValidators _validatorContract) internal view {
-        require(_message.length == 116);
-        uint256 requiredSignatures = _validatorContract.requiredSignatures();
-        require(_vs.length >= requiredSignatures);
-        bytes32 hash = MessageSigning.hashMessage(_message);
-        address[] memory encounteredAddresses = new address[](requiredSignatures);
-
-        for (uint256 i = 0; i < requiredSignatures; i++) {
-            address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
-            require(_validatorContract.isValidator(recoveredAddress));
-            if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
-                revert();
+    function addressArrayContains(address[] array, address value) internal pure returns (bool) {
+        for (uint256 i = 0; i < array.length; i++) {
+            if (array[i] == value) {
+                return true;
             }
-            encounteredAddresses[i] = recoveredAddress;
         }
+        return false;
     }
-}
-
-
-library MessageSigning {
-    function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
-        require(message.length == 116);
-        require(signature.length == 65);
-        bytes32 r;
-        bytes32 s;
-        bytes1 v;
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := mload(add(signature, 0x60))
-        }
-        return ecrecover(hashMessage(message), uint8(v), r, s);
-    }
-
-    function hashMessage(bytes message) internal pure returns (bytes32) {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        return keccak256(prefix, Helpers.uintToString(message.length), message);
-    }
-}
-
-// File: contracts/libraries/Message.sol
-
-library Message {
     // layout of message :: bytes:
     // offset  0: 32 bytes :: uint256 - message length
     // offset 32: 20 bytes :: address - recipient address
@@ -106,32 +56,62 @@ library Message {
     // which is padding address to 32 bytes and reading recipient at offset 32.
     // for more details see discussion in:
     // https://github.com/paritytech/parity-bridge/issues/61
-
-    function getRecipient(bytes message) internal pure returns (address) {
-        address recipient;
-        // solium-disable-next-line security/no-inline-assembly
+    function parseMessage(bytes message)
+        internal
+        pure
+        returns(address recipient, uint256 amount, bytes32 txHash)
+    {
+        require(isMessageValid(message));
         assembly {
             recipient := and(mload(add(message, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            amount := mload(add(message, 52))
+            txHash := mload(add(message, 84))
         }
-        return recipient;
     }
 
-    function getValue(bytes message) internal pure returns (uint256) {
-        uint256 value;
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            value := mload(add(message, 52))
-        }
-        return value;
+    function isMessageValid(bytes _msg) internal pure returns(bool) {
+        return _msg.length == 116;
     }
 
-    function getTransactionHash(bytes message) internal pure returns (bytes32) {
-        bytes32 hash;
+    function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
+        require(signature.length == 65);
+        bytes32 r;
+        bytes32 s;
+        bytes1 v;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            hash := mload(add(message, 84))
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := mload(add(signature, 0x60))
         }
-        return hash;
+        return ecrecover(hashMessage(message), uint8(v), r, s);
+    }
+
+    function hashMessage(bytes message) internal pure returns (bytes32) {
+        bytes memory prefix = "\x19Ethereum Signed Message:\n";
+        return keccak256(prefix, uintToString(message.length), message);
+    }
+
+    function hasEnoughValidSignatures(
+        bytes _message,
+        uint8[] _vs,
+        bytes32[] _rs,
+        bytes32[] _ss,
+        IBridgeValidators _validatorContract) internal view {
+        require(_message.length == 116);
+        uint256 requiredSignatures = _validatorContract.requiredSignatures();
+        require(_vs.length >= requiredSignatures);
+        bytes32 hash = hashMessage(_message);
+        address[] memory encounteredAddresses = new address[](requiredSignatures);
+
+        for (uint256 i = 0; i < requiredSignatures; i++) {
+            address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
+            require(_validatorContract.isValidator(recoveredAddress));
+            if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
+                revert();
+            }
+            encounteredAddresses[i] = recoveredAddress;
+        }
     }
 }
 
@@ -283,18 +263,18 @@ contract HomeBridge is EternalStorage, Validatable {
     }
 
     function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
-        Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
-
-        address recipient = Message.getRecipient(message);
-        uint256 value = Message.getValue(message);
-        bytes32 hash = Message.getTransactionHash(message);
-        require(!withdraws(hash));
-        setWithdraws(hash, true);
+        Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
+        address recipient;
+        uint256 amount;
+        bytes32 txHash;
+        (recipient, amount, txHash) = Message.parseMessage(message);
+        require(!withdraws(txHash));
+        setWithdraws(txHash, true);
 
         // pay out recipient
-        recipient.transfer(value);
+        recipient.transfer(amount);
 
-        emit Withdraw(recipient, value, hash);
+        emit Withdraw(recipient, amount, txHash);
     }
 
     function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {

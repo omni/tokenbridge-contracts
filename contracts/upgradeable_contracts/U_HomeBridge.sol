@@ -1,6 +1,5 @@
 pragma solidity 0.4.21;
 import "../libraries/SafeMath.sol";
-import "../libraries/Helpers.sol";
 import "../libraries/Message.sol";
 import "./U_Validatable.sol";
 import "../upgradeability/EternalStorage.sol";
@@ -67,18 +66,18 @@ contract HomeBridge is EternalStorage, Validatable {
     }
 
     function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
-        Helpers.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
-
-        address recipient = Message.getRecipient(message);
-        uint256 value = Message.getValue(message);
-        bytes32 hash = Message.getTransactionHash(message);
-        require(!withdraws(hash));
-        setWithdraws(hash, true);
+        Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
+        address recipient;
+        uint256 amount;
+        bytes32 txHash;
+        (recipient, amount, txHash) = Message.parseMessage(message);
+        require(!withdraws(txHash));
+        setWithdraws(txHash, true);
 
         // pay out recipient
-        recipient.transfer(value);
+        recipient.transfer(amount);
 
-        emit Withdraw(recipient, value, hash);
+        emit Withdraw(recipient, amount, txHash);
     }
 
     function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {

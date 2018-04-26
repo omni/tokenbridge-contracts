@@ -1,7 +1,36 @@
 pragma solidity 0.4.21;
+import "../IBridgeValidators.sol";
 
 
 library Message {
+     function uintToString(uint256 inputValue) internal pure returns (string) {
+        // figure out the length of the resulting string
+        uint256 length = 0;
+        uint256 currentValue = inputValue;
+        do {
+            length++;
+            currentValue /= 10;
+        } while (currentValue != 0);
+        // allocate enough memory
+        bytes memory result = new bytes(length);
+        // construct the string backwards
+        uint256 i = length - 1;
+        currentValue = inputValue;
+        do {
+            result[i--] = byte(48 + currentValue % 10);
+            currentValue /= 10;
+        } while (currentValue != 0);
+        return string(result);
+    }
+
+    function addressArrayContains(address[] array, address value) internal pure returns (bool) {
+        for (uint256 i = 0; i < array.length; i++) {
+            if (array[i] == value) {
+                return true;
+            }
+        }
+        return false;
+    }
     // layout of message :: bytes:
     // offset  0: 32 bytes :: uint256 - message length
     // offset 32: 20 bytes :: address - recipient address
@@ -19,31 +48,61 @@ library Message {
     // which is padding address to 32 bytes and reading recipient at offset 32.
     // for more details see discussion in:
     // https://github.com/paritytech/parity-bridge/issues/61
-
-    function getRecipient(bytes message) internal pure returns (address) {
-        address recipient;
-        // solium-disable-next-line security/no-inline-assembly
+    function parseMessage(bytes message)
+        internal
+        pure
+        returns(address recipient, uint256 amount, bytes32 txHash)
+    {
+        require(isMessageValid(message));
         assembly {
             recipient := and(mload(add(message, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            amount := mload(add(message, 52))
+            txHash := mload(add(message, 84))
         }
-        return recipient;
     }
 
-    function getValue(bytes message) internal pure returns (uint256) {
-        uint256 value;
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            value := mload(add(message, 52))
-        }
-        return value;
+    function isMessageValid(bytes _msg) internal pure returns(bool) {
+        return _msg.length == 116;
     }
 
-    function getTransactionHash(bytes message) internal pure returns (bytes32) {
-        bytes32 hash;
+    function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
+        require(signature.length == 65);
+        bytes32 r;
+        bytes32 s;
+        bytes1 v;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            hash := mload(add(message, 84))
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := mload(add(signature, 0x60))
         }
-        return hash;
+        return ecrecover(hashMessage(message), uint8(v), r, s);
+    }
+
+    function hashMessage(bytes message) internal pure returns (bytes32) {
+        bytes memory prefix = "\x19Ethereum Signed Message:\n";
+        return keccak256(prefix, uintToString(message.length), message);
+    }
+
+    function hasEnoughValidSignatures(
+        bytes _message,
+        uint8[] _vs,
+        bytes32[] _rs,
+        bytes32[] _ss,
+        IBridgeValidators _validatorContract) internal view {
+        require(_message.length == 116);
+        uint256 requiredSignatures = _validatorContract.requiredSignatures();
+        require(_vs.length >= requiredSignatures);
+        bytes32 hash = hashMessage(_message);
+        address[] memory encounteredAddresses = new address[](requiredSignatures);
+
+        for (uint256 i = 0; i < requiredSignatures; i++) {
+            address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
+            require(_validatorContract.isValidator(recoveredAddress));
+            if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
+                revert();
+            }
+            encounteredAddresses[i] = recoveredAddress;
+        }
     }
 }

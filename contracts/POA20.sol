@@ -55,4 +55,17 @@ contract POA20 is
         revert();
     }
 
+    function claimTokens(address _token, address _to) public onlyOwner {
+        require(_to != address(0));
+        if (_token == address(0)) {
+            _to.transfer(address(this).balance);
+            return;
+        }
+
+        DetailedERC20 token = DetailedERC20(_token);
+        uint256 balance = token.balanceOf(address(this));
+        token.transfer(_to, balance);
+    }
+
+
 }

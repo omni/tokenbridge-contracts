@@ -484,17 +484,15 @@ contract('ForeignBridge', async (accounts) => {
 
       let tokenSecond = await POA20.new("Roman Token", "RST", 18);
 
-      await tokenSecond.mint(accounts[0], 500).should.be.fulfilled;
-      '500'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
-      await tokenSecond.transfer(foreignBridge.address, '350');
+      await tokenSecond.mint(accounts[0], 150).should.be.fulfilled;
+      '150'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
       await tokenSecond.transfer(token.address, '150');
       '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
-      '350'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
       '150'.should.be.bignumber.equal(await tokenSecond.balanceOf(token.address))
 
-      await foreignBridge.claimTokens(tokenSecond.address, accounts[3], {from: owner});
+      await foreignBridge.claimTokensFromErc677(tokenSecond.address, accounts[3], {from: owner});
       '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
-      '500'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
+      '150'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
     })
   })
   describe('#isAlreadyProcessed', async () => {

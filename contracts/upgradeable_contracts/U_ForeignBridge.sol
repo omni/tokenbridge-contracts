@@ -4,7 +4,7 @@ import "../libraries/Message.sol";
 import "./U_Validatable.sol";
 import "../IBurnableMintableERC677Token.sol";
 import "../ERC677Receiver.sol";
-import "zeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
 contract ForeignBridge is ERC677Receiver, Validatable {
@@ -44,7 +44,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         return isInitialized();
     }
 
-    function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
+    function onTokenTransfer(address _from, uint256 _value, bytes /*_data*/) external returns(bool) {
         require(msg.sender == address(erc677token()));
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
@@ -63,7 +63,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         uintStorage[keccak256("minPerTx")] = _minPerTx;
     }
 
-    function claimTokens(address _token, address _to) public onlyOwner {
+    function claimTokens(address _token, address _to) external onlyOwner {
         require(_to != address(0));
         if (_token == address(0)) {
             _to.transfer(address(this).balance);
@@ -72,7 +72,10 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
         ERC20Basic token = ERC20Basic(_token);
         uint256 balance = token.balanceOf(this);
-        token.transfer(_to, balance);
+        require(token.transfer(_to, balance));
+    }
+
+    function claimTokensFromErc677(address _token, address _to) external onlyOwner {
         erc677token().claimTokens(_token, _to);
     }
 
@@ -178,7 +181,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         }
     }
 
-    function isAlreadyProcessed(uint256 _number) public view returns(bool) {
+    function isAlreadyProcessed(uint256 _number) public pure returns(bool) {
         return _number & 2**255 == 2**255;
     }
 
@@ -210,7 +213,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         return boolStorage[keccak256("isInitialized")];
     }
 
-    function homeGasPrice() internal view returns(uint256) {
+    function homeGasPrice() internal pure returns(uint256) {
         return 1000000000 wei;
     }
 

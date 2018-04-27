@@ -1,8 +1,8 @@
 pragma solidity 0.4.21;
 
-import "zeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
-import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
-import "zeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./IBurnableMintableERC677Token.sol";
 import "./ERC677Receiver.sol";
 
@@ -65,7 +65,7 @@ contract POA20 is
 
         DetailedERC20 token = DetailedERC20(_token);
         uint256 balance = token.balanceOf(address(this));
-        token.transfer(_to, balance);
+        require(token.transfer(_to, balance));
     }
 
 

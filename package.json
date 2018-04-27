@@ -14,7 +14,6 @@
   "license": "ISC",
   "dependencies": {
     "ganache-cli": "^6.1.0",
-    "nodemon": "^1.17.2",
     "openzeppelin-solidity": "^1.9.0",
     "truffle": "^4.1.6",
     "web3-utils": "^1.0.0-beta.34"
@@ -23,7 +22,7 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
-    "mochawesome": "^3.0.2",
+    "nodemon": "^1.17.3",
     "solidity-coverage": "^0.4.15",
     "truffle-flattener": "^1.2.3"
   }

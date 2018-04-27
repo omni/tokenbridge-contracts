@@ -1,8 +1,10 @@
 const fs = require('fs');
 const assert = require('assert');
+const fetch = require('node-fetch');
 require('dotenv').config();
 const Tx = require('ethereumjs-tx');
 
+const GET_RECEIPT_INTERVAL_IN_MILLISECONDS = process.env.GET_RECEIPT_INTERVAL_IN_MILLISECONDS;
 const HOME_RPC_URL = process.env.HOME_RPC_URL;
 const HOME_PROXY_OWNER = process.env.HOME_PROXY_OWNER;
 const HOME_PROXY_OWNER_PRIVATE_KEY = process.env.HOME_PROXY_OWNER_PRIVATE_KEY;
@@ -61,14 +63,14 @@ async function deployHome(homeNonce) {
     nonce: homeNonce,
     to: storageValidatorsHome.options.address,
     privateKey: homeProxyOwnerPrivateKey,
-    web3: web3Home
+    url: HOME_RPC_URL
   })
   assert.equal(txUpgradeToBridgeVHome.status, '0x1', 'Transaction Failed');
   homeNonce++;
   console.log('[Home] TxHash: ' , txUpgradeToBridgeVHome.transactionHash)
 
-  console.log('\ninitializing Home Bridge Validators with following parameters:')
-  console.log(`\tREQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
+  console.log('\ninitializing Home Bridge Validators with following parameters:\n')
+  console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
   bridgeValidatorsHome.options.address = storageValidatorsHome.options.address
   const initializeData = await bridgeValidatorsHome.methods.initialize(
     REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_PROXY_OWNER
@@ -78,7 +80,7 @@ async function deployHome(homeNonce) {
     nonce: homeNonce,
     to: bridgeValidatorsHome.options.address,
     privateKey: homeProxyOwnerPrivateKey,
-    web3: web3Home
+    url: HOME_RPC_URL
   })
   homeNonce++;
   console.log('[Home] TxHash: ',txInitialize.transactionHash)
@@ -101,14 +103,14 @@ async function deployHome(homeNonce) {
     nonce: homeNonce,
     to: homeBridgeStorage.options.address,
     privateKey: homeProxyOwnerPrivateKey,
-    web3: web3Home
+    url: HOME_RPC_URL
   })
   assert.equal(txUpgradeToHomeBridge.status, '0x1', 'Transaction Failed');
   homeNonce++;
   console.log('[Home] TxHash: ' , txUpgradeToHomeBridge.transactionHash)
 
-  console.log('\ninitializing Home Bridge with following parameters:')
-  console.log(`\t Home Validators: ${storageValidatorsHome.options.address},
+  console.log('\ninitializing Home Bridge with following parameters:\n')
+  console.log(`Home Validators: ${storageValidatorsHome.options.address},
   HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
@@ -122,14 +124,17 @@ async function deployHome(homeNonce) {
     nonce: homeNonce,
     to: homeBridgeStorage.options.address,
     privateKey: homeProxyOwnerPrivateKey,
-    web3: web3Home
+    url: HOME_RPC_URL
   });
   assert.equal(txInitializeHomeBridge.status, '0x1', 'Transaction Failed');
   homeNonce++;
   console.log('[Home] TxHash: ',txInitializeHomeBridge.transactionHash)
 
   console.log('\nHome Deployment Bridge is complete\n')
-  return {address: homeBridgeStorage.options.address, deployedBlockNumber: homeBridgeStorage.deployedBlockNumber}
+  return {
+    address: homeBridgeStorage.options.address,
+    deployedBlockNumber: Web3Utils.hexToNumber(homeBridgeStorage.deployedBlockNumber)
+  }
 
 }
 
@@ -162,14 +167,14 @@ async function deployForeign(foreignNonce) {
     nonce: foreignNonce,
     to: storageValidatorsForeign.options.address,
     privateKey: foreignProxyOwnerPrivateKey,
-    web3: web3Foreign
+    url: FOREIGN_RPC_URL
   });
   assert.equal(txUpgradeToBridgeVForeign.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   console.log('[Foreign] TxHash: ' , txUpgradeToBridgeVForeign.transactionHash)
 
-  console.log('\ninitializing Foreign Bridge Validators with following parameters:')
-  console.log(`\tREQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
+  console.log('\ninitializing Foreign Bridge Validators with following parameters:\n')
+  console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
   bridgeValidatorsForeign.options.address = storageValidatorsForeign.options.address
   const initializeForeignData = await bridgeValidatorsForeign.methods.initialize(
     REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_PROXY_OWNER
@@ -179,7 +184,7 @@ async function deployForeign(foreignNonce) {
     nonce: foreignNonce,
     to: bridgeValidatorsForeign.options.address,
     privateKey: foreignProxyOwnerPrivateKey,
-    web3: web3Foreign
+    url: FOREIGN_RPC_URL
   });
   assert.equal(txInitializeForeign.status, '0x1', 'Transaction Failed');
   foreignNonce++;
@@ -204,14 +209,14 @@ async function deployForeign(foreignNonce) {
     nonce: foreignNonce,
     to: foreignBridgeStorage.options.address,
     privateKey: foreignProxyOwnerPrivateKey,
-    web3: web3Foreign
+    url: FOREIGN_RPC_URL
   });
   assert.equal(txUpgradeToForeignBridge.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   console.log('[Foreign] TxHash: ' , txUpgradeToForeignBridge.transactionHash)
 
-  console.log('\ninitializing Foreign Bridge with following parameters:')
-  console.log(`\t Foreign Validators: ${storageValidatorsForeign.options.address},
+  console.log('\ninitializing Foreign Bridge with following parameters:\n')
+  console.log(`Foreign Validators: ${storageValidatorsForeign.options.address},
   FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(FOREIGN_MAX_AMOUNT_PER_TX)} in eth,
   FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(FOREIGN_MIN_AMOUNT_PER_TX)} in eth
@@ -225,7 +230,7 @@ async function deployForeign(foreignNonce) {
     nonce: foreignNonce,
     to: foreignBridgeStorage.options.address,
     privateKey: foreignProxyOwnerPrivateKey,
-    web3: web3Foreign
+    url: FOREIGN_RPC_URL
   });
   assert.equal(txInitializeBridge.status, '0x1', 'Transaction Failed');
   foreignNonce++;
@@ -239,13 +244,17 @@ async function deployForeign(foreignNonce) {
     nonce: foreignNonce,
     to: poa20foreign.options.address,
     privateKey: foreignProxyOwnerPrivateKey,
-    web3: web3Foreign
+    url: FOREIGN_RPC_URL
   });
   assert.equal(txOwnership.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   console.log('[Foreign] TxHash: ', txOwnership.transactionHash)
   return {
-    foreignBridge: {address: foreignBridgeStorage.options.address, deployedBlockNumber: foreignBridgeStorage.deployedBlockNumber},
+    foreignBridge:
+      {
+        address: foreignBridgeStorage.options.address,
+        deployedBlockNumber: Web3Utils.hexToNumber(foreignBridgeStorage.deployedBlockNumber)
+      },
     erc677: {address: poa20foreign.options.address}
   }
 }
@@ -256,9 +265,9 @@ async function main() {
   const homeBridge = await deployHome(homeNonce)
   const {foreignBridge, erc677} = await deployForeign(foreignNonce);
   console.log("\nDeployment has been completed.\n\n")
-  console.log('[   Home  ] HomeBridge: ', homeBridge.address)
-  console.log('[ Foreign ] ForeignBridge: ', foreignBridge.address)
-  console.log('[ Foreign ] POA20: ', erc677.address)
+  console.log(`[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
+  console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
+  console.log(`[ Foreign ] POA20: ${erc677.address}`)
   fs.writeFileSync('./bridgeDeploymentResults.json', JSON.stringify({
     homeBridge: {
       ...homeBridge,
@@ -273,7 +282,16 @@ async function main() {
 
 
 async function deployContract(contractJson, args, {from, network, nonce}) {
-  const {web3, privateKey} = network === 'foreign' ? {web3: web3Foreign, privateKey: foreignProxyOwnerPrivateKey}: {web3: web3Home, privateKey: homeProxyOwnerPrivateKey};
+  let web3, privateKey;
+  if(network === 'foreign'){
+    web3 = web3Foreign
+    privateKey = foreignProxyOwnerPrivateKey
+    url = FOREIGN_RPC_URL
+  } else {
+    web3 = web3Home
+    privateKey = homeProxyOwnerPrivateKey
+    url = HOME_RPC_URL
+  }
   const options = {
     from,
     gasPrice: GAS_PRICE,
@@ -289,7 +307,7 @@ async function deployContract(contractJson, args, {from, network, nonce}) {
     nonce: Web3Utils.toHex(nonce),
     to: null,
     privateKey,
-    web3
+    url
   })
   if(tx.status !== '0x1'){
     throw new Error('Tx failed');
@@ -299,7 +317,7 @@ async function deployContract(contractJson, args, {from, network, nonce}) {
   return instance;
 }
 
-async function sendRawTx({data, nonce, to, privateKey, web3}) {
+async function sendRawTx({data, nonce, to, privateKey, url}) {
   var rawTx = {
     nonce,
     gasPrice: Web3Utils.toHex(GAS_PRICE),
@@ -310,6 +328,39 @@ async function sendRawTx({data, nonce, to, privateKey, web3}) {
   var tx = new Tx(rawTx);
   tx.sign(privateKey);
   var serializedTx = tx.serialize();
-  return await web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
+  const txHash = await sendNodeRequest(url, "eth_sendRawTransaction", '0x' + serializedTx.toString('hex'));
+  const receipt = await getReceipt(txHash, url);
+  return receipt
+}
+
+async function sendNodeRequest(url, method, signedData){
+  const request = await fetch(url, {
+    headers: {
+      'Content-type': 'application/json'
+    },
+    method: 'POST',
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method,
+      params: [signedData],
+      id: 1
+    })
+  });
+  const json = await request.json()
+  return json.result;
+
+}
+
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getReceipt(txHash, url) {
+  await timeout(GET_RECEIPT_INTERVAL_IN_MILLISECONDS);
+  let receipt = await sendNodeRequest(url, "eth_getTransactionReceipt", txHash);
+  if(receipt === null) {
+    receipt = await getReceipt(txHash, url);
+  }
+  return receipt;
 }
 main()

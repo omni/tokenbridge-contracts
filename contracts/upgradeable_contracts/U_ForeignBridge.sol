@@ -130,7 +130,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
         emit SignedForDeposit(msg.sender, transactionHash);
 
-        if (signed == validatorContract().requiredSignatures()) {
+        if (signed >= validatorContract().requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
             setNumDepositsSigned(hashMsg, markAsProcessed(signed));
@@ -172,7 +172,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         setNumMessagesSigned(hashMsg, signed);
 
         emit SignedForWithdraw(msg.sender, hashMsg);
-        if (signed == validatorContract().requiredSignatures()) {
+        if (signed >= validatorContract().requiredSignatures()) {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
             emit CollectedSignatures(msg.sender, hashMsg);
         }

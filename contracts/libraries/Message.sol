@@ -3,7 +3,7 @@ import "../IBridgeValidators.sol";
 
 
 library Message {
-     function uintToString(uint256 inputValue) internal pure returns (string) {
+    function uintToString(uint256 inputValue) internal pure returns (string) {
         // figure out the length of the resulting string
         uint256 length = 0;
         uint256 currentValue = inputValue;
@@ -90,7 +90,7 @@ library Message {
         bytes32[] _rs,
         bytes32[] _ss,
         IBridgeValidators _validatorContract) internal view {
-        require(_message.length == 116);
+        require(isMessageValid(_message));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         require(_vs.length >= requiredSignatures);
         bytes32 hash = hashMessage(_message);

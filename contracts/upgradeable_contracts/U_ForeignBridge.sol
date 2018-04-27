@@ -123,7 +123,8 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
         uint256 signed = numDepositsSigned(hashMsg);
         require(!isAlreadyProcessed(signed));
-        signed = signed.add(1);
+        // the check above assumes that the case when the value could be overflew will not happen in the addition operation below
+        signed = signed + 1;
 
         setNumDepositsSigned(hashMsg, signed);
 

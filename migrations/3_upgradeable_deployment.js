@@ -31,7 +31,7 @@ module.exports = async function(deployer, network, accounts) {
     var bridgeValidatorsWeb3 = web3.eth.contract(BridgeValidators.abi);
     var bridgeValidatorsWeb3Instance = bridgeValidatorsWeb3.at(validatorContract.address);
     var initializeDataValidators = bridgeValidatorsWeb3Instance.initialize.getData(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER);
-    await storageBridgeValidators.upgradeTo('0', validatorContract.address, {from: PROXY_OWNER});
+    await storageBridgeValidators.upgradeTo('1', validatorContract.address, {from: PROXY_OWNER});
     await web3.eth.sendTransaction({
       from: PROXY_OWNER,
       to: storageBridgeValidators.address,
@@ -48,7 +48,7 @@ module.exports = async function(deployer, network, accounts) {
     var homeBridgeWeb3 = web3.eth.contract(HomeBridge.abi);
     var homeBridgeWeb3Instance = homeBridgeWeb3.at(homeBridgeImplementation.address);
     var initializeDataHome = homeBridgeWeb3Instance.initialize.getData(storageBridgeValidators.address, homeDailyLimit, MAX_AMOUNT_PER_TX, MIN_AMOUNT_PER_TX);
-    await homeBridgeUpgradeable.upgradeTo('0', homeBridgeImplementation.address, {from: PROXY_OWNER});
+    await homeBridgeUpgradeable.upgradeTo('1', homeBridgeImplementation.address, {from: PROXY_OWNER});
     await web3.eth.sendTransaction({
       from: PROXY_OWNER,
       to: homeBridgeUpgradeable.address,
@@ -66,7 +66,7 @@ module.exports = async function(deployer, network, accounts) {
     var foreignBridgeWeb3Instance = foreignBridgeWeb3.at(foreignBridgeImplementation.address);
     var initializeDataForeign = foreignBridgeWeb3Instance.initialize
       .getData(storageBridgeValidators.address, erc677token.address, foreignDailyLimit, MAX_AMOUNT_PER_TX, MIN_AMOUNT_PER_TX);
-    await foreignBridgeUpgradeable.upgradeTo('0', foreignBridgeImplementation.address, {from: PROXY_OWNER});
+    await foreignBridgeUpgradeable.upgradeTo('1', foreignBridgeImplementation.address, {from: PROXY_OWNER});
 
     await web3.eth.sendTransaction({
       from: PROXY_OWNER,

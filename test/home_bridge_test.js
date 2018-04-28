@@ -41,7 +41,7 @@ contract('HomeBridge', async (accounts) => {
     it('can be deployed via upgradeToAndCall', async () => {
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       let data = homeContract.initialize.request(validatorContract.address, "3", "2", "1").params[0].data
-      await storageProxy.upgradeToAndCall('0', homeContract.address, data).should.be.fulfilled;
+      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled;
       let finalContract = await HomeBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
       validatorContract.address.should.be.equal(await finalContract.validatorContract())

@@ -13,7 +13,7 @@ contract ERC677ReceiverTest is ERC677Receiver {
         from = _from;
         value = _value;
         data = _data;
-        require(this.call(_data));
+        require(address(this).call(_data));
         return true;
     }
 

@@ -32,15 +32,15 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         return isInitialized();
     }
 
-    function addValidator(address _validator) public onlyOwner {
+    function addValidator(address _validator) external onlyOwner {
         require(_validator != address(0));
-        assert(validators(_validator) != true);
+        require(!isValidator(_validator));
         setValidatorCount(validatorCount().add(1));
         setValidator(_validator, true);
         emit ValidatorAdded(_validator);
     }
 
-    function removeValidator(address _validator) public onlyOwner {
+    function removeValidator(address _validator) external onlyOwner {
         require(validatorCount() > requiredSignatures());
         require(isValidator(_validator));
         setValidator(_validator, false);
@@ -48,7 +48,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         emit ValidatorRemoved(_validator);
     }
 
-    function setRequiredSignatures(uint256 _requiredSignatures) public onlyOwner {
+    function setRequiredSignatures(uint256 _requiredSignatures) external onlyOwner {
         require(validatorCount() >= _requiredSignatures);
         uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
     }

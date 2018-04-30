@@ -310,7 +310,7 @@ async function deployContract(contractJson, args, {from, network, nonce}) {
     url
   })
   if(tx === undefined || tx === null){
-    throw new Error("Tx failed, check account Ether funds");
+    throw new Error("Tx failed, this may be due to running a chain pre Byzantinum fork");
   }
   else if(tx.status !== '0x1'){
     throw new Error('Tx failed');

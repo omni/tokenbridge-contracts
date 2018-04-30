@@ -309,7 +309,10 @@ async function deployContract(contractJson, args, {from, network, nonce}) {
     privateKey,
     url
   })
-  if(tx.status !== '0x1'){
+  if(tx === undefined || tx === null){
+    throw new Error("Tx failed, check account Ether funds");
+  }
+  else if(tx.status !== '0x1'){
     throw new Error('Tx failed');
   }
   instance.options.address = tx.contractAddress;

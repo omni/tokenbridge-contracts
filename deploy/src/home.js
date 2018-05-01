@@ -83,7 +83,7 @@ async function deployHome()
   console.log('[Home] TxHash: ',txProxyDataTransfer.transactionHash)
   assert.equal(txProxyDataTransfer.status, '0x1', 'Transaction Failed');
   const newProxyOwner = await storageValidatorsHome.methods.proxyOwner().call();
-  assert.equal(newProxyOwner, HOME_OWNER_MULTISIG);
+  assert.equal(newProxyOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_VALIDATORS.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\ndeploying homeBridge storage\n')
@@ -144,7 +144,7 @@ async function deployHome()
   console.log('[Home] TxHash: ',txhomeBridgeProxyData.transactionHash)
   assert.equal(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed');
   const newProxyBridgeOwner = await homeBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner, HOME_OWNER_MULTISIG);
+  assert.equal(newProxyBridgeOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_BRIDGE.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\nHome Deployment Bridge is complete\n')

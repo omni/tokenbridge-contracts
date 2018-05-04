@@ -1,6 +1,8 @@
-const POA20 = artifacts.require("POA20.sol");
+const POA20 = artifacts.require("POA20Mock.sol");
 const ERC677ReceiverTest = artifacts.require("ERC677ReceiverTest.sol")
 const {ERROR_MSG} = require('./setup');
+const assertRevert = require('./helpers/assertRevert');
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 contract('POA20', async (accounts) => {
   let token
@@ -113,6 +115,13 @@ contract('POA20', async (accounts) => {
       '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(token.address))
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
 
+      await assertRevert(token.claimTokens(token.address, ZERO_ADDRESS, {from: owner} )) ;
+
+      let ethBalanceOfAccount_1 = web3.eth.getBalance(accounts[1]).toNumber();
+      let ethBalanceOfContract  = web3.eth.getBalance(token.address).toNumber();
+      await web3.eth.sendTransaction({from: accounts[5], to: token.address, value: halfEther });    
+      await token.claimTokens(ZERO_ADDRESS, accounts[1], { from: owner});
+      assert.equal( web3.eth.getBalance(accounts[1]).toNumber() , ethBalanceOfAccount_1 + halfEther.toNumber() )
     })
   })
 })

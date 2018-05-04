@@ -63,7 +63,7 @@ contract('ForeignBridge', async (accounts) => {
       foreignBridge = await ForeignBridge.new();
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
       await token.transferOwnership(foreignBridge.address)
-    
+
     })
     it('should allow validator to deposit', async () => {
       const recipient = accounts[5];
@@ -189,12 +189,6 @@ contract('ForeignBridge', async (accounts) => {
       const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
       await foreignBridge.deposit(recipient, value, transactionHash, {from: accounts[7]}).should.be.rejectedWith(ERROR_MSG);
     })
-// 
-    // it('erc677token contract should not be 0x0 when initializing', async () => {
-    //   foreignBridge_zero_erc677 = await ForeignBridge.new();
-    //   await foreignBridge_zero_erc677.initialize(validatorContract.address, ZERO_ADDRESS, oneEther, halfEther, minPerTx);
-    //   await foreignBridge_zero_erc677.deposit(recipient,) 
-    // })
   })
 
   describe('#onTokenTransfer', async () => {
@@ -355,10 +349,6 @@ contract('ForeignBridge', async (accounts) => {
       const foreignDailyLimit = 20;
       await foreignBridge.setForeignDailyLimit(foreignDailyLimit);
       assert.equal( await foreignBridge.foreignDailyLimit.call(), 20);
-      // const events = await getEvents(foreignBridge, {event: 'DailyLimit'});
-      // events[0].args.should.be.deep.equal({
-      //   newLimit: foreignDailyLimit
-      // })
     })
   })
 
@@ -452,9 +442,9 @@ contract('ForeignBridge', async (accounts) => {
       foreignBridge = await ForeignBridge.new();
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
       await token.transferOwnership(foreignBridge.address)
-      
+
       let tokenSecond = await POA20.new("Roman Token", "RST", 18);
-      
+
       await tokenSecond.mint(accounts[0], 500).should.be.fulfilled;
       '500'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
       await tokenSecond.transfer(foreignBridge.address, '350');
@@ -462,7 +452,7 @@ contract('ForeignBridge', async (accounts) => {
       '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
       '350'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
       '150'.should.be.bignumber.equal(await tokenSecond.balanceOf(token.address))
-      
+
       await foreignBridge.claimTokens(tokenSecond.address, accounts[3], {from: owner});
       '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
       '500'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
@@ -475,11 +465,11 @@ contract('ForeignBridge', async (accounts) => {
       await token.transferOwnership(foreignBridge.address)
 
       await assertRevert(foreignBridge.claimTokens(foreignBridge.address, ZERO_ADDRESS, {from: owner} )) ;
-      
+
       let ethBalanceOfAccount_1 = web3.eth.getBalance(accounts[1]).toNumber();
       let ethBalanceOfContract  = web3.eth.getBalance(foreignBridge.address).toNumber();
-      web3.eth.sendTransaction({from: accounts[5], to: foreignBridge.address, value: halfEther });    
-      await foreignBridge.claimTokens(ZERO_ADDRESS, accounts[1],{from:owner});      
+      web3.eth.sendTransaction({from: accounts[5], to: foreignBridge.address, value: halfEther });
+      await foreignBridge.claimTokens(ZERO_ADDRESS, accounts[1],{from:owner});
       assert.equal( web3.eth.getBalance(accounts[1]).toNumber() , ethBalanceOfAccount_1 + halfEther.toNumber() )
     })
   })

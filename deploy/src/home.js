@@ -12,17 +12,20 @@ const EternalStorageProxy = require('../../build/contracts/EternalStorageProxy.j
 const BridgeValidators = require('../../build/contracts/BridgeValidators.json')
 const HomeBridge = require('../../build/contracts/HomeBridge.json')
 
-const DEPLOYMENT_ACCOUNT_ADDRESS = process.env.DEPLOYMENT_ACCOUNT_ADDRESS;
-const REQUIRED_NUMBER_OF_VALIDATORS = process.env.REQUIRED_NUMBER_OF_VALIDATORS;
 const VALIDATORS = process.env.VALIDATORS.split(" ")
+const HOME_GAS_PRICE =  Web3Utils.toWei(process.env.HOME_GAS_PRICE, 'gwei');
 
-const HOME_OWNER_MULTISIG = process.env.HOME_OWNER_MULTISIG;
-const HOME_UPGRADEABLE_ADMIN_VALIDATORS = process.env.HOME_UPGRADEABLE_ADMIN_VALIDATORS;
-const HOME_UPGRADEABLE_ADMIN_BRIDGE = process.env.HOME_UPGRADEABLE_ADMIN_BRIDGE;
-const HOME_DAILY_LIMIT = process.env.HOME_DAILY_LIMIT || '1000000000000000000' // 1 ether
-const HOME_MAX_AMOUNT_PER_TX = process.env.HOME_MAX_AMOUNT_PER_TX || '100000000000000000' // 0.1 ether
-const HOME_MIN_AMOUNT_PER_TX = process.env.HOME_MIN_AMOUNT_PER_TX || '10000000000000000' // 0.01 ether
-
+const {
+  DEPLOYMENT_ACCOUNT_ADDRESS,
+  REQUIRED_NUMBER_OF_VALIDATORS,
+  HOME_OWNER_MULTISIG,
+  HOME_UPGRADEABLE_ADMIN_VALIDATORS,
+  HOME_UPGRADEABLE_ADMIN_BRIDGE,
+  HOME_DAILY_LIMIT,
+  HOME_MAX_AMOUNT_PER_TX,
+  HOME_MIN_AMOUNT_PER_TX,
+  HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+} = process.env;
 
 async function deployHome()
 {
@@ -115,10 +118,11 @@ async function deployHome()
   HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
+  HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}
   `)
   homeBridgeImplementation.options.address = homeBridgeStorage.options.address
   const initializeHomeBridgeData = await homeBridgeImplementation.methods.initialize(
-    storageValidatorsHome.options.address, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX
+    storageValidatorsHome.options.address, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX, HOME_GAS_PRICE, HOME_REQUIRED_BLOCK_CONFIRMATIONS
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeHomeBridge = await sendRawTx({
     data: initializeHomeBridgeData,

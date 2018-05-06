@@ -3,25 +3,25 @@ import "../IBridgeValidators.sol";
 
 
 library Message {
-    function uintToString(uint256 inputValue) internal pure returns (string) {
-        // figure out the length of the resulting string
-        uint256 length = 0;
-        uint256 currentValue = inputValue;
-        do {
-            length++;
-            currentValue /= 10;
-        } while (currentValue != 0);
-        // allocate enough memory
-        bytes memory result = new bytes(length);
-        // construct the string backwards
-        uint256 i = length - 1;
-        currentValue = inputValue;
-        do {
-            result[i--] = byte(48 + currentValue % 10);
-            currentValue /= 10;
-        } while (currentValue != 0);
-        return string(result);
-    }
+    // function uintToString(uint256 inputValue) internal pure returns (string) {
+    //     // figure out the length of the resulting string
+    //     uint256 length = 0;
+    //     uint256 currentValue = inputValue;
+    //     do {
+    //         length++;
+    //         currentValue /= 10;
+    //     } while (currentValue != 0);
+    //     // allocate enough memory
+    //     bytes memory result = new bytes(length);
+    //     // construct the string backwards
+    //     uint256 i = length - 1;
+    //     currentValue = inputValue;
+    //     do {
+    //         result[i--] = byte(48 + currentValue % 10);
+    //         currentValue /= 10;
+    //     } while (currentValue != 0);
+    //     return string(result);
+    // }
 
     function addressArrayContains(address[] array, address value) internal pure returns (bool) {
         for (uint256 i = 0; i < array.length; i++) {
@@ -81,7 +81,9 @@ library Message {
 
     function hashMessage(bytes message) internal pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        return keccak256(prefix, uintToString(message.length), message);
+        // message is always 116 length
+        string memory msgLength = "116";
+        return keccak256(prefix, msgLength, message);
     }
 
     function hasEnoughValidSignatures(

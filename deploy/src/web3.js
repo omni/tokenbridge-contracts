@@ -12,8 +12,8 @@ const web3Home = new Web3(homeProvider);
 const foreignProvider = new Web3.providers.HttpProvider(FOREIGN_RPC_URL);
 const web3Foreign = new Web3(foreignProvider);
 
-const GAS_PRICE = Web3Utils.toWei(process.env.GAS_PRICE, 'gwei');
-const GAS_LIMIT = '6700000';
+const GAS_PRICE = Web3Utils.toWei(process.env.DEPLOYMENT_GAS_PRICE, 'gwei');
+const GAS_LIMIT = process.env.DEPLOYMENT_GAS_LIMIT;
 const GET_RECEIPT_INTERVAL_IN_MILLISECONDS = process.env.GET_RECEIPT_INTERVAL_IN_MILLISECONDS;
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = process.env.DEPLOYMENT_ACCOUNT_ADDRESS;

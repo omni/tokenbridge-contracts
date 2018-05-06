@@ -10,6 +10,8 @@ const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
 const Web3Utils = require('web3-utils');
+const requireBlockConfirmations = 8;
+const gasPrice = Web3Utils.toWei('1', 'gwei');
 
 const getEvents = function(contract, filter) {
   return new Promise((resolve, reject) => {
@@ -44,7 +46,7 @@ contract('ForeignBridge', async (accounts) => {
       '0'.should.be.bignumber.equal(await foreignBridge.foreignDailyLimit())
       '0'.should.be.bignumber.equal(await foreignBridge.maxPerTx())
       false.should.be.equal(await foreignBridge.isInitialized())
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
 
       true.should.be.equal(await foreignBridge.isInitialized())
       validatorContract.address.should.be.equal(await foreignBridge.validatorContract());
@@ -60,7 +62,7 @@ contract('ForeignBridge', async (accounts) => {
     beforeEach(async () => {
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await token.transferOwnership(foreignBridge.address)
     })
     it('should allow validator to deposit', async () => {
@@ -93,7 +95,7 @@ contract('ForeignBridge', async (accounts) => {
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       let tokenPOA20 = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       let foreignBridgeWithTwoSigs = await ForeignBridge.new();
-      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx);
+      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await tokenPOA20.transferOwnership(foreignBridgeWithTwoSigs.address)
 
       const recipient = accounts[5];
@@ -141,7 +143,7 @@ contract('ForeignBridge', async (accounts) => {
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       let tokenPOA20 = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       let foreignBridgeWithTwoSigs = await ForeignBridge.new();
-      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx);
+      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await tokenPOA20.transferOwnership(foreignBridgeWithTwoSigs.address)
 
       const recipient = accounts[5];
@@ -176,7 +178,7 @@ contract('ForeignBridge', async (accounts) => {
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       let tokenPOA20 = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       let foreignBridgeWithTwoSigs = await ForeignBridge.new();
-      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx);
+      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await tokenPOA20.transferOwnership(foreignBridgeWithTwoSigs.address)
 
       const recipient = accounts[5];
@@ -210,7 +212,7 @@ contract('ForeignBridge', async (accounts) => {
       const user = accounts[4]
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await token.mint(user, halfEther, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
       await foreignBridge.onTokenTransfer(user, halfEther, '0x00', {from: owner}).should.be.rejectedWith(ERROR_MSG);
@@ -224,7 +226,7 @@ contract('ForeignBridge', async (accounts) => {
       const valueMoreThanLimit = halfEther.add(1);
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await token.mint(user, valueMoreThanLimit, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
       await token.transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
@@ -246,7 +248,7 @@ contract('ForeignBridge', async (accounts) => {
       const valueMoreThanLimit = halfEther.add(1);
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await token.mint(user, oneEther.add(1), {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
       await token.transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
@@ -267,7 +269,7 @@ contract('ForeignBridge', async (accounts) => {
       const valueLessThanMinPerTx = minPerTx.sub(1);
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await token.mint(user, oneEther, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
       await token.transferAndCall(foreignBridge.address, valueLessThanMinPerTx, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
@@ -288,7 +290,7 @@ contract('ForeignBridge', async (accounts) => {
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       tokenPOA20 = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       foreignBridgeWithTwoSigs = await ForeignBridge.new();
-      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx);
+      await foreignBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, tokenPOA20.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await tokenPOA20.transferOwnership(foreignBridgeWithTwoSigs.address)
 
     })
@@ -373,7 +375,7 @@ contract('ForeignBridge', async (accounts) => {
     beforeEach(async () => {
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await token.transferOwnership(foreignBridge.address)
     })
     it('#setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
@@ -417,7 +419,7 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridgeProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled;
 
       foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address);
-      await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX)
+      await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, gasPrice, requireBlockConfirmations)
       await token.transferOwnership(foreignBridgeProxy.address).should.be.fulfilled;
 
       foreignBridgeProxy.address.should.be.equal(await token.owner());
@@ -443,7 +445,7 @@ contract('ForeignBridge', async (accounts) => {
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       let foreignBridge =  await ForeignBridge.new();
       let data = foreignBridge.initialize.request(
-        fakeValidatorsAddress, fakeTokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX).params[0].data
+        fakeValidatorsAddress, fakeTokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, gasPrice, requireBlockConfirmations).params[0].data
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
       let finalContract = await ForeignBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
@@ -459,7 +461,7 @@ contract('ForeignBridge', async (accounts) => {
       const owner = accounts[0];
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await token.transferOwnership(foreignBridge.address)
 
       let tokenSecond = await POA20.new("Roman Token", "RST", 18);
@@ -479,7 +481,7 @@ contract('ForeignBridge', async (accounts) => {
       const owner = accounts[0];
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       await token.transferOwnership(foreignBridge.address)
 
       let tokenSecond = await POA20.new("Roman Token", "RST", 18);

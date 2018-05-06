@@ -51,6 +51,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
 
     function setRequiredSignatures(uint256 _requiredSignatures) external onlyOwner {
         require(validatorCount() >= _requiredSignatures);
+        require(_requiredSignatures != 0);
         uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
         emit RequiredSignaturesChanged(_requiredSignatures);
     }

@@ -68,6 +68,6 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     */
     function upgradeToAndCall(uint256 version, address implementation, bytes data) payable public onlyProxyOwner {
         upgradeTo(version, implementation);
-        require(this.call.value(msg.value)(data));
+        require(address(this).call.value(msg.value)(data));
     }
 }

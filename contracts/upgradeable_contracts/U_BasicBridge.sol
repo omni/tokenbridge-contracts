@@ -3,7 +3,7 @@ import "../IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
 
 
-contract Validatable is EternalStorage {
+contract BasicBridge is EternalStorage {
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
     function validatorContract() public view returns(IBridgeValidators) {
@@ -39,5 +39,4 @@ contract Validatable is EternalStorage {
     function requiredBlockConfirmations() public view returns(uint256) {
         return uintStorage[keccak256("requiredBlockConfirmations")];
     }
-
 }

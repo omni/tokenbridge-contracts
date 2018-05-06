@@ -1,13 +1,13 @@
 pragma solidity 0.4.21;
 import "../libraries/SafeMath.sol";
 import "../libraries/Message.sol";
-import "./U_Validatable.sol";
+import "./U_BasicBridge.sol";
 import "../IBurnableMintableERC677Token.sol";
 import "../ERC677Receiver.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
-contract ForeignBridge is ERC677Receiver, Validatable {
+contract ForeignBridge is ERC677Receiver, BasicBridge {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
     event Deposit(address recipient, uint value, bytes32 transactionHash);
@@ -30,19 +30,20 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         uint256 _foreignDailyLimit,
         uint256 _maxPerTx,
         uint256 _minPerTx,
-        uint256 _homeGasPrice,
+        uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _foreignDailyLimit > _maxPerTx);
+        require(_foreignGasPrice > 0);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
         uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
         uintStorage[keccak256("minPerTx")] = _minPerTx;
-        uintStorage[keccak256("gasPrice")] = _homeGasPrice;
+        uintStorage[keccak256("gasPrice")] = _foreignGasPrice;
         uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
         setInitialize(true);
         return isInitialized();
@@ -53,7 +54,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
         erc677token().burn(_value);
-        emit Withdraw(_from, _value, gasPrice());
+        emit Withdraw(_from, _value, gasPriceForCompensationAtHomeSide());
         return true;
     }
 
@@ -183,6 +184,10 @@ contract ForeignBridge is ERC677Receiver, Validatable {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
             emit CollectedSignatures(msg.sender, hashMsg);
         }
+    }
+
+    function gasPriceForCompensationAtHomeSide() public pure returns(uint256) {
+        return 1000000000 wei;
     }
 
     function isAlreadyProcessed(uint256 _number) public pure returns(bool) {

@@ -1,11 +1,11 @@
 pragma solidity 0.4.21;
 import "../libraries/SafeMath.sol";
 import "../libraries/Message.sol";
-import "./U_Validatable.sol";
+import "./U_BasicBridge.sol";
 import "../upgradeability/EternalStorage.sol";
 
 
-contract HomeBridge is EternalStorage, Validatable {
+contract HomeBridge is EternalStorage, BasicBridge {
     using SafeMath for uint256;
     event GasConsumptionLimitsUpdated(uint256 gas);
     event Deposit (address recipient, uint256 value);
@@ -17,14 +17,14 @@ contract HomeBridge is EternalStorage, Validatable {
         uint256 _homeDailyLimit,
         uint256 _maxPerTx,
         uint256 _minPerTx,
-        uint256 _foreignGasPrice,
+        uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations
     ) public
       returns(bool)
     {
         require(!isInitialized());
         require(_validatorContract != address(0));
-        require(_foreignGasPrice > 0);
+        require(_homeGasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _homeDailyLimit > _maxPerTx);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
@@ -32,7 +32,7 @@ contract HomeBridge is EternalStorage, Validatable {
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
         uintStorage[keccak256("minPerTx")] = _minPerTx;
-        uintStorage[keccak256("gasPrice")] = _foreignGasPrice;
+        uintStorage[keccak256("gasPrice")] = _homeGasPrice;
         uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
         setInitialize(true);
         return isInitialized();

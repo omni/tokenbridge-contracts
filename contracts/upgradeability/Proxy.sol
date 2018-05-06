@@ -58,12 +58,25 @@ contract Proxy {
             */
             let result := delegatecall(gas, _impl, ptr, calldatasize, 0, 0)
             /*
+
+            */
+            /*
+                ptr current points to the value stored at 0x40,
+                because we assigned it like ptr := mload(0x40).
+                Because we use 0x40 as a free memory pointer,
+                we want to make sure that the next time we want to allocate memory,
+                we aren't overwriting anything important.
+                So, by adding ptr and returndatasize,
+                we get a memory location beyond the end of the data we will be copying to ptr.
+                We place this in at 0x40, and any reads from 0x40 will now read from free memory
+            */
+            mstore(0x40, add(ptr, returndatasize))
+            /*
                 `returndatacopy` is an Opcode that copies the last return data to a slot. `ptr` is the
                     slot it will copy to, 0 means copy from the beginning of the return data, and size is
                     the amount of data to copy.
                 `returndatasize` is an Opcode that gives us the size of the last return data. In this case, that is the size of the data returned from delegatecall
             */
-
             returndatacopy(ptr, 0, returndatasize)
 
             /*

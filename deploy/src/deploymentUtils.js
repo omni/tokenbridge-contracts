@@ -11,6 +11,7 @@ const {
 const Tx = require('ethereumjs-tx');
 const Web3Utils = require('web3-utils');
 const fetch = require('node-fetch');
+const assert = require('assert')
 
 async function deployContract(contractJson, args, {from, network, nonce}) {
   let web3, url;
@@ -24,7 +25,6 @@ async function deployContract(contractJson, args, {from, network, nonce}) {
   const options = {
     from,
     gasPrice: GAS_PRICE,
-    gas: GAS_LIMIT
   };
   let instance = new web3.eth.Contract(contractJson.abi, options);
   const result = await instance.deploy({
@@ -48,19 +48,25 @@ async function deployContract(contractJson, args, {from, network, nonce}) {
 
 
 async function sendRawTx({data, nonce, to, privateKey, url}) {
-  var rawTx = {
-    nonce,
-    gasPrice: Web3Utils.toHex(GAS_PRICE),
-    gasLimit:  Web3Utils.toHex('6700000'),
-    to,
-    data
+  try {
+    var rawTx = {
+      nonce,
+      gasPrice: Web3Utils.toHex(GAS_PRICE),
+      gasLimit: Web3Utils.toHex(GAS_LIMIT),
+      to,
+      data
+    }
+
+    var tx = new Tx(rawTx);
+    tx.sign(privateKey);
+    var serializedTx = tx.serialize();
+    const txHash = await sendNodeRequest(url, "eth_sendRawTransaction", '0x' + serializedTx.toString('hex'));
+    const receipt = await getReceipt(txHash, url);
+    return receipt
+
+  } catch (e) {
+    console.error(e)
   }
-  var tx = new Tx(rawTx);
-  tx.sign(privateKey);
-  var serializedTx = tx.serialize();
-  const txHash = await sendNodeRequest(url, "eth_sendRawTransaction", '0x' + serializedTx.toString('hex'));
-  const receipt = await getReceipt(txHash, url);
-  return receipt
 }
 
 async function sendNodeRequest(url, method, signedData){
@@ -77,6 +83,9 @@ async function sendNodeRequest(url, method, signedData){
     })
   });
   const json = await request.json()
+  if(method === 'eth_sendRawTransaction') {
+    assert.equal(json.result.length, 66, `Tx wasn't sent ${json}`)
+  }
   return json.result;
 
 }

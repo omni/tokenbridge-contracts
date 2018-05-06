@@ -29,7 +29,9 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         address _erc677token,
         uint256 _foreignDailyLimit,
         uint256 _maxPerTx,
-        uint256 _minPerTx
+        uint256 _minPerTx,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0));
@@ -40,6 +42,8 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
         uintStorage[keccak256("minPerTx")] = _minPerTx;
+        uintStorage[keccak256("gasPrice")] = _homeGasPrice;
+        uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
         setInitialize(true);
         return isInitialized();
     }
@@ -49,7 +53,7 @@ contract ForeignBridge is ERC677Receiver, Validatable {
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
         erc677token().burn(_value);
-        emit Withdraw(_from, _value, homeGasPrice());
+        emit Withdraw(_from, _value, gasPrice());
         return true;
     }
 
@@ -211,10 +215,6 @@ contract ForeignBridge is ERC677Receiver, Validatable {
 
     function isInitialized() public view returns(bool) {
         return boolStorage[keccak256("isInitialized")];
-    }
-
-    function homeGasPrice() internal pure returns(uint256) {
-        return 1000000000 wei;
     }
 
     function messages(bytes32 _hash) private view returns(bytes) {

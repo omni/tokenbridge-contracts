@@ -13,17 +13,21 @@ const EternalStorageProxy = require('../../build/contracts/EternalStorageProxy.j
 const BridgeValidators = require('../../build/contracts/BridgeValidators.json')
 const ForeignBridge = require('../../build/contracts/ForeignBridge.json')
 
-const DEPLOYMENT_ACCOUNT_ADDRESS = process.env.DEPLOYMENT_ACCOUNT_ADDRESS;
-const REQUIRED_NUMBER_OF_VALIDATORS = process.env.REQUIRED_NUMBER_OF_VALIDATORS;
 const VALIDATORS = process.env.VALIDATORS.split(" ")
+const FOREIGN_GAS_PRICE =  Web3Utils.toWei(process.env.FOREIGN_GAS_PRICE, 'gwei');
 
-const FOREIGN_OWNER_MULTISIG = process.env.FOREIGN_OWNER_MULTISIG;
-const FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS = process.env.FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS;
-const FOREIGN_UPGRADEABLE_ADMIN_BRIDGE = process.env.FOREIGN_UPGRADEABLE_ADMIN_BRIDGE;
-const FOREIGN_DAILY_LIMIT = process.env.FOREIGN_DAILY_LIMIT || '1000000000000000000' // 1 ether
-const FOREIGN_MAX_AMOUNT_PER_TX = process.env.FOREIGN_MAX_AMOUNT_PER_TX || '100000000000000000' // 0.1 ether
-const FOREIGN_MIN_AMOUNT_PER_TX = process.env.FOREIGN_MIN_AMOUNT_PER_TX || '10000000000000000' // 0.01 ether
+const {
+  DEPLOYMENT_ACCOUNT_ADDRESS,
+  REQUIRED_NUMBER_OF_VALIDATORS,
+  FOREIGN_OWNER_MULTISIG,
+  FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
+  FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,
+  FOREIGN_DAILY_LIMIT,
+  FOREIGN_MAX_AMOUNT_PER_TX,
+  FOREIGN_MIN_AMOUNT_PER_TX,
+  FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
 
+} = process.env;
 
 async function deployForeign() {
   let foreignNonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS);
@@ -128,7 +132,7 @@ async function deployForeign() {
   `)
   foreignBridgeImplementation.options.address = foreignBridgeStorage.options.address
   const initializeFBridgeData = await foreignBridgeImplementation.methods.initialize(
-    storageValidatorsForeign.options.address, poa20foreign.options.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX
+    storageValidatorsForeign.options.address, poa20foreign.options.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, FOREIGN_GAS_PRICE, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeBridge = await sendRawTx({
     data: initializeFBridgeData,

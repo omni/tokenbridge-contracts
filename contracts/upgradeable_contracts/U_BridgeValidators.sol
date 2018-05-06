@@ -10,6 +10,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     using SafeMath for uint256;
     event ValidatorAdded (address validator);
     event ValidatorRemoved (address validator);
+    event RequiredSignaturesChanged (uint256 requiredSignatures);
 
     function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
       public returns(bool)
@@ -51,6 +52,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     function setRequiredSignatures(uint256 _requiredSignatures) external onlyOwner {
         require(validatorCount() >= _requiredSignatures);
         uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
+        emit RequiredSignaturesChanged(_requiredSignatures);
     }
 
     function requiredSignatures() public view returns(uint256) {

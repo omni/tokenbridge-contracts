@@ -63,7 +63,6 @@ async function deployForeign() {
   });
   assert.equal(txUpgradeToBridgeVForeign.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  console.log('[Foreign] TxHash: ' , txUpgradeToBridgeVForeign.transactionHash)
 
   console.log('\ninitializing Foreign Bridge Validators with following parameters:\n')
   console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
@@ -82,7 +81,6 @@ async function deployForeign() {
   const validatorOwner = await bridgeValidatorsForeign.methods.owner().call();
   assert.equal(validatorOwner.toLowerCase(), FOREIGN_OWNER_MULTISIG.toLocaleLowerCase());
   foreignNonce++;
-  console.log('[Foreign] TxHash: ',txInitializeForeign.transactionHash)
 
   console.log('\nTransferring ownership of ValidatorsProxy\n')
   const validatorsForeignOwnershipData = await storageValidatorsForeign.methods.transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS)
@@ -98,7 +96,6 @@ async function deployForeign() {
   foreignNonce++;
   const newProxyValidatorsOwner = await storageValidatorsForeign.methods.proxyOwner().call();
   assert.equal(newProxyValidatorsOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS.toLowerCase());
-  console.log('[Foreign] TxHash: ' , txValidatorsForeignOwnershipData.transactionHash)
 
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
@@ -122,7 +119,6 @@ async function deployForeign() {
   });
   assert.equal(txUpgradeToForeignBridge.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  console.log('[Foreign] TxHash: ' , txUpgradeToForeignBridge.transactionHash)
 
   console.log('\ninitializing Foreign Bridge with following parameters:\n')
   console.log(`Foreign Validators: ${storageValidatorsForeign.options.address},
@@ -143,7 +139,6 @@ async function deployForeign() {
   });
   assert.equal(txInitializeBridge.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  console.log('[Foreign] TxHash: ',txInitializeBridge.transactionHash)
 
   console.log('transferring ownership of POA20 token to foreignBridge contract')
   const txOwnershipData = await poa20foreign.methods.transferOwnership(foreignBridgeStorage.options.address)
@@ -171,9 +166,7 @@ async function deployForeign() {
   foreignNonce++;
   const newProxyBridgeOwner = await foreignBridgeStorage.methods.proxyOwner().call();
   assert.equal(newProxyBridgeOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_BRIDGE.toLowerCase());
-  console.log('[Foreign] TxHash: ' , txBridgeOwnershipData.transactionHash)
 
-  console.log('[Foreign] TxHash: ', txOwnership.transactionHash)
   return {
     foreignBridge:
       {

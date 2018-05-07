@@ -52,7 +52,6 @@ async function deployHome()
   })
   assert.equal(txUpgradeToBridgeVHome.status, '0x1', 'Transaction Failed');
   homeNonce++;
-  console.log('[Home] TxHash: ' , txUpgradeToBridgeVHome.transactionHash)
 
   console.log('\ninitializing Home Bridge Validators with following parameters:\n')
   console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
@@ -72,8 +71,6 @@ async function deployHome()
   assert.equal(validatorOwner.toLocaleLowerCase(), HOME_OWNER_MULTISIG.toLocaleLowerCase());
   homeNonce++;
 
-  console.log('[Home] TxHash: ',txInitialize.transactionHash)
-
   console.log('transferring proxy ownership to multisig for Validators Proxy contract');
   const proxyDataTransfer = await storageValidatorsHome.methods.transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_VALIDATORS).encodeABI();
   const txProxyDataTransfer = await sendRawTx({
@@ -83,7 +80,6 @@ async function deployHome()
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  console.log('[Home] TxHash: ',txProxyDataTransfer.transactionHash)
   assert.equal(txProxyDataTransfer.status, '0x1', 'Transaction Failed');
   const newProxyOwner = await storageValidatorsHome.methods.proxyOwner().call();
   assert.equal(newProxyOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_VALIDATORS.toLocaleLowerCase());
@@ -111,7 +107,6 @@ async function deployHome()
   })
   assert.equal(txUpgradeToHomeBridge.status, '0x1', 'Transaction Failed');
   homeNonce++;
-  console.log('[Home] TxHash: ' , txUpgradeToHomeBridge.transactionHash)
 
   console.log('\ninitializing Home Bridge with following parameters:\n')
   console.log(`Home Validators: ${storageValidatorsHome.options.address},
@@ -133,8 +128,6 @@ async function deployHome()
   });
   assert.equal(txInitializeHomeBridge.status, '0x1', 'Transaction Failed');
   homeNonce++;
-  console.log('[Home] TxHash: ',txInitializeHomeBridge.transactionHash)
-
 
   console.log('transferring proxy ownership to multisig for Home bridge Proxy contract');
   const homeBridgeProxyData = await homeBridgeStorage.methods.transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_BRIDGE).encodeABI();
@@ -145,7 +138,6 @@ async function deployHome()
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  console.log('[Home] TxHash: ',txhomeBridgeProxyData.transactionHash)
   assert.equal(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed');
   const newProxyBridgeOwner = await homeBridgeStorage.methods.proxyOwner().call();
   assert.equal(newProxyBridgeOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_BRIDGE.toLocaleLowerCase());

@@ -61,6 +61,7 @@ async function sendRawTx({data, nonce, to, privateKey, url}) {
     tx.sign(privateKey);
     var serializedTx = tx.serialize();
     const txHash = await sendNodeRequest(url, "eth_sendRawTransaction", '0x' + serializedTx.toString('hex'));
+    console.log('pending txHash', txHash );
     const receipt = await getReceipt(txHash, url);
     return receipt
 

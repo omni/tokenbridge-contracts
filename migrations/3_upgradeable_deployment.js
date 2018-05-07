@@ -13,6 +13,10 @@ module.exports = async function(deployer, network, accounts) {
     const foreignDailyLimit = process.env.FOREIGN_LIMIT || '1000000000000000000' // 1 ether
     const MAX_AMOUNT_PER_TX = process.env.MAX_AMOUNT_PER_TX || '100000000000000000' // 0.1 ether
     const MIN_AMOUNT_PER_TX = process.env.MIN_AMOUNT_PER_TX || '10000000000000000' // 0.01 ether
+    const HOME_REQUIRED_BLOCK_CONFIRMATIONS = process.env.HOME_REQUIRED_BLOCK_CONFIRMATIONS || '1'
+    const HOME_GAS_PRICE = process.env.HOME_GAS_PRICE || '1000000000';
+    const FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS = process.env.FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS || '8';
+    const FOREIGN_GAS_PRICE = process.env.FOREIGN_GAS_PRICE || '1000000000';
 
     console.log('storage for home validators')
     await deployer.deploy(EternalStorageProxy, {from: PROXY_OWNER});
@@ -31,7 +35,7 @@ module.exports = async function(deployer, network, accounts) {
     var bridgeValidatorsWeb3 = web3.eth.contract(BridgeValidators.abi);
     var bridgeValidatorsWeb3Instance = bridgeValidatorsWeb3.at(validatorContract.address);
     var initializeDataValidators = bridgeValidatorsWeb3Instance.initialize.getData(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER);
-    await storageBridgeValidators.upgradeTo('0', validatorContract.address, {from: PROXY_OWNER});
+    await storageBridgeValidators.upgradeTo('1', validatorContract.address, {from: PROXY_OWNER});
     await web3.eth.sendTransaction({
       from: PROXY_OWNER,
       to: storageBridgeValidators.address,
@@ -47,8 +51,14 @@ module.exports = async function(deployer, network, accounts) {
     const homeBridgeImplementation = await HomeBridge.deployed();
     var homeBridgeWeb3 = web3.eth.contract(HomeBridge.abi);
     var homeBridgeWeb3Instance = homeBridgeWeb3.at(homeBridgeImplementation.address);
-    var initializeDataHome = homeBridgeWeb3Instance.initialize.getData(storageBridgeValidators.address, homeDailyLimit, MAX_AMOUNT_PER_TX, MIN_AMOUNT_PER_TX);
-    await homeBridgeUpgradeable.upgradeTo('0', homeBridgeImplementation.address, {from: PROXY_OWNER});
+    var initializeDataHome = homeBridgeWeb3Instance.initialize.getData(
+      storageBridgeValidators.address,
+      homeDailyLimit,
+      MAX_AMOUNT_PER_TX,
+      MIN_AMOUNT_PER_TX,
+      HOME_GAS_PRICE,
+      HOME_REQUIRED_BLOCK_CONFIRMATIONS);
+    await homeBridgeUpgradeable.upgradeTo('1', homeBridgeImplementation.address, {from: PROXY_OWNER});
     await web3.eth.sendTransaction({
       from: PROXY_OWNER,
       to: homeBridgeUpgradeable.address,
@@ -65,8 +75,8 @@ module.exports = async function(deployer, network, accounts) {
     var foreignBridgeWeb3 = web3.eth.contract(ForeignBridge.abi);
     var foreignBridgeWeb3Instance = foreignBridgeWeb3.at(foreignBridgeImplementation.address);
     var initializeDataForeign = foreignBridgeWeb3Instance.initialize
-      .getData(storageBridgeValidators.address, erc677token.address, foreignDailyLimit, MAX_AMOUNT_PER_TX, MIN_AMOUNT_PER_TX);
-    await foreignBridgeUpgradeable.upgradeTo('0', foreignBridgeImplementation.address, {from: PROXY_OWNER});
+      .getData(storageBridgeValidators.address, erc677token.address, foreignDailyLimit, MAX_AMOUNT_PER_TX, MIN_AMOUNT_PER_TX, FOREIGN_GAS_PRICE, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS);
+    await foreignBridgeUpgradeable.upgradeTo('1', foreignBridgeImplementation.address, {from: PROXY_OWNER});
 
     await web3.eth.sendTransaction({
       from: PROXY_OWNER,

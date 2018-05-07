@@ -1,8 +1,8 @@
 pragma solidity 0.4.21;
 
-import "zeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
-import "zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
-import "zeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./IBurnableMintableERC677Token.sol";
 import "./ERC677Receiver.sol";
 
@@ -24,14 +24,14 @@ contract POA20 is
     }
 
     function transferAndCall(address _to, uint _value, bytes _data)
-        public validRecipient(_to) returns (bool)
+        external validRecipient(_to) returns (bool)
     {
-        bool result = super.transfer(_to, _value);
+        require(transfer(_to, _value));
         emit Transfer(msg.sender, _to, _value, _data);
         if (isContract(_to)) {
-            result = contractFallback(_to, _value, _data);
+            require(contractFallback(_to, _value, _data));
         }
-        return result;
+        return true;
     }
 
     function contractFallback(address _to, uint _value, bytes _data)
@@ -44,6 +44,7 @@ contract POA20 is
 
     function isContract(address _addr)
         private
+        view
         returns (bool hasCode)
     {
         uint length;
@@ -64,7 +65,7 @@ contract POA20 is
 
         DetailedERC20 token = DetailedERC20(_token);
         uint256 balance = token.balanceOf(address(this));
-        token.transfer(_to, balance);
+        require(token.transfer(_to, balance));
     }
 
 

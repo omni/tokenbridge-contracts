@@ -10,6 +10,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     using SafeMath for uint256;
     event ValidatorAdded (address validator);
     event ValidatorRemoved (address validator);
+    event RequiredSignaturesChanged (uint256 requiredSignatures);
 
     function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
       public returns(bool)
@@ -32,15 +33,15 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         return isInitialized();
     }
 
-    function addValidator(address _validator) public onlyOwner {
+    function addValidator(address _validator) external onlyOwner {
         require(_validator != address(0));
-        assert(validators(_validator) != true);
+        require(!isValidator(_validator));
         setValidatorCount(validatorCount().add(1));
         setValidator(_validator, true);
         emit ValidatorAdded(_validator);
     }
 
-    function removeValidator(address _validator) public onlyOwner {
+    function removeValidator(address _validator) external onlyOwner {
         require(validatorCount() > requiredSignatures());
         require(isValidator(_validator));
         setValidator(_validator, false);
@@ -48,9 +49,11 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         emit ValidatorRemoved(_validator);
     }
 
-    function setRequiredSignatures(uint256 _requiredSignatures) public onlyOwner {
+    function setRequiredSignatures(uint256 _requiredSignatures) external onlyOwner {
         require(validatorCount() >= _requiredSignatures);
+        require(_requiredSignatures != 0);
         uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
+        emit RequiredSignaturesChanged(_requiredSignatures);
     }
 
     function requiredSignatures() public view returns(uint256) {

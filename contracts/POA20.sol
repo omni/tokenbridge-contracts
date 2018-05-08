@@ -45,7 +45,7 @@ contract POA20 is
     function isContract(address _addr)
         private
         view
-        returns (bool hasCode)
+        returns (bool)
     {
         uint length;
         assembly { length := extcodesize(_addr) }

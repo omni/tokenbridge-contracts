@@ -12,6 +12,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
     event Withdraw (address recipient, uint256 value, bytes32 transactionHash);
     event DailyLimit(uint256 newLimit);
     event SignedForDeposit(address indexed signer, bytes32 messageHash);
+    event SignedForWithdraw(address indexed signer, bytes32 transactionHash);
     event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash);
 
 
@@ -78,42 +79,42 @@ contract HomeBridge is EternalStorage, BasicBridge {
         bytes32 hashMsg = keccak256(recipient, value, transactionHash);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
         // Duplicated deposits
-        require(!depositsSigned(hashSender));
-        setDepositsSigned(hashSender, true);
+        require(!withdrawalsSigned(hashSender));
+        setWithdrawalsSigned(hashSender, true);
 
-        uint256 signed = numDepositsSigned(hashMsg);
+        uint256 signed = numWithdrawalsSigned(hashMsg);
         require(!isAlreadyProcessed(signed));
         // the check above assumes that the case when the value could be overflew will not happen in the addition operation below
         signed = signed + 1;
 
-        setNumDepositsSigned(hashMsg, signed);
+        setNumWithdrawalsSigned(hashMsg, signed);
 
-        emit SignedForDeposit(msg.sender, transactionHash);
+        emit SignedForWithdraw(msg.sender, transactionHash);
 
         if (signed >= validatorContract().requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
-            setNumDepositsSigned(hashMsg, markAsProcessed(signed));
+            setNumWithdrawalsSigned(hashMsg, markAsProcessed(signed));
             recipient.transfer(value);
             emit Withdraw(recipient, value, transactionHash);
         }
     }
 
-    function numDepositsSigned(bytes32 _deposit) private view returns(uint256) {
-        return uintStorage[keccak256("numDepositsSigned", _deposit)];
+    function numWithdrawalsSigned(bytes32 _deposit) private view returns(uint256) {
+        return uintStorage[keccak256("numWithdrawalsSigned", _deposit)];
     }
 
-    function setDepositsSigned(bytes32 _deposit, bool _status) private {
-        boolStorage[keccak256("depositsSigned", _deposit)] = _status;
+    function setWithdrawalsSigned(bytes32 _deposit, bool _status) private {
+        boolStorage[keccak256("withdrawalsSigned", _deposit)] = _status;
     }
 
-    function setNumDepositsSigned(bytes32 _deposit, uint256 _number) private {
-        uintStorage[keccak256("numDepositsSigned", _deposit)] = _number;
+    function setNumWithdrawalsSigned(bytes32 _deposit, uint256 _number) private {
+        uintStorage[keccak256("numWithdrawalsSigned", _deposit)] = _number;
     }
 
 
-    function depositsSigned(bytes32 _deposit) public view returns(bool) {
-        return boolStorage[keccak256("depositsSigned", _deposit)];
+    function withdrawalsSigned(bytes32 _deposit) public view returns(bool) {
+        return boolStorage[keccak256("withdrawalsSigned", _deposit)];
     }
 
     function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {

@@ -232,8 +232,7 @@ contract('ForeignBridge', async (accounts) => {
       const events = await getEvents(foreignBridge, {event: 'Withdraw'});
       events[0].args.should.be.deep.equal({
         recipient: user,
-        value: halfEther,
-        homeGasPrice: web3.toBigNumber(web3.toWei(1, "gwei"))
+        value: halfEther
       })
     })
     it('should only let to send within maxPerTx limit', async () => {

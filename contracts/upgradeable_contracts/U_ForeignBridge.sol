@@ -13,7 +13,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
     event Deposit(address recipient, uint value, bytes32 transactionHash);
 
     /// Event created on money withdraw.
-    event Withdraw(address recipient, uint256 value, uint256 homeGasPrice);
+    event Withdraw(address recipient, uint256 value);
 
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
 
@@ -47,7 +47,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
         erc677token().burn(_value);
-        emit Withdraw(_from, _value, gasPriceForCompensationAtHomeSide());
+        emit Withdraw(_from, _value);
         return true;
     }
 
@@ -104,10 +104,6 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
 
     function setDeposits(bytes32 _withdraw, bool _status) private {
         boolStorage[keccak256("deposits", _withdraw)] = _status;
-    }
-
-    function gasPriceForCompensationAtHomeSide() public pure returns(uint256) {
-        return 1000000000 wei;
     }
 
     function setErc677token(address _token) private {

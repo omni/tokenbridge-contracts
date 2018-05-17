@@ -7,6 +7,8 @@ const {createMessage, sign, signatureToVRS} = require('./helpers/helpers');
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
 const requireBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
+const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
+const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 
 contract('HomeBridge', async (accounts) => {
   let homeContract, validatorContract, authorities, owner;
@@ -23,18 +25,18 @@ contract('HomeBridge', async (accounts) => {
     it('sets variables', async () => {
       ZERO_ADDRESS.should.be.equal(await homeContract.validatorContract())
       '0'.should.be.bignumber.equal(await homeContract.deployedAtBlock())
-      '0'.should.be.bignumber.equal(await homeContract.homeDailyLimit())
+      '0'.should.be.bignumber.equal(await homeContract.dailyLimit())
       '0'.should.be.bignumber.equal(await homeContract.maxPerTx())
       false.should.be.equal(await homeContract.isInitialized())
       await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations).should.be.fulfilled;
       true.should.be.equal(await homeContract.isInitialized())
       validatorContract.address.should.be.equal(await homeContract.validatorContract());
       (await homeContract.deployedAtBlock()).should.be.bignumber.above(0);
-      '3'.should.be.bignumber.equal(await homeContract.homeDailyLimit())
+      '3'.should.be.bignumber.equal(await homeContract.dailyLimit())
       '2'.should.be.bignumber.equal(await homeContract.maxPerTx())
       '1'.should.be.bignumber.equal(await homeContract.minPerTx())
     })
-    it('cant set maxPerTx > homeDailyLimit', async () => {
+    it('cant set maxPerTx > dailyLimit', async () => {
       false.should.be.equal(await homeContract.isInitialized())
       await homeContract.initialize(validatorContract.address, '1', '2', '1', gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
       await homeContract.initialize(validatorContract.address, '3', '2', '2', gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
@@ -48,7 +50,7 @@ contract('HomeBridge', async (accounts) => {
       let finalContract = await HomeBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
       validatorContract.address.should.be.equal(await finalContract.validatorContract())
-      "3".should.be.bignumber.equal(await finalContract.homeDailyLimit())
+      "3".should.be.bignumber.equal(await finalContract.dailyLimit())
       "2".should.be.bignumber.equal(await finalContract.maxPerTx())
       "1".should.be.bignumber.equal(await finalContract.minPerTx())
     })
@@ -76,7 +78,7 @@ contract('HomeBridge', async (accounts) => {
         recipient: accounts[1],
         value: new web3.BigNumber(1)
       })
-      await homeContract.setHomeDailyLimit(4).should.be.fulfilled;
+      await homeContract.setDailyLimit(4).should.be.fulfilled;
       await homeContract.sendTransaction({
         from: accounts[1],
         value: 1
@@ -94,7 +96,7 @@ contract('HomeBridge', async (accounts) => {
         value: 3
       }).should.be.rejectedWith(ERROR_MSG)
       await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.setHomeDailyLimit(100).should.be.fulfilled;
+      await homeContract.setDailyLimit(100).should.be.fulfilled;
       await homeContract.setMaxPerTx(99).should.be.fulfilled;
       //meets max per tx and daily limit
       await homeContract.sendTransaction({
@@ -113,7 +115,7 @@ contract('HomeBridge', async (accounts) => {
       const newDailyLimit = 100;
       const newMaxPerTx = 50;
       const newMinPerTx = 20;
-      await homeContract.setHomeDailyLimit(newDailyLimit).should.be.fulfilled;
+      await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled;
       await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled;
       await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled;
 
@@ -127,171 +129,7 @@ contract('HomeBridge', async (accounts) => {
       }).should.be.rejectedWith(ERROR_MSG)
     })
   })
-  // describe('#withdraw', async () => {
-  //   beforeEach(async () => {
-  //     homeContract = await HomeBridge.new()
-  //     const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-  //     const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
-  //     await homeContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
-  //     oneEther.should.be.bignumber.equal(await homeContract.homeDailyLimit());
-  //     await homeContract.sendTransaction({
-  //       from: accounts[1],
-  //       value: halfEther
-  //     }).should.be.fulfilled
-  //   })
-  //   it('should allow to withdraw', async () => {
-  //     var recipientAccount = accounts[3];
-  //     const balanceBefore = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceBefore = await web3.eth.getBalance(homeContract.address)
-  //     var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
-  //     var homeGasPrice = web3.toBigNumber(0);
-  //     var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
-  //     var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
-  //     var signature = await sign(authorities[0], message)
-  //     var vrs = signatureToVRS(signature);
-  //     false.should.be.equal(await homeContract.withdraws(transactionHash))
-  //     const {logs} = await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-  //     logs[0].event.should.be.equal("Withdraw")
-  //     logs[0].args.recipient.should.be.equal(recipientAccount)
-  //     logs[0].args.value.should.be.bignumber.equal(value)
-  //     logs[0].args.transactionHash.should.be.equal(transactionHash);
-  //     const balanceAfter = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceAfter = await web3.eth.getBalance(homeContract.address)
-  //     balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
-  //     homeBalanceAfter.should.be.bignumber.equal(homeBalanceBefore.sub(value))
-  //     true.should.be.equal(await homeContract.withdraws(transactionHash))
-  //   })
-  //   it('should allow second withdraw with different transactionHash but same recipient and value', async ()=> {
-  //     var recipientAccount = accounts[3];
-  //     const balanceBefore = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceBefore = await web3.eth.getBalance(homeContract.address)
-  //     // tx 1
-  //     var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
-  //     var homeGasPrice = web3.toBigNumber(0);
-  //     var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-  //     var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
-  //     var signature = await sign(authorities[0], message)
-  //     var vrs = signatureToVRS(signature);
-  //     false.should.be.equal(await homeContract.withdraws(transactionHash))
-  //     await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-  //     // tx 2
-  //     var transactionHash2 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
-  //     var message2 = createMessage(recipientAccount, value, transactionHash2, homeGasPrice);
-  //     var signature2 = await sign(authorities[0], message2)
-  //     var vrs2 = signatureToVRS(signature2);
-  //     false.should.be.equal(await homeContract.withdraws(transactionHash2))
-  //     const {logs} = await homeContract.withdraw([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
 
-  //     logs[0].event.should.be.equal("Withdraw")
-  //     logs[0].args.recipient.should.be.equal(recipientAccount)
-  //     logs[0].args.value.should.be.bignumber.equal(value)
-  //     logs[0].args.transactionHash.should.be.equal(transactionHash2);
-  //     const balanceAfter = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceAfter = await web3.eth.getBalance(homeContract.address)
-  //     balanceAfter.should.be.bignumber.equal(balanceBefore.add(value.mul(2)))
-  //     homeBalanceAfter.should.be.bignumber.equal(0)
-  //     true.should.be.equal(await homeContract.withdraws(transactionHash))
-  //     true.should.be.equal(await homeContract.withdraws(transactionHash2))
-  //   })
-
-  //   it('should not allow if there are not enough funds in the contract', async () => {
-  //     var recipientAccount = accounts[3];
-  //     const balanceBefore = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceBefore = await web3.eth.getBalance(homeContract.address)
-  //     // tx 1
-  //     var value = web3.toBigNumber(web3.toWei(1.01, "ether"));
-  //     var homeGasPrice = web3.toBigNumber(0);
-  //     var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-  //     var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
-  //     var signature = await sign(authorities[0], message)
-  //     var vrs = signatureToVRS(signature);
-  //     false.should.be.equal(await homeContract.withdraws(transactionHash))
-  //     await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
-
-  //   })
-  //   it('should not allow second withdraw (replay attack) with same transactionHash but different recipient', async () => {
-  //     var recipientAccount = accounts[3];
-  //     const balanceBefore = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceBefore = await web3.eth.getBalance(homeContract.address)
-  //     // tx 1
-  //     var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
-  //     var homeGasPrice = web3.toBigNumber(0);
-  //     var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-  //     var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
-  //     var signature = await sign(authorities[0], message)
-  //     var vrs = signatureToVRS(signature);
-  //     false.should.be.equal(await homeContract.withdraws(transactionHash))
-  //     await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-  //     // tx 2
-  //     var message2 = createMessage(accounts[4], value, transactionHash, homeGasPrice);
-  //     var signature2 = await sign(authorities[0], message2)
-  //     var vrs = signatureToVRS(signature2);
-  //     true.should.be.equal(await homeContract.withdraws(transactionHash))
-  //     await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message2).should.be.rejectedWith(ERROR_MSG)
-  //   })
-  // })
-
-  // describe('#withdraw with 2 minimum signatures', async () => {
-  //   let multisigValidatorContract, twoAuthorities, ownerOfValidatorContract, homeContractWithMultiSignatures
-  //   beforeEach(async () => {
-  //     multisigValidatorContract = await BridgeValidators.new()
-  //     twoAuthorities = [accounts[0], accounts[1]];
-  //     ownerOfValidatorContract = accounts[3]
-  //     const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
-  //     await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {from: ownerOfValidatorContract})
-  //     homeContractWithMultiSignatures = await HomeBridge.new()
-  //     const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-  //     await homeContractWithMultiSignatures.initialize(multisigValidatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, {from: ownerOfValidatorContract});
-  //     await homeContractWithMultiSignatures.sendTransaction({
-  //       from: accounts[1],
-  //       value: halfEther
-  //     }).should.be.fulfilled
-  //   })
-  //   it('withdraw should fail if not enough signatures are provided', async () => {
-
-  //     var recipientAccount = accounts[4];
-  //     const balanceBefore = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceBefore = await web3.eth.getBalance(homeContractWithMultiSignatures.address)
-  //     // msg 1
-  //     var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
-  //     var homeGasPrice = web3.toBigNumber(0);
-  //     var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-  //     var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
-  //     var signature = await sign(twoAuthorities[0], message)
-  //     var vrs = signatureToVRS(signature);
-  //     false.should.be.equal(await homeContractWithMultiSignatures.withdraws(transactionHash))
-  //     await homeContractWithMultiSignatures.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
-  //     // msg 2
-  //     var signature2 = await sign(twoAuthorities[1], message)
-  //     var vrs2 = signatureToVRS(signature2);
-  //     const {logs} = await homeContractWithMultiSignatures.withdraw([vrs.v, vrs2.v], [vrs.r, vrs2.r], [vrs.s, vrs2.s], message).should.be.fulfilled;
-
-  //     logs[0].event.should.be.equal("Withdraw")
-  //     logs[0].args.recipient.should.be.equal(recipientAccount)
-  //     logs[0].args.value.should.be.bignumber.equal(value)
-  //     logs[0].args.transactionHash.should.be.equal(transactionHash);
-  //     const balanceAfter = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceAfter = await web3.eth.getBalance(homeContractWithMultiSignatures.address)
-  //     balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
-  //     homeBalanceAfter.should.be.bignumber.equal(homeBalanceBefore.sub(value))
-  //     true.should.be.equal(await homeContractWithMultiSignatures.withdraws(transactionHash))
-
-  //   })
-  //   it('withdraw should fail if duplicate signature is provided', async () => {
-  //     var recipientAccount = accounts[4];
-  //     const balanceBefore = await web3.eth.getBalance(recipientAccount)
-  //     const homeBalanceBefore = await web3.eth.getBalance(homeContractWithMultiSignatures.address)
-  //     // msg 1
-  //     var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
-  //     var homeGasPrice = web3.toBigNumber(0);
-  //     var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-  //     var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
-  //     var signature = await sign(twoAuthorities[0], message)
-  //     var vrs = signatureToVRS(signature);
-  //     false.should.be.equal(await homeContractWithMultiSignatures.withdraws(transactionHash))
-  //     await homeContractWithMultiSignatures.withdraw([vrs.v, vrs.v], [vrs.r, vrs.r], [vrs.s, vrs.s], message).should.be.rejectedWith(ERROR_MSG)
-  //   })
-  // })
   describe('#setting limits', async () => {
     let homeContract;
     beforeEach(async () => {
@@ -310,6 +148,242 @@ contract('HomeBridge', async (accounts) => {
       await homeContract.setMinPerTx(1, {from: owner}).should.be.fulfilled;
 
       await homeContract.setMinPerTx(2, {from: owner}).should.be.rejectedWith(ERROR_MSG);
+    })
+  })
+
+  describe('#withdraw', async () => {
+    let homeBridge;
+    beforeEach(async () => {
+      homeBridge = await HomeBridge.new();
+      await homeBridge.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+      const {logs} = await homeBridge.sendTransaction({
+        from: accounts[2],
+        value: halfEther
+      }).should.be.fulfilled
+    })
+    it('should allow validator to withdraw', async () => {
+      const recipient = accounts[5];
+      const value = halfEther;
+      const balanceBefore = await web3.eth.getBalance(recipient)
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs} = await homeBridge.withdraw(recipient, value, transactionHash, {from: authorities[0]})
+      logs[0].event.should.be.equal("SignedForWithdraw");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        transactionHash
+      });
+      logs[1].event.should.be.equal("Withdraw");
+      logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+      const homeBalanceAfter = await web3.eth.getBalance(homeBridge.address)
+      const balanceAfter = await web3.eth.getBalance(recipient)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      homeBalanceAfter.should.be.bignumber.equal(0)
+
+      const msgHash = Web3Utils.soliditySha3(recipient, value, transactionHash);
+      const senderHash = Web3Utils.soliditySha3(authorities[0], msgHash)
+      true.should.be.equal(await homeBridge.withdrawalsSigned(senderHash))
+    })
+
+    it('test with 2 signatures required', async () => {
+      let validatorContractWith2Signatures = await BridgeValidators.new()
+      let authoritiesTwoAccs = [accounts[1], accounts[2], accounts[3]];
+      let ownerOfValidators = accounts[0]
+      await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
+      let homeBridgeWithTwoSigs = await HomeBridge.new();
+      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+
+      await homeBridgeWithTwoSigs.sendTransaction({
+        from: accounts[2],
+        value: halfEther
+      }).should.be.fulfilled
+      const homeBalanceBefore = await web3.eth.getBalance(homeBridgeWithTwoSigs.address)
+      homeBalanceBefore.should.be.bignumber.equal(halfEther)
+
+      const recipient = accounts[5];
+      const value = halfEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const balanceBefore = await web3.eth.getBalance(recipient)
+      const msgHash = Web3Utils.soliditySha3(recipient, value, transactionHash);
+
+      const {logs} = await homeBridgeWithTwoSigs.withdraw(recipient, value, transactionHash, {from: authoritiesTwoAccs[0]}).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForWithdraw");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        transactionHash
+      });
+      halfEther.should.be.bignumber.equal(await web3.eth.getBalance(homeBridgeWithTwoSigs.address))
+      const notProcessed = await homeBridgeWithTwoSigs.numWithdrawalsSigned(msgHash);
+      notProcessed.should.be.bignumber.equal(1);
+
+      await homeBridgeWithTwoSigs.withdraw(recipient, value, transactionHash, {from: authoritiesTwoAccs[0]}).should.be.rejectedWith(ERROR_MSG);
+      const secondSignature = await homeBridgeWithTwoSigs.withdraw(recipient, value, transactionHash, {from: authoritiesTwoAccs[1]}).should.be.fulfilled;
+
+      const balanceAfter = await web3.eth.getBalance(recipient)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      '0'.should.be.bignumber.equal(await web3.eth.getBalance(homeBridgeWithTwoSigs.address))
+
+      secondSignature.logs[1].event.should.be.equal("Withdraw");
+      secondSignature.logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+
+      const senderHash = Web3Utils.soliditySha3(authoritiesTwoAccs[0], msgHash)
+      true.should.be.equal(await homeBridgeWithTwoSigs.withdrawalsSigned(senderHash))
+
+      const senderHash2 = Web3Utils.soliditySha3(authoritiesTwoAccs[1], msgHash);
+      true.should.be.equal(await homeBridgeWithTwoSigs.withdrawalsSigned(senderHash2))
+
+      const markedAsProcessed = await homeBridgeWithTwoSigs.numWithdrawalsSigned(msgHash);
+      const processed = new web3.BigNumber(2).pow(255).add(2);
+      markedAsProcessed.should.be.bignumber.equal(processed)
+    })
+    it('should not allow to double submit', async () => {
+      const recipient = accounts[5];
+      const value = '1';
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      await homeBridge.withdraw(recipient, value, transactionHash, {from: authorities[0]}).should.be.fulfilled;
+      await homeBridge.withdraw(recipient, value, transactionHash, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+    })
+
+    it('should not allow non-authorities to execute withdraw', async () => {
+      const recipient = accounts[5];
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      await homeBridge.withdraw(recipient, value, transactionHash, {from: accounts[7]}).should.be.rejectedWith(ERROR_MSG);
+    })
+
+    it('doesnt allow to withdraw if requiredSignatures has changed', async () => {
+      let validatorContractWith2Signatures = await BridgeValidators.new()
+      let authoritiesTwoAccs = [accounts[1], accounts[2], accounts[3]];
+      let ownerOfValidators = accounts[0]
+      await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
+      let homeBridgeWithTwoSigs = await HomeBridge.new();
+      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+
+      await homeBridgeWithTwoSigs.sendTransaction({
+        from: accounts[2],
+        value: halfEther
+      }).should.be.fulfilled
+      const homeBalanceBefore = await web3.eth.getBalance(homeBridgeWithTwoSigs.address)
+      homeBalanceBefore.should.be.bignumber.equal(halfEther)
+
+      const recipient = accounts[5];
+      const value = halfEther.div(2);
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const balanceBefore = await web3.eth.getBalance(recipient)
+      const msgHash = Web3Utils.soliditySha3(recipient, value, transactionHash);
+
+      await homeBridgeWithTwoSigs.withdraw(recipient, value, transactionHash, {from: authoritiesTwoAccs[0]}).should.be.fulfilled;
+      await homeBridgeWithTwoSigs.withdraw(recipient, value, transactionHash, {from: authoritiesTwoAccs[1]}).should.be.fulfilled;
+      balanceBefore.add(value).should.be.bignumber.equal(await web3.eth.getBalance(recipient))
+      await validatorContractWith2Signatures.setRequiredSignatures(3).should.be.fulfilled;
+      await homeBridgeWithTwoSigs.withdraw(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG);
+      await validatorContractWith2Signatures.setRequiredSignatures(1).should.be.fulfilled;
+      await homeBridgeWithTwoSigs.withdraw(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG);
+      balanceBefore.add(value).should.be.bignumber.equal(await web3.eth.getBalance(recipient))
+
+    })
+  })
+  describe('#isAlreadyProcessed', async () => {
+    it('returns ', async () => {
+      homeBridge = await HomeBridge.new();
+      const bn = new web3.BigNumber(2).pow(255);
+      const processedNumbers = [bn.add(1).toString(10), bn.add(100).toString(10)];
+      true.should.be.equal(await homeBridge.isAlreadyProcessed(processedNumbers[0]));
+      true.should.be.equal(await homeBridge.isAlreadyProcessed(processedNumbers[1]));
+      false.should.be.equal(await homeBridge.isAlreadyProcessed(10));
+    })
+  })
+
+  describe('#submitSignature', async () => {
+    let validatorContractWith2Signatures,authoritiesTwoAccs,ownerOfValidators,tokenPOA20,homeBridgeWithTwoSigs
+    beforeEach(async () => {
+      validatorContractWith2Signatures = await BridgeValidators.new()
+      authoritiesTwoAccs = [accounts[1], accounts[2], accounts[3]];
+      ownerOfValidators = accounts[0]
+      await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
+      homeBridgeWithTwoSigs = await HomeBridge.new();
+      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+    })
+    it('allows a validator to submit a signature', async () => {
+      var recipientAccount = accounts[8]
+      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      var homeGasPrice = web3.toBigNumber(0);
+      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var signature = await sign(authoritiesTwoAccs[0], message)
+      const {logs} = await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authorities[0]}).should.be.fulfilled;
+      logs[0].event.should.be.equal('SignedForDeposit')
+      const msgHashFromLog = logs[0].args.messageHash
+      const signatureFromContract = await homeBridgeWithTwoSigs.signature(msgHashFromLog, 0);
+      const messageFromContract = await homeBridgeWithTwoSigs.message(msgHashFromLog);
+      signature.should.be.equal(signatureFromContract);
+      messageFromContract.should.be.equal(messageFromContract);
+      const hashMsg = Web3Utils.soliditySha3(message);
+      const hashSenderMsg = Web3Utils.soliditySha3(authorities[0], hashMsg)
+      true.should.be.equal(await homeBridgeWithTwoSigs.messagesSigned(hashSenderMsg));
+    })
+    it('when enough requiredSignatures are collected, CollectedSignatures event is emitted', async () => {
+      var recipientAccount = accounts[8]
+      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      var homeGasPrice = web3.toBigNumber(0);
+      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var signature = await sign(authoritiesTwoAccs[0], message)
+      var signature2 = await sign(authoritiesTwoAccs[1], message)
+      '2'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
+      await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[0]}).should.be.fulfilled;
+      await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[0]}).should.be.rejectedWith(ERROR_MSG);
+      await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[1]}).should.be.rejectedWith(ERROR_MSG);
+      const {logs} = await homeBridgeWithTwoSigs.submitSignature(signature2, message, {from: authoritiesTwoAccs[1]}).should.be.fulfilled;
+      logs.length.should.be.equal(2)
+      logs[1].event.should.be.equal('CollectedSignatures')
+      logs[1].args.authorityResponsibleForRelay.should.be.equal(authoritiesTwoAccs[1])
+    })
+    it('attack when increasing requiredSignatures', async () => {
+      var recipientAccount = accounts[8]
+      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      var homeGasPrice = web3.toBigNumber(0);
+      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var signature = await sign(authoritiesTwoAccs[0], message)
+      var signature2 = await sign(authoritiesTwoAccs[1], message)
+      var signature3 = await sign(authoritiesTwoAccs[2], message)
+      '2'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
+      await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[0]}).should.be.fulfilled;
+      await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[0]}).should.be.rejectedWith(ERROR_MSG);
+      await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[1]}).should.be.rejectedWith(ERROR_MSG);
+      const {logs} = await homeBridgeWithTwoSigs.submitSignature(signature2, message, {from: authoritiesTwoAccs[1]}).should.be.fulfilled;
+      logs.length.should.be.equal(2)
+      logs[1].event.should.be.equal('CollectedSignatures')
+      logs[1].args.authorityResponsibleForRelay.should.be.equal(authoritiesTwoAccs[1])
+      await validatorContractWith2Signatures.setRequiredSignatures(3).should.be.fulfilled;
+      '3'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
+      const attackerTx = await homeBridgeWithTwoSigs.submitSignature(signature3, message, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG);
+    })
+    it('attack when decreasing requiredSignatures', async () => {
+      var recipientAccount = accounts[8]
+      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      var homeGasPrice = web3.toBigNumber(0);
+      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var signature = await sign(authoritiesTwoAccs[0], message)
+      var signature2 = await sign(authoritiesTwoAccs[1], message)
+      var signature3 = await sign(authoritiesTwoAccs[2], message)
+      '2'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
+      await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authoritiesTwoAccs[0]}).should.be.fulfilled;
+      await validatorContractWith2Signatures.setRequiredSignatures(1).should.be.fulfilled;
+      '1'.should.be.bignumber.equal(await validatorContractWith2Signatures.requiredSignatures());
+      const {logs} = await homeBridgeWithTwoSigs.submitSignature(signature2, message, {from: authoritiesTwoAccs[1]}).should.be.fulfilled;
+      logs.length.should.be.equal(2)
+      logs[1].event.should.be.equal('CollectedSignatures')
+      logs[1].args.authorityResponsibleForRelay.should.be.equal(authoritiesTwoAccs[1])
     })
   })
 })

@@ -10,7 +10,6 @@ contract HomeBridge is EternalStorage, BasicBridge {
     event GasConsumptionLimitsUpdated(uint256 gas);
     event Deposit (address recipient, uint256 value);
     event Withdraw (address recipient, uint256 value, bytes32 transactionHash);
-    event DailyLimit(uint256 newLimit);
     event SignedForDeposit(address indexed signer, bytes32 messageHash);
     event SignedForWithdraw(address indexed signer, bytes32 transactionHash);
     event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash);
@@ -18,7 +17,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
 
     function initialize (
         address _validatorContract,
-        uint256 _homeDailyLimit,
+        uint256 _dailyLimit,
         uint256 _maxPerTx,
         uint256 _minPerTx,
         uint256 _homeGasPrice,
@@ -30,10 +29,10 @@ contract HomeBridge is EternalStorage, BasicBridge {
         require(_validatorContract != address(0));
         require(_homeGasPrice > 0);
         require(_requiredBlockConfirmations > 0);
-        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _homeDailyLimit > _maxPerTx);
+        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
-        uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
+        uintStorage[keccak256("dailyLimit")] = _dailyLimit;
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
         uintStorage[keccak256("minPerTx")] = _minPerTx;
         uintStorage[keccak256("gasPrice")] = _homeGasPrice;
@@ -52,18 +51,6 @@ contract HomeBridge is EternalStorage, BasicBridge {
 
     function gasLimitWithdrawRelay() public view returns(uint256) {
         return uintStorage[keccak256("gasLimitWithdrawRelay")];
-    }
-
-    function deployedAtBlock() public view returns(uint256) {
-        return uintStorage[keccak256("deployedAtBlock")];
-    }
-
-    function homeDailyLimit() public view returns(uint256) {
-        return uintStorage[keccak256("homeDailyLimit")];
-    }
-
-    function totalSpentPerDay(uint256 _day) public view returns(uint256) {
-        return uintStorage[keccak256("totalSpentPerDay", _day)];
     }
 
     function withdraws(bytes32 _withdraw) public view returns(bool) {
@@ -100,69 +87,24 @@ contract HomeBridge is EternalStorage, BasicBridge {
         }
     }
 
-    function numWithdrawalsSigned(bytes32 _deposit) private view returns(uint256) {
-        return uintStorage[keccak256("numWithdrawalsSigned", _deposit)];
+    function numWithdrawalsSigned(bytes32 _withdrawal) public view returns(uint256) {
+        return uintStorage[keccak256("numWithdrawalsSigned", _withdrawal)];
     }
 
-    function setWithdrawalsSigned(bytes32 _deposit, bool _status) private {
-        boolStorage[keccak256("withdrawalsSigned", _deposit)] = _status;
+    function setWithdrawalsSigned(bytes32 _withdrawal, bool _status) private {
+        boolStorage[keccak256("withdrawalsSigned", _withdrawal)] = _status;
     }
 
-    function setNumWithdrawalsSigned(bytes32 _deposit, uint256 _number) private {
-        uintStorage[keccak256("numWithdrawalsSigned", _deposit)] = _number;
+    function setNumWithdrawalsSigned(bytes32 _withdrawal, uint256 _number) private {
+        uintStorage[keccak256("numWithdrawalsSigned", _withdrawal)] = _number;
     }
 
-
-    function withdrawalsSigned(bytes32 _deposit) public view returns(bool) {
-        return boolStorage[keccak256("withdrawalsSigned", _deposit)];
-    }
-
-    function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {
-        uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
-        emit DailyLimit(_homeDailyLimit);
-    }
-
-    function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < homeDailyLimit());
-        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
-    }
-
-    function setMinPerTx(uint256 _minPerTx) external onlyOwner {
-        require(_minPerTx < homeDailyLimit() && _minPerTx < maxPerTx());
-        uintStorage[keccak256("minPerTx")] = _minPerTx;
-    }
-
-    function minPerTx() public view returns(uint256) {
-        return uintStorage[keccak256("minPerTx")];
-    }
-
-    function getCurrentDay() public view returns(uint256) {
-        return now / 1 days;
-    }
-
-    function maxPerTx() public view returns(uint256) {
-        return uintStorage[keccak256("maxPerTx")];
-    }
-
-    function withinLimit(uint256 _amount) public view returns(bool) {
-        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
-        return homeDailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
-    }
-
-    function isInitialized() public view returns(bool) {
-        return boolStorage[keccak256("isInitialized")];
-    }
-
-    function setTotalSpentPerDay(uint256 _day, uint256 _value) private {
-        uintStorage[keccak256("totalSpentPerDay", _day)] = _value;
+    function withdrawalsSigned(bytes32 _withdrawal) public view returns(bool) {
+        return boolStorage[keccak256("withdrawalsSigned", _withdrawal)];
     }
 
     function setWithdraws(bytes32 _withdraw, bool _status) private {
         boolStorage[keccak256("withdraws", _withdraw)] = _status;
-    }
-
-    function setInitialize(bool _status) private {
-        boolStorage[keccak256("isInitialized")] = _status;
     }
 
     function submitSignature(bytes signature, bytes message) external onlyValidator {
@@ -217,7 +159,6 @@ contract HomeBridge is EternalStorage, BasicBridge {
         return bytesStorage[keccak256("signatures", _hash)];
     }
 
-
     function setSignatures(bytes32 _hash, bytes _signature) private {
         bytesStorage[keccak256("signatures", _hash)] = _signature;
     }
@@ -242,9 +183,8 @@ contract HomeBridge is EternalStorage, BasicBridge {
         return _number & 2**255 == 2**255;
     }
 
-    function numMessagesSigned(bytes32 _message) private view returns(uint256) {
+    function numMessagesSigned(bytes32 _message) public view returns(uint256) {
         return uintStorage[keccak256("numMessagesSigned", _message)];
     }
-
 
 }

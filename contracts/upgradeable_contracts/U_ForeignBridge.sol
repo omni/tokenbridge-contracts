@@ -15,19 +15,12 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
     /// Event created on money withdraw.
     event Withdraw(address recipient, uint256 value, uint256 homeGasPrice);
 
-    /// Collected signatures which should be relayed to home chain.
-    event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash);
-
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
-
-    event SignedForDeposit(address indexed signer, bytes32 transactionHash);
-    event SignedForWithdraw(address indexed signer, bytes32 messageHash);
-    event DailyLimit(uint256 newLimit);
 
     function initialize(
         address _validatorContract,
         address _erc677token,
-        uint256 _foreignDailyLimit,
+        uint256 _dailyLimit,
         uint256 _maxPerTx,
         uint256 _minPerTx,
         uint256 _foreignGasPrice,
@@ -35,11 +28,11 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0));
-        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _foreignDailyLimit > _maxPerTx);
+        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignGasPrice > 0);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
-        uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
+        uintStorage[keccak256("dailyLimit")] = _dailyLimit;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
         uintStorage[keccak256("minPerTx")] = _minPerTx;
@@ -58,16 +51,6 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         return true;
     }
 
-    function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < foreignDailyLimit());
-        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
-    }
-
-    function setMinPerTx(uint256 _minPerTx) external onlyOwner {
-        require(_minPerTx < foreignDailyLimit() && _minPerTx < maxPerTx());
-        uintStorage[keccak256("minPerTx")] = _minPerTx;
-    }
-
     function claimTokens(address _token, address _to) external onlyOwner {
         require(_to != address(0));
         if (_token == address(0)) {
@@ -84,32 +67,12 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         erc677token().claimTokens(_token, _to);
     }
 
-    function minPerTx() public view returns(uint256) {
-        return uintStorage[keccak256("minPerTx")];
-    }
-
-    function maxPerTx() public view returns(uint256) {
-        return uintStorage[keccak256("maxPerTx")];
-    }
-
-    function totalSpentPerDay(uint256 _day) public view returns(uint256) {
-        return uintStorage[keccak256("totalSpentPerDay", _day)];
-    }
-
-    function deployedAtBlock() public view returns(uint256) {
-        return uintStorage[keccak256("deployedAtBlock")];
-    }
-
     function gasLimitDepositRelay() public view returns(uint256) {
         return uintStorage[keccak256("gasLimitDepositRelay")];
     }
 
     function gasLimitWithdrawConfirm() public view returns(uint256) {
         return uintStorage[keccak256("gasLimitWithdrawConfirm")];
-    }
-
-    function foreignDailyLimit() public view returns(uint256) {
-        return uintStorage[keccak256("foreignDailyLimit")];
     }
 
     function erc677token() public view returns(IBurnableMintableERC677Token) {
@@ -147,43 +110,8 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         return 1000000000 wei;
     }
 
-    function isAlreadyProcessed(uint256 _number) public pure returns(bool) {
-        return _number & 2**255 == 2**255;
-    }
-
-    function getCurrentDay() public view returns(uint256) {
-        return now / 1 days;
-    }
-
-    function setForeignDailyLimit(uint256 _foreignDailyLimit) public onlyOwner {
-        uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
-        emit DailyLimit(_foreignDailyLimit);
-    }
-
-    function withinLimit(uint256 _amount) public view returns(bool) {
-        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
-        return foreignDailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
-    }
-
-    function isInitialized() public view returns(bool) {
-        return boolStorage[keccak256("isInitialized")];
-    }
-
-    function markAsProcessed(uint256 _v) private pure returns(uint256) {
-        return _v | 2 ** 255;
-    }
-
-    function setTotalSpentPerDay(uint256 _day, uint256 _value) private {
-        uintStorage[keccak256("totalSpentPerDay", _day)] = _value;
-    }
-
     function setErc677token(address _token) private {
         require(_token != address(0));
         addressStorage[keccak256("erc677token")] = _token;
     }
-
-    function setInitialize(bool _status) private {
-        boolStorage[keccak256("isInitialized")] = _status;
-    }
-
 }

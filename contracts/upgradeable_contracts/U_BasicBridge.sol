@@ -100,4 +100,8 @@ contract BasicBridge is EternalStorage {
         return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
     }
 
+    function requiredSignatures() public view returns(uint256) {
+        return validatorContract().requiredSignatures();
+    }
+
 }

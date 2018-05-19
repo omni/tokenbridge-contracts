@@ -78,7 +78,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
 
         emit SignedForWithdraw(msg.sender, transactionHash);
 
-        if (signed >= validatorContract().requiredSignatures()) {
+        if (signed >= requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
             setNumWithdrawalsSigned(hashMsg, markAsProcessed(signed));

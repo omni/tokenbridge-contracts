@@ -16,7 +16,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
     event Withdraw(address recipient, uint256 value, uint256 homeGasPrice);
 
     /// Collected signatures which should be relayed to home chain.
-    event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash);
+    event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash, uint256 NumberOfCollectedSignatures);
 
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
 
@@ -180,9 +180,11 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         setNumMessagesSigned(hashMsg, signed);
 
         emit SignedForWithdraw(msg.sender, hashMsg);
-        if (signed >= validatorContract().requiredSignatures()) {
+
+        uint256 reqSigs = validatorContract().requiredSignatures();
+        if (signed >= reqSigs) {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
-            emit CollectedSignatures(msg.sender, hashMsg);
+            emit CollectedSignatures(msg.sender, hashMsg, reqSigs);
         }
     }
 

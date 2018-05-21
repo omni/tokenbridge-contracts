@@ -12,7 +12,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
     event Withdraw (address recipient, uint256 value, bytes32 transactionHash);
     event SignedForDeposit(address indexed signer, bytes32 messageHash);
     event SignedForWithdraw(address indexed signer, bytes32 transactionHash);
-    event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash);
+    event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash, uint256 NumberOfCollectedSignatures);
 
 
     function initialize (
@@ -132,9 +132,11 @@ contract HomeBridge is EternalStorage, BasicBridge {
         setNumMessagesSigned(hashMsg, signed);
 
         emit SignedForDeposit(msg.sender, hashMsg);
-        if (signed >= validatorContract().requiredSignatures()) {
+        
+        uint256 reqSigs = requiredSignatures();
+        if (signed >= reqSigs) {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
-            emit CollectedSignatures(msg.sender, hashMsg);
+            emit CollectedSignatures(msg.sender, hashMsg, reqSigs);
         }
     }
 

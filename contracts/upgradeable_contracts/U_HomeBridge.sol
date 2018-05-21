@@ -133,7 +133,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
 
         emit SignedForDeposit(msg.sender, hashMsg);
         
-        uint256 reqSigs = validatorContract().requiredSignatures();
+        uint256 reqSigs = requiredSignatures();
         if (signed >= reqSigs) {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
             emit CollectedSignatures(msg.sender, hashMsg, reqSigs);

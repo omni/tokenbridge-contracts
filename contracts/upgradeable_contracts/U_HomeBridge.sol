@@ -49,19 +49,6 @@ contract HomeBridge is EternalStorage, BasicBridge {
         emit Deposit(msg.sender, msg.value);
     }
 
-    function gasLimitWithdrawRelay() public view returns(uint256) {
-        return uintStorage[keccak256("gasLimitWithdrawRelay")];
-    }
-
-    function withdraws(bytes32 _withdraw) public view returns(bool) {
-        return boolStorage[keccak256("withdraws", _withdraw)];
-    }
-
-    function setGasLimitWithdrawRelay(uint256 _gas) external onlyOwner {
-        uintStorage[keccak256("gasLimitWithdrawRelay")] = _gas;
-        emit GasConsumptionLimitsUpdated(_gas);
-    }
-
     function withdraw(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
         bytes32 hashMsg = keccak256(recipient, value, transactionHash);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
@@ -103,10 +90,6 @@ contract HomeBridge is EternalStorage, BasicBridge {
         return boolStorage[keccak256("withdrawalsSigned", _withdrawal)];
     }
 
-    function setWithdraws(bytes32 _withdraw, bool _status) private {
-        boolStorage[keccak256("withdraws", _withdraw)] = _status;
-    }
-
     function submitSignature(bytes signature, bytes message) external onlyValidator {
         // ensure that `signature` is really `message` signed by `msg.sender`
         require(Message.isMessageValid(message));
@@ -132,7 +115,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
         setNumMessagesSigned(hashMsg, signed);
 
         emit SignedForDeposit(msg.sender, hashMsg);
-        
+
         uint256 reqSigs = requiredSignatures();
         if (signed >= reqSigs) {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));

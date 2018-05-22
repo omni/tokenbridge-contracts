@@ -61,7 +61,11 @@ library Message {
     }
 
     function isMessageValid(bytes _msg) internal pure returns(bool) {
-        return _msg.length == 84;
+        return _msg.length == requiredMessageLength();
+    }
+
+    function requiredMessageLength() public pure returns(uint256) {
+        return 84;
     }
 
     function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
@@ -80,7 +84,7 @@ library Message {
 
     function hashMessage(bytes message) internal pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        // message is always 116 length
+        // message is always 84 length
         string memory msgLength = "84";
         return keccak256(prefix, msgLength, message);
     }

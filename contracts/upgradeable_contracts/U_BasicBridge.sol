@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 import "../IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
@@ -11,7 +11,7 @@ contract BasicBridge is EternalStorage {
     event DailyLimit(uint256 newLimit);
 
     function validatorContract() public view returns(IBridgeValidators) {
-        return IBridgeValidators(addressStorage[keccak256("validatorContract")]);
+        return IBridgeValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
     }
 
     modifier onlyValidator() {
@@ -26,50 +26,50 @@ contract BasicBridge is EternalStorage {
 
     function setGasPrice(uint256 _gasPrice) public onlyOwner {
         require(_gasPrice > 0);
-        uintStorage[keccak256("gasPrice")] = _gasPrice;
+        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
         emit GasPriceChanged(_gasPrice);
     }
 
     function gasPrice() public view returns(uint256) {
-        return uintStorage[keccak256("gasPrice")];
+        return uintStorage[keccak256(abi.encodePacked("gasPrice"))];
     }
 
     function setRequiredBlockConfirmations(uint256 _blockConfirmations) public onlyOwner {
         require(_blockConfirmations > 0);
-        uintStorage[keccak256("requiredBlockConfirmations")] = _blockConfirmations;
+        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _blockConfirmations;
         emit RequiredBlockConfirmationChanged(_blockConfirmations);
     }
 
     function requiredBlockConfirmations() public view returns(uint256) {
-        return uintStorage[keccak256("requiredBlockConfirmations")];
+        return uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))];
     }
 
     function deployedAtBlock() public view returns(uint256) {
-        return uintStorage[keccak256("deployedAtBlock")];
+        return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
     function setTotalSpentPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256("totalSpentPerDay", _day)] = _value;
+        uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))] = _value;
     }
 
     function totalSpentPerDay(uint256 _day) public view returns(uint256) {
-        return uintStorage[keccak256("totalSpentPerDay", _day)];
+        return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
     }
 
     function minPerTx() public view returns(uint256) {
-        return uintStorage[keccak256("minPerTx")];
+        return uintStorage[keccak256(abi.encodePacked("minPerTx"))];
     }
 
     function maxPerTx() public view returns(uint256) {
-        return uintStorage[keccak256("maxPerTx")];
+        return uintStorage[keccak256(abi.encodePacked("maxPerTx"))];
     }
 
     function setInitialize(bool _status) internal {
-        boolStorage[keccak256("isInitialized")] = _status;
+        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
     }
 
     function isInitialized() public view returns(bool) {
-        return boolStorage[keccak256("isInitialized")];
+        return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
     }
 
     function getCurrentDay() public view returns(uint256) {
@@ -77,22 +77,22 @@ contract BasicBridge is EternalStorage {
     }
 
     function setDailyLimit(uint256 _dailyLimit) public onlyOwner {
-        uintStorage[keccak256("dailyLimit")] = _dailyLimit;
+        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
         emit DailyLimit(_dailyLimit);
     }
 
     function dailyLimit() public view returns(uint256) {
-        return uintStorage[keccak256("dailyLimit")];
+        return uintStorage[keccak256(abi.encodePacked("dailyLimit"))];
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
         require(_maxPerTx < dailyLimit());
-        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
     }
 
     function setMinPerTx(uint256 _minPerTx) external onlyOwner {
         require(_minPerTx < dailyLimit() && _minPerTx < maxPerTx());
-        uintStorage[keccak256("minPerTx")] = _minPerTx;
+        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
     }
 
     function withinLimit(uint256 _amount) public view returns(bool) {

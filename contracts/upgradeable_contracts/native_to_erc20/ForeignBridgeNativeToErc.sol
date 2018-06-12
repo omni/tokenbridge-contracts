@@ -1,19 +1,20 @@
-pragma solidity 0.4.23;
-import "../libraries/SafeMath.sol";
-import "../libraries/Message.sol";
-import "./U_BasicBridge.sol";
-import "../IBurnableMintableERC677Token.sol";
-import "../ERC677Receiver.sol";
+pragma solidity 0.4.24;
+import "../../libraries/SafeMath.sol";
+import "../../libraries/Message.sol";
+import "../U_BasicBridge.sol";
+import "../../IBurnableMintableERC677Token.sol";
+import "../../ERC677Receiver.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
-contract ForeignBridge is ERC677Receiver, BasicBridge {
+contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
-    event Deposit(address recipient, uint value, bytes32 transactionHash);
+
+    event RelayedMessage(address recipient, uint value, bytes32 transactionHash);
 
     /// Event created on money withdraw.
-    event Withdraw(address recipient, uint256 value);
+    event UserRequestForAffirmation(address recipient, uint256 value);
 
     event GasConsumptionLimitsUpdated(uint256 gasLimitDepositRelay, uint256 gasLimitWithdrawConfirm);
 
@@ -30,14 +31,14 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         require(_validatorContract != address(0));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignGasPrice > 0);
-        addressStorage[keccak256("validatorContract")] = _validatorContract;
+        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc677token(_erc677token);
-        uintStorage[keccak256("dailyLimit")] = _dailyLimit;
-        uintStorage[keccak256("deployedAtBlock")] = block.number;
-        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
-        uintStorage[keccak256("minPerTx")] = _minPerTx;
-        uintStorage[keccak256("gasPrice")] = _foreignGasPrice;
-        uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
+        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
+        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
+        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
+        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _foreignGasPrice;
+        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         setInitialize(true);
         return isInitialized();
     }
@@ -47,7 +48,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
         erc677token().burn(_value);
-        emit Withdraw(_from, _value);
+        emit UserRequestForAffirmation(_from, _value);
         return true;
     }
 
@@ -68,46 +69,49 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
     }
 
     function gasLimitDepositRelay() public view returns(uint256) {
-        return uintStorage[keccak256("gasLimitDepositRelay")];
+        return uintStorage[keccak256(abi.encodePacked("gasLimitDepositRelay"))];
     }
 
     function gasLimitWithdrawConfirm() public view returns(uint256) {
-        return uintStorage[keccak256("gasLimitWithdrawConfirm")];
+        return uintStorage[keccak256(abi.encodePacked("gasLimitWithdrawConfirm"))];
     }
 
     function erc677token() public view returns(IBurnableMintableERC677Token) {
-        return IBurnableMintableERC677Token(addressStorage[keccak256("erc677token")]);
+        return IBurnableMintableERC677Token(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
     }
 
     function setGasLimits(uint256 _gasLimitDepositRelay, uint256 _gasLimitWithdrawConfirm) external onlyOwner {
-        uintStorage[keccak256("gasLimitDepositRelay")] = _gasLimitDepositRelay;
-        uintStorage[keccak256("gasLimitWithdrawConfirm")] = _gasLimitWithdrawConfirm;
+        uintStorage[keccak256(abi.encodePacked("gasLimitDepositRelay"))] = _gasLimitDepositRelay;
+        uintStorage[keccak256(abi.encodePacked("gasLimitWithdrawConfirm"))] = _gasLimitWithdrawConfirm;
         emit GasConsumptionLimitsUpdated(gasLimitDepositRelay(), gasLimitWithdrawConfirm());
     }
 
-    function deposit(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
+    function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
         Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
         address recipient;
         uint256 amount;
         bytes32 txHash;
         (recipient, amount, txHash) = Message.parseMessage(message);
-        require(!deposits(txHash));
-        setDeposits(txHash, true);
-
-        erc677token().mint(recipient, amount);
-        emit Deposit(recipient, amount, txHash);
+        require(!relayedMessages(txHash));
+        setRelayedMessages(txHash, true);
+        require(onExecuteMessage(recipient, amount));
+        emit RelayedMessage(recipient, amount, txHash);
     }
 
-    function deposits(bytes32 _withdraw) public view returns(bool) {
-        return boolStorage[keccak256("deposits", _withdraw)];
+    function relayedMessages(bytes32 _txHash) public view returns(bool) {
+        return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
     }
 
-    function setDeposits(bytes32 _withdraw, bool _status) private {
-        boolStorage[keccak256("deposits", _withdraw)] = _status;
+    function onExecuteMessage(address _recipient, uint256 _amount) private returns(bool){
+        return erc677token().mint(_recipient, _amount);
+    }
+
+    function setRelayedMessages(bytes32 _txHash, bool _status) private {
+        boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))] = _status;
     }
 
     function setErc677token(address _token) private {
         require(_token != address(0));
-        addressStorage[keccak256("erc677token")] = _token;
+        addressStorage[keccak256(abi.encodePacked("erc677token"))] = _token;
     }
 }

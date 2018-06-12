@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
@@ -7,12 +7,12 @@ import "./IBurnableMintableERC677Token.sol";
 import "./ERC677Receiver.sol";
 
 
-contract POA20 is
+contract ERC677BridgeToken is
     IBurnableMintableERC677Token,
     DetailedERC20,
     BurnableToken,
     MintableToken {
-    function POA20(
+    constructor(
         string _name,
         string _symbol,
         uint8 _decimals)

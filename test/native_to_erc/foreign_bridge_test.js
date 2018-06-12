@@ -1,11 +1,11 @@
-const ForeignBridge = artifacts.require("ForeignBridge.sol");
+const ForeignBridge = artifacts.require("ForeignBridgeNativeToErc.sol");
 const ForeignBridgeV2 = artifacts.require("ForeignBridgeV2.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 
 const POA20 = artifacts.require("POA20.sol");
-const {ERROR_MSG, ZERO_ADDRESS, ERROR_MSG_OPCODE} = require('./setup');
-const {createMessage, sign, signatureToVRS, strip0x} = require('./helpers/helpers');
+const {ERROR_MSG, ZERO_ADDRESS, ERROR_MSG_OPCODE} = require('../setup');
+const {createMessage, sign, signatureToVRS, strip0x} = require('../helpers/helpers');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
@@ -56,7 +56,7 @@ contract('ForeignBridge', async (accounts) => {
       minPerTx.should.be.bignumber.equal(await foreignBridge.minPerTx())
     })
   })
-  describe('#deposit', async () => {
+  describe('#executeSignatures', async () => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
@@ -76,9 +76,9 @@ contract('ForeignBridge', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridge.deposits(transactionHash))
-      const {logs} = await foreignBridge.deposit([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-      logs[0].event.should.be.equal("Deposit")
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      const {logs} = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      logs[0].event.should.be.equal("RelayedMessage")
       logs[0].args.recipient.should.be.equal(recipientAccount)
       logs[0].args.value.should.be.bignumber.equal(value)
       logs[0].args.transactionHash.should.be.equal(transactionHash);
@@ -87,7 +87,7 @@ contract('ForeignBridge', async (accounts) => {
       const totalSupplyAfter = await token.totalSupply();
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
       totalSupplyAfter.should.be.bignumber.equal(totalSupplyBefore.add(value))
-      true.should.be.equal(await foreignBridge.deposits(transactionHash))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
     })
     it('should allow second deposit with different transactionHash but same recipient and value', async ()=> {
       var recipientAccount = accounts[3];
@@ -99,17 +99,17 @@ contract('ForeignBridge', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridge.deposits(transactionHash))
-      await foreignBridge.deposit([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
       var transactionHash2 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
       var message2 = createMessage(recipientAccount, value, transactionHash2, homeGasPrice);
       var signature2 = await sign(authorities[0], message2)
       var vrs2 = signatureToVRS(signature2);
-      false.should.be.equal(await foreignBridge.deposits(transactionHash2))
-      const {logs} = await foreignBridge.deposit([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
+      const {logs} = await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
 
-      logs[0].event.should.be.equal("Deposit")
+      logs[0].event.should.be.equal("RelayedMessage")
       logs[0].args.recipient.should.be.equal(recipientAccount)
       logs[0].args.value.should.be.bignumber.equal(value)
       logs[0].args.transactionHash.should.be.equal(transactionHash2);
@@ -117,8 +117,8 @@ contract('ForeignBridge', async (accounts) => {
       const balanceAfter = await token.balanceOf(recipientAccount)
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value.mul(2)))
       totalSupply.should.be.bignumber.equal(value.mul(2))
-      true.should.be.equal(await foreignBridge.deposits(transactionHash))
-      true.should.be.equal(await foreignBridge.deposits(transactionHash2))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
     })
 
     it('should not allow second deposit (replay attack) with same transactionHash but different recipient', async () => {
@@ -131,18 +131,18 @@ contract('ForeignBridge', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridge.deposits(transactionHash))
-      await foreignBridge.deposit([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
       var message2 = createMessage(accounts[4], value, transactionHash, homeGasPrice);
       var signature2 = await sign(authorities[0], message2)
       var vrs = signatureToVRS(signature2);
-      true.should.be.equal(await foreignBridge.deposits(transactionHash))
-      await foreignBridge.deposit([vrs.v], [vrs.r], [vrs.s], message2).should.be.rejectedWith(ERROR_MSG)
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message2).should.be.rejectedWith(ERROR_MSG)
     })
   })
 
-  describe('#deposit with 2 minimum signatures', async () => {
+  describe('#executeSignatures with 2 minimum signatures', async () => {
     let multisigValidatorContract, twoAuthorities, ownerOfValidatorContract, foreignBridgeWithMultiSignatures
     beforeEach(async () => {
       multisigValidatorContract = await BridgeValidators.new()
@@ -168,19 +168,19 @@ contract('ForeignBridge', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
       var signature = await sign(twoAuthorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridgeWithMultiSignatures.deposits(transactionHash))
-      await foreignBridgeWithMultiSignatures.deposit([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
+      false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
+      await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
       // msg 2
       var signature2 = await sign(twoAuthorities[1], message)
       var vrs2 = signatureToVRS(signature2);
-      const {logs} = await foreignBridgeWithMultiSignatures.deposit([vrs.v, vrs2.v], [vrs.r, vrs2.r], [vrs.s, vrs2.s], message).should.be.fulfilled;
+      const {logs} = await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v, vrs2.v], [vrs.r, vrs2.r], [vrs.s, vrs2.s], message).should.be.fulfilled;
 
-      logs[0].event.should.be.equal("Deposit")
+      logs[0].event.should.be.equal("RelayedMessage")
       logs[0].args.recipient.should.be.equal(recipientAccount)
       logs[0].args.value.should.be.bignumber.equal(value)
       logs[0].args.transactionHash.should.be.equal(transactionHash);
       const balanceAfter = await token.balanceOf(recipientAccount)
-      true.should.be.equal(await foreignBridgeWithMultiSignatures.deposits(transactionHash))
+      true.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
 
     })
     it('deposit should fail if duplicate signature is provided', async () => {
@@ -194,8 +194,8 @@ contract('ForeignBridge', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
       var signature = await sign(twoAuthorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridgeWithMultiSignatures.deposits(transactionHash))
-      await foreignBridgeWithMultiSignatures.deposit([vrs.v, vrs.v], [vrs.r, vrs.r], [vrs.s, vrs.s], message).should.be.rejectedWith(ERROR_MSG)
+      false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
+      await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v, vrs.v], [vrs.r, vrs.r], [vrs.s, vrs.s], message).should.be.rejectedWith(ERROR_MSG)
     })
   })
 
@@ -229,7 +229,7 @@ contract('ForeignBridge', async (accounts) => {
       const {logs} = await token.transferAndCall(foreignBridge.address, halfEther, '0x00', {from: user}).should.be.fulfilled;
       '1'.should.be.bignumber.equal(await token.totalSupply());
       '1'.should.be.bignumber.equal(await token.balanceOf(user));
-      const events = await getEvents(foreignBridge, {event: 'Withdraw'});
+      const events = await getEvents(foreignBridge, {event: 'UserRequestForAffirmation'});
       events[0].args.should.be.deep.equal({
         recipient: user,
         value: halfEther

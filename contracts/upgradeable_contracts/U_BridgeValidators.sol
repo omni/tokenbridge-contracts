@@ -1,4 +1,4 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 import "./Ownable.sol";
 import "../IBridgeValidators.sol";
@@ -28,7 +28,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
             emit ValidatorAdded(_initialValidators[i]);
         }
         require(validatorCount() >= _requiredSignatures);
-        uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
+        uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
         setInitialize(true);
         return isInitialized();
     }
@@ -52,20 +52,20 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     function setRequiredSignatures(uint256 _requiredSignatures) external onlyOwner {
         require(validatorCount() >= _requiredSignatures);
         require(_requiredSignatures != 0);
-        uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
+        uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
         emit RequiredSignaturesChanged(_requiredSignatures);
     }
 
     function requiredSignatures() public view returns(uint256) {
-        return uintStorage[keccak256("requiredSignatures")];
+        return uintStorage[keccak256(abi.encodePacked("requiredSignatures"))];
     }
 
     function validatorCount() public view returns(uint256) {
-        return uintStorage[keccak256("validatorCount")];
+        return uintStorage[keccak256(abi.encodePacked("validatorCount"))];
     }
 
     function validators(address _validator) public view returns(bool) {
-        return boolStorage[keccak256("validators", _validator)];
+        return boolStorage[keccak256(abi.encodePacked("validators", _validator))];
     }
 
     function isValidator(address _validator) public view returns(bool) {
@@ -73,18 +73,18 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     }
 
     function isInitialized() public view returns(bool) {
-        return boolStorage[keccak256("isInitialized")];
+        return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
     }
 
     function setValidatorCount(uint256 _validatorCount) private {
-        uintStorage[keccak256("validatorCount")] = _validatorCount;
+        uintStorage[keccak256(abi.encodePacked("validatorCount"))] = _validatorCount;
     }
 
     function setValidator(address _validator, bool _status) private {
-        boolStorage[keccak256("validators", _validator)] = _status;
+        boolStorage[keccak256(abi.encodePacked("validators", _validator))] = _status;
     }
 
     function setInitialize(bool _status) private {
-        boolStorage[keccak256("isInitialized")] = _status;
+        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
     }
 }

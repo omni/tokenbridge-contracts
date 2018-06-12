@@ -5,7 +5,7 @@ const ForeignBridge = artifacts.require("./ForeignBridge.sol");
 const EternalStorageProxy = artifacts.require('EternalStorageProxy')
 
 module.exports = async function(deployer, network, accounts) {
-  if(network !== 'test'){
+  if(network !== 'test' && network !== 'ganache'){
     const VALIDATORS = process.env.VALIDATORS ? process.env.VALIDATORS.split(" ") : [accounts[0]];
     const REQUIRED_NUMBER_OF_VALIDATORS = process.env.REQUIRED_VALIDATORS || VALIDATORS.length
     const PROXY_OWNER = process.env.PROXY_OWNER || accounts[0];

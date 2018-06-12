@@ -54,7 +54,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       (await foreignBridge.deployedAtBlock()).should.be.bignumber.above(0);
     })
   })
-  describe('#withdraw', async () => {
+  describe('#executeSignatures', async () => {
     var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
@@ -62,7 +62,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       await foreignBridge.initialize(validatorContract.address, token.address);
       await token.mint(foreignBridge.address,value);
     })
-    it('should allow to withdraw', async () => {
+    it('should allow to executeSignatures', async () => {
       var recipientAccount = accounts[3];
       const balanceBeforeBridge = await token.balanceOf(foreignBridge.address)
       const balanceBefore = await token.balanceOf(recipientAccount)
@@ -73,9 +73,9 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridge.withdrawals(transactionHash))
-      const {logs} = await foreignBridge.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-      logs[0].event.should.be.equal("Withdraw")
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      const {logs} = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      logs[0].event.should.be.equal("RelayedMessage")
       logs[0].args.recipient.should.be.equal(recipientAccount)
       logs[0].args.value.should.be.bignumber.equal(value)
 
@@ -83,7 +83,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       const balanceAfterBridge = await token.balanceOf(foreignBridge.address);
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
       balanceAfterBridge.should.be.bignumber.equal(0)
-      true.should.be.equal(await foreignBridge.withdrawals(transactionHash))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
     })
     it('should allow second withdrawal with different transactionHash but same recipient and value', async ()=> {
       var recipientAccount = accounts[3];
@@ -94,24 +94,24 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridge.withdrawals(transactionHash))
-      await foreignBridge.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
       await token.mint(foreignBridge.address,value);
       var transactionHash2 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
       var message2 = createMessage(recipientAccount, value, transactionHash2);
       var signature2 = await sign(authorities[0], message2)
       var vrs2 = signatureToVRS(signature2);
-      false.should.be.equal(await foreignBridge.withdrawals(transactionHash2))
-      const {logs} = await foreignBridge.withdraw([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
+      const {logs} = await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
 
-      logs[0].event.should.be.equal("Withdraw")
+      logs[0].event.should.be.equal("RelayedMessage")
       logs[0].args.recipient.should.be.equal(recipientAccount)
       logs[0].args.value.should.be.bignumber.equal(value)
       const balanceAfter = await token.balanceOf(recipientAccount)
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value.mul(2)))
-      true.should.be.equal(await foreignBridge.withdrawals(transactionHash))
-      true.should.be.equal(await foreignBridge.withdrawals(transactionHash2))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
     })
 
     it('should not allow second withdraw (replay attack) with same transactionHash but different recipient', async () => {
@@ -122,15 +122,15 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridge.withdrawals(transactionHash))
-      await foreignBridge.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
       await token.mint(foreignBridge.address,value);
       var message2 = createMessage(accounts[4], value, transactionHash);
       var signature2 = await sign(authorities[0], message2)
       var vrs = signatureToVRS(signature2);
-      true.should.be.equal(await foreignBridge.withdrawals(transactionHash))
-      await foreignBridge.withdraw([vrs.v], [vrs.r], [vrs.s], message2).should.be.rejectedWith(ERROR_MSG)
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message2).should.be.rejectedWith(ERROR_MSG)
     })
   })
 
@@ -159,18 +159,18 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash);
       var signature = await sign(twoAuthorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridgeWithMultiSignatures.withdrawals(transactionHash))
-      await foreignBridgeWithMultiSignatures.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
+      false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
+      await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
       // msg 2
       var signature2 = await sign(twoAuthorities[1], message)
       var vrs2 = signatureToVRS(signature2);
-      const {logs} = await foreignBridgeWithMultiSignatures.withdraw([vrs.v, vrs2.v], [vrs.r, vrs2.r], [vrs.s, vrs2.s], message).should.be.fulfilled;
+      const {logs} = await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v, vrs2.v], [vrs.r, vrs2.r], [vrs.s, vrs2.s], message).should.be.fulfilled;
 
-      logs[0].event.should.be.equal("Withdraw")
+      logs[0].event.should.be.equal("RelayedMessage")
       logs[0].args.recipient.should.be.equal(recipientAccount)
       logs[0].args.value.should.be.bignumber.equal(value)
       const balanceAfter = await token.balanceOf(recipientAccount)
-      true.should.be.equal(await foreignBridgeWithMultiSignatures.withdrawals(transactionHash))
+      true.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
 
     })
     it('withdraw should fail if duplicate signature is provided', async () => {
@@ -182,8 +182,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       var message = createMessage(recipientAccount, value, transactionHash);
       var signature = await sign(twoAuthorities[0], message)
       var vrs = signatureToVRS(signature);
-      false.should.be.equal(await foreignBridgeWithMultiSignatures.withdrawals(transactionHash))
-      await foreignBridgeWithMultiSignatures.withdraw([vrs.v, vrs.v], [vrs.r, vrs.r], [vrs.s, vrs.s], message).should.be.rejectedWith(ERROR_MSG)
+      false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
+      await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v, vrs.v], [vrs.r, vrs.r], [vrs.s, vrs.s], message).should.be.rejectedWith(ERROR_MSG)
     })
   })
 

@@ -2,27 +2,15 @@ pragma solidity 0.4.24;
 import "../IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
+import "./Validatable.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
-contract BasicBridge is EternalStorage {
+contract BasicBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
     event DailyLimit(uint256 newLimit);
-
-    function validatorContract() public view returns(IBridgeValidators) {
-        return IBridgeValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
-    }
-
-    modifier onlyValidator() {
-        require(validatorContract().isValidator(msg.sender));
-        _;
-    }
-
-    modifier onlyOwner() {
-        require(validatorContract().owner() == msg.sender);
-        _;
-    }
 
     function setGasPrice(uint256 _gasPrice) public onlyOwner {
         require(_gasPrice > 0);
@@ -102,6 +90,18 @@ contract BasicBridge is EternalStorage {
 
     function requiredSignatures() public view returns(uint256) {
         return validatorContract().requiredSignatures();
+    }
+
+    function claimTokens(address _token, address _to) public onlyOwner {
+        require(_to != address(0));
+        if (_token == address(0)) {
+            _to.transfer(address(this).balance);
+            return;
+        }
+
+        ERC20Basic token = ERC20Basic(_token);
+        uint256 balance = token.balanceOf(this);
+        require(token.transfer(_to, balance));
     }
 
 }

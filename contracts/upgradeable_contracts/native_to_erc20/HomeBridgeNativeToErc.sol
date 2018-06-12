@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
-import "../U_BasicBridge.sol";
+import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 
 

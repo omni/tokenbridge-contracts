@@ -1,16 +1,15 @@
 pragma solidity 0.4.24;
 import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
-import "../U_BasicBridge.sol";
+import "../BasicBridge.sol";
+import "../BasicForeignBridge.sol";
 import "../../IBurnableMintableERC677Token.sol";
 import "../../ERC677Receiver.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
-contract ForeignBridgeErcToErc is BasicBridge {
-    using SafeMath for uint256;
-
-    event Withdraw(address recipient, uint256 value);
+contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
+    event RelayedMessage(address recipient, uint value, bytes32 transactionHash);
 
     function initialize(
         address _validatorContract,
@@ -25,42 +24,17 @@ contract ForeignBridgeErcToErc is BasicBridge {
         return isInitialized();
     }
 
-    function claimTokens(address _token, address _to) external onlyOwner {
+    function claimTokens(address _token, address _to) public onlyOwner {
         require(_token != address(erc20token()));
-        require(_to != address(0));
-        if (_token == address(0)) {
-            _to.transfer(address(this).balance);
-            return;
-        }
-
-        ERC20Basic token = ERC20Basic(_token);
-        uint256 balance = token.balanceOf(this);
-        require(token.transfer(_to, balance));
+        super.claimTokens(_token, _to);
     }
 
     function erc20token() public view returns(ERC20Basic) {
         return ERC20Basic(addressStorage[keccak256(abi.encodePacked("erc20token"))]);
     }
 
-    function withdraw(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
-        Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
-        address recipient;
-        uint256 amount;
-        bytes32 txHash;
-        (recipient, amount, txHash) = Message.parseMessage(message);
-        require(!withdrawals(txHash));
-        setWithdrawals(txHash, true);
-
-        require(erc20token().transfer(recipient, amount));
-        emit Withdraw(recipient, amount);
-    }
-
-    function withdrawals(bytes32 _withdraw) public view returns(bool) {
-        return boolStorage[keccak256(abi.encodePacked("withdrawals", _withdraw))];
-    }
-
-    function setWithdrawals(bytes32 _withdraw, bool _status) private {
-        boolStorage[keccak256(abi.encodePacked("withdrawals", _withdraw))] = _status;
+    function onExecuteMessage(address _recipient, uint256 _amount) private returns(bool){
+        return erc20token().transfer(_recipient, _amount);
     }
 
     function setErc20token(address _token) private {

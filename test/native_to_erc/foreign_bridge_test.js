@@ -3,7 +3,7 @@ const ForeignBridgeV2 = artifacts.require("ForeignBridgeV2.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 
-const POA20 = artifacts.require("POA20.sol");
+const POA20 = artifacts.require("ERC677BridgeToken.sol");
 const {ERROR_MSG, ZERO_ADDRESS, ERROR_MSG_OPCODE} = require('../setup');
 const {createMessage, sign, signatureToVRS, strip0x} = require('../helpers/helpers');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));

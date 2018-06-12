@@ -17,4 +17,9 @@ contract Validatable is EternalStorage {
         require(validatorContract().owner() == msg.sender);
         _;
     }
+
+    function requiredSignatures() public view returns(uint256) {
+        return validatorContract().requiredSignatures();
+    }
+
 }

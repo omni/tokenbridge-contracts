@@ -23,11 +23,11 @@ contract BasicForeignBridge is EternalStorage, Validatable {
         emit RelayedMessage(recipient, amount, txHash);
     }
 
-    function onExecuteMessage(address _recipient, uint256 _amount) private returns(bool){
+    function onExecuteMessage(address, uint256) internal returns(bool){
         // has to be defined
     }
 
-    function setRelayedMessages(bytes32 _txHash, bool _status) private {
+    function setRelayedMessages(bytes32 _txHash, bool _status) internal {
         boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))] = _status;
     }
 

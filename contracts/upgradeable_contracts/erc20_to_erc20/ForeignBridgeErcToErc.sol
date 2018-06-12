@@ -33,7 +33,7 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         return ERC20Basic(addressStorage[keccak256(abi.encodePacked("erc20token"))]);
     }
 
-    function onExecuteMessage(address _recipient, uint256 _amount) private returns(bool){
+    function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool){
         return erc20token().transfer(_recipient, _amount);
     }
 

@@ -53,7 +53,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         return IBurnableMintableERC677Token(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
     }
 
-    function onExecuteMessage(address _recipient, uint256 _amount) private returns(bool){
+    function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool){
         return erc677token().mint(_recipient, _amount);
     }
 

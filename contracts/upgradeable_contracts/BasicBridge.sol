@@ -88,10 +88,6 @@ contract BasicBridge is EternalStorage, Validatable {
         return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
     }
 
-    function requiredSignatures() public view returns(uint256) {
-        return validatorContract().requiredSignatures();
-    }
-
     function claimTokens(address _token, address _to) public onlyOwner {
         require(_to != address(0));
         if (_token == address(0)) {

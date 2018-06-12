@@ -1,7 +1,7 @@
 {
   "name": "poa-parity-bridge-contracts",
   "version": "1.0.0",
-  "description": "",
+  "description": "Bridge",
   "main": "index.js",
   "scripts": {
     "test": "scripts/test.sh",

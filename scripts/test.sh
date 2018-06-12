@@ -2,7 +2,7 @@
 
 # Exit script as soon as a command fails.
 set -o errexit
-
+node_modules/.bin/truffle version
 # Executes cleanup function at script exit.
 trap cleanup EXIT
 

@@ -19,7 +19,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     /**
     * @dev the constructor sets the original owner of the contract to the sender account.
     */
-    function OwnedUpgradeabilityProxy() public {
+    constructor() public {
         setUpgradeabilityOwner(msg.sender);
     }
 

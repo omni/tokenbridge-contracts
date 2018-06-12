@@ -1,7 +1,7 @@
 const POA20 = artifacts.require("./ERC677BridgeToken.sol");
 const BridgeValidators = artifacts.require("./BridgeValidators.sol");
-const HomeBridge = artifacts.require("./HomeBridge.sol");
-const ForeignBridge = artifacts.require("./ForeignBridge.sol");
+const HomeBridge = artifacts.require("./HomeBridgeNativeToErc.sol");
+const ForeignBridge = artifacts.require("./ForeignBridgeNativeToErc.sol");
 const EternalStorageProxy = artifacts.require('EternalStorageProxy')
 
 module.exports = async function(deployer, network, accounts) {

@@ -10,7 +10,7 @@ contract BasicBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
-    event DailyLimit(uint256 newLimit);
+    event DailyLimitChanged(uint256 newLimit);
 
     function setGasPrice(uint256 _gasPrice) public onlyOwner {
         require(_gasPrice > 0);
@@ -66,7 +66,7 @@ contract BasicBridge is EternalStorage, Validatable {
 
     function setDailyLimit(uint256 _dailyLimit) public onlyOwner {
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        emit DailyLimit(_dailyLimit);
+        emit DailyLimitChanged(_dailyLimit);
     }
 
     function dailyLimit() public view returns(uint256) {

@@ -18,7 +18,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
         bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
-        // Duplicated deposits
+        // Duplicated affirmations
         require(!affirmationsSigned(hashSender));
         setAffirmationsSigned(hashSender, true);
 

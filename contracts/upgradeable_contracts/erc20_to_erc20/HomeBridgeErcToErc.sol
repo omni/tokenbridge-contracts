@@ -6,9 +6,10 @@ import "../../upgradeability/EternalStorage.sol";
 import "../../IBurnableMintableERC677Token.sol";
 import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
+import "../ERC677Bridge.sol";
 
 
-contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge {
+contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677Bridge {
 
     function initialize (
         address _validatorContract,
@@ -48,22 +49,8 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         return erc677token().mint(_recipient, _value);
     }
 
-    function onTokenTransfer(address _from, uint256 _value, bytes /*_data*/) external returns(bool) {
-        require(msg.sender == address(erc677token()));
-        require(withinLimit(_value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
-        erc677token().burn(_value);
+    function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
         emit UserRequestForSignature(_from, _value);
-        return true;
-    }
-
-    function erc677token() public view returns(IBurnableMintableERC677Token) {
-        return IBurnableMintableERC677Token(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
-    }
-
-    function setErc677token(address _token) private {
-        require(_token != address(0));
-        addressStorage[keccak256(abi.encodePacked("erc677token"))] = _token;
     }
 
 }

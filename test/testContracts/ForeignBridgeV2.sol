@@ -14,7 +14,7 @@ contract ForeignBridgeV2 is ForeignBridgeNativeToErc {
         OwnableToken poa = OwnableToken(token);
         poa.transferOwnership(_newTokenOwner);
     }
-
+    // used for testing
     address public something;
     function doSomething(address _newTokenOwner) public onlyOwner {
         something = _newTokenOwner;

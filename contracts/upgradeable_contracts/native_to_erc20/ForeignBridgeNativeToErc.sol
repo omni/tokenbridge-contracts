@@ -5,9 +5,10 @@ import "../../IBurnableMintableERC677Token.sol";
 import "../../ERC677Receiver.sol";
 import "../BasicForeignBridge.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "../ERC677Bridge.sol";
 
 
-contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBridge {
+contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBridge, ERC677Bridge {
     /// Event created on money withdraw.
     event UserRequestForAffirmation(address recipient, uint256 value);
 
@@ -36,29 +37,16 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         return isInitialized();
     }
 
-    function onTokenTransfer(address _from, uint256 _value, bytes /*_data*/) external returns(bool) {
-        require(msg.sender == address(erc677token()));
-        require(withinLimit(_value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
-        erc677token().burn(_value);
-        emit UserRequestForAffirmation(_from, _value);
-        return true;
-    }
-
     function claimTokensFromErc677(address _token, address _to) external onlyOwner {
         erc677token().claimTokens(_token, _to);
-    }
-
-    function erc677token() public view returns(IBurnableMintableERC677Token) {
-        return IBurnableMintableERC677Token(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool){
         return erc677token().mint(_recipient, _amount);
     }
 
-    function setErc677token(address _token) private {
-        require(_token != address(0));
-        addressStorage[keccak256(abi.encodePacked("erc677token"))] = _token;
+    function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
+        emit UserRequestForAffirmation(_from, _value);
     }
+
 }

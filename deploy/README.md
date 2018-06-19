@@ -1,9 +1,13 @@
 # How to use
-0. compile source contracts:
+1. compile source contracts:
 ```
-poa-parity
+cd ..
+npm run compile
+```
 
-1. create .env file
+2. create .env file
+`cp .env.example .env`
+
 ```bash
 DEPLOYMENT_ACCOUNT_ADDRESS=0xb8988b690910913c97a090c3a6f80fad8b3a4683
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
@@ -33,15 +37,6 @@ FOREIGN_GAS_PRICE=10
 
 REQUIRED_NUMBER_OF_VALIDATORS=1
 VALIDATORS="0x 0x 0x"
-
-
-
 ```
-2.  Run `node deploy.js`
-OR
-2. Compile sources: `npm run compile`
-3. run `./build/deploy-macos`
 
-
-
-
+3.  Run `node deploy.js`

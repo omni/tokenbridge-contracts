@@ -56,6 +56,10 @@ contract ERC677BridgeToken is
         revert();
     }
 
+    function renounceOwnership() public onlyOwner {
+        revert();
+    }
+
     function claimTokens(address _token, address _to) public onlyOwner {
         require(_to != address(0));
         if (_token == address(0)) {

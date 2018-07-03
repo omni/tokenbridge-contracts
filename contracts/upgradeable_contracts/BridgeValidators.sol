@@ -27,9 +27,9 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
             setValidator(_initialValidators[i], true);
             emit ValidatorAdded(_initialValidators[i]);
         }
-        require(validatorCount() >= _requiredSignatures);
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
         setInitialize(true);
+        emit RequiredSignaturesChanged(_requiredSignatures);
         return isInitialized();
     }
 

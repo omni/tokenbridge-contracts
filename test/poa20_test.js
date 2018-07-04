@@ -1,8 +1,8 @@
-const POA20 = artifacts.require("POA20.sol");
+const POA20 = artifacts.require("ERC677BridgeToken.sol");
 const ERC677ReceiverTest = artifacts.require("ERC677ReceiverTest.sol")
 const {ERROR_MSG} = require('./setup');
 
-contract('POA20', async (accounts) => {
+contract('ERC677BridgeToken', async (accounts) => {
   let token
   let owner = accounts[0]
   const user = accounts[1];

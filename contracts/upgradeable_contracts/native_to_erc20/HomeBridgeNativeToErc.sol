@@ -5,6 +5,12 @@ import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../BasicHomeBridge.sol";
 
+contract Sacrifice {
+    constructor(address _recipient) public payable {
+        selfdestruct(_recipient);
+    }
+}
+
 contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
 
     function initialize (
@@ -42,7 +48,9 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
-        _recipient.transfer(_value);
+        if (!_recipient.send(_value)) {
+            (new Sacrifice).value(_value)(_recipient);
+        }
         return true;
     }
 }

@@ -8,6 +8,8 @@ import "../libraries/Message.sol";
 
 contract BasicHomeBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
+    enum TxStatus { Invalid, Received }
+
 
     event UserRequestForSignature(address recipient, uint256 value);
     event AffirmationCompleted (address recipient, uint256 value, bytes32 transactionHash);
@@ -40,10 +42,15 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         }
     }
 
+    function onMitmPrevention(bytes message) internal returns(bool) {
+
+    }
+
     function submitSignature(bytes signature, bytes message) external onlyValidator {
         // ensure that `signature` is really `message` signed by `msg.sender`
         require(Message.isMessageValid(message));
         require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message));
+        require(onMitmPrevention(message));
         bytes32 hashMsg = keccak256(abi.encodePacked(message));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
 
@@ -141,5 +148,19 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         return uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))];
     }
 
+    function incrementNonce(address _sender) internal {
+        uintStorage[keccak256(abi.encodePacked("nonce", _sender))] = getNonce(_sender).add(1);
+    }
 
+    function getNonce(address _sender) public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("nonce", _sender))];
+    }
+
+    function setTxStatus(bytes32 _hash, uint256 _status) internal {
+        uintStorage[keccak256(abi.encodePacked("txStatus", _hash))] = _status;
+    }
+
+    function getTxStatus(bytes32 _hash) public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("txStatus", _hash))];
+    }
 }

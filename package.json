@@ -10,8 +10,8 @@
     "flatten": "bash flatten.sh",
     "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "POA network",
+  "license": "GPLv3",
   "dependencies": {
     "ganache-cli": "^6.1.0",
     "openzeppelin-solidity": "^1.10.0",

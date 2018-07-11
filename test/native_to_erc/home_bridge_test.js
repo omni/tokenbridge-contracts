@@ -2,6 +2,7 @@ const Web3Utils = require('web3-utils');
 const HomeBridge = artifacts.require("HomeBridgeNativeToErc.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
+const RevertFallback = artifacts.require("RevertFallback.sol");
 const {ERROR_MSG, ZERO_ADDRESS} = require('../setup');
 const {createMessage, sign, signatureToVRS} = require('../helpers/helpers');
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
@@ -127,6 +128,23 @@ contract('HomeBridge', async (accounts) => {
         from: accounts[1],
         value: newMinPerTx - 1
       }).should.be.rejectedWith(ERROR_MSG)
+    })
+
+    it('should increment nonce' , async () => {
+      const sender = accounts[1];
+      const value = 1;
+      const txStatus = Web3Utils.soliditySha3(sender, value, 1);
+      const currentNonce = await homeContract.getNonce(sender);
+      currentNonce.should.be.bignumber.equal(0);
+      (await homeContract.getTxStatus(txStatus)).should.be.bignumber.equal(0);
+      await homeContract.sendTransaction({
+        from: accounts[1],
+        value
+      }).should.be.fulfilled;
+
+      (await homeContract.getNonce(sender)).should.be.bignumber.equal(1);
+      (await homeContract.getTxStatus(txStatus)).should.be.bignumber.equal(1);
+
     })
   })
 
@@ -289,6 +307,31 @@ contract('HomeBridge', async (accounts) => {
       balanceBefore.add(value).should.be.bignumber.equal(await web3.eth.getBalance(recipient))
 
     })
+
+    it('force withdraw if the recepient has fallback to revert', async () => {
+      const revertFallbackContract = await RevertFallback.new();
+      await revertFallbackContract.receiveEth({from: accounts[0], value: halfEther})
+      await web3.eth.getBalance(revertFallbackContract.address).should.be.bignumber.equal(halfEther)
+
+      const transactionHash = "0x106335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs} = await homeBridge.executeAffirmation(revertFallbackContract.address, halfEther, transactionHash, {from: authorities[0]})
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        transactionHash
+      });
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient: revertFallbackContract.address,
+        value: halfEther,
+        transactionHash
+      })
+      const homeBalanceAfter = await web3.eth.getBalance(homeBridge.address)
+      const balanceAfter = await web3.eth.getBalance(revertFallbackContract.address)
+      balanceAfter.should.be.bignumber.equal(halfEther.add(halfEther))
+      homeBalanceAfter.should.be.bignumber.equal(0)
+
+    })
   })
   describe('#isAlreadyProcessed', async () => {
     it('returns ', async () => {
@@ -314,7 +357,8 @@ contract('HomeBridge', async (accounts) => {
     it('allows a validator to submit a signature', async () => {
       var recipientAccount = accounts[8]
       var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
-      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      const tx = await homeBridgeWithTwoSigs.sendTransaction({from: recipientAccount, value})
+      var transactionHash = tx.tx;
       var message = createMessage(recipientAccount, value, transactionHash);
       var signature = await sign(authoritiesTwoAccs[0], message)
       const {logs} = await homeBridgeWithTwoSigs.submitSignature(signature, message, {from: authorities[0]}).should.be.fulfilled;
@@ -332,7 +376,8 @@ contract('HomeBridge', async (accounts) => {
       var recipientAccount = accounts[8]
       var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       var homeGasPrice = web3.toBigNumber(0);
-      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      const tx = await homeBridgeWithTwoSigs.sendTransaction({from: recipientAccount, value})
+      var transactionHash = tx.tx;
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
       var signature = await sign(authoritiesTwoAccs[0], message)
       var signature2 = await sign(authoritiesTwoAccs[1], message)
@@ -349,7 +394,8 @@ contract('HomeBridge', async (accounts) => {
       var recipientAccount = accounts[8]
       var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       var homeGasPrice = web3.toBigNumber(0);
-      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      const tx = await homeBridgeWithTwoSigs.sendTransaction({from: recipientAccount, value})
+      var transactionHash = tx.tx;
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
       var signature = await sign(authoritiesTwoAccs[0], message)
       var signature2 = await sign(authoritiesTwoAccs[1], message)
@@ -370,7 +416,8 @@ contract('HomeBridge', async (accounts) => {
       var recipientAccount = accounts[8]
       var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       var homeGasPrice = web3.toBigNumber(0);
-      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      const tx = await homeBridgeWithTwoSigs.sendTransaction({from: recipientAccount, value})
+      var transactionHash = tx.tx;
       var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
       var signature = await sign(authoritiesTwoAccs[0], message)
       var signature2 = await sign(authoritiesTwoAccs[1], message)

@@ -8,8 +8,8 @@ import "../upgradeability/EternalStorage.sol";
 
 contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     using SafeMath for uint256;
-    event ValidatorAdded (address validator);
-    event ValidatorRemoved (address validator);
+    event ValidatorAdded (address indexed validator);
+    event ValidatorRemoved (address indexed validator);
     event RequiredSignaturesChanged (uint256 requiredSignatures);
 
     function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)

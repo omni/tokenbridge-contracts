@@ -44,6 +44,11 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
         require(msg.data.length == 0);
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        incrementNonce(msg.sender);
+        uint256 nonce = getNonce(msg.sender);
+        bytes32 status = keccak256(abi.encodePacked(msg.sender, msg.value, nonce));
+        setTxStatus(status, uint256(TxStatus.Received));
+
         emit UserRequestForSignature(msg.sender, msg.value);
     }
 
@@ -52,5 +57,14 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
             (new Sacrifice).value(_value)(_recipient);
         }
         return true;
+    }
+
+    function onMitmPrevention(bytes message) internal returns(bool) {
+        address recipient;
+        uint256 amount;
+        bytes32 txHash;
+        (recipient, amount, txHash) = Message.parseMessage(message);
+        bytes32 currentTx = keccak256(abi.encodePacked(recipient, amount, getNonce(recipient)));
+        return getTxStatus(currentTx) == uint256(TxStatus.Received);
     }
 }

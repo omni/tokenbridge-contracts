@@ -53,4 +53,8 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         emit UserRequestForSignature(_from, _value);
     }
 
+    function onMitmPrevention(bytes message) internal returns(bool) {
+        return true;
+    }
+
 }

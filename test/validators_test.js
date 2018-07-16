@@ -18,6 +18,7 @@ contract('BridgeValidators', async (accounts) => {
       false.should.be.equal(await bridgeValidators.isValidator(accounts[1]))
       false.should.be.equal(await bridgeValidators.isInitialized())
       '0'.should.be.bignumber.equal(await bridgeValidators.requiredSignatures())
+      '0'.should.be.bignumber.equal(await bridgeValidators.deployedAtBlock())
       await bridgeValidators.initialize(3, [accounts[0], accounts[1]], accounts[2], {from: accounts[2]}).should.be.rejectedWith(ERROR_MSG)
       await bridgeValidators.initialize(2, [accounts[0], accounts[1]], accounts[2], {from: accounts[2]}).should.be.fulfilled;
       await bridgeValidators.initialize(2, [accounts[0], accounts[1]], accounts[2], {from: accounts[2]}).should.be.rejectedWith(ERROR_MSG);
@@ -26,7 +27,8 @@ contract('BridgeValidators', async (accounts) => {
       true.should.be.equal(await bridgeValidators.isValidator(accounts[0]))
       true.should.be.equal(await bridgeValidators.isValidator(accounts[1]))
       accounts[2].should.be.equal(await bridgeValidators.owner())
-      '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
+      '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount());
+      (await bridgeValidators.deployedAtBlock()).should.be.bignumber.above(0)
     })
   })
 

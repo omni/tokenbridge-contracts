@@ -30,7 +30,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         require(validatorCount() >= _requiredSignatures);
         uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
-    setInitialize(true);
+        setInitialize(true);
         return isInitialized();
     }
 

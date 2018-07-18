@@ -4,6 +4,11 @@ import "../libraries/Message.sol";
 import "./U_BasicBridge.sol";
 import "../upgradeability/EternalStorage.sol";
 
+contract Sacrifice {
+    constructor(address _recipient) public payable {
+        selfdestruct(_recipient);
+    }
+}
 
 contract HomeBridge is EternalStorage, BasicBridge {
     using SafeMath for uint256;
@@ -81,7 +86,9 @@ contract HomeBridge is EternalStorage, BasicBridge {
         setWithdraws(txHash, true);
 
         // pay out recipient
-        recipient.transfer(amount);
+        if (!recipient.send(amount)) {
+            (new Sacrifice).value(amount)(recipient);
+        }
 
         emit Withdraw(recipient, amount, txHash);
     }

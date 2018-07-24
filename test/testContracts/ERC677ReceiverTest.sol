@@ -9,11 +9,11 @@ contract ERC677ReceiverTest is ERC677Receiver {
     bytes public data;
     uint public someVar = 0;
 
-    function onTokenTransfer(address _from, uint _value, bytes _data) external returns(bool) {
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns(bool) {
         from = _from;
         value = _value;
         data = _data;
-        require(address(this).call(_data));
+        address(this).call(_data);
         return true;
     }
 

@@ -115,4 +115,34 @@ contract('ERC677BridgeToken', async (accounts) => {
 
     })
   })
+  describe('#transfer', async () => {
+    it('if transfer called on contract, onTokenTransfer is also invoked', async () => {
+      const receiver = await ERC677ReceiverTest.new();
+      (await receiver.from()).should.be.equal('0x0000000000000000000000000000000000000000');
+      (await receiver.value()).should.be.bignumber.equal('0');
+      (await receiver.data()).should.be.equal('0x');
+      (await receiver.someVar()).should.be.bignumber.equal('0');
+
+      await token.mint(user, 1, {from: owner }).should.be.fulfilled;
+      const {logs} = await token.transfer(receiver.address, 1, {from: user}).should.be.fulfilled;
+
+      (await token.balanceOf(receiver.address)).should.be.bignumber.equal(1);
+      (await token.balanceOf(user)).should.be.bignumber.equal(0);
+      (await receiver.from()).should.be.equal(user);
+      (await receiver.value()).should.be.bignumber.equal(1);
+      (await receiver.data()).should.be.equal('0x');
+      logs[0].event.should.be.equal("Transfer")
+    })
+    it('if transfer called on contract, still works even if onTokenTransfer doesnot exist', async () => {
+      const someContract = await POA20.new("Some", "Token", 18);
+      await token.mint(user, 2, {from: owner }).should.be.fulfilled;
+      const tokenTransfer = await token.transfer(someContract.address, 1, {from: user}).should.be.fulfilled;
+      const tokenTransfer2 = await token.transfer(accounts[0], 1, {from: user}).should.be.fulfilled;
+      (await token.balanceOf(someContract.address)).should.be.bignumber.equal(1);
+      (await token.balanceOf(user)).should.be.bignumber.equal(0);
+      tokenTransfer.logs[0].event.should.be.equal("Transfer")
+      tokenTransfer2.logs[0].event.should.be.equal("Transfer")
+
+    })
+  })
 })

@@ -73,7 +73,7 @@ contract('ForeignBridge', async (accounts) => {
       var homeGasPrice = web3.toBigNumber(0);
       var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
       var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
-      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
@@ -96,14 +96,14 @@ contract('ForeignBridge', async (accounts) => {
       var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
       var homeGasPrice = web3.toBigNumber(0);
       var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
       await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
       var transactionHash2 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
-      var message2 = createMessage(recipientAccount, value, transactionHash2, homeGasPrice);
+      var message2 = createMessage(recipientAccount, value, transactionHash2, foreignBridge.address);
       var signature2 = await sign(authorities[0], message2)
       var vrs2 = signatureToVRS(signature2);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
@@ -128,13 +128,13 @@ contract('ForeignBridge', async (accounts) => {
       var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       var homeGasPrice = web3.toBigNumber(0);
       var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
       var signature = await sign(authorities[0], message)
       var vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
       await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
-      var message2 = createMessage(accounts[4], value, transactionHash, homeGasPrice);
+      var message2 = createMessage(accounts[4], value, transactionHash, foreignBridge.address);
       var signature2 = await sign(authorities[0], message2)
       var vrs = signatureToVRS(signature2);
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
@@ -165,7 +165,7 @@ contract('ForeignBridge', async (accounts) => {
       var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       var homeGasPrice = web3.toBigNumber(0);
       var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address);
       var signature = await sign(twoAuthorities[0], message)
       var vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
@@ -191,7 +191,7 @@ contract('ForeignBridge', async (accounts) => {
       var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       var homeGasPrice = web3.toBigNumber(0);
       var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-      var message = createMessage(recipientAccount, value, transactionHash, homeGasPrice);
+      var message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address);
       var signature = await sign(twoAuthorities[0], message)
       var vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))

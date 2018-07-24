@@ -9,14 +9,14 @@ import "../libraries/Message.sol";
 contract BasicForeignBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
-
     event RelayedMessage(address recipient, uint value, bytes32 transactionHash);
     function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
         Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
         address recipient;
         uint256 amount;
         bytes32 txHash;
-        (recipient, amount, txHash) = Message.parseMessage(message);
+        address contractAddress;
+        (recipient, amount, txHash, contractAddress) = Message.parseMessage(message);
         require(!relayedMessages(txHash));
         setRelayedMessages(txHash, true);
         require(onExecuteMessage(recipient, amount));

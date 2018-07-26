@@ -17,6 +17,7 @@ contract('BridgeValidators', async (accounts) => {
       false.should.be.equal(await bridgeValidators.isValidator(accounts[0]))
       false.should.be.equal(await bridgeValidators.isValidator(accounts[1]))
       false.should.be.equal(await bridgeValidators.isInitialized())
+      '0'.should.be.bignumber.equal(await bridgeValidators.deployedAtBlock())
       '0'.should.be.bignumber.equal(await bridgeValidators.requiredSignatures())
       '0'.should.be.bignumber.equal(await bridgeValidators.deployedAtBlock())
       await bridgeValidators.initialize(3, [accounts[0], accounts[1]], accounts[2], {from: accounts[2]}).should.be.rejectedWith(ERROR_MSG)

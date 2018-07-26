@@ -27,11 +27,16 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
             setValidator(_initialValidators[i], true);
             emit ValidatorAdded(_initialValidators[i]);
         }
+        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         setInitialize(true);
         emit RequiredSignaturesChanged(_requiredSignatures);
         return isInitialized();
+    }
+
+    function deployedAtBlock() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
     function addValidator(address _validator) external onlyOwner {

@@ -8,8 +8,8 @@ import "../upgradeability/EternalStorage.sol";
 
 contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     using SafeMath for uint256;
-    event ValidatorAdded (address validator);
-    event ValidatorRemoved (address validator);
+    event ValidatorAdded (address indexed validator);
+    event ValidatorRemoved (address indexed validator);
     event RequiredSignaturesChanged (uint256 requiredSignatures);
 
     function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
@@ -28,6 +28,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
             emit ValidatorAdded(_initialValidators[i]);
         }
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
+        uintStorage[keccak256("deployedAtBlock")] = block.number;
         setInitialize(true);
         emit RequiredSignaturesChanged(_requiredSignatures);
         return isInitialized();
@@ -74,6 +75,10 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
 
     function isInitialized() public view returns(bool) {
         return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
+    }
+
+    function deployedAtBlock() public view returns(uint256) {
+        return uintStorage[keccak256("deployedAtBlock")];
     }
 
     function setValidatorCount(uint256 _validatorCount) private {

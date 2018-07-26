@@ -2,6 +2,7 @@ const Web3Utils = require('web3-utils');
 const HomeBridge = artifacts.require("HomeBridgeNativeToErc.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
+const RevertFallback = artifacts.require("RevertFallback.sol");
 const {ERROR_MSG, ZERO_ADDRESS} = require('../setup');
 const {createMessage, sign, signatureToVRS} = require('../helpers/helpers');
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
@@ -287,6 +288,31 @@ contract('HomeBridge', async (accounts) => {
       await validatorContractWith2Signatures.setRequiredSignatures(1).should.be.fulfilled;
       await homeBridgeWithTwoSigs.executeAffirmation(recipient, value, transactionHash, {from: authoritiesTwoAccs[2]}).should.be.rejectedWith(ERROR_MSG);
       balanceBefore.add(value).should.be.bignumber.equal(await web3.eth.getBalance(recipient))
+
+    })
+
+    it('force withdraw if the recepient has fallback to revert', async () => {
+      const revertFallbackContract = await RevertFallback.new();
+      await revertFallbackContract.receiveEth({from: accounts[0], value: halfEther})
+      await web3.eth.getBalance(revertFallbackContract.address).should.be.bignumber.equal(halfEther)
+
+      const transactionHash = "0x106335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs} = await homeBridge.executeAffirmation(revertFallbackContract.address, halfEther, transactionHash, {from: authorities[0]})
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        transactionHash
+      });
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient: revertFallbackContract.address,
+        value: halfEther,
+        transactionHash
+      })
+      const homeBalanceAfter = await web3.eth.getBalance(homeBridge.address)
+      const balanceAfter = await web3.eth.getBalance(revertFallbackContract.address)
+      balanceAfter.should.be.bignumber.equal(halfEther.add(halfEther))
+      homeBalanceAfter.should.be.bignumber.equal(0)
 
     })
   })

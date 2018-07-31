@@ -1,9 +1,19 @@
 [![Build Status](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts)
 
 # POA bridge smart contracts
-The goal of these contracts is to allow users to tokenize native POA coin into ERC20 token on ethereum mainnet.
-Home Bridge is a smart contract that should be deployed in POA.network
-Foreign Bridge is a smart contract that should be deployed in Ethereum Mainnet
+These contracts are the core of POA bridge functionality. They implement the logic to relay assests between
+two EVM-based blockchain networks by collecting bridge validators signatures to approve relay operations.
+
+Currently the contracts supports two types of relay operations:
+* to tokenize native coins circulating in one blockchain network (Home) into an ERC20 token in another network (Foreign);
+* to swap a token presented by an ERC20 contract in Home network to an existing ERC20 token in Foreign network.
+
+POA bridge consist of several main parts:
+* Home Bridge is a smart contract that should be deployed in POA.network;
+* Foreign Bridge is a smart contract that should be deployed in Ethereum Mainnet;
+* Depending on type of relay operations the following components are used as well:
+  * in `NATIVE-TO-ERC` mode: ERC20 token (in fact, ERC677 extension is used) should be deployed on Foreign network;
+  * in `ERC-TO-ERC` mode: ERC20 token (in fact, ERC677 extension is used) should be deployed on Home network;
 
 Responsibilities and roles of the bridge:
 - Administrator Role(representation of a multisig contract):

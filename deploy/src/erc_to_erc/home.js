@@ -5,7 +5,7 @@ require('dotenv').config({
 
 const assert = require('assert');
 
-const {deployContract, sendRawTx} = require('../deploymentUtils');
+const {deployContract, privateKeyToAddress, sendRawTx} = require('../deploymentUtils');
 const {web3Home, deploymentPrivateKey, HOME_RPC_URL} = require('../web3');
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json');
@@ -17,7 +17,7 @@ const VALIDATORS = process.env.VALIDATORS.split(" ")
 const HOME_GAS_PRICE =  Web3Utils.toWei(process.env.HOME_GAS_PRICE, 'gwei');
 
 const {
-  DEPLOYMENT_ACCOUNT_ADDRESS,
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   HOME_OWNER_MULTISIG,
   HOME_UPGRADEABLE_ADMIN_VALIDATORS,
@@ -27,6 +27,8 @@ const {
   HOME_MIN_AMOUNT_PER_TX,
   HOME_REQUIRED_BLOCK_CONFIRMATIONS,
 } = process.env;
+
+const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 async function deployHome()
 {

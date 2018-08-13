@@ -5,7 +5,7 @@ require('dotenv').config({
 
 const assert = require('assert');
 
-const {deployContract, sendRawTx} = require('../deploymentUtils');
+const {deployContract, privateKeyToAddress, sendRawTx} = require('../deploymentUtils');
 const {web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL} = require('../web3');
 
 const POA20 = require('../../../build/contracts/ERC677BridgeToken.json');
@@ -17,7 +17,7 @@ const VALIDATORS = process.env.VALIDATORS.split(" ")
 const FOREIGN_GAS_PRICE =  Web3Utils.toWei(process.env.FOREIGN_GAS_PRICE, 'gwei');
 
 const {
-  DEPLOYMENT_ACCOUNT_ADDRESS,
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   FOREIGN_OWNER_MULTISIG,
   FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
@@ -26,8 +26,9 @@ const {
   FOREIGN_MAX_AMOUNT_PER_TX,
   FOREIGN_MIN_AMOUNT_PER_TX,
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-
 } = process.env;
+
+const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 async function deployForeign() {
   let foreignNonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS);

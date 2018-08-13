@@ -5,7 +5,7 @@ require('dotenv').config({
 
 const assert = require('assert');
 
-const {deployContract, sendRawTx} = require('../deploymentUtils');
+const {deployContract, privateKeyToAddress, sendRawTx} = require('../deploymentUtils');
 const {web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL} = require('../web3');
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json');
@@ -15,14 +15,15 @@ const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToErc.js
 const VALIDATORS = process.env.VALIDATORS.split(" ")
 
 const {
-  DEPLOYMENT_ACCOUNT_ADDRESS,
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   FOREIGN_OWNER_MULTISIG,
   FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
   FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,
   ERC20_TOKEN_ADDRESS
-
 } = process.env;
+
+const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 async function deployForeign() {
   if(!Web3Utils.isAddress(ERC20_TOKEN_ADDRESS)){

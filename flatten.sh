@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-rm -rf flats/*
+if [ ! -d "flats" ]; then
+	mkdir flats
+else
+	rm -rf flats/*
+fi
+
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/U_ForeignBridge.sol > flats/ForeignBridge_flat.sol
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/U_BridgeValidators.sol > flats/BridgeValidators_flat.sol
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/U_HomeBridge.sol > flats/HomeBridge_flat.sol

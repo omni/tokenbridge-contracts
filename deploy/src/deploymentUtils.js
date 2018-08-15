@@ -1,3 +1,4 @@
+const Web3 = require('web3')
 const {
   web3Home,
   web3Foreign,
@@ -104,9 +105,22 @@ async function getReceipt(txHash, url) {
   return receipt;
 }
 
+function add0xPrefix(s) {
+  if (s.indexOf('0x') === 0) {
+    return s
+  }
+
+  return '0x' + s
+}
+
+function privateKeyToAddress(privateKey) {
+  return new Web3().eth.accounts.privateKeyToAccount(add0xPrefix(privateKey)).address
+}
+
 module.exports = {
   deployContract,
   sendNodeRequest,
   getReceipt,
-  sendRawTx
+  sendRawTx,
+  privateKeyToAddress
 }

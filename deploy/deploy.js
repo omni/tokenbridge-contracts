@@ -58,4 +58,5 @@ async function main() {
       throw "Please specify BRIDGE_MODE: NATIVE_TO_ERC or ERC_TO_ERC"
   }
 }
-main()
+
+main().catch(e => console.log('Error:', e))

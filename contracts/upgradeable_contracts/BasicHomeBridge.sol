@@ -141,5 +141,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         return uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))];
     }
 
-
+    function requiredMessageLength() public pure returns(uint256) {
+        return Message.requiredMessageLength();
+    }
 }

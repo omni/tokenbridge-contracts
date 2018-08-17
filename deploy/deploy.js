@@ -1,5 +1,8 @@
 const fs = require('fs');
-require('dotenv').config();
+const path = require('path')
+require('dotenv').config({
+  path: path.join(__dirname, '.env')
+});
 
 async function deployNativeToErc(){
   const deployHome = require('./src/native_to_erc/home');
@@ -11,7 +14,8 @@ async function deployNativeToErc(){
   console.log(`[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] POA20: ${erc677.address}`)
-  fs.writeFileSync('./bridgeDeploymentResults.json', JSON.stringify({
+  const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
+  fs.writeFileSync(deployResultsPath, JSON.stringify({
     homeBridge: {
       ...homeBridge,
     },foreignBridge: {

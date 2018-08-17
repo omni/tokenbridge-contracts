@@ -324,4 +324,15 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       logs[1].args.authorityResponsibleForRelay.should.be.equal(authoritiesTwoAccs[1])
     })
   })
+
+  describe('#requiredMessageLength', async () => {
+    beforeEach(async () => {
+      homeContract = await HomeBridge.new()
+    })
+
+    it('should return the required message length', async () => {
+      const requiredMessageLength = await homeContract.requiredMessageLength()
+      '104'.should.be.bignumber.equal(requiredMessageLength)
+    })
+  })
 })

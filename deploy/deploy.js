@@ -1,5 +1,10 @@
 const fs = require('fs');
-require('dotenv').config();
+const path = require('path')
+require('dotenv').config({
+  path: path.join(__dirname, '.env')
+});
+
+const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
 
 async function deployNativeToErc(){
   const deployHome = require('./src/native_to_erc/home');
@@ -11,7 +16,7 @@ async function deployNativeToErc(){
   console.log(`[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] POA20: ${erc677.address}`)
-  fs.writeFileSync('./bridgeDeploymentResults.json', JSON.stringify({
+  fs.writeFileSync(deployResultsPath, JSON.stringify({
     homeBridge: {
       ...homeBridge,
     },foreignBridge: {
@@ -32,7 +37,7 @@ async function deployErcToErc() {
   console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ERC20 Token: ${process.env.ERC20_TOKEN_ADDRESS}`)
   console.log(`[ Home ] ERC677 Bridgeble Token: ${erc677tokenAddress}`)
-  fs.writeFileSync('./bridgeDeploymentResults.json', JSON.stringify({
+  fs.writeFileSync(deployResultsPath, JSON.stringify({
     homeBridge: {
       homeBridgeAddress,
       erc677tokenAddress

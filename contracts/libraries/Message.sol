@@ -66,7 +66,7 @@ library Message {
         return _msg.length == requiredMessageLength();
     }
 
-    function requiredMessageLength() public pure returns(uint256) {
+    function requiredMessageLength() internal pure returns(uint256) {
         return 104;
     }
 

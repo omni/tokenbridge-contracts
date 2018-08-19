@@ -26,6 +26,10 @@ const {
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
   HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+  HOME_BRIDGEABLE_TOKEN_NAME,
+  HOME_BRIDGEABLE_TOKEN_SYMBOL,
+  HOME_BRIDGEABLE_TOKEN_DECIMALS,
+
 } = process.env;
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -112,7 +116,10 @@ async function deployHome()
   homeNonce++;
 
   console.log('\n[Home] deploying Bridgeble token')
-  const erc677token = await deployContract(ERC677BridgeToken, ["Bancor on POA", "BNT", 18], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce: homeNonce})
+  const erc677token = await deployContract(ERC677BridgeToken,
+    [HOME_BRIDGEABLE_TOKEN_NAME, HOME_BRIDGEABLE_TOKEN_SYMBOL, HOME_BRIDGEABLE_TOKEN_DECIMALS],
+    {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce: homeNonce}
+  )
   homeNonce++;
   console.log('[Home] Bridgeble Token: ', erc677token.options.address)
 

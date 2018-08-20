@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-rm -rf flats/*
+if [ ! -d "flats" ]; then
+	mkdir flats
+else
+	rm -rf flats/*
+fi
+
 mkdir -p flats/native_to_erc20
 mkdir -p flats/erc20_to_erc20
 

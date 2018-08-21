@@ -26,6 +26,10 @@ const {
   FOREIGN_MAX_AMOUNT_PER_TX,
   FOREIGN_MIN_AMOUNT_PER_TX,
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+  BRIDGEABLE_TOKEN_NAME,
+  BRIDGEABLE_TOKEN_SYMBOL,
+  BRIDGEABLE_TOKEN_DECIMALS,
+
 } = process.env;
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -37,7 +41,7 @@ async function deployForeign() {
   console.log('========================================\n')
 
   console.log('\n[Foreign] deploying POA20 token')
-  const poa20foreign = await deployContract(POA20, ["POA ERC20 on Foundation", "POA20", 18], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
+  const poa20foreign = await deployContract(POA20, [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
   foreignNonce++;
   console.log('[Foreign] POA20: ', poa20foreign.options.address)
 

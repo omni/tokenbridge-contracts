@@ -69,8 +69,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txInitialize.status, '0x1', 'Transaction Failed');
-  const validatorOwner = await bridgeValidatorsHome.methods.owner().call();
-  assert.equal(validatorOwner.toLocaleLowerCase(), HOME_OWNER_MULTISIG.toLocaleLowerCase());
   homeNonce++;
 
   console.log('transferring proxy ownership to multisig for Validators Proxy contract');
@@ -83,8 +81,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txProxyDataTransfer.status, '0x1', 'Transaction Failed');
-  const newProxyOwner = await storageValidatorsHome.methods.proxyOwner().call();
-  assert.equal(newProxyOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_VALIDATORS.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\ndeploying homeBridge storage\n')
@@ -141,8 +137,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed');
-  const newProxyBridgeOwner = await homeBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_BRIDGE.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\nHome Deployment Bridge is complete\n')

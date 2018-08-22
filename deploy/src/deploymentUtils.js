@@ -99,7 +99,7 @@ function timeout(ms) {
 async function getReceipt(txHash, url) {
   await timeout(GET_RECEIPT_INTERVAL_IN_MILLISECONDS);
   let receipt = await sendNodeRequest(url, "eth_getTransactionReceipt", txHash);
-  if(receipt === null) {
+  if(receipt === null || receipt.blockNumber === null) {
     receipt = await getReceipt(txHash, url);
   }
   return receipt;

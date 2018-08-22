@@ -26,6 +26,10 @@ const {
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
   HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+  BRIDGEABLE_TOKEN_NAME,
+  BRIDGEABLE_TOKEN_SYMBOL,
+  BRIDGEABLE_TOKEN_DECIMALS,
+
 } = process.env;
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -70,8 +74,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txInitialize.status, '0x1', 'Transaction Failed');
-  const validatorOwner = await bridgeValidatorsHome.methods.owner().call();
-  assert.equal(validatorOwner.toLocaleLowerCase(), HOME_OWNER_MULTISIG.toLocaleLowerCase());
   homeNonce++;
 
   console.log('transferring proxy ownership to multisig for Validators Proxy contract');
@@ -84,8 +86,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txProxyDataTransfer.status, '0x1', 'Transaction Failed');
-  const newProxyOwner = await storageValidatorsHome.methods.proxyOwner().call();
-  assert.equal(newProxyOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_VALIDATORS.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\ndeploying homeBridge storage\n')
@@ -112,7 +112,10 @@ async function deployHome()
   homeNonce++;
 
   console.log('\n[Home] deploying Bridgeble token')
-  const erc677token = await deployContract(ERC677BridgeToken, ["Bancor on POA", "BNT", 18], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce: homeNonce})
+  const erc677token = await deployContract(ERC677BridgeToken,
+    [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
+    {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce: homeNonce}
+  )
   homeNonce++;
   console.log('[Home] Bridgeble Token: ', erc677token.options.address)
 
@@ -166,8 +169,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed');
-  const newProxyBridgeOwner = await homeBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_BRIDGE.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\nHome Deployment Bridge is complete\n')

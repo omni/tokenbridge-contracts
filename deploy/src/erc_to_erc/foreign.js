@@ -20,6 +20,7 @@ const {
   FOREIGN_OWNER_MULTISIG,
   FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
   FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,
+  FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
   ERC20_TOKEN_ADDRESS
 } = process.env;
 
@@ -71,8 +72,6 @@ async function deployForeign() {
     url: FOREIGN_RPC_URL
   });
   assert.equal(txInitializeForeign.status, '0x1', 'Transaction Failed');
-  const validatorOwner = await bridgeValidatorsForeign.methods.owner().call();
-  assert.equal(validatorOwner.toLowerCase(), FOREIGN_OWNER_MULTISIG.toLocaleLowerCase());
   foreignNonce++;
 
   console.log('\nTransferring ownership of ValidatorsProxy\n')
@@ -87,8 +86,6 @@ async function deployForeign() {
   });
   assert.equal(txValidatorsForeignOwnershipData.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  const newProxyValidatorsOwner = await storageValidatorsForeign.methods.proxyOwner().call();
-  assert.equal(newProxyValidatorsOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS.toLowerCase());
 
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
@@ -118,7 +115,7 @@ async function deployForeign() {
   `)
   foreignBridgeImplementation.options.address = foreignBridgeStorage.options.address
   const initializeFBridgeData = await foreignBridgeImplementation.methods.initialize(
-    storageValidatorsForeign.options.address, ERC20_TOKEN_ADDRESS
+    storageValidatorsForeign.options.address, ERC20_TOKEN_ADDRESS, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeBridge = await sendRawTx({
     data: initializeFBridgeData,
@@ -141,8 +138,6 @@ async function deployForeign() {
   });
   assert.equal(txBridgeOwnershipData.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  const newProxyBridgeOwner = await foreignBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_BRIDGE.toLowerCase());
 
   return {
     foreignBridge:

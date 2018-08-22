@@ -27,7 +27,6 @@ const {
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 async function deployForeign() {
-  console.log(FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS)
   if(!Web3Utils.isAddress(ERC20_TOKEN_ADDRESS)){
     throw "ERC20_TOKEN_ADDRESS env var is not defined"
   }

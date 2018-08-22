@@ -8,7 +8,7 @@ const assert = require('assert');
 const {deployContract, privateKeyToAddress, sendRawTx} = require('../deploymentUtils');
 const {web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL} = require('../web3');
 
-const POA20 = require('../../../build/contracts/ERC677BridgeToken.json');
+const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json');
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json');
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeNativeToErc.json')
@@ -40,10 +40,10 @@ async function deployForeign() {
   console.log('deploying ForeignBridge')
   console.log('========================================\n')
 
-  console.log('\n[Foreign] deploying POA20 token')
-  const poa20foreign = await deployContract(POA20, [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
+  console.log('\n[Foreign] deploying BRIDGEABLE_TOKEN_SYMBOL token')
+  const erc677bridgeToken = await deployContract(ERC677BridgeToken, [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
   foreignNonce++;
-  console.log('[Foreign] POA20: ', poa20foreign.options.address)
+  console.log('[Foreign] BRIDGEABLE_TOKEN_SYMBOL: ', erc677bridgeToken.options.address)
 
 
   console.log('deploying storage for foreign validators')
@@ -83,8 +83,6 @@ async function deployForeign() {
     url: FOREIGN_RPC_URL
   });
   assert.equal(txInitializeForeign.status, '0x1', 'Transaction Failed');
-  const validatorOwner = await bridgeValidatorsForeign.methods.owner().call();
-  assert.equal(validatorOwner.toLowerCase(), FOREIGN_OWNER_MULTISIG.toLocaleLowerCase());
   foreignNonce++;
 
   console.log('\nTransferring ownership of ValidatorsProxy\n')
@@ -99,8 +97,6 @@ async function deployForeign() {
   });
   assert.equal(txValidatorsForeignOwnershipData.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  const newProxyValidatorsOwner = await storageValidatorsForeign.methods.proxyOwner().call();
-  assert.equal(newProxyValidatorsOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS.toLowerCase());
 
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
@@ -133,7 +129,7 @@ async function deployForeign() {
   `)
   foreignBridgeImplementation.options.address = foreignBridgeStorage.options.address
   const initializeFBridgeData = await foreignBridgeImplementation.methods.initialize(
-    storageValidatorsForeign.options.address, poa20foreign.options.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, FOREIGN_GAS_PRICE, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
+    storageValidatorsForeign.options.address, erc677bridgeToken.options.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, FOREIGN_GAS_PRICE, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeBridge = await sendRawTx({
     data: initializeFBridgeData,
@@ -145,13 +141,13 @@ async function deployForeign() {
   assert.equal(txInitializeBridge.status, '0x1', 'Transaction Failed');
   foreignNonce++;
 
-  console.log('transferring ownership of POA20 token to foreignBridge contract')
-  const txOwnershipData = await poa20foreign.methods.transferOwnership(foreignBridgeStorage.options.address)
+  console.log('transferring ownership of ERC677BridgeToken token to foreignBridge contract')
+  const txOwnershipData = await erc677bridgeToken.methods.transferOwnership(foreignBridgeStorage.options.address)
           .encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS})
   const txOwnership = await sendRawTx({
     data: txOwnershipData,
     nonce: foreignNonce,
-    to: poa20foreign.options.address,
+    to: erc677bridgeToken.options.address,
     privateKey: deploymentPrivateKey,
     url: FOREIGN_RPC_URL
   });
@@ -169,8 +165,6 @@ async function deployForeign() {
   });
   assert.equal(txBridgeOwnershipData.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  const newProxyBridgeOwner = await foreignBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_BRIDGE.toLowerCase());
 
   return {
     foreignBridge:
@@ -178,7 +172,7 @@ async function deployForeign() {
         address: foreignBridgeStorage.options.address,
         deployedBlockNumber: Web3Utils.hexToNumber(foreignBridgeStorage.deployedBlockNumber)
       },
-    erc677: {address: poa20foreign.options.address}
+    erc677: {address: erc677bridgeToken.options.address}
   }
 }
 

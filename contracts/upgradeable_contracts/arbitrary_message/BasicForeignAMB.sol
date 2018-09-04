@@ -3,12 +3,19 @@ pragma solidity 0.4.24;
 import "./BasicAMB.sol";
 import "../../libraries/Message.sol";
 
+
 contract BasicForeignAMB is BasicAMB {
-    uint256 constant PASS_MESSAGE_GAS = 100000;
+    uint256 internal constant PASS_MESSAGE_GAS = 100000;
     bytes4 public foreignBridgeMode = DEFRAYAL_MODE;
-    address accountForAction = address(0);
+    address internal accountForAction = address(0);
 
     event RelayedMessage(address sender, address executor, bytes32 transactionHash);
+
+    function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes _data) external onlyValidator {
+        Message.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
+
+        processMessage(_data);
+    }
 
     function setSubsidizedModeForForeign() public {
         foreignBridgeMode = SUBSIDIZED_MODE;
@@ -31,6 +38,14 @@ contract BasicForeignAMB is BasicAMB {
     function depositForContractSender(address _contract) public payable {
         require(_contract != address(0));
         setBalanceOf(_contract, balanceOf(_contract) + msg.value);
+    }
+
+    function relayedMessages(bytes32 _txHash) public view returns(bool) {
+        return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
+    }
+
+    function balanceOf(address _balanceHolder) public view returns(uint) {
+        return uintStorage[keccak256(abi.encodePacked("balances", _balanceHolder))];
     }
 
     function isWithdrawFromDepositSelector(bytes _data) internal pure returns(bool _retval) {
@@ -67,12 +82,6 @@ contract BasicForeignAMB is BasicAMB {
         msg.sender.transfer(fee);
     }
 
-    function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes _data) external onlyValidator {
-        Message.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
-
-        processMessage(_data);
-    }
-
     function processMessage(bytes _data) internal {
         address sender;
         address executor;
@@ -105,14 +114,6 @@ contract BasicForeignAMB is BasicAMB {
 
     function setRelayedMessages(bytes32 _txHash, bool _status) internal {
         boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))] = _status;
-    }
-
-    function relayedMessages(bytes32 _txHash) public view returns(bool) {
-        return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
-    }
-
-    function balanceOf(address _balanceHolder) public view returns(uint) {
-        return uintStorage[keccak256(abi.encodePacked("balances", _balanceHolder))];
     }
 
     function setBalanceOf(address _balanceHolder, uint _amount) internal {

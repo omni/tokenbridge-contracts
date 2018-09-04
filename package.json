@@ -23,7 +23,7 @@
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
     "nodemon": "^1.17.3",
-    "solidity-coverage": "^0.4.15",
+    "solidity-coverage": "^0.5.11",
     "truffle-flattener": "^1.2.3"
   }
 }

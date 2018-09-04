@@ -69,6 +69,11 @@ contract BasicForeignAMB is BasicAMB {
 
     function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes _data) external onlyValidator {
         Message.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
+
+        processMessage(_data);
+    }
+
+    function processMessage(bytes _data) internal {
         address sender;
         address executor;
         uint256 gasLimit;

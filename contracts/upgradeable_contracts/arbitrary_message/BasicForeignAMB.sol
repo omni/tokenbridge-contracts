@@ -6,7 +6,6 @@ import "../../libraries/Message.sol";
 
 contract BasicForeignAMB is BasicAMB {
     uint256 internal constant PASS_MESSAGE_GAS = 100000;
-    bytes4 public foreignBridgeMode = DEFRAYAL_MODE;
     address internal accountForAction = address(0);
 
     event RelayedMessage(address sender, address executor, bytes32 transactionHash);
@@ -15,14 +14,6 @@ contract BasicForeignAMB is BasicAMB {
         Message.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
 
         processMessage(_data);
-    }
-
-    function setSubsidizedModeForForeign() public {
-        foreignBridgeMode = SUBSIDIZED_MODE;
-    }
-
-    function setDefrayalModeForForeign() public {
-        foreignBridgeMode = DEFRAYAL_MODE;
     }
 
     function withdrawFromDeposit(address _recipient) public {
@@ -95,15 +86,17 @@ contract BasicForeignAMB is BasicAMB {
         require(!relayedMessages(txHash));
         setRelayedMessages(txHash, true);
 
+        bytes memory bridgeMode = foreignBridgeMode();
+
         if (dataType == 0x00) {
-            require(foreignBridgeMode == SUBSIDIZED_MODE);
+            require(keccak256(bridgeMode) == keccak256(SUBSIDIZED_MODE));
             _passMessage(sender, executor, data, gasLimit);
         } else if (dataType == 0x01) {
-            require(foreignBridgeMode == DEFRAYAL_MODE);
+            require(keccak256(bridgeMode) == keccak256(DEFRAYAL_MODE));
             require(gasPrice == tx.gasprice);
             _defrayAndPassMessage(sender, executor, data, gasLimit);
         } else if (dataType == 0x02) {
-            require(foreignBridgeMode == DEFRAYAL_MODE);
+            require(keccak256(bridgeMode) == keccak256(DEFRAYAL_MODE));
             _defrayAndPassMessage(sender, executor, data, gasLimit);
         } else {
             revert();

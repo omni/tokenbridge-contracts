@@ -7,6 +7,7 @@ import "./BasicForeignAMB.sol";
 contract ForeignAMB is BasicForeignAMB {
     function initialize() public returns(bool) {
         require(!isInitialized(), "already initialized");
+        setDefrayalModeForForeign();
         setInitialize(true);
         return isInitialized();
     }

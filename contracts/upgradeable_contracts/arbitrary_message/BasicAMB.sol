@@ -7,7 +7,19 @@ import "../BasicBridge.sol";
 
 
 contract BasicAMB is BasicBridge {
-    bytes4 constant internal SUBSIDIZED_MODE = bytes4(keccak256("AMB-subsidized-mode"));
-    bytes4 constant internal DEFRAYAL_MODE = bytes4(keccak256("AMB-defrayal-mode"));
+    bytes constant internal SUBSIDIZED_MODE = bytes(abi.encodePacked("AMB-subsidized-mode"));
+    bytes constant internal DEFRAYAL_MODE = bytes(abi.encodePacked("AMB-defrayal-mode"));
+
+    function setSubsidizedModeForForeign() public onlyOwner {
+        bytesStorage[keccak256(abi.encodePacked("foreignBridgeMode"))] = SUBSIDIZED_MODE;
+    }
+
+    function setDefrayalModeForForeign() public onlyOwner {
+        bytesStorage[keccak256(abi.encodePacked("foreignBridgeMode"))] = DEFRAYAL_MODE;
+    }
+
+    function foreignBridgeMode() public view returns(bytes) {
+        return bytesStorage[keccak256(abi.encodePacked("foreignBridgeMode"))];
+    }
 }
 

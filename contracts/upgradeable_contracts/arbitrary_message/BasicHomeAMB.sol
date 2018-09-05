@@ -6,8 +6,6 @@ import "./BasicAMB.sol";
 
 
 contract BasicHomeAMB is BasicAMB {
-    bytes4 public foreignBridgeMode = DEFRAYAL_MODE;
-
     event RequestForSignature(bytes encodedData);
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
     event CollectedSignatures(
@@ -50,28 +48,20 @@ contract BasicHomeAMB is BasicAMB {
         }
     }
 
-    function setSubsidizedModeForForeign() public onlyOwner {
-        foreignBridgeMode = SUBSIDIZED_MODE;
-    }
-
-    function setDefrayalModeForForeign() public onlyOwner {
-        foreignBridgeMode = DEFRAYAL_MODE;
-    }
-
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public {
-        require(foreignBridgeMode == SUBSIDIZED_MODE);
+        require(keccak256(foreignBridgeMode()) == keccak256(SUBSIDIZED_MODE));
         emit RequestForSignature(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x00), _data));
     }
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas, uint256 _gasPrice) public {
-        if (foreignBridgeMode == SUBSIDIZED_MODE)
+        if (keccak256(foreignBridgeMode()) == keccak256(SUBSIDIZED_MODE))
             requireToPassMessage(_contract, _data, _gas);
         else
             emit RequestForSignature(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x01), _gasPrice, _data));
     }
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas, bytes1 _oracleGasPriceSpeed) public {
-        if (foreignBridgeMode == SUBSIDIZED_MODE)
+        if (keccak256(foreignBridgeMode()) == keccak256(SUBSIDIZED_MODE))
             requireToPassMessage(_contract, _data, _gas);
         else
             emit RequestForSignature(

@@ -26,11 +26,6 @@ contract BasicForeignAMB is BasicAMB {
         accountForAction = address(0);
     }
 
-    function depositForContractSender(address _contract) public payable {
-        require(_contract != address(0));
-        setBalanceOf(_contract, balanceOf(_contract).add(msg.value));
-    }
-
     function relayedMessages(bytes32 _txHash) public view returns(bool) {
         return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
     }

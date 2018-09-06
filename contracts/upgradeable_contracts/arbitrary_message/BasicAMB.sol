@@ -10,6 +10,31 @@ contract BasicAMB is BasicBridge {
     bytes constant internal SUBSIDIZED_MODE = bytes(abi.encodePacked("AMB-subsidized-mode"));
     bytes constant internal DEFRAYAL_MODE = bytes(abi.encodePacked("AMB-defrayal-mode"));
 
+    function initialize(
+        address _validatorContract,
+        uint256 _dailyLimit,
+        uint256 _maxPerTx,
+        uint256 _minPerTx,
+        uint256 _gasPrice,
+        uint256 _requiredBlockConfirmations
+    ) public returns(bool) {
+        require(!isInitialized());
+        require(_validatorContract != address(0));
+        require(_gasPrice > 0);
+        require(_requiredBlockConfirmations > 0);
+        require(_minPerTx >= 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
+        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
+        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
+        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
+        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
+        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
+        setDefrayalModeForForeign();
+        setInitialize(true);
+        return isInitialized();
+    }
+
     function setSubsidizedModeForForeign() public onlyOwner {
         bytesStorage[keccak256(abi.encodePacked("foreignBridgeMode"))] = SUBSIDIZED_MODE;
     }

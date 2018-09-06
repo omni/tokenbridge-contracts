@@ -5,10 +5,5 @@ import "./BasicForeignAMB.sol";
 
 
 contract ForeignAMB is BasicForeignAMB {
-    function initialize() public returns(bool) {
-        require(!isInitialized());
-        setDefrayalModeForForeign();
-        setInitialize(true);
-        return isInitialized();
-    }
+
 }

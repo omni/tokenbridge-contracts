@@ -25,7 +25,7 @@ contract BasicHomeAMB is BasicAMB {
         require(!isAlreadyProcessed(signed));
         // the check above assumes that the case when the value could be overflew
         // will not happen in the addition operation below
-        signed = signed + 1;
+        signed = signed.add(1);
         if (signed > 1) {
             // Duplicated signatures
             require(!messagesSigned(hashSender));
@@ -34,7 +34,7 @@ contract BasicHomeAMB is BasicAMB {
         }
         setMessagesSigned(hashSender, true);
 
-        bytes32 signIdx = keccak256(abi.encodePacked(hashMsg, (signed-1)));
+        bytes32 signIdx = keccak256(abi.encodePacked(hashMsg, (signed.sub(1))));
         setSignatures(signIdx, signature);
 
         setNumMessagesSigned(hashMsg, signed);

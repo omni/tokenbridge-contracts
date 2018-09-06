@@ -28,7 +28,7 @@ contract BasicForeignAMB is BasicAMB {
 
     function depositForContractSender(address _contract) public payable {
         require(_contract != address(0));
-        setBalanceOf(_contract, balanceOf(_contract) + msg.value);
+        setBalanceOf(_contract, balanceOf(_contract).add(msg.value));
     }
 
     function relayedMessages(bytes32 _txHash) public view returns(bool) {
@@ -62,11 +62,11 @@ contract BasicForeignAMB is BasicAMB {
     }
 
     function _defrayAndPassMessage(address _sender, address _contract, bytes _data, uint256 _gas) internal {
-        uint256 fee = (PASS_MESSAGE_GAS + _gas) * tx.gasprice;
+        uint256 fee = PASS_MESSAGE_GAS.add(_gas).mul(tx.gasprice);
         require(balanceOf(_sender) >= fee);
         require(address(this).balance >= fee);
 
-        setBalanceOf(_sender, balanceOf(_sender) - fee);
+        setBalanceOf(_sender, balanceOf(_sender).sub(fee));
 
         _passMessage(_sender, _contract, _data, _gas);
 

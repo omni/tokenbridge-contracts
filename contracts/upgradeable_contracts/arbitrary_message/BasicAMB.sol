@@ -21,5 +21,10 @@ contract BasicAMB is BasicBridge {
     function foreignBridgeMode() public view returns(bytes) {
         return bytesStorage[keccak256(abi.encodePacked("foreignBridgeMode"))];
     }
+
+    function checkAndUpdateGasLimits(uint256 _gas) internal {
+        require(withinLimit(_gas), "Estimated Gas is not within limits or daily gas usage limit reached");
+        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_gas));
+    }
 }
 

@@ -23,7 +23,7 @@ contract BasicAMB is BasicBridge {
     }
 
     function checkAndUpdateGasLimits(uint256 _gas) internal {
-        require(withinLimit(_gas), "Estimated Gas is not within limits or daily gas usage limit reached");
+        require(withinLimit(_gas));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_gas));
     }
 }

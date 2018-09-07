@@ -81,7 +81,7 @@ contract BasicForeignAMB is BasicAMB {
         require(!relayedMessages(txHash));
         setRelayedMessages(txHash, true);
 
-        bytes memory bridgeMode = foreignBridgeMode();
+        bytes memory bridgeMode = homeToForeignMode();
 
         if (dataType == 0x00) {
             require(keccak256(bridgeMode) == keccak256(SUBSIDIZED_MODE));

@@ -30,21 +30,21 @@ contract BasicAMB is BasicBridge {
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        setDefrayalModeForForeign();
+        setDefrayalModeForHomeToForeign();
         setInitialize(true);
         return isInitialized();
     }
 
-    function setSubsidizedModeForForeign() public onlyOwner {
-        bytesStorage[keccak256(abi.encodePacked("foreignBridgeMode"))] = SUBSIDIZED_MODE;
+    function setSubsidizedModeForHomeToForeign() public onlyOwner {
+        bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = SUBSIDIZED_MODE;
     }
 
-    function setDefrayalModeForForeign() public onlyOwner {
-        bytesStorage[keccak256(abi.encodePacked("foreignBridgeMode"))] = DEFRAYAL_MODE;
+    function setDefrayalModeForHomeToForeign() public onlyOwner {
+        bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = DEFRAYAL_MODE;
     }
 
-    function foreignBridgeMode() public view returns(bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("foreignBridgeMode"))];
+    function homeToForeignMode() public view returns(bytes) {
+        return bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))];
     }
 
     function checkAndUpdateGasLimits(uint256 _gas) internal {

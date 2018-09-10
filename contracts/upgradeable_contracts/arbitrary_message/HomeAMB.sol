@@ -9,7 +9,7 @@ contract HomeAMB is BasicHomeAMB {
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public {
         require(keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE));
-        checkAndUpdateGasLimits(_gas);
+        require(_gas <= maxPerTx());
         emit RequestForSignature(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x00), _data));
     }
 
@@ -17,7 +17,7 @@ contract HomeAMB is BasicHomeAMB {
         if (keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE))
             requireToPassMessage(_contract, _data, _gas);
         else {
-            checkAndUpdateGasLimits(_gas);
+            require(_gas <= maxPerTx());
             emit RequestForSignature(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x01), _gasPrice, _data));
         }
     }
@@ -26,7 +26,7 @@ contract HomeAMB is BasicHomeAMB {
         if (keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE))
             requireToPassMessage(_contract, _data, _gas);
         else {
-            checkAndUpdateGasLimits(_gas);
+            require(_gas <= maxPerTx());
             emit RequestForSignature(
                 abi.encodePacked(msg.sender, _contract, _gas, uint8(0x02), _oracleGasPriceSpeed, _data)
             );

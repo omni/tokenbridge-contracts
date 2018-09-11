@@ -1,12 +1,13 @@
 pragma solidity 0.4.24;
 
 import "../BasicBridge.sol";
-import "../../libraries/Message.sol";
+import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
 
 
 contract BasicHomeAMB is BasicAMB {
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
+
     event CollectedSignatures(
         address authorityResponsibleForRelay,
         bytes32 messageHash,
@@ -15,8 +16,7 @@ contract BasicHomeAMB is BasicAMB {
 
     function submitSignature(bytes signature, bytes message) external onlyValidator {
         // ensure that `signature` is really `message` signed by `msg.sender`
-        require(Message.isMessageValid(message));
-        require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message));
+        require(msg.sender == ArbitraryMessage.recoverAddressFromSignedMessage(signature, message));
         bytes32 hashMsg = keccak256(abi.encodePacked(message));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
 
@@ -53,10 +53,6 @@ contract BasicHomeAMB is BasicAMB {
 
     function numMessagesSigned(bytes32 _message) public view returns(uint256) {
         return uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))];
-    }
-
-    function requiredMessageLength() public pure returns(uint256) {
-        return Message.requiredMessageLength();
     }
 
     function signature(bytes32 _hash, uint256 _index) public view returns (bytes) {

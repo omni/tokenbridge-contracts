@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "./BasicAMB.sol";
-import "../../libraries/Message.sol";
+import "../../libraries/ArbitraryMessage.sol";
 
 
 contract BasicForeignAMB is BasicAMB {
@@ -11,7 +11,7 @@ contract BasicForeignAMB is BasicAMB {
     event RelayedMessage(address sender, address executor, bytes32 transactionHash);
 
     function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes _data) external onlyValidator {
-        Message.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
+        ArbitraryMessage.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
 
         processMessage(_data);
     }
@@ -76,7 +76,7 @@ contract BasicForeignAMB is BasicAMB {
         uint256 gasPrice;
         bytes32 txHash;
         bytes memory data;
-        (sender, executor, gasLimit, dataType, gasPrice, txHash, data) = Message.unpackData(_data);
+        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data);
 
         require(!relayedMessages(txHash));
         setRelayedMessages(txHash, true);

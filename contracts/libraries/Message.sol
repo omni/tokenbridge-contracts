@@ -112,46 +112,4 @@ library Message {
             encounteredAddresses[i] = recoveredAddress;
         }
     }
-
-    function unpackData(bytes _data)
-    internal
-    pure
-    returns(address sender, address executor, uint256 gasLimit, bytes1 dataType, uint256 gasPrice, bytes32 txHash, bytes memory data)
-    {
-        uint256 datasize;
-        uint256 srcdataptr = 20 + 20 + 32 + 1 + 32; //20 (sender)  + 20 (executor) + 32 (gasLimit) + 1 (dataType) + 32 (tx hash)
-        assembly {
-            sender := and(mload(add(_data, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            executor := and(mload(add(_data, 40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            gasLimit := mload(add(_data, 72))
-            dataType := and(mload(add(_data, 104)), 0xFF00000000000000000000000000000000000000000000000000000000000000)
-            switch dataType
-            case 0x0000000000000000000000000000000000000000000000000000000000000000 {
-                gasPrice := 0
-                //oracleGasPriceSpeed := 0x00
-                txHash := mload(add(_data, 105))
-            }
-            case 0x0100000000000000000000000000000000000000000000000000000000000000 {
-                gasPrice := mload(add(_data, 105)) // 32
-                //oracleGasPriceSpeed := 0x00
-                txHash := mload(add(_data, 137))
-                srcdataptr := add(srcdataptr, 0x20)
-            }
-            case 0x0200000000000000000000000000000000000000000000000000000000000000 {
-                gasPrice := 0
-                //oracleGasPriceSpeed := and(mload(add(_data, 105)), 0xFF00000000000000000000000000000000000000000000000000000000000000) // 1
-                txHash := mload(add(_data, 106))
-                //srcdataptr := add(srcdataptr, 0x01)
-            }
-            default {
-                revert(0, 1)
-            }
-            datasize := sub(mload(_data), srcdataptr)
-        }
-        data = new bytes(datasize);
-        assembly {
-            let dataptr := add(data, /*BYTES_HEADER_SIZE*/32)
-            calldatacopy(dataptr, add(68, srcdataptr), datasize) //68 = 4 (selector) + 32 (bytes header) + 32 (bytes length)
-        }
-    }
 }

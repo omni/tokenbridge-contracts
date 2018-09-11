@@ -24,17 +24,18 @@ contract('ArbitraryMessage.sol', async () => {
 
       // when
       const messageTest = await MessageTest.new()
-      const { logs } = await messageTest.unpackData(message)
+      const result = await messageTest.unpackData(message)
 
       // then
-      expect(logs.length).to.be.equal(1)
-      const { args } = logs[0]
-      expect(args.sender).to.be.equal(sender)
-      expect(args.executor).to.be.equal(contractAddress)
-      expect(args.gasLimit.toString()).to.be.equal(gasLimit)
-      expect(args.dataType).to.be.equal(dataType)
-      expect(args.gasPrice.toString()).to.be.equal(gasPrice)
-      expect(args.data).to.be.equal(data)
+      expect(result.length).to.be.equal(7)
+      const [_sender, _executor, _txHash, _gasLimit, _dataType, _gasPrice, _data] = result
+      expect(_sender).to.be.equal(sender)
+      expect(_executor).to.be.equal(contractAddress)
+      expect(_txHash).to.be.equal(txHash)
+      expect(_gasLimit.toString()).to.be.equal(gasLimit)
+      expect(_dataType).to.be.equal(dataType)
+      expect(_gasPrice.toString()).to.be.equal(gasPrice)
+      expect(_data).to.be.equal(data)
     })
 
     it('unpack dataType 0x01', async () => {
@@ -60,17 +61,18 @@ contract('ArbitraryMessage.sol', async () => {
 
       // when
       const messageTest = await MessageTest.new()
-      const { logs } = await messageTest.unpackData(message)
+      const result = await messageTest.unpackData(message)
 
       // then
-      expect(logs.length).to.be.equal(1)
-      const { args } = logs[0]
-      expect(args.sender).to.be.equal(sender)
-      expect(args.executor).to.be.equal(contractAddress)
-      expect(args.gasLimit.toString()).to.be.equal(gasLimit)
-      expect(args.dataType).to.be.equal(dataType)
-      expect(args.gasPrice.toString()).to.be.equal(gasPrice)
-      expect(args.data).to.be.equal(data)
+      expect(result.length).to.be.equal(7)
+      const [_sender, _executor, _txHash, _gasLimit, _dataType, _gasPrice, _data] = result
+      expect(_sender).to.be.equal(sender)
+      expect(_executor).to.be.equal(contractAddress)
+      expect(_txHash).to.be.equal(txHash)
+      expect(_gasLimit.toString()).to.be.equal(gasLimit)
+      expect(_dataType).to.be.equal(dataType)
+      expect(_gasPrice.toString()).to.be.equal(gasPrice)
+      expect(_data).to.be.equal(data)
     })
 
     it('unpack dataType 0x02', async () => {
@@ -95,17 +97,18 @@ contract('ArbitraryMessage.sol', async () => {
 
       // when
       const messageTest = await MessageTest.new()
-      const { logs } = await messageTest.unpackData(message)
+      const result = await messageTest.unpackData(message)
 
       // then
-      expect(logs.length).to.be.equal(1)
-      const { args } = logs[0]
-      expect(args.sender).to.be.equal(sender)
-      expect(args.executor).to.be.equal(contractAddress)
-      expect(args.gasLimit.toString()).to.be.equal(gasLimit)
-      expect(args.dataType).to.be.equal(dataType)
-      expect(args.gasPrice.toString()).to.be.equal(gasPrice)
-      expect(args.data).to.be.equal(data)
+      expect(result.length).to.be.equal(7)
+      const [_sender, _executor, _txHash, _gasLimit, _dataType, _gasPrice, _data] = result
+      expect(_sender).to.be.equal(sender)
+      expect(_executor).to.be.equal(contractAddress)
+      expect(_txHash).to.be.equal(txHash)
+      expect(_gasLimit.toString()).to.be.equal(gasLimit)
+      expect(_dataType).to.be.equal(dataType)
+      expect(_gasPrice.toString()).to.be.equal(gasPrice)
+      expect(_data).to.be.equal(data)
     })
   })
 })

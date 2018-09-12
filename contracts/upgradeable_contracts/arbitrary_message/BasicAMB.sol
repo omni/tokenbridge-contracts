@@ -46,7 +46,7 @@ contract BasicAMB is BasicBridge {
     function getMinimumGasUsage(bytes _data) public pure returns(uint256 gas) {
         //From Ethereum Yellow Paper
         // 68 gas is paid for every non-zero byte of data or code for a transaction
-        return _data.length * 68;
+        return _data.length.mul(68);
     }
 }
 

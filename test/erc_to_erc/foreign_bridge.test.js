@@ -36,6 +36,9 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       token.address.should.be.equal(await foreignBridge.erc20token());
       (await foreignBridge.deployedAtBlock()).should.be.bignumber.above(0);
       requireBlockConfirmations.should.be.bignumber.equal(await foreignBridge.requiredBlockConfirmations())
+      const bridgeMode = '0xba4690f5' // 4 bytes of keccak256('erc-to-erc-core')
+      const mode = await foreignBridge.bridgeMode();
+      mode.should.be.equal(bridgeMode)
     })
   })
   describe('#executeSignatures', async () => {

@@ -11,6 +11,8 @@ import "../ERC677Bridge.sol";
 
 contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677Bridge {
 
+    bytes internal constant BRIDGE_MODE = hex"ba4690f5"; // 4 bytes of keccak256('erc-to-erc-core')
+
     function initialize (
         address _validatorContract,
         uint256 _dailyLimit,
@@ -35,6 +37,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
+        setBridgeMode(BRIDGE_MODE);
         setInitialize(true);
         setErc677token(_erc677token);
 

@@ -13,6 +13,8 @@ contract Sacrifice {
 
 contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
 
+    bytes internal constant BRIDGE_MODE = hex"92a8d7fe"; // 4 bytes of keccak256('native-to-erc-core')
+
     function initialize (
         address _validatorContract,
         uint256 _dailyLimit,
@@ -35,6 +37,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
+        setBridgeMode(BRIDGE_MODE);
         setInitialize(true);
         return isInitialized();
     }

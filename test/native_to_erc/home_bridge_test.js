@@ -36,6 +36,9 @@ contract('HomeBridge', async (accounts) => {
       '3'.should.be.bignumber.equal(await homeContract.dailyLimit())
       '2'.should.be.bignumber.equal(await homeContract.maxPerTx())
       '1'.should.be.bignumber.equal(await homeContract.minPerTx())
+      const bridgeMode = '0x92a8d7fe' // 4 bytes of keccak256('native-to-erc-core')
+      const mode = await homeContract.bridgeMode();
+      mode.should.be.equal(bridgeMode)
     })
     it('cant set maxPerTx > dailyLimit', async () => {
       false.should.be.equal(await homeContract.isInitialized())

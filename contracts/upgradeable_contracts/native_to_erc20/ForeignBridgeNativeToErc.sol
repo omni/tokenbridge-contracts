@@ -10,8 +10,6 @@ import "../ERC677Bridge.sol";
 
 contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBridge, ERC677Bridge {
 
-    bytes internal constant BRIDGE_MODE = hex"92a8d7fe"; // 4 bytes of keccak256('native-to-erc-core')
-
     /// Event created on money withdraw.
     event UserRequestForAffirmation(address recipient, uint256 value);
 
@@ -36,9 +34,12 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _foreignGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        setBridgeMode(BRIDGE_MODE);
         setInitialize(true);
         return isInitialized();
+    }
+
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyOwner {

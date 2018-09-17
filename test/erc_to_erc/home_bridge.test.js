@@ -39,7 +39,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       '2'.should.be.bignumber.equal(await homeContract.maxPerTx())
       '1'.should.be.bignumber.equal(await homeContract.minPerTx())
       const bridgeMode = '0xba4690f5' // 4 bytes of keccak256('erc-to-erc-core')
-      const mode = await homeContract.bridgeMode();
+      const mode = await homeContract.getBridgeMode();
       mode.should.be.equal(bridgeMode)
       const [major, minor, patch] = await homeContract.getBridgeInterfacesVersion()
       major.should.be.bignumber.gte(0)

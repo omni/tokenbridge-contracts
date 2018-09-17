@@ -37,7 +37,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       (await foreignBridge.deployedAtBlock()).should.be.bignumber.above(0);
       requireBlockConfirmations.should.be.bignumber.equal(await foreignBridge.requiredBlockConfirmations())
       const bridgeMode = '0xba4690f5' // 4 bytes of keccak256('erc-to-erc-core')
-      const mode = await foreignBridge.bridgeMode();
+      const mode = await foreignBridge.getBridgeMode();
       mode.should.be.equal(bridgeMode)
       const [major, minor, patch] = await foreignBridge.getBridgeInterfacesVersion()
       major.should.be.bignumber.gte(0)

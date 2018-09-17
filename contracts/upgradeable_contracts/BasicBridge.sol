@@ -16,14 +16,6 @@ contract BasicBridge is EternalStorage, Validatable {
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
     event DailyLimitChanged(uint256 newLimit);
 
-    function bridgeMode() public view returns(bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("bridgeMode"))];
-    }
-
-    function setBridgeMode(bytes _mode) internal {
-        bytesStorage[keccak256(abi.encodePacked("bridgeMode"))] = _mode;
-    }
-
     function setGasPrice(uint256 _gasPrice) public onlyOwner {
         require(_gasPrice > 0);
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;

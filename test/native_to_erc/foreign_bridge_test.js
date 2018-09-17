@@ -55,7 +55,7 @@ contract('ForeignBridge', async (accounts) => {
       halfEther.should.be.bignumber.equal(await foreignBridge.maxPerTx())
       minPerTx.should.be.bignumber.equal(await foreignBridge.minPerTx())
       const bridgeMode = '0x92a8d7fe' // 4 bytes of keccak256('native-to-erc-core')
-      const mode = await foreignBridge.bridgeMode();
+      const mode = await foreignBridge.getBridgeMode();
       mode.should.be.equal(bridgeMode)
       const [major, minor, patch] = await foreignBridge.getBridgeInterfacesVersion()
       major.should.be.bignumber.gte(0)

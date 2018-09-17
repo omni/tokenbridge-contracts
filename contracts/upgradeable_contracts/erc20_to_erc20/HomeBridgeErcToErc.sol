@@ -37,11 +37,14 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        setBridgeMode(BRIDGE_MODE);
         setInitialize(true);
         setErc677token(_erc677token);
 
         return isInitialized();
+    }
+
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 
     function () public {

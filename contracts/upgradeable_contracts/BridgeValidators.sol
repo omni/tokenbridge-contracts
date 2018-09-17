@@ -10,7 +10,7 @@ import "../libraries/Version.sol";
 contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     using SafeMath for uint256;
 
-    Version.Version public getInterfacesVersion = Version.Version(1, 0, 0);
+    Version.Version public getBridgeInterfacesVersion = Version.Version(1, 0, 0);
 
     event ValidatorAdded (address indexed validator);
     event ValidatorRemoved (address indexed validator);

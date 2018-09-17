@@ -26,7 +26,7 @@ contract('ERC677BridgeToken', async (accounts) => {
     const mintingFinished = await token.mintingFinished();
     assert.equal(mintingFinished, false);
 
-    const [major, minor, patch] = await token.getInterfacesVersion()
+    const [major, minor, patch] = await token.getBridgeInterfacesVersion()
     major.should.be.bignumber.gte(0)
     minor.should.be.bignumber.gte(0)
     patch.should.be.bignumber.gte(0)

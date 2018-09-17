@@ -4,10 +4,14 @@ import "./Ownable.sol";
 import "../IBridgeValidators.sol";
 import "../libraries/SafeMath.sol";
 import "../upgradeability/EternalStorage.sol";
+import "../libraries/Version.sol";
 
 
 contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     using SafeMath for uint256;
+
+    Version.Version public getInterfacesVersion = Version.Version(1, 0, 0);
+
     event ValidatorAdded (address indexed validator);
     event ValidatorRemoved (address indexed validator);
     event RequiredSignaturesChanged (uint256 requiredSignatures);

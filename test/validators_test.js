@@ -29,6 +29,10 @@ contract('BridgeValidators', async (accounts) => {
       accounts[2].should.be.equal(await bridgeValidators.owner())
       '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount());
       (await bridgeValidators.deployedAtBlock()).should.be.bignumber.above(0)
+      const [major, minor, patch] = await bridgeValidators.getInterfacesVersion()
+      major.should.be.bignumber.gte(0)
+      minor.should.be.bignumber.gte(0)
+      patch.should.be.bignumber.gte(0)
     })
   })
 

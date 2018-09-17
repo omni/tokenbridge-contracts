@@ -41,6 +41,10 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const bridgeMode = '0xba4690f5' // 4 bytes of keccak256('erc-to-erc-core')
       const mode = await homeContract.bridgeMode();
       mode.should.be.equal(bridgeMode)
+      const [major, minor, patch] = await homeContract.getBridgeInterfacesVersion()
+      major.should.be.bignumber.gte(0)
+      minor.should.be.bignumber.gte(0)
+      patch.should.be.bignumber.gte(0)
     })
     it('cant set maxPerTx > dailyLimit', async () => {
       false.should.be.equal(await homeContract.isInitialized())

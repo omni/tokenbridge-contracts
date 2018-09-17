@@ -26,6 +26,10 @@ contract('ERC677BridgeToken', async (accounts) => {
     const mintingFinished = await token.mintingFinished();
     assert.equal(mintingFinished, false);
 
+    const [major, minor, patch] = await token.getInterfacesVersion()
+    major.should.be.bignumber.gte(0)
+    minor.should.be.bignumber.gte(0)
+    patch.should.be.bignumber.gte(0)
   })
   describe('#mint', async() => {
     it('can mint by owner', async () => {

@@ -57,6 +57,10 @@ contract('ForeignBridge', async (accounts) => {
       const bridgeMode = '0x92a8d7fe' // 4 bytes of keccak256('native-to-erc-core')
       const mode = await foreignBridge.bridgeMode();
       mode.should.be.equal(bridgeMode)
+      const [major, minor, patch] = await foreignBridge.getBridgeInterfacesVersion()
+      major.should.be.bignumber.gte(0)
+      minor.should.be.bignumber.gte(0)
+      patch.should.be.bignumber.gte(0)
     })
   })
   describe('#executeSignatures', async () => {

@@ -2,12 +2,16 @@ pragma solidity 0.4.24;
 import "../IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
+import "../libraries/Version.sol";
 import "./Validatable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
 contract BasicBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
+
+    Version.Version public getBridgeInterfacesVersion = Version.Version(1, 0, 0);
+
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
     event DailyLimitChanged(uint256 newLimit);

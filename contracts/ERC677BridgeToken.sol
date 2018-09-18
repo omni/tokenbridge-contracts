@@ -14,7 +14,7 @@ contract ERC677BridgeToken is
     BurnableToken,
     MintableToken {
 
-    Version.Version public getTokenInterfacesVersion = Version.Version(1, 0, 0);
+    Version.Version public getTokenInterfacesVersion = Version.Version(2, 0, 0);
 
     constructor(
         string _name,

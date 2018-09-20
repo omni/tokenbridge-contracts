@@ -1,7 +1,5 @@
 const Web3Utils = require('web3-utils')
-require('dotenv').config({
-  path: `${__dirname}../../.env`
-})
+const env = require('../loadEnv')
 
 const assert = require('assert')
 
@@ -12,7 +10,7 @@ const EternalStorageProxy = require('../../../build/contracts/EternalStorageProx
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToErc.json')
 
-const VALIDATORS = process.env.VALIDATORS.split(' ')
+const VALIDATORS = env.VALIDATORS.split(' ')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -22,7 +20,7 @@ const {
   FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
   ERC20_TOKEN_ADDRESS
-} = process.env
+} = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 

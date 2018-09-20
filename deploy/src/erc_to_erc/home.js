@@ -1,9 +1,6 @@
-const Web3Utils = require('web3-utils')
-require('dotenv').config({
-  path: `${__dirname}../../.env`
-})
-
 const assert = require('assert')
+const Web3Utils = require('web3-utils')
+const env = require('../loadEnv')
 
 const { deployContract, privateKeyToAddress, sendRawTx } = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
@@ -13,8 +10,8 @@ const BridgeValidators = require('../../../build/contracts/BridgeValidators.json
 const HomeBridge = require('../../../build/contracts/HomeBridgeErcToErc.json')
 const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
 
-const VALIDATORS = process.env.VALIDATORS.split(' ')
-const HOME_GAS_PRICE = Web3Utils.toWei(process.env.HOME_GAS_PRICE, 'gwei')
+const VALIDATORS = env.VALIDATORS.split(' ')
+const HOME_GAS_PRICE = Web3Utils.toWei(env.HOME_GAS_PRICE, 'gwei')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -29,7 +26,7 @@ const {
   BRIDGEABLE_TOKEN_NAME,
   BRIDGEABLE_TOKEN_SYMBOL,
   BRIDGEABLE_TOKEN_DECIMALS
-} = process.env
+} = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 

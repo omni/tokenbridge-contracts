@@ -41,6 +41,10 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         return isInitialized();
     }
 
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
+    }
+
     function () public {
         revert();
     }

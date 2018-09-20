@@ -47,6 +47,10 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
         emit UserRequestForSignature(msg.sender, msg.value);
     }
 
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
+    }
+
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
         if (!_recipient.send(_value)) {
             (new Sacrifice).value(_value)(_recipient);

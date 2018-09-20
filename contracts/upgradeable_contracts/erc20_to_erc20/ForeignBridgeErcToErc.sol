@@ -9,6 +9,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
 contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
+
     event RelayedMessage(address recipient, uint value, bytes32 transactionHash);
 
     function initialize(
@@ -25,6 +26,10 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         setInitialize(true);
         return isInitialized();
+    }
+
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 
     function claimTokens(address _token, address _to) public onlyOwner {

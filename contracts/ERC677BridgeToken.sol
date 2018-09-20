@@ -5,6 +5,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./IBurnableMintableERC677Token.sol";
 import "./ERC677Receiver.sol";
+import "./libraries/Version.sol";
 
 
 contract ERC677BridgeToken is
@@ -12,6 +13,9 @@ contract ERC677BridgeToken is
     DetailedERC20,
     BurnableToken,
     MintableToken {
+
+    Version.Version public getTokenInterfacesVersion = Version.Version(2, 0, 0);
+
     constructor(
         string _name,
         string _symbol,

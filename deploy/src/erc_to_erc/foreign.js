@@ -1,9 +1,8 @@
+const assert = require('assert')
 const Web3Utils = require('web3-utils')
 const env = require('../loadEnv')
 
-const assert = require('assert')
-
-const { deployContract, privateKeyToAddress, sendRawTx } = require('../deploymentUtils')
+const { deployContract, privateKeyToAddress, sendRawTxForeign } = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
@@ -58,7 +57,7 @@ async function deployForeign() {
   const upgradeToBridgeVForeignData = await storageValidatorsForeign.methods
     .upgradeTo('1', bridgeValidatorsForeign.options.address)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txUpgradeToBridgeVForeign = await sendRawTx({
+  const txUpgradeToBridgeVForeign = await sendRawTxForeign({
     data: upgradeToBridgeVForeignData,
     nonce: foreignNonce,
     to: storageValidatorsForeign.options.address,
@@ -76,7 +75,7 @@ async function deployForeign() {
   const initializeForeignData = await bridgeValidatorsForeign.methods
     .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_OWNER_MULTISIG)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txInitializeForeign = await sendRawTx({
+  const txInitializeForeign = await sendRawTxForeign({
     data: initializeForeignData,
     nonce: foreignNonce,
     to: bridgeValidatorsForeign.options.address,
@@ -90,7 +89,7 @@ async function deployForeign() {
   const validatorsForeignOwnershipData = await storageValidatorsForeign.methods
     .transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txValidatorsForeignOwnershipData = await sendRawTx({
+  const txValidatorsForeignOwnershipData = await sendRawTxForeign({
     data: validatorsForeignOwnershipData,
     nonce: foreignNonce,
     to: storageValidatorsForeign.options.address,
@@ -125,7 +124,7 @@ async function deployForeign() {
   const upgradeToForeignBridgeData = await foreignBridgeStorage.methods
     .upgradeTo('1', foreignBridgeImplementation.options.address)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txUpgradeToForeignBridge = await sendRawTx({
+  const txUpgradeToForeignBridge = await sendRawTxForeign({
     data: upgradeToForeignBridgeData,
     nonce: foreignNonce,
     to: foreignBridgeStorage.options.address,
@@ -146,7 +145,7 @@ async function deployForeign() {
       FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txInitializeBridge = await sendRawTx({
+  const txInitializeBridge = await sendRawTxForeign({
     data: initializeFBridgeData,
     nonce: foreignNonce,
     to: foreignBridgeStorage.options.address,
@@ -159,7 +158,7 @@ async function deployForeign() {
   const bridgeOwnershipData = await foreignBridgeStorage.methods
     .transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_BRIDGE)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txBridgeOwnershipData = await sendRawTx({
+  const txBridgeOwnershipData = await sendRawTxForeign({
     data: bridgeOwnershipData,
     nonce: foreignNonce,
     to: foreignBridgeStorage.options.address,

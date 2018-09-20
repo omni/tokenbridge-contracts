@@ -1,9 +1,8 @@
-const Web3Utils = require('web3-utils')
-const env = require('../loadEnv')
-
 const assert = require('assert')
+const Web3Utils = require('web3-utils')
 
-const { deployContract, privateKeyToAddress, sendRawTx } = require('../deploymentUtils')
+const env = require('../loadEnv')
+const { deployContract, privateKeyToAddress, sendRawTxHome } = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
@@ -49,7 +48,7 @@ async function deployHome() {
   const upgradeToBridgeVHomeData = await storageValidatorsHome.methods
     .upgradeTo('1', bridgeValidatorsHome.options.address)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txUpgradeToBridgeVHome = await sendRawTx({
+  const txUpgradeToBridgeVHome = await sendRawTxHome({
     data: upgradeToBridgeVHomeData,
     nonce: homeNonce,
     to: storageValidatorsHome.options.address,
@@ -67,7 +66,7 @@ async function deployHome() {
   const initializeData = await bridgeValidatorsHome.methods
     .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_OWNER_MULTISIG)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txInitialize = await sendRawTx({
+  const txInitialize = await sendRawTxHome({
     data: initializeData,
     nonce: homeNonce,
     to: bridgeValidatorsHome.options.address,
@@ -81,7 +80,7 @@ async function deployHome() {
   const proxyDataTransfer = await storageValidatorsHome.methods
     .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_VALIDATORS)
     .encodeABI()
-  const txProxyDataTransfer = await sendRawTx({
+  const txProxyDataTransfer = await sendRawTxHome({
     data: proxyDataTransfer,
     nonce: homeNonce,
     to: storageValidatorsHome.options.address,
@@ -111,7 +110,7 @@ async function deployHome() {
   const upgradeToHomeBridgeData = await homeBridgeStorage.methods
     .upgradeTo('1', homeBridgeImplementation.options.address)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txUpgradeToHomeBridge = await sendRawTx({
+  const txUpgradeToHomeBridge = await sendRawTxHome({
     data: upgradeToHomeBridgeData,
     nonce: homeNonce,
     to: homeBridgeStorage.options.address,
@@ -143,7 +142,7 @@ async function deployHome() {
       HOME_REQUIRED_BLOCK_CONFIRMATIONS
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txInitializeHomeBridge = await sendRawTx({
+  const txInitializeHomeBridge = await sendRawTxHome({
     data: initializeHomeBridgeData,
     nonce: homeNonce,
     to: homeBridgeStorage.options.address,
@@ -157,7 +156,7 @@ async function deployHome() {
   const homeBridgeProxyData = await homeBridgeStorage.methods
     .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_BRIDGE)
     .encodeABI()
-  const txhomeBridgeProxyData = await sendRawTx({
+  const txhomeBridgeProxyData = await sendRawTxHome({
     data: homeBridgeProxyData,
     nonce: homeNonce,
     to: homeBridgeStorage.options.address,

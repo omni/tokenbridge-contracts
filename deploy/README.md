@@ -8,9 +8,14 @@ npm run compile
 2. create `.env` file
 `cp .env.example .env`
 
-3. adjust parameters in `.env` file as per recommendation below depending on the desired bridge mode 
+3. If it is necessary, deploy and configure a multi-sig wallet contract which will
+   be used to manage the bridge contracts after deployment.
 
-4. Run `node deploy.js` 
+4. adjust parameters in `.env` file as per recommendation below depending on the desired bridge mode 
+
+5. Fill balance of the deployment account in Home and Foreign networks 
+
+6. Run `node deploy.js` 
 
 ## Configuration for `NATIVE-TO-ERC` Bridge mode  
 
@@ -117,7 +122,7 @@ Here is an example of `.env` file for `erc-to-erc` bridge mode.
 
 ```bash
 # The type of bridge. Defines set of contracts to be deployed.
-BRIDGE_MODE=NATIVE_TO_ERC
+BRIDGE_MODE=ERC_TO_ERC
 
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
@@ -193,6 +198,9 @@ FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS=8
 # The default gas price used to send Foreign network transactions finalizing
 # asset deposits. This price is used if the Gas price oracle is unreachable.
 FOREIGN_GAS_PRICE=10
+# The address of the existing ERC20 compatible token in the Foreign network to
+# be exchanged to the ERC20/ERC677 token deployed on Home.
+ERC20_TOKEN_ADDRESS=0x
 
 # The minimum number of validators required to send their signatures confirming
 # the relay of assets. The same number of validators is expected on both sides

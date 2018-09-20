@@ -8,9 +8,7 @@ RUN npm install
 
 COPY ./deploy/package.json ./deploy/
 COPY ./deploy/package-lock.json ./deploy/
-RUN cd deploy
-RUN npm install
-RUN cd ..
+RUN npm install deploy
 
 COPY . .
 RUN npm run compile

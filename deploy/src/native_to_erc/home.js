@@ -1,7 +1,5 @@
 const Web3Utils = require('web3-utils')
-require('dotenv').config({
-  path: `${__dirname}../../.env`
-})
+const env = require('../loadEnv')
 
 const assert = require('assert')
 
@@ -12,8 +10,8 @@ const EternalStorageProxy = require('../../../build/contracts/EternalStorageProx
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const HomeBridge = require('../../../build/contracts/HomeBridgeNativeToErc.json')
 
-const VALIDATORS = process.env.VALIDATORS.split(' ')
-const HOME_GAS_PRICE = Web3Utils.toWei(process.env.HOME_GAS_PRICE, 'gwei')
+const VALIDATORS = env.VALIDATORS.split(' ')
+const HOME_GAS_PRICE = Web3Utils.toWei(env.HOME_GAS_PRICE, 'gwei')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -25,7 +23,7 @@ const {
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
   HOME_REQUIRED_BLOCK_CONFIRMATIONS
-} = process.env
+} = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 

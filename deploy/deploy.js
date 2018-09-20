@@ -1,12 +1,9 @@
 const fs = require('fs')
 const path = require('path')
 
-const dotenvPath = path.join(__dirname, '.env')
-if (fs.existsSync(dotenvPath)) {
-  require('dotenv').config({
-    path: dotenvPath
-  })
-}
+const env = require('./src/loadEnv')
+
+const { BRIDGE_MODE, ERC20_TOKEN_ADDRESS } = env
 
 const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
 
@@ -58,7 +55,7 @@ async function deployErcToErc() {
       foreignBridge.deployedBlockNumber
     }`
   )
-  console.log(`[ Foreign ] ERC20 Token: ${process.env.ERC20_TOKEN_ADDRESS}`)
+  console.log(`[ Foreign ] ERC20 Token: ${ERC20_TOKEN_ADDRESS}`)
   console.log(`[ Home ] ERC677 Bridgeble Token: ${erc677tokenAddress}`)
   fs.writeFileSync(
     deployResultsPath,
@@ -80,7 +77,6 @@ async function deployErcToErc() {
 }
 
 async function main() {
-  const { BRIDGE_MODE } = process.env
   console.log(`Bridge mode: ${BRIDGE_MODE}`)
   switch (BRIDGE_MODE) {
     case 'NATIVE_TO_ERC':

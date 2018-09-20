@@ -10,23 +10,27 @@ const {
   FOREIGN_RPC_URL,
   HOME_RPC_URL,
   GAS_LIMIT,
-  GAS_PRICE,
+  HOME_GAS_PRICE,
+  FOREIGN_GAS_PRICE,
   GET_RECEIPT_INTERVAL_IN_MILLISECONDS
 } = require('./web3')
 
 async function deployContract(contractJson, args, { from, network, nonce }) {
   let web3
   let url
+  let gasPrice
   if (network === 'foreign') {
     web3 = web3Foreign
     url = FOREIGN_RPC_URL
+    gasPrice = FOREIGN_GAS_PRICE
   } else {
     web3 = web3Home
     url = HOME_RPC_URL
+    gasPrice = HOME_GAS_PRICE
   }
   const options = {
     from,
-    gasPrice: GAS_PRICE
+    gasPrice
   }
   const instance = new web3.eth.Contract(contractJson.abi, options)
   const result = await instance
@@ -50,11 +54,25 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
   return instance
 }
 
-async function sendRawTx({ data, nonce, to, privateKey, url }) {
+async function sendRawTxHome(options) {
+  return sendRawTx({
+    ...options,
+    gasPrice: HOME_GAS_PRICE
+  })
+}
+
+async function sendRawTxForeign(options) {
+  return sendRawTx({
+    ...options,
+    gasPrice: FOREIGN_GAS_PRICE
+  })
+}
+
+async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice }) {
   try {
     const rawTx = {
       nonce,
-      gasPrice: Web3Utils.toHex(GAS_PRICE),
+      gasPrice: Web3Utils.toHex(gasPrice),
       gasLimit: Web3Utils.toHex(GAS_LIMIT),
       to,
       data
@@ -125,6 +143,7 @@ module.exports = {
   deployContract,
   sendNodeRequest,
   getReceipt,
-  sendRawTx,
+  sendRawTxHome,
+  sendRawTxForeign,
   privateKeyToAddress
 }

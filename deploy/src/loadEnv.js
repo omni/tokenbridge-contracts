@@ -5,7 +5,7 @@ require('dotenv').config({
   path: path.join(__dirname, '', '.env')
 })
 
-const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC']
+const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
 const validateAddress = address => {
   if (isAddress(address)) {
@@ -52,6 +52,9 @@ const env = envalid.cleanEnv(process.env, {
   VALIDATORS: addressesValidator(),
   ERC20_TOKEN_ADDRESS: addressValidator({
     default: '0x0000000000000000000000000000000000000000'
+  }),
+  BLOCK_REWARD_ADDRESS: envalid.str({
+    devDefault: ''
   })
 })
 

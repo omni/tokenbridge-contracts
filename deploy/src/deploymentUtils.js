@@ -68,14 +68,15 @@ async function sendRawTxForeign(options) {
   })
 }
 
-async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice }) {
+async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) {
   try {
     const rawTx = {
       nonce,
       gasPrice: Web3Utils.toHex(gasPrice),
       gasLimit: Web3Utils.toHex(GAS_LIMIT),
       to,
-      data
+      data,
+      value
     }
 
     const tx = new Tx(rawTx)

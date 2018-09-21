@@ -37,6 +37,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         require(_homeGasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
+        require(_blockReward != address(0) && isContract(_blockReward));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
@@ -44,7 +45,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        setBlockRewardContract(_blockReward);
+        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
         setInitialize(true);
 
         return isInitialized();
@@ -62,8 +63,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         return uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))];
     }
 
-    function setBlockRewardContract(address _blockReward) internal {
-        require(_blockReward != address(0));
+    function setBlockRewardContract(address _blockReward) public onlyOwner {
+        require(_blockReward != address(0) && isContract(_blockReward));
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
     }
 

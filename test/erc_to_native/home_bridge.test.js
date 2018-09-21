@@ -50,6 +50,27 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       minor.should.be.bignumber.gte(0)
       patch.should.be.bignumber.gte(0)
     })
+
+    it('can update block reward contract', async () => {
+      ZERO_ADDRESS.should.be.equal(await homeContract.blockRewardContract())
+
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address).should.be.fulfilled
+
+      blockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      const secondBlockRewardContract = await BlockReward.new()
+      await homeContract.setBlockRewardContract(secondBlockRewardContract.address)
+      secondBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      const thirdBlockRewardContract = await BlockReward.new()
+      await homeContract.setBlockRewardContract(thirdBlockRewardContract.address, {from: accounts[4]}).should.be.rejectedWith(ERROR_MSG)
+      secondBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      const notAContract = accounts[5]
+      await homeContract.setBlockRewardContract(notAContract).should.be.rejectedWith(ERROR_MSG)
+      secondBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+    })
+
     it('cant set maxPerTx > dailyLimit', async () => {
       false.should.be.equal(await homeContract.isInitialized())
 

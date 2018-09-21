@@ -4,7 +4,7 @@
 These contracts are the core of POA bridge functionality. They implement the logic to relay assests between
 two EVM-based blockchain networks by collecting bridge validators signatures to approve relay operations.
 
-Currently the contracts supports two types of relay operations:
+Currently, the contracts supports two types of relay operations:
 * to tokenize native coins circulating in one blockchain network (Home) into an ERC20 token in another network (Foreign);
 * to swap a token presented by an existing ERC20 contract in a Foreign network to an ERC20 token in the Home network, where one pair of bridge contracts correspond to one pair of ERC20 tokens.
 

@@ -1,4 +1,5 @@
-# How to use
+# How to deploy POA bridge contracts
+
 1. compile source contracts:
 ```
 cd ..
@@ -8,18 +9,18 @@ npm run compile
 2. create `.env` file
 `cp .env.example .env`
 
-3. If it is necessary, deploy and configure a multi-sig wallet contract which will
+3. if it is necessary, deploy and configure a multi-sig wallet contract which will
    be used to manage the bridge contracts after deployment.
 
-4. adjust parameters in `.env` file as per recommendation below depending on the desired bridge mode 
+4. adjust parameters in the `.env` file depending on the desired bridge mode 
 
-5. Fill balance of the deployment account in Home and Foreign networks 
+5. fill the balance of the deployment account in Home and Foreign networks 
 
-6. Run `node deploy.js` 
+6. run `node deploy.js` 
 
 ## Configuration for `NATIVE-TO-ERC` Bridge mode  
 
-Here is an example of `.env` file for `native-to-erc` bridge mode.
+Here is an example of an `.env` file for `native-to-erc` bridge mode.
 
 ```bash
 # The type of bridge. Defines set of contracts to be deployed.
@@ -31,7 +32,7 @@ BRIDGE_MODE=NATIVE_TO_ERC
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # The "gas" parameter set in every deployment/configuration transaction.
 DEPLOYMENT_GAS_LIMIT=4000000
-# The "gasPrice" parameterset in every deployment/configuration transaction on
+# The "gasPrice" parameter set in every deployment/configuration transaction on
 # both networks.
 DEPLOYMENT_GAS_PRICE=10
 # The timeout limit to wait for receipt of the deployment/configuration
@@ -130,7 +131,7 @@ BRIDGE_MODE=ERC_TO_ERC
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # The "gas" parameter set in every deployment/configuration transaction.
 DEPLOYMENT_GAS_LIMIT=4000000
-# The "gasPrice" parameterset in every deployment/configuration transaction on
+# The "gasPrice" parameter set in every deployment/configuration transaction on
 # both networks.
 DEPLOYMENT_GAS_PRICE=10
 # The timeout limit to wait for receipt of the deployment/configuration

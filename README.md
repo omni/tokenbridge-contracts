@@ -21,21 +21,23 @@ Responsibilities and roles of the bridge:
   - sends POA coins to Home bridge in order to receive ERC20 token on Foreign Bridge
   - sends ERC20 POA20 token on Foreign Bridge in order to receive POA coins on Home Bridge
 
+## Compilation and automated deployment
 
-# Dependencies
-```bash
-npm install
-```
+1. Dependant packages installation
+   ```bash
+   npm install
+   ```
+2. Contract compilation
+   ```bash
+   npm run compile
+   ```
+3. In order to deploy contracts by Check the README.md in `deploy` folder.
 
-# To Deploy
-Check `truffle.js` for networks and their ports
-```bash
-NETWORK=sokol npm run deploy
-```
+## Manual Deployment  steps
 
-# Manual Deployment  steps
+It is assumed that contracts were compiled. See first two steps in the _Compilation and automated deployment_ section.
 
-## Home Deployment(Sokol)
+### Home Deployment(Sokol)
 
 1. Deploy [EternalStorageProxy contract](https://github.com/poanetwork/poa-parity-bridge-contracts/blob/upgradable/flats/EternalStorageProxy_flat.sol#L218) (Example address: '0x01')
 that will be used as Home Bridge Validators Proxy contract
@@ -57,9 +59,8 @@ that will be used as Home Bridge Proxy contract.  Example address: `0x04`
 - Daily Limit in wei: Example `1000000000000000000` == 1 ether
 - Maximum Per Transaction Limit in wei: Example `100000000000000000` == 0.1 ether. Should be less than Daily Limit
 - Minimum Per Transaction Limit in wei: Example `10000000000000000` == 0.01 ether. Should be less than Daily Limit and less than MaxPerTx
-=====
-## Foreign Deployment on Kovan
-=====
+
+### Foreign Deployment on Kovan
 
 9. Deploy [POA20 contract](https://github.com/poanetwork/poa-parity-bridge-contracts/blob/upgradable/flats/POA20_flat.sol#L448) Example(`0x05`)
 10. Deploy [EternalStorageProxy contract](https://github.com/poanetwork/poa-parity-bridge-contracts/blob/upgradable/flats/EternalStorageProxy_flat.sol#L218)
@@ -86,8 +87,10 @@ that will be used as Foreign Bridge Proxy contract. Example `0x08`
 18. Call `transferOwnership` of POA20 contract(0x05) with 1 parameter:
 - address of Foreign Bridge Proxy (`0x08`) from step#14
 
+## To Flatten
 
-# To Flatten
+Only `HomeBridge` and `ForeignBridge` contracts will be flattened. 
+
 ```bash
 npm run flatten
 ```

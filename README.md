@@ -6,18 +6,18 @@ two EVM-based blockchain networks by collecting bridge validators signatures to 
 
 Currently the contracts supports two types of relay operations:
 * to tokenize native coins circulating in one blockchain network (Home) into an ERC20 token in another network (Foreign);
-* to swap a token presented by an existing ERC20 contract in Foreign network to an ERC20 token in Home network, one pair of bridge contracts correspond to one pair of ERC20 tokens.
+* to swap a token presented by an existing ERC20 contract in a Foreign network to an ERC20 token in the Home network, where one pair of bridge contracts correspond to one pair of ERC20 tokens.
 
-This version of contract is intended to be work with [the bridge process implemented on NodeJS](https://github.com/poanetwork/bridge-nodejs).
-Please refer to the bridge process documentation to deploy it and configure.
+This version of the contract is intended to be work with [the bridge process implemented on NodeJS](https://github.com/poanetwork/bridge-nodejs).
+Please refer to the bridge process documentation to deploy and configure it.
 
 POA bridge contracts consist of several main parts:
-* Home Bridge is a smart contract that should be deployed in POA.Network;
-* Foreign Bridge is a smart contract that should be deployed in Ethereum Mainnet;
+* The Home Bridge is a smart contract that should be deployed in POA.Network;
+* The Foreign Bridge is a smart contract that should be deployed in Ethereum Mainnet;
 * Depending on type of relay operations the following components are used as well:
-  * in `NATIVE-TO-ERC` mode: ERC20 token (in fact, ERC677 extension is used) should be deployed on Foreign network;
-  * in `ERC-TO-ERC` mode: ERC20 token (in fact, ERC677 extension is used) should be deployed on Home network;
-* Validators is a smart contract that should be deployed in both POA.Network and Ethereum Mainnet.
+  * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, ERC677 extension is used) should be deployed on Foreign network;
+  * in `ERC-TO-ERC` mode: the ERC20 token (in fact, ERC677 extension is used) should be deployed on Home network;
+* Validators is a smart contract that should be deployed in both the POA.Network and the Ethereum Mainnet.
 
 Responsibilities and roles of the bridge:
 - Administrator Role (representation of a multisig contract):
@@ -34,8 +34,8 @@ Responsibilities and roles of the bridge:
   - listen for `UserRequestForAffirmation` or `Transfer` (depending on the bridge mode) events on Foreign Bridge and send approval to Home Bridge to relay assets from Foreign Network to Home
 - User role:
   - sends assets to Bridge contracts:
-    - in `NATIVE-TO-ERC` mode: send native coins to Home Bridge to receive ERC20 tokens from Foreign Bridge, send ERC20 tokens to Foreign Bridge to unlock native coins from Home Bride;
-    - in `ERC-TO-ERC` mode: transfer ERC20 tokens to Foreign Bridge to mint ERC20 tokens on Home Network, transfer ERC20 tokens to Home Bridge to unlock ERC20 tokens on Foreing networks. 
+    - in `NATIVE-TO-ERC` mode: send native coins to the Home Bridge to receive ERC20 tokens from the Foreign Bridge, send ERC20 tokens to the Foreign Bridge to unlock native coins from the Home Bridge;
+    - in `ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Bridge to unlock ERC20 tokens on Foreign networks. 
 
 # Dependencies
 ```bash
@@ -43,7 +43,7 @@ npm install
 ```
 
 # To Deploy
-Check README.md in `deploy` folder
+Check the README.md in `deploy` folder
 
 # To Flatten
 ```bash

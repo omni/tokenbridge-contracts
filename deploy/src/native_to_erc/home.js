@@ -10,7 +10,7 @@ const BridgeValidators = require('../../../build/contracts/BridgeValidators.json
 const HomeBridge = require('../../../build/contracts/HomeBridgeNativeToErc.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const HOME_GAS_PRICE = Web3Utils.toWei(env.HOME_GAS_PRICE, 'gwei')
+const HOME_GAS_PRICE = env.HOME_GAS_PRICE
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,

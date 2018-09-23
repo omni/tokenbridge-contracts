@@ -1,8 +1,12 @@
 const fs = require('fs');
 const path = require('path')
-require('dotenv').config({
-  path: path.join(__dirname, '.env')
-});
+
+const dotenvPath = path.join(__dirname, '.env')
+if (fs.existsSync(dotenvPath)) {
+  require('dotenv').config({
+    path: dotenvPath
+  });
+}
 
 const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
 

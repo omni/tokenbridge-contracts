@@ -37,15 +37,45 @@ Responsibilities and roles of the bridge:
     - in `NATIVE-TO-ERC` mode: send native coins to the Home Bridge to receive ERC20 tokens from the Foreign Bridge, send ERC20 tokens to the Foreign Bridge to unlock native coins from the Home Bridge;
     - in `ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Bridge to unlock ERC20 tokens on Foreign networks. 
 
-# Dependencies
+## Dependencies
 ```bash
 npm install
 ```
 
-# To Deploy
+## Deploy
 Check the README.md in `deploy` folder
 
-# To Flatten
+## Flatten contracts sources
+In order to verify contracts in a block explorer, the contract sources could be flattened by the following command
+
 ```bash
 npm run flatten
+```
+
+## Docker
+[Docker](https://www.docker.com/community-edition) and [Docker Compose](https://docs.docker.com/compose/install/) could be used to deploy contracts without NodeJS installation on the system. 
+f you are on Linux, it's also recommended that you [create a docker group and add your user to it](https://docs.docker.com/install/linux/linux-postinstall/), so that you can use the CLI without `sudo`.
+
+### Prepare the docker container
+```bash
+docker-compose up --build
+```
+_Note: The container must be rebuild every time when you change code of contracts or deployment script._
+
+### Deploy contract
+1. Create the `.env` file in the `deploy` directory as it is described in deployment [README.md](deploy/README.md).
+2. Run deployment process by
+   ```bash
+   docker-compose run bridge-contracts deploy.sh
+   ```
+   or (in case of Linux system)
+   ```bash
+   ./deploy.sh
+   ```
+
+### Shutdown the container
+If the container is not needed any more it could be shutdown by the command
+
+```bash
+docker-compose down
 ```

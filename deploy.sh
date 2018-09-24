@@ -4,10 +4,15 @@ if [ -f /.dockerenv ]; then
   # the script is run within the container
   cd deploy
 
-  node deploy.js
-
-  if [ -f bridgeDeploymentResults.json ]; then
-    cat bridgeDeploymentResults.json
+  if [ "$1" == "token" ]; then
+    echo "Deployment of token for testing environment started"
+    node testenv-deploy.js
+  else 
+    echo "Bridge contract deployment started"
+    #node deploy.js
+    if [ -f bridgeDeploymentResults.json ]; then
+      cat bridgeDeploymentResults.json
+    fi
   fi
   exit 0
 fi
@@ -29,4 +34,4 @@ if [ "$?" == "1" ]; then
   exit 2
 fi
 
-docker-compose run bridge-contracts deploy.sh
+docker-compose run bridge-contracts deploy.sh "$@"

@@ -29,8 +29,7 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     gasPrice = HOME_DEPLOYMENT_GAS_PRICE
   }
   const options = {
-    from,
-    gasPrice
+    from
   }
   const instance = new web3.eth.Contract(contractJson.abi, options)
   const result = await instance
@@ -44,7 +43,8 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     nonce: Web3Utils.toHex(nonce),
     to: null,
     privateKey: deploymentPrivateKey,
-    url
+    url,
+    gasPrice
   })
   if (tx.status !== '0x1') {
     throw new Error('Tx failed')

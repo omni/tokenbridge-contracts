@@ -12,5 +12,6 @@ RUN npm install deploy
 
 COPY . .
 RUN npm run compile
+RUN bash flatten.sh
 
 ENV PATH="/contracts/:${PATH}"

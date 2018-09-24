@@ -73,6 +73,16 @@ _Note: The container must be rebuild every time when you change code of contract
    ./deploy.sh
    ```
 
+### Copy flatten sources (if it is needed)
+1. Discover the container name by
+   ```bash
+   docker-compose images bridge-contracts
+   ```
+2. Use contaner name in the following comand to copy flatten sources to the current workin directory. Sources will be located in the `flats` directory.
+   ```bash
+   docker cp name-of-your-container:/contracts/flats ./
+   ```
+
 ### Shutdown the container
 If the container is not needed any more it could be shutdown by the command
 

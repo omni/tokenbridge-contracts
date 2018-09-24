@@ -10,6 +10,7 @@ const BridgeValidators = require('../../../build/contracts/BridgeValidators.json
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToNative.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
+const FOREIGN_GAS_PRICE = Web3Utils.toWei(env.FOREIGN_GAS_PRICE, 'gwei')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -142,7 +143,8 @@ async function deployForeign() {
     .initialize(
       storageValidatorsForeign.options.address,
       ERC20_TOKEN_ADDRESS,
-      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
+      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+      FOREIGN_GAS_PRICE
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeBridge = await sendRawTxForeign({

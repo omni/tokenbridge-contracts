@@ -42,6 +42,8 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       '3'.should.be.bignumber.equal(await homeContract.dailyLimit())
       '2'.should.be.bignumber.equal(await homeContract.maxPerTx())
       '1'.should.be.bignumber.equal(await homeContract.minPerTx())
+      const contractGasPrice = await homeContract.gasPrice()
+      contractGasPrice.should.be.bignumber.equal(gasPrice)
       const bridgeMode = '0x18762d46' // 4 bytes of keccak256('erc-to-native-core')
       const mode = await homeContract.getBridgeMode();
       mode.should.be.equal(bridgeMode)

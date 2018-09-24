@@ -3,3 +3,4 @@ node_modules
 deploy/.env
 docker-compose.yml
 Dockerfile
+*.log

@@ -9,9 +9,10 @@ if [ -f /.dockerenv ]; then
     node testenv-deploy.js
   else 
     echo "Bridge contract deployment started"
-    #node deploy.js
+    node deploy.js
     if [ -f bridgeDeploymentResults.json ]; then
       cat bridgeDeploymentResults.json
+      echo
     fi
   fi
   exit 0

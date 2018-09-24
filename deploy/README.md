@@ -1,28 +1,34 @@
-# How to deploy POA bridge contracts
+# How to Deploy POA Bridge Contracts
 
-1. compile source contracts:
+In order to deploy bridge contracts you must run `npm install` to install all dependencies. For more information, see the [project README](../README.md).
+
+1. Compile the source contracts.
 ```
 cd ..
 npm run compile
 ```
 
-2. create `.env` file
-`cp .env.example .env`
+2. Create a `.env` file.
+```
+cd deploy
+cp .env.example .env
+```
 
-3. if it is necessary, deploy and configure a multi-sig wallet contract which will
-   be used to manage the bridge contracts after deployment.
+3. If necessary, deploy and configure a multi-sig wallet contract to manage the bridge contracts after deployment. We have not audited any wallets for security, but have used https://github.com/gnosis/MultiSigWallet/ with success.
 
-4. adjust parameters in the `.env` file depending on the desired bridge mode 
+4. Adjust the parameters in the `.env` file depending on the desired bridge mode. See below for comments related to each parameter.
 
-5. fill the balance of the deployment account in Home and Foreign networks 
+5. Add funds to the deployment accounts in both the Home and Foreign networks. 
 
-6. run `node deploy.js` 
+6. Run `node deploy.js`. 
 
-## Configuration for `NATIVE-TO-ERC` Bridge mode  
+## `NATIVE-TO-ERC` Bridge Mode Configuration Example.  
 
-Here is an example of an `.env` file for `native-to-erc` bridge mode.
+This example of an `.env` file for the `native-to-erc` bridge mode includes comments describing each parameter.
 
 ```bash
+
+
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=NATIVE_TO_ERC
 
@@ -117,9 +123,10 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 VALIDATORS="0x 0x 0x"
 ```
 
-## Configuration for `ERC-TO-ERC` Bridge mode  
 
-Here is an example of `.env` file for `erc-to-erc` bridge mode.
+## `ERC-TO-ERC` Bridge Mode Configuration Example. 
+
+This example of an `.env` file for the `erc-to-erc` bridge mode includes comments describing each parameter.
 
 ```bash
 # The type of bridge. Defines set of contracts to be deployed.

@@ -1,51 +1,78 @@
 [![Build Status](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts)
 
-# POA bridge smart contracts
-These contracts are the core of POA bridge functionality. They implement the logic to relay assests between
-two EVM-based blockchain networks by collecting bridge validators signatures to approve relay operations.
+# POA Bridge Smart Contracts
+These contracts provide the core functionality for the POA bridge. They implement the logic to relay assests between two EVM-based blockchain networks. The contracts collect bridge validator's signatures to approve and facilitate relay operations. 
 
-Currently, the contracts supports two types of relay operations:
-* to tokenize native coins circulating in one blockchain network (Home) into an ERC20 token in another network (Foreign);
-* to swap a token presented by an existing ERC20 contract in a Foreign network to an ERC20 token in the Home network, where one pair of bridge contracts correspond to one pair of ERC20 tokens.
+The POA bridge smart contracts are intended to work with [the bridge process implemented on NodeJS](https://github.com/poanetwork/bridge-nodejs).
+Please refer to the bridge process documentation to configure and deploy the bridge.
 
-This version of the contract is intended to be work with [the bridge process implemented on NodeJS](https://github.com/poanetwork/bridge-nodejs).
-Please refer to the bridge process documentation to deploy and configure it.
+## Summary
 
-POA bridge contracts consist of several main parts:
-* The Home Bridge is a smart contract that should be deployed in POA.Network;
-* The Foreign Bridge is a smart contract that should be deployed in Ethereum Mainnet;
-* Depending on type of relay operations the following components are used as well:
-  * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, ERC677 extension is used) should be deployed on Foreign network;
-  * in `ERC-TO-ERC` mode: the ERC20 token (in fact, ERC677 extension is used) should be deployed on Home network;
-* Validators is a smart contract that should be deployed in both the POA.Network and the Ethereum Mainnet.
+### Operations
+
+Currently, the contracts support two types of relay operations:
+* Tokenize the native coin in one blockchain network (Home) into an ERC20 token in another network (Foreign).
+* Swap a token presented by an existing ERC20 contract in a Foreign network into an ERC20 token in the Home network, where one pair of bridge contracts corresponds to one pair of ERC20 tokens.
+
+
+### Components
+
+The POA bridge contracts consist of several components:
+* The **Home Bridge** smart contract. This is currently deployed in POA.Network.
+* The **Foreign Bridge** smart contract. This is deployed in the Ethereum Mainnet.
+* Depending on the type of relay operations the following components are also used:
+  * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Foreign network;
+  * in `ERC-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Home network;
+* The **Validators** smart contract is deployed in both the POA.Network and the Ethereum Mainnet.
+
+### Bridge Roles and Responsibilities
 
 Responsibilities and roles of the bridge:
-- Administrator Role (representation of a multisig contract):
+- **Administrator** role (representation of a multisig contract):
   - add/remove validators
   - set daily limits on both bridges
   - set maximum per transaction limit on both bridges
   - set minimum per transaction limit on both bridges
   - upgrade contracts in case of vulnerability
   - set minimum required signatures from validators in order to relay a user's transaction
-- Validator Role :
+- **Validator** role:
   - provide 100% uptime to relay transactions
-  - listen for `UserRequestForSignature` events on Home Bridge and sign an approval to relay assets on Foreign network;
-  - listen for `CollectedSignatures` events on Home Bridge as soon enough signatures are collected and transfer all collected signatures to Foreign Bridge contact;
-  - listen for `UserRequestForAffirmation` or `Transfer` (depending on the bridge mode) events on Foreign Bridge and send approval to Home Bridge to relay assets from Foreign Network to Home
-- User role:
+  - listen for `UserRequestForSignature` events on Home Bridge and sign an approval to relay assets on Foreign network
+  - listen for `CollectedSignatures` events on Home Bridge. As soon as enough signatures are collected, transfer all collected signatures to the Foreign Bridge contract.
+  - listen for `UserRequestForAffirmation` or `Transfer` (depending on the bridge mode) events on the Foreign Bridge and send approval to Home Bridge to relay assets from Foreign Network to Home
+- **User** role:
   - sends assets to Bridge contracts:
     - in `NATIVE-TO-ERC` mode: send native coins to the Home Bridge to receive ERC20 tokens from the Foreign Bridge, send ERC20 tokens to the Foreign Bridge to unlock native coins from the Home Bridge;
     - in `ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Bridge to unlock ERC20 tokens on Foreign networks. 
 
-# Dependencies
+## Usage
+
+### Install Dependencies
 ```bash
 npm install
 ```
+### Deploy
+Please the [README.md](deploy/README.md) in the `deploy` folder for instructions and .env file configuration
 
-# To Deploy
-Check the README.md in `deploy` folder
+### Test
+```bash
+npm test
+```
 
-# To Flatten
+### Flatten
 ```bash
 npm run flatten
 ```
+
+## Contributing
+
+See the [CONTRIBUTING](CONTRIBUTING.md) document for contribution, testing and pull request protocol.
+
+## License
+
+[![License: GPL v3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
+
+
+

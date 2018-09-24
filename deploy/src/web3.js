@@ -1,4 +1,3 @@
-const Web3Utils = require('web3-utils')
 const Web3 = require('web3')
 const env = require('./loadEnv')
 
@@ -15,8 +14,7 @@ const web3Home = new Web3(homeProvider)
 const foreignProvider = new Web3.providers.HttpProvider(FOREIGN_RPC_URL)
 const web3Foreign = new Web3(foreignProvider)
 
-const HOME_DEPLOYMENT_GAS_PRICE = env.HOME_DEPLOYMENT_GAS_PRICE
-const FOREIGN_DEPLOYMENT_GAS_PRICE = env.FOREIGN_DEPLOYMENT_GAS_PRICE
+const { HOME_DEPLOYMENT_GAS_PRICE, FOREIGN_DEPLOYMENT_GAS_PRICE } = env
 const GAS_LIMIT = env.DEPLOYMENT_GAS_LIMIT
 
 const deploymentPrivateKey = Buffer.from(DEPLOYMENT_ACCOUNT_PRIVATE_KEY, 'hex')

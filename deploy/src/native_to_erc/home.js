@@ -10,11 +10,11 @@ const BridgeValidators = require('../../../build/contracts/BridgeValidators.json
 const HomeBridge = require('../../../build/contracts/HomeBridgeNativeToErc.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const HOME_GAS_PRICE = env.HOME_GAS_PRICE
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
+  HOME_GAS_PRICE,
   HOME_OWNER_MULTISIG,
   HOME_UPGRADEABLE_ADMIN_VALIDATORS,
   HOME_UPGRADEABLE_ADMIN_BRIDGE,

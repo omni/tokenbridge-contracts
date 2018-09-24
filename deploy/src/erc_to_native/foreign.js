@@ -10,11 +10,11 @@ const BridgeValidators = require('../../../build/contracts/BridgeValidators.json
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToNative.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const FOREIGN_GAS_PRICE = env.FOREIGN_GAS_PRICE
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
+  FOREIGN_GAS_PRICE,
   FOREIGN_OWNER_MULTISIG,
   FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
   FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,

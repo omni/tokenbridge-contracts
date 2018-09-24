@@ -1,10 +1,8 @@
 const { isAddress, toBN } = require('web3').utils
 const path = require('path')
 const envalid = require('envalid')
-require('dotenv').config({
-  path: path.join(__dirname, '', '.env')
-})
 
+const dotEnvPath = path.join(__dirname, '..', '.env')
 const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
 const validateAddress = address => {
@@ -56,6 +54,8 @@ const env = envalid.cleanEnv(process.env, {
   BLOCK_REWARD_ADDRESS: envalid.str({
     devDefault: ''
   })
+}, {
+  dotEnvPath
 })
 
 if (

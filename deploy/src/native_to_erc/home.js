@@ -1,22 +1,22 @@
 const Web3Utils = require('web3-utils')
 require('dotenv').config({
-  path: __dirname + '/../.env'
+  path: __dirname + '../../.env'
 });
 
 const assert = require('assert');
 
-const {deployContract, sendRawTx} = require('./deploymentUtils');
-const {web3Home, deploymentPrivateKey, HOME_RPC_URL} = require('./web3');
+const {deployContract, privateKeyToAddress, sendRawTx} = require('../deploymentUtils');
+const {web3Home, deploymentPrivateKey, HOME_RPC_URL} = require('../web3');
 
-const EternalStorageProxy = require('../../build/contracts/EternalStorageProxy.json');
-const BridgeValidators = require('../../build/contracts/BridgeValidators.json')
-const HomeBridge = require('../../build/contracts/HomeBridge.json')
+const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json');
+const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
+const HomeBridge = require('../../../build/contracts/HomeBridgeNativeToErc.json')
 
 const VALIDATORS = process.env.VALIDATORS.split(" ")
 const HOME_GAS_PRICE =  Web3Utils.toWei(process.env.HOME_GAS_PRICE, 'gwei');
 
 const {
-  DEPLOYMENT_ACCOUNT_ADDRESS,
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   HOME_OWNER_MULTISIG,
   HOME_UPGRADEABLE_ADMIN_VALIDATORS,
@@ -26,6 +26,8 @@ const {
   HOME_MIN_AMOUNT_PER_TX,
   HOME_REQUIRED_BLOCK_CONFIRMATIONS,
 } = process.env;
+
+const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 async function deployHome()
 {
@@ -67,8 +69,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txInitialize.status, '0x1', 'Transaction Failed');
-  const validatorOwner = await bridgeValidatorsHome.methods.owner().call();
-  assert.equal(validatorOwner.toLocaleLowerCase(), HOME_OWNER_MULTISIG.toLocaleLowerCase());
   homeNonce++;
 
   console.log('transferring proxy ownership to multisig for Validators Proxy contract');
@@ -81,8 +81,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txProxyDataTransfer.status, '0x1', 'Transaction Failed');
-  const newProxyOwner = await storageValidatorsHome.methods.proxyOwner().call();
-  assert.equal(newProxyOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_VALIDATORS.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\ndeploying homeBridge storage\n')
@@ -139,8 +137,6 @@ async function deployHome()
     url: HOME_RPC_URL
   })
   assert.equal(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed');
-  const newProxyBridgeOwner = await homeBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_BRIDGE.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\nHome Deployment Bridge is complete\n')

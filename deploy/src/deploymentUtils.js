@@ -44,7 +44,8 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     nonce: Web3Utils.toHex(nonce),
     to: null,
     privateKey: deploymentPrivateKey,
-    url
+    url,
+    gasPrice: options.gasPrice
   })
   if (tx.status !== '0x1') {
     throw new Error('Tx failed')

@@ -8,7 +8,6 @@ const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const HomeBridge = require('../../../build/contracts/HomeBridgeErcToNative.json')
-const BlockReward = require('../../../build/contracts/BlockReward.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 const HOME_GAS_PRICE = env.HOME_GAS_PRICE
@@ -122,30 +121,6 @@ async function deployHome() {
   assert.equal(txUpgradeToHomeBridge.status, '0x1', 'Transaction Failed')
   homeNonce++
 
-  let blockRewardAddress = null
-  if (BLOCK_REWARD_ADDRESS) {
-    blockRewardAddress = BLOCK_REWARD_ADDRESS
-  } else {
-    console.log('\n[Home] deploying Block Reward contract (dev only)')
-    const blockReward = await deployContract(BlockReward, [], {
-      from: DEPLOYMENT_ACCOUNT_ADDRESS,
-      network: 'home',
-      nonce: homeNonce
-    })
-    homeNonce++
-    console.log('[Home] Block Reward: ', blockReward.options.address)
-    blockRewardAddress = blockReward.options.address
-
-    const sendBalanceTx = await sendRawTxHome({
-      to: blockRewardAddress,
-      privateKey: deploymentPrivateKey,
-      url: HOME_RPC_URL,
-      value: Web3Utils.toHex(Web3Utils.toWei('1000')),
-      nonce: homeNonce
-    })
-    homeNonce++
-  }
-
   console.log('\ninitializing Home Bridge with following parameters:\n')
   console.log(`Home Validators: ${storageValidatorsHome.options.address},
   HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
@@ -165,7 +140,7 @@ async function deployHome() {
       HOME_MIN_AMOUNT_PER_TX,
       HOME_GAS_PRICE,
       HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-      blockRewardAddress
+      BLOCK_REWARD_ADDRESS
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeHomeBridge = await sendRawTxHome({

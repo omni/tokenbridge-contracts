@@ -292,6 +292,10 @@ FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS=8
 # asset deposits. This price is used if the Gas price oracle is unreachable.
 FOREIGN_GAS_PRICE=10
 
+# The address of the existing ERC20 compatible token in the Foreign network to
+# be exchanged to the native coins on Home.
+ERC20_TOKEN_ADDRESS=0x
+
 # The minimum number of validators required to send their signatures confirming
 # the relay of assets. The same number of validators is expected on both sides
 # of the bridge.

@@ -46,7 +46,7 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     url,
     gasPrice
   })
-  if (tx.status !== '0x1') {
+  if (Web3Utils.hexToNumber(tx.status) !== 1) {
     throw new Error('Tx failed')
   }
   instance.options.address = tx.contractAddress
@@ -95,17 +95,19 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice }) {
 }
 
 async function sendNodeRequest(url, method, signedData) {
+  const json_body = JSON.stringify({
+    jsonrpc: '2.0',
+    method,
+    params: [signedData],
+    id: 1
+  })
+  //console.log('POST:', json_body)
   const request = await fetch(url, {
     headers: {
       'Content-type': 'application/json'
     },
     method: 'POST',
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method,
-      params: [signedData],
-      id: 1
-    })
+    body: json_body
   })
   const json = await request.json()
   if (method === 'eth_sendRawTransaction') {

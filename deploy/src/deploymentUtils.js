@@ -10,8 +10,8 @@ const {
   FOREIGN_RPC_URL,
   HOME_RPC_URL,
   GAS_LIMIT,
-  HOME_GAS_PRICE,
-  FOREIGN_GAS_PRICE,
+  HOME_DEPLOYMENT_GAS_PRICE,
+  FOREIGN_DEPLOYMENT_GAS_PRICE,
   GET_RECEIPT_INTERVAL_IN_MILLISECONDS
 } = require('./web3')
 
@@ -22,11 +22,11 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
   if (network === 'foreign') {
     web3 = web3Foreign
     url = FOREIGN_RPC_URL
-    gasPrice = FOREIGN_GAS_PRICE
+    gasPrice = FOREIGN_DEPLOYMENT_GAS_PRICE
   } else {
     web3 = web3Home
     url = HOME_RPC_URL
-    gasPrice = HOME_GAS_PRICE
+    gasPrice = HOME_DEPLOYMENT_GAS_PRICE
   }
   const options = {
     from,
@@ -57,14 +57,14 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
 async function sendRawTxHome(options) {
   return sendRawTx({
     ...options,
-    gasPrice: HOME_GAS_PRICE
+    gasPrice: HOME_DEPLOYMENT_GAS_PRICE
   })
 }
 
 async function sendRawTxForeign(options) {
   return sendRawTx({
     ...options,
-    gasPrice: FOREIGN_GAS_PRICE
+    gasPrice: FOREIGN_DEPLOYMENT_GAS_PRICE
   })
 }
 

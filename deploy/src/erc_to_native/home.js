@@ -11,7 +11,7 @@ const HomeBridge = require('../../../build/contracts/HomeBridgeErcToNative.json'
 const BlockReward = require('../../../build/contracts/BlockReward.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const HOME_GAS_PRICE = Web3Utils.toWei(env.HOME_GAS_PRICE, 'gwei')
+const HOME_GAS_PRICE = env.HOME_GAS_PRICE
 
 const {
   BLOCK_REWARD_ADDRESS,

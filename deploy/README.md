@@ -12,13 +12,13 @@ npm run compile
 3. if it is necessary, deploy and configure a multi-sig wallet contract which will
    be used to manage the bridge contracts after deployment.
 
-4. adjust parameters in the `.env` file depending on the desired bridge mode 
+4. adjust parameters in the `.env` file depending on the desired bridge mode
 
-5. fill the balance of the deployment account in Home and Foreign networks 
+5. fill the balance of the deployment account in Home and Foreign networks
 
-6. run `node deploy.js` 
+6. run `node deploy.js`
 
-## Configuration for `NATIVE-TO-ERC` Bridge mode  
+## Configuration for `NATIVE-TO-ERC` Bridge mode
 
 Here is an example of an `.env` file for `native-to-erc` bridge mode.
 
@@ -33,8 +33,11 @@ DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # The "gas" parameter set in every deployment/configuration transaction.
 DEPLOYMENT_GAS_LIMIT=4000000
 # The "gasPrice" parameter set in every deployment/configuration transaction on
-# both networks.
-DEPLOYMENT_GAS_PRICE=10
+# Home network (in Wei).
+HOME_DEPLOYMENT_GAS_PRICE=10000000000
+# The "gasPrice" parameter set in every deployment/configuration transaction on
+# Foreign network (in Wei).
+FOREIGN_DEPLOYMENT_GAS_PRICE=10000000000
 # The timeout limit to wait for receipt of the deployment/configuration
 # transaction.
 GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
@@ -57,7 +60,7 @@ HOME_OWNER_MULTISIG=0x
 # The address from which a validator's contract can be upgraded on Home.
 HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
 # The address from which the bridge's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_BRIDGE=0x 
+HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
@@ -72,10 +75,10 @@ HOME_MIN_AMOUNT_PER_TX=500000000000000000
 # the corresponding deposit transaction to guarantee the transaction will not be
 # rolled back.
 HOME_REQUIRED_BLOCK_CONFIRMATIONS=1
-# The default gas price used to send Home Network signature transactions for
-# deposit or withdrawl confirmations. This price is used if the Gas price oracle
-# is unreachable. 
-HOME_GAS_PRICE=1
+# The default gas price (in Wei) used to send Home Network signature
+# transactions for deposit or withdrawal confirmations. This price is used if
+# the Gas price oracle is unreachable.
+HOME_GAS_PRICE=1000000000
 
 # The RPC channel to a Foreign node able to handle deployment/configuration
 # transactions.
@@ -102,9 +105,10 @@ FOREIGN_MIN_AMOUNT_PER_TX=500000000000000000
 # the corresponding deposit transaction to guarantee the transaction will not be
 # rolled back.
 FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS=8
-# The default gas price used to send Foreign network transactions finalizing
-# asset deposits. This price is used if the Gas price oracle is unreachable.
-FOREIGN_GAS_PRICE=10
+# The default gas price (in Wei) used to send Foreign network transactions
+# finalizing asset deposits. This price is used if the Gas price oracle is
+# unreachable.
+FOREIGN_GAS_PRICE=10000000000
 
 # The minimum number of validators required to send their signatures confirming
 # the relay of assets. The same number of validators is expected on both sides
@@ -117,7 +121,7 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 VALIDATORS="0x 0x 0x"
 ```
 
-## Configuration for `ERC-TO-ERC` Bridge mode  
+## Configuration for `ERC-TO-ERC` Bridge mode
 
 Here is an example of `.env` file for `erc-to-erc` bridge mode.
 
@@ -132,8 +136,11 @@ DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # The "gas" parameter set in every deployment/configuration transaction.
 DEPLOYMENT_GAS_LIMIT=4000000
 # The "gasPrice" parameter set in every deployment/configuration transaction on
-# both networks.
-DEPLOYMENT_GAS_PRICE=10
+# Home network (in Wei).
+HOME_DEPLOYMENT_GAS_PRICE=10000000000
+# The "gasPrice" parameter set in every deployment/configuration transaction on
+# Foreign network (in Wei).
+FOREIGN_DEPLOYMENT_GAS_PRICE=10000000000
 # The timeout limit to wait for receipt of the deployment/configuration
 # transaction.
 GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
@@ -156,7 +163,7 @@ HOME_OWNER_MULTISIG=0x
 # The address from which a validator's contract can be upgraded on Home.
 HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
 # The address from which the bridge's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_BRIDGE=0x 
+HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
@@ -171,10 +178,10 @@ HOME_MIN_AMOUNT_PER_TX=500000000000000000
 # the corresponding deposit transaction to guarantee the transaction will not be
 # rolled back.
 HOME_REQUIRED_BLOCK_CONFIRMATIONS=1
-# The default gas price used to send Home Network signature transactions for
-# deposit or withdrawl confirmations. This price is used if the Gas price oracle
-# is unreachable. 
-HOME_GAS_PRICE=1
+# The default gas price (in Wei) used to send Home Network signature
+# transactions for deposit or withdrawl confirmations. This price is used if
+# the Gas price oracle is unreachable.
+HOME_GAS_PRICE=1000000000
 
 # The RPC channel to a Foreign node able to handle deployment/configuration
 # transactions.
@@ -196,9 +203,10 @@ FOREIGN_MIN_AMOUNT_PER_TX=500000000000000000
 # the corresponding deposit transaction to guarantee the transaction will not be
 # rolled back.
 FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS=8
-# The default gas price used to send Foreign network transactions finalizing
-# asset deposits. This price is used if the Gas price oracle is unreachable.
-FOREIGN_GAS_PRICE=10
+# The default gas price (in Wei) used to send Foreign network transactions
+# finalizing asset deposits. This price is used if the Gas price oracle is
+# unreachable.
+FOREIGN_GAS_PRICE=10000000000
 # The address of the existing ERC20 compatible token in the Foreign network to
 # be exchanged to the ERC20/ERC677 token deployed on Home.
 ERC20_TOKEN_ADDRESS=0x
@@ -214,7 +222,7 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 VALIDATORS="0x 0x 0x"
 ```
 
-## Configuration for `ERC-TO-NATIVE` Bridge mode  
+## Configuration for `ERC-TO-NATIVE` Bridge mode
 
 Here is an example of `.env` file for `erc-to-erc` bridge mode.
 
@@ -245,7 +253,7 @@ HOME_OWNER_MULTISIG=0x
 # The address from which a validator's contract can be upgraded on Home.
 HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
 # The address from which the bridge's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_BRIDGE=0x 
+HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
@@ -262,7 +270,7 @@ HOME_MIN_AMOUNT_PER_TX=500000000000000000
 HOME_REQUIRED_BLOCK_CONFIRMATIONS=1
 # The default gas price used to send Home Network signature transactions for
 # deposit or withdrawl confirmations. This price is used if the Gas price oracle
-# is unreachable. 
+# is unreachable.
 HOME_GAS_PRICE=1
 
 # The address of the existing smart contract for block reward calculation on Home network.

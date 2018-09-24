@@ -11,7 +11,7 @@ const BridgeValidators = require('../../../build/contracts/BridgeValidators.json
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeNativeToErc.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const FOREIGN_GAS_PRICE = Web3Utils.toWei(env.FOREIGN_GAS_PRICE, 'gwei')
+const FOREIGN_GAS_PRICE = env.FOREIGN_GAS_PRICE
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,

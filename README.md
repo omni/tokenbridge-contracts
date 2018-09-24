@@ -4,9 +4,10 @@
 These contracts are the core of POA bridge functionality. They implement the logic to relay assests between
 two EVM-based blockchain networks by collecting bridge validators signatures to approve relay operations.
 
-Currently, the contracts supports two types of relay operations:
+Currently, the contracts supports three types of relay operations:
 * to tokenize native coins circulating in one blockchain network (Home) into an ERC20 token in another network (Foreign);
-* to swap a token presented by an existing ERC20 contract in a Foreign network to an ERC20 token in the Home network, where one pair of bridge contracts correspond to one pair of ERC20 tokens.
+* to swap a token presented by an existing ERC20 contract in a Foreign network to an ERC20 token in the Home network, where one pair of bridge contracts correspond to one pair of ERC20 tokens;
+* to swap a token presented by an existing ERC20 contract in a Foreign network to a native coin circulating in Home blockchain network. 
 
 This version of the contract is intended to be work with [the bridge process implemented on NodeJS](https://github.com/poanetwork/bridge-nodejs).
 Please refer to the bridge process documentation to deploy and configure it.
@@ -17,6 +18,7 @@ POA bridge contracts consist of several main parts:
 * Depending on type of relay operations the following components are used as well:
   * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, ERC677 extension is used) should be deployed on Foreign network;
   * in `ERC-TO-ERC` mode: the ERC20 token (in fact, ERC677 extension is used) should be deployed on Home network;
+  * in `ERC-TO-NATIVE` mode: The home network nodes must support consensus engine that allows using a smart contract for block reward calculation.
 * Validators is a smart contract that should be deployed in both the POA.Network and the Ethereum Mainnet.
 
 Responsibilities and roles of the bridge:
@@ -35,7 +37,8 @@ Responsibilities and roles of the bridge:
 - User role:
   - sends assets to Bridge contracts:
     - in `NATIVE-TO-ERC` mode: send native coins to the Home Bridge to receive ERC20 tokens from the Foreign Bridge, send ERC20 tokens to the Foreign Bridge to unlock native coins from the Home Bridge;
-    - in `ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Bridge to unlock ERC20 tokens on Foreign networks. 
+    - in `ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Bridge to unlock ERC20 tokens on Foreign networks; 
+    - in `ERC-TO-NATIVE` mode: send ERC20 tokens to the Foreign Bridge to receive native coins from the Home Bridge, send native coins to the Home Bridge to unlock ERC20 tokens from the Foreign Bridge.
 
 # Dependencies
 ```bash

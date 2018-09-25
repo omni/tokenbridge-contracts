@@ -19,7 +19,7 @@ contract BlockReward is IBlockReward {
         _receiver.transfer(_amount);
     }
 
-    function totalMintedCoins() public view returns (uint256) {
+    function mintedTotally() public view returns (uint256) {
         return mintedCoins;
     }
 }

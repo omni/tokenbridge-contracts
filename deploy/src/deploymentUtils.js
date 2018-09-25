@@ -145,6 +145,7 @@ module.exports = {
   deployContract,
   sendNodeRequest,
   getReceipt,
+  sendRawTx,
   sendRawTxHome,
   sendRawTxForeign,
   privateKeyToAddress

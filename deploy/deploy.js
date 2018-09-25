@@ -1,8 +1,9 @@
 const fs = require('fs')
 const path = require('path')
 const env = require('./src/loadEnv')
+const { ZERO_ADDRESS } = require('./src/constants')
 
-const { BRIDGE_MODE, ERC20_TOKEN_ADDRESS } = env
+const { BRIDGE_MODE, BLOCK_REWARD_ADDRESS, ERC20_TOKEN_ADDRESS } = env
 
 const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
 
@@ -42,6 +43,10 @@ async function deployNativeToErc() {
 }
 
 async function deployErcToErc() {
+  if (ERC20_TOKEN_ADDRESS === ZERO_ADDRESS) {
+    throw new Error('ERC_TO_ERC mode requires ERC20_TOKEN_ADDRESS to be set')
+  }
+
   const deployHome = require('./src/erc_to_erc/home')
   const deployForeign = require('./src/erc_to_erc/foreign')
 
@@ -76,6 +81,13 @@ async function deployErcToErc() {
 }
 
 async function deployErcToNative() {
+  if (ERC20_TOKEN_ADDRESS === ZERO_ADDRESS) {
+    throw new Error('ERC_TO_NATIVE mode requires ERC20_TOKEN_ADDRESS to be set')
+  }
+  if (BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
+    throw new Error('ERC_TO_NATIVE mode requires BLOCK_REWARD_ADDRESS to be set')
+  }
+
   const deployHome = require('./src/erc_to_native/home')
   const deployForeign = require('./src/erc_to_native/foreign')
 

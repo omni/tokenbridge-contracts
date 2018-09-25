@@ -1,12 +1,12 @@
 const { isAddress, toBN } = require('web3').utils
 const path = require('path')
 const envalid = require('envalid')
+const { ZERO_ADDRESS } = require('./constants')
 
 const dotEnvPath = path.join(__dirname, '..', '.env')
 
 // Validations and constants
 const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
 const validateAddress = address => {
   if (isAddress(address)) {
@@ -64,16 +64,5 @@ const env = envalid.cleanEnv(
     dotEnvPath
   }
 )
-
-if (
-  (env.BRIDGE_MODE === 'ERC_TO_ERC' || env.BRIDGE_MODE === 'ERC_TO_NATIVE') &&
-  env.ERC20_TOKEN_ADDRESS === ZERO_ADDRESS
-) {
-  throw new Error('ERC_TO_ERC mode requires ERC20_TOKEN_ADDRESS to be set')
-}
-
-if (env.BRIDGE_MODE === 'ERC_TO_NATIVE' && env.BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
-  throw new Error('ERC_TO_NATIVE mode requires BLOCK_REWARD_ADDRESS to be set')
-}
 
 module.exports = env

@@ -237,8 +237,11 @@ DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # The "gas" parameter set in every deployment/configuration transaction.
 DEPLOYMENT_GAS_LIMIT=4000000
 # The "gasPrice" parameter set in every deployment/configuration transaction on
-# both networks.
-DEPLOYMENT_GAS_PRICE=10
+# home network.
+HOME_DEPLOYMENT_GAS_PRICE=10000000000
+# The "gasPrice" parameter set in every deployment/configuration transaction on
+# foreign network.
+FOREIGN_DEPLOYMENT_GAS_PRICE=10000000000
 # The timeout limit to wait for receipt of the deployment/configuration
 # transaction.
 GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000

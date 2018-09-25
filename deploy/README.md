@@ -229,9 +229,9 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 VALIDATORS="0x 0x 0x"
 ```
 
-## Configuration for `ERC-TO-NATIVE` Bridge mode
+## `ERC-TO-NATIVE` Bridge Mode Configuration Example. 
 
-Here is an example of `.env` file for `erc-to-erc` bridge mode.
+This example of an `.env` file for the `erc-to-native` bridge mode includes comments describing each parameter.
 
 ```bash
 # The type of bridge. Defines set of contracts to be deployed.

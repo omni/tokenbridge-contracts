@@ -65,7 +65,10 @@ const env = envalid.cleanEnv(
   }
 )
 
-if (env.BRIDGE_MODE === 'ERC_TO_ERC' && env.ERC20_TOKEN_ADDRESS === ZERO_ADDRESS) {
+if (
+  (env.BRIDGE_MODE === 'ERC_TO_ERC' || env.BRIDGE_MODE === 'ERC_TO_NATIVE') &&
+  env.ERC20_TOKEN_ADDRESS === ZERO_ADDRESS
+) {
   throw new Error('ERC_TO_ERC mode requires ERC20_TOKEN_ADDRESS to be set')
 }
 

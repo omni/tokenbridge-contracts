@@ -24,7 +24,7 @@ const addressesValidator = envalid.makeValidator(addresses => {
 const env = envalid.cleanEnv(
   process.env,
   {
-    BRIDGE_MODE: envalid.str(validBridgeModes),
+    BRIDGE_MODE: envalid.str({ choices: validBridgeModes }),
     DEPLOYMENT_ACCOUNT_PRIVATE_KEY: envalid.str(),
     DEPLOYMENT_GAS_LIMIT: bigNumValidator(),
     HOME_DEPLOYMENT_GAS_PRICE: bigNumValidator(),

@@ -15,12 +15,17 @@ contract ERC677BridgeToken is
     MintableToken {
 
     Version.Version public getTokenInterfacesVersion = Version.Version(2, 0, 0);
+    address public bridgeContract;
 
     constructor(
         string _name,
         string _symbol,
         uint8 _decimals)
     public DetailedERC20(_name, _symbol, _decimals) {}
+
+    function setBridgeContract(address _bridgeContract) onlyOwner public {
+        bridgeContract = _bridgeContract;
+    }
 
     modifier validRecipient(address _recipient) {
         require(_recipient != address(0) && _recipient != address(this));

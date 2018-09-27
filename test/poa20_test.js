@@ -1,6 +1,6 @@
 const POA20 = artifacts.require("ERC677BridgeToken.sol");
 const ERC677ReceiverTest = artifacts.require("ERC677ReceiverTest.sol")
-const {ERROR_MSG} = require('./setup');
+const { ERROR_MSG, ZERO_ADDRESS} = require('./setup');
 
 contract('ERC677BridgeToken', async (accounts) => {
   let token
@@ -31,6 +31,29 @@ contract('ERC677BridgeToken', async (accounts) => {
     minor.should.be.bignumber.gte(0)
     patch.should.be.bignumber.gte(0)
   })
+
+  describe('#bridgeContract', async() => {
+    it('can set bridge contract', async () => {
+      const bridgeAddress = '0x630d2c61234224fd9705457be61b830a0ea81822';
+      (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
+
+      await token.setBridgeContract(bridgeAddress).should.be.fulfilled;
+
+      (await token.bridgeContract()).should.be.equal(bridgeAddress);
+    })
+
+    it('only owner can set bridge contract', async () => {
+      const bridgeAddress = '0x630d2c61234224fd9705457be61b830a0ea81822';
+      (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
+
+      await token.setBridgeContract(bridgeAddress, {from: user }).should.be.rejectedWith(ERROR_MSG);
+      (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
+
+      await token.setBridgeContract(bridgeAddress, {from: owner }).should.be.fulfilled;
+      (await token.bridgeContract()).should.be.equal(bridgeAddress);
+    })
+  })
+
   describe('#mint', async() => {
     it('can mint by owner', async () => {
       (await token.totalSupply()).should.be.bignumber.equal(0);

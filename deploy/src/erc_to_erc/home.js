@@ -133,6 +133,20 @@ async function deployHome() {
   homeNonce++
   console.log('[Home] Bridgeble Token: ', erc677token.options.address)
 
+  console.log('\nset bridge contract on ERC677BridgeToken')
+  const setBridgeContractData = await erc677token.methods
+    .setBridgeContract(homeBridgeStorage.options.address)
+    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  const setBridgeContract = await sendRawTxHome({
+    data: setBridgeContractData,
+    nonce: homeNonce,
+    to: erc677token.options.address,
+    privateKey: deploymentPrivateKey,
+    url: HOME_RPC_URL
+  })
+  assert.equal(setBridgeContract.status, '0x1', 'Transaction Failed')
+  homeNonce++
+
   console.log('transferring ownership of Bridgeble token to homeBridge contract')
   const txOwnershipData = await erc677token.methods
     .transferOwnership(homeBridgeStorage.options.address)

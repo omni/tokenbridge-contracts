@@ -36,7 +36,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         require(_validatorContract != address(0));
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
-        require(_blockReward != address(0) && isContract(_blockReward));
+        require(_blockReward == address(0) || isContract(_blockReward));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
@@ -68,7 +68,9 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
-        blockRewardContract().addExtraReceiver(_value, _recipient);
+        IBlockReward blockReward = blockRewardContract();
+        require(blockReward != address(0));
+        blockReward.addExtraReceiver(_value, _recipient);
         return true;
     }
 

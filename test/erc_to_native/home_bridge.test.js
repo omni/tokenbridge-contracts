@@ -297,6 +297,16 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
       await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: accounts[7]}).should.be.rejectedWith(ERROR_MSG);
     })
+
+    it('should fail if the block reward contract is not set', async () => {
+      homeBridge = await HomeBridge.new();
+      await homeBridge.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, ZERO_ADDRESS);
+
+      const recipient = accounts[5];
+      const value = halfEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG)
+    })
   })
 
   describe('#submitSignature', async () => {

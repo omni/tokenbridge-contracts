@@ -177,6 +177,16 @@ contract('ERC677BridgeToken', async (accounts) => {
   })
 
   describe('#transferAndCall', () => {
+    let homeErcToErcContract, foreignNativeToErcBridge, validatorContract
+    beforeEach(async () => {
+      validatorContract = await BridgeValidators.new()
+      const authorities = [accounts[2]];
+      await validatorContract.initialize(1, authorities, owner)
+      homeErcToErcContract = await HomeErcToErcBridge.new()
+      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address)
+      foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
+      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+    })
     it('calls contractFallback', async () => {
       const receiver = await ERC677ReceiverTest.new();
       (await receiver.from()).should.be.equal('0x0000000000000000000000000000000000000000');
@@ -198,6 +208,46 @@ contract('ERC677BridgeToken', async (accounts) => {
       (await receiver.value()).should.be.bignumber.equal(1);
       (await receiver.data()).should.be.equal(callDoSomething123);
       (await receiver.someVar()).should.be.bignumber.equal('123');
+    })
+
+    it('sends tokens to bridge contract', async () => {
+      await token.setBridgeContract(homeErcToErcContract.address).should.be.fulfilled;
+      await token.mint(user, web3.toWei(1, "ether"), {from: owner }).should.be.fulfilled;
+
+      const result = await token.transferAndCall(homeErcToErcContract.address, minPerTx, '0x', {from: user}).should.be.fulfilled;
+      result.logs[0].event.should.be.equal("Transfer")
+      result.logs[0].args.should.be.deep.equal({
+        from: user,
+        to: homeErcToErcContract.address,
+        value: minPerTx
+      })
+
+      await token.setBridgeContract(foreignNativeToErcBridge.address).should.be.fulfilled;
+      const result2 = await token.transferAndCall(foreignNativeToErcBridge.address, minPerTx, '0x', {from: user}).should.be.fulfilled;
+      result2.logs[0].event.should.be.equal("Transfer")
+      result2.logs[0].args.should.be.deep.equal({
+        from: user,
+        to: foreignNativeToErcBridge.address,
+        value: minPerTx
+      })
+    })
+
+    it('fail to sends tokens to contract that does not contains onTokenTransfer method', async () => {
+      await token.setBridgeContract(homeErcToErcContract.address).should.be.fulfilled;
+      await token.mint(user, web3.toWei(1, "ether"), {from: owner }).should.be.fulfilled;
+
+      await token.transferAndCall(validatorContract.address, minPerTx, '0x', {from: user}).should.be.rejectedWith(ERROR_MSG);
+    })
+
+    it('fail to send tokens to bridge contract out of limits', async () => {
+      const lessThanMin = web3.toBigNumber(web3.toWei(0.0001, "ether"))
+      await token.mint(user, web3.toWei(1, "ether"), {from: owner }).should.be.fulfilled;
+
+      await token.setBridgeContract(homeErcToErcContract.address).should.be.fulfilled;
+      await token.transferAndCall(homeErcToErcContract.address, lessThanMin, '0x', {from: user}).should.be.rejectedWith(ERROR_MSG);
+
+      await token.setBridgeContract(foreignNativeToErcBridge.address).should.be.fulfilled;
+      await token.transferAndCall(foreignNativeToErcBridge.address, lessThanMin, '0x', {from: user}).should.be.rejectedWith(ERROR_MSG);
     })
   })
   describe('#claimtokens', async () => {

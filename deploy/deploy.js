@@ -43,10 +43,6 @@ async function deployNativeToErc() {
 }
 
 async function deployErcToErc() {
-  if (ERC20_TOKEN_ADDRESS === ZERO_ADDRESS) {
-    throw new Error('ERC_TO_ERC mode requires ERC20_TOKEN_ADDRESS to be set')
-  }
-
   const deployHome = require('./src/erc_to_erc/home')
   const deployForeign = require('./src/erc_to_erc/foreign')
 
@@ -81,9 +77,6 @@ async function deployErcToErc() {
 }
 
 async function deployErcToNative() {
-  if (ERC20_TOKEN_ADDRESS === ZERO_ADDRESS) {
-    throw new Error('ERC_TO_NATIVE mode requires ERC20_TOKEN_ADDRESS to be set')
-  }
   if (BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
     throw new Error('ERC_TO_NATIVE mode requires BLOCK_REWARD_ADDRESS to be set')
   }

@@ -77,10 +77,6 @@ async function deployErcToErc() {
 }
 
 async function deployErcToNative() {
-  if (BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
-    throw new Error('ERC_TO_NATIVE mode requires BLOCK_REWARD_ADDRESS to be set')
-  }
-
   const deployHome = require('./src/erc_to_native/home')
   const deployForeign = require('./src/erc_to_native/foreign')
 

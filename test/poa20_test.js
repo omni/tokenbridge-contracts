@@ -43,23 +43,34 @@ contract('ERC677BridgeToken', async (accounts) => {
 
   describe('#bridgeContract', async() => {
     it('can set bridge contract', async () => {
-      const bridgeAddress = '0x630d2c61234224fd9705457be61b830a0ea81822';
+      const homeErcToErcContract = await HomeErcToErcBridge.new();
       (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
 
-      await token.setBridgeContract(bridgeAddress).should.be.fulfilled;
+      await token.setBridgeContract(homeErcToErcContract.address).should.be.fulfilled;
 
-      (await token.bridgeContract()).should.be.equal(bridgeAddress);
+      (await token.bridgeContract()).should.be.equal(homeErcToErcContract.address);
     })
 
     it('only owner can set bridge contract', async () => {
-      const bridgeAddress = '0x630d2c61234224fd9705457be61b830a0ea81822';
+      const homeErcToErcContract = await HomeErcToErcBridge.new();
       (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
 
-      await token.setBridgeContract(bridgeAddress, {from: user }).should.be.rejectedWith(ERROR_MSG);
+      await token.setBridgeContract(homeErcToErcContract.address, {from: user }).should.be.rejectedWith(ERROR_MSG);
       (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
 
-      await token.setBridgeContract(bridgeAddress, {from: owner }).should.be.fulfilled;
-      (await token.bridgeContract()).should.be.equal(bridgeAddress);
+      await token.setBridgeContract(homeErcToErcContract.address, {from: owner }).should.be.fulfilled;
+      (await token.bridgeContract()).should.be.equal(homeErcToErcContract.address);
+    })
+
+    it('fail to set invalid bridge contract address', async () => {
+      const invalidContractAddress = '0xaaB52d66283F7A1D5978bcFcB55721ACB467384b';
+      (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
+
+      await token.setBridgeContract(invalidContractAddress).should.be.rejectedWith(ERROR_MSG);
+      (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
+
+      await token.setBridgeContract(ZERO_ADDRESS).should.be.rejectedWith(ERROR_MSG);
+      (await token.bridgeContract()).should.be.equal(ZERO_ADDRESS);
     })
   })
 

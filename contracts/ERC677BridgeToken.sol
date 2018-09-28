@@ -24,6 +24,7 @@ contract ERC677BridgeToken is
     public DetailedERC20(_name, _symbol, _decimals) {}
 
     function setBridgeContract(address _bridgeContract) onlyOwner public {
+        require(_bridgeContract != address(0) && isContract(_bridgeContract));
         bridgeContract = _bridgeContract;
     }
 

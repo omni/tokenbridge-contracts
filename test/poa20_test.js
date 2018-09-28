@@ -152,6 +152,12 @@ contract('ERC677BridgeToken', async (accounts) => {
         to: validatorContract.address,
         value: minPerTx
       })
+      result.logs[1].event.should.be.equal("ContractFallbackCallFailed")
+      result.logs[1].args.should.be.deep.equal({
+        from: user,
+        to: validatorContract.address,
+        value: minPerTx
+      })
     })
 
     it('fail to send tokens to bridge contract out of limits', async () => {

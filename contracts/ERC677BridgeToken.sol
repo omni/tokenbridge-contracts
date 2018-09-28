@@ -17,6 +17,8 @@ contract ERC677BridgeToken is
     Version.Version public getTokenInterfacesVersion = Version.Version(2, 0, 0);
     address public bridgeContract;
 
+    event ContractFallbackCallFailed(address from, address to, uint value);
+
     constructor(
         string _name,
         string _symbol,
@@ -53,8 +55,12 @@ contract ERC677BridgeToken is
     function transfer(address _to, uint256 _value) public returns (bool)
     {
         require(superTransfer(_to, _value));
-        if (isContract(_to) && !contractFallback(_to, _value, new bytes(0)) && _to == bridgeContract) {
-            revert();
+        if (isContract(_to) && !contractFallback(_to, _value, new bytes(0))) {
+            if (_to == bridgeContract) {
+                revert();
+            } else {
+                emit ContractFallbackCallFailed(msg.sender, _to, _value);
+            }
         }
         return true;
     }

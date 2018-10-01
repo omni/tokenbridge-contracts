@@ -181,6 +181,20 @@ async function deployForeign() {
   assert.equal(txInitializeBridge.status, '0x1', 'Transaction Failed')
   foreignNonce++
 
+  console.log('\nset bridge contract on ERC677BridgeToken')
+  const setBridgeContractData = await erc677bridgeToken.methods
+    .setBridgeContract(foreignBridgeStorage.options.address)
+    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  const setBridgeContract = await sendRawTxForeign({
+    data: setBridgeContractData,
+    nonce: foreignNonce,
+    to: erc677bridgeToken.options.address,
+    privateKey: deploymentPrivateKey,
+    url: FOREIGN_RPC_URL
+  })
+  assert.equal(setBridgeContract.status, '0x1', 'Transaction Failed')
+  foreignNonce++
+
   console.log('transferring ownership of ERC677BridgeToken token to foreignBridge contract')
   const txOwnershipData = await erc677bridgeToken.methods
     .transferOwnership(foreignBridgeStorage.options.address)

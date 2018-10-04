@@ -4,7 +4,7 @@ const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 
 const ERC677BridgeToken = artifacts.require("ERC677BridgeToken.sol");
-const {ERROR_MSG, ZERO_ADDRESS} = require('../setup');
+const {ERROR_MSG, ZERO_ADDRESS, INVALID_ARGUMENTS} = require('../setup');
 const {createMessage, sign, signatureToVRS} = require('../helpers/helpers');
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 const requireBlockConfirmations = 8;
@@ -29,6 +29,9 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       '0'.should.be.bignumber.equal(await foreignBridge.deployedAtBlock())
       false.should.be.equal(await foreignBridge.isInitialized())
       '0'.should.be.bignumber.equal(await foreignBridge.requiredBlockConfirmations())
+
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations).should.be.rejectedWith(INVALID_ARGUMENTS);
+
       await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice);
 
       token.address.should.be.equal(await foreignBridge.erc20token());

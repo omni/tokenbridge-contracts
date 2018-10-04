@@ -1,3 +1,4 @@
+const Web3 = require('web3')
 const {
   web3Home,
   web3Foreign,
@@ -98,15 +99,28 @@ function timeout(ms) {
 async function getReceipt(txHash, url) {
   await timeout(GET_RECEIPT_INTERVAL_IN_MILLISECONDS);
   let receipt = await sendNodeRequest(url, "eth_getTransactionReceipt", txHash);
-  if(receipt === null) {
+  if(receipt === null || receipt.blockNumber === null) {
     receipt = await getReceipt(txHash, url);
   }
   return receipt;
+}
+
+function add0xPrefix(s) {
+  if (s.indexOf('0x') === 0) {
+    return s
+  }
+
+  return '0x' + s
+}
+
+function privateKeyToAddress(privateKey) {
+  return new Web3().eth.accounts.privateKeyToAccount(add0xPrefix(privateKey)).address
 }
 
 module.exports = {
   deployContract,
   sendNodeRequest,
   getReceipt,
-  sendRawTx
+  sendRawTx,
+  privateKeyToAddress
 }

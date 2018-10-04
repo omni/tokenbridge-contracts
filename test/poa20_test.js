@@ -1,8 +1,8 @@
-const POA20 = artifacts.require("POA20.sol");
+const POA20 = artifacts.require("ERC677BridgeToken.sol");
 const ERC677ReceiverTest = artifacts.require("ERC677ReceiverTest.sol")
 const {ERROR_MSG} = require('./setup');
 
-contract('POA20', async (accounts) => {
+contract('ERC677BridgeToken', async (accounts) => {
   let token
   let owner = accounts[0]
   const user = accounts[1];
@@ -26,6 +26,10 @@ contract('POA20', async (accounts) => {
     const mintingFinished = await token.mintingFinished();
     assert.equal(mintingFinished, false);
 
+    const [major, minor, patch] = await token.getTokenInterfacesVersion()
+    major.should.be.bignumber.gte(0)
+    minor.should.be.bignumber.gte(0)
+    patch.should.be.bignumber.gte(0)
   })
   describe('#mint', async() => {
     it('can mint by owner', async () => {
@@ -112,6 +116,36 @@ contract('POA20', async (accounts) => {
       await token.claimTokens(tokenSecond.address, accounts[3], {from: owner});
       '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(token.address))
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
+
+    })
+  })
+  describe('#transfer', async () => {
+    it('if transfer called on contract, onTokenTransfer is also invoked', async () => {
+      const receiver = await ERC677ReceiverTest.new();
+      (await receiver.from()).should.be.equal('0x0000000000000000000000000000000000000000');
+      (await receiver.value()).should.be.bignumber.equal('0');
+      (await receiver.data()).should.be.equal('0x');
+      (await receiver.someVar()).should.be.bignumber.equal('0');
+
+      await token.mint(user, 1, {from: owner }).should.be.fulfilled;
+      const {logs} = await token.transfer(receiver.address, 1, {from: user}).should.be.fulfilled;
+
+      (await token.balanceOf(receiver.address)).should.be.bignumber.equal(1);
+      (await token.balanceOf(user)).should.be.bignumber.equal(0);
+      (await receiver.from()).should.be.equal(user);
+      (await receiver.value()).should.be.bignumber.equal(1);
+      (await receiver.data()).should.be.equal('0x');
+      logs[0].event.should.be.equal("Transfer")
+    })
+    it('if transfer called on contract, still works even if onTokenTransfer doesnot exist', async () => {
+      const someContract = await POA20.new("Some", "Token", 18);
+      await token.mint(user, 2, {from: owner }).should.be.fulfilled;
+      const tokenTransfer = await token.transfer(someContract.address, 1, {from: user}).should.be.fulfilled;
+      const tokenTransfer2 = await token.transfer(accounts[0], 1, {from: user}).should.be.fulfilled;
+      (await token.balanceOf(someContract.address)).should.be.bignumber.equal(1);
+      (await token.balanceOf(user)).should.be.bignumber.equal(0);
+      tokenTransfer.logs[0].event.should.be.equal("Transfer")
+      tokenTransfer2.logs[0].event.should.be.equal("Transfer")
 
     })
   })

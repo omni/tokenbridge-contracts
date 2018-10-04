@@ -1,86 +1,222 @@
-# How to deploy POA bridge contracts
+# How to Deploy POA Bridge Contracts
 
-It is assumed that steps listed below are executed in `deploy` folder.
+In order to deploy bridge contracts you must run `npm install` to install all dependencies. For more information, see the [project README](../README.md).
 
-1. Install packages needed for deployment
-   ```bash
-   npm install
-   ```
+1. Compile the source contracts.
+```
+cd ..
+npm run compile
+```
 
-2. create `.env` file by
-   ```bash
-   cp .env.example .env
-   ```
+2. Create a `.env` file.
+```
+cd deploy
+cp .env.example .env
+```
 
-3. if it is necessary, deploy and configure a multi-sig wallet contract which will be used to manage the bridge contracts after deployment.
+3. If necessary, deploy and configure a multi-sig wallet contract to manage the bridge contracts after deployment. We have not audited any wallets for security, but have used https://github.com/gnosis/MultiSigWallet/ with success.
 
-4. adjust parameters in the .env file
+4. Adjust the parameters in the `.env` file depending on the desired bridge mode. See below for comments related to each parameter.
 
-   ```bash
-   DEPLOYMENT_ACCOUNT_ADDRESS=0xb8988b690910913c97a090c3a6f80fad8b3a4683
-   DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
-   DEPLOYMENT_GAS_LIMIT=4000000
-   DEPLOYMENT_GAS_PRICE=10
-   GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
+5. Add funds to the deployment accounts in both the Home and Foreign networks. 
 
-   HOME_RPC_URL=https://sokol.poa.network
-   HOME_OWNER_MULTISIG=0x
-   HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
-   HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
-   HOME_DAILY_LIMIT=30000000000000000000000000
-   HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
-   HOME_MIN_AMOUNT_PER_TX=500000000000000000
-   HOME_REQUIRED_BLOCK_CONFIRMATIONS=1
-   HOME_GAS_PRICE=1
+6. Run `node deploy.js`. 
 
-   FOREIGN_RPC_URL=https://sokol.poa.network
-   FOREIGN_OWNER_MULTISIG=0x
-   FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS=0x
-   FOREIGN_UPGRADEABLE_ADMIN_BRIDGE=0x
-   FOREIGN_DAILY_LIMIT=15000000000000000000000000
-   FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
-   FOREIGN_MIN_AMOUNT_PER_TX=500000000000000000
-   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS=8
-   FOREIGN_GAS_PRICE=10
+## `NATIVE-TO-ERC` Bridge Mode Configuration Example.  
 
-   REQUIRED_NUMBER_OF_VALIDATORS=1
-   VALIDATORS="0x 0x 0x"
-   ```
+This example of an `.env` file for the `native-to-erc` bridge mode includes comments describing each parameter.
 
-5. fill the balance of the deployment account in Home and Foreign networks
+```bash
 
-6. run the deployment script
-   ```bash
-   node deploy.js
-   ```
 
-## Explanation of parameters in `.env` file
+# The type of bridge. Defines set of contracts to be deployed.
+BRIDGE_MODE=NATIVE_TO_ERC
 
-Name | Description
---------- | -------
-DEPLOYMENT_ACCOUNT_ADDRESS | Temporary  account from which all contracts will be deployed. Make sure that the deployment account owns some ether on both kovan & sokol network.
-DEPLOYMENT_ACCOUNT_PRIVATE_KEY | private key from temp account
-DEPLOYMENT_GAS_LIMIT | Gas Limit to use for transactions during bridge contract provisioning 
-DEPLOYMENT_GAS_PRICE | Gas Price to use for transactions during bridge contract provisioning on both networks in gwei  
-GET_RECEIPT_INTERVAL_IN_MILLISECONDS | Interval that is used to wait for tx to be mined( 3 sec in example)
-HOME_RPC_URL | Public RPC Node URL for Home Network  
-HOME_OWNER_MULTISIG | Address of Administrator role on Home network to change parameters of the bridge and validator's contract
-HOME_UPGRADEABLE_ADMIN_VALIDATORS | Address from which Validator's contract could be upgraded
-HOME_UPGRADEABLE_ADMIN_BRIDGE | Address from which HomeBridge's contract could be upgraded
-HOME_DAILY_LIMIT | Daily Limit in Wei. Example above is `1 eth`  
-HOME_MAX_AMOUNT_PER_TX | Max limit per 1 tx in Wei. Example above is `0.1 eth`  
-HOME_MIN_AMOUNT_PER_TX | Minimum amount per 1 tx in Wei. Example above is `0.01 eth`  
-HOME_REQUIRED_BLOCK_CONFIRMATIONS | Number of blocks issued after the block with the corresponding deposit transaction to make sure that the transaction will not be rolled back
-HOME_GAS_PRICE | Gas Price to use for transactions to relay withdraws to Home Network
-FOREIGN_RPC_URL | Public RPC Node URL for Foreign Network  
-FOREIGN_OWNER_MULTISIG | Address of Administrator role on FOREIGN network to change parameters of the bridge and validator's contract
-FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS | Address from which Validator's contract could be upgraded
-FOREIGN_UPGRADEABLE_ADMIN_BRIDGE | Address from which HomeBridge's contract could be upgraded
-FOREIGN_DAILY_LIMIT | Daily Limit in Wei. Example above is `1 eth`  
-FOREIGN_MAX_AMOUNT_PER_TX | Max limit per 1 tx in Wei. Example above is `0.1 eth`  
-FOREIGN_MIN_AMOUNT_PER_TX | Minimum amount per 1 tx in Wei. Example above is `0.01 eth`  
-FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS | Number of blocks issued after the block with the corresponding withdraw transaction to make sure that the transaction will not be rolled back
-FOREIGN_GAS_PRICE | Gas Price to use for transactions to deposit and confirm withdraws to Foreign Network
-VALIDATORS | array of validators on Home and Foreign network. Space separated.  
-REQUIRED_NUMBER_OF_VALIDATORS | Minimum Number of validators in order to Withdraw Funds on POA network Sokol  
+# The private key hex value of the account responsible for contracts
+# deployments and initial configuration. The account's balance must contain
+# funds from both networks.
+DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
+# The "gas" parameter set in every deployment/configuration transaction.
+DEPLOYMENT_GAS_LIMIT=4000000
+# The "gasPrice" parameter set in every deployment/configuration transaction on
+# both networks.
+DEPLOYMENT_GAS_PRICE=10
+# The timeout limit to wait for receipt of the deployment/configuration
+# transaction.
+GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 
+# The name of the ERC677 token to be deployed on the Foreign network.
+BRIDGEABLE_TOKEN_NAME="Your New Bridged Token"
+# The symbol name of the ERC677 token to be deployed on the Foreign network.
+BRIDGEABLE_TOKEN_SYMBOL="TEST"
+# The number of supportable decimal digits after the "point" in the ERC677 token
+# to be deployed on the Foreign network.
+BRIDGEABLE_TOKEN_DECIMALS="18"
+
+# The RPC channel to a Home node able to handle deployment/configuration
+# transactions.
+HOME_RPC_URL=https://poa.infura.io
+# The address of an administrator on the Home network who can change bridge
+# parameters and a validator's contract. For extra security we recommended using
+# a multi-sig wallet contract address here.
+HOME_OWNER_MULTISIG=0x
+# The address from which a validator's contract can be upgraded on Home.
+HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
+# The address from which the bridge's contract can be upgraded on Home.
+HOME_UPGRADEABLE_ADMIN_BRIDGE=0x 
+# The daily transaction limit in Wei. As soon as this limit is exceeded, any
+# transaction which requests to relay assets will fail.
+HOME_DAILY_LIMIT=30000000000000000000000000
+# The maximum limit for one transaction in Wei. If a single transaction tries to
+# relay funds exceeding this limit it will fail.
+HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
+# The minimum limit for one transaction in Wei. If a transaction tries to relay
+# funds below this limit it will fail. This is required to prevent dryout
+# validator accounts.
+HOME_MIN_AMOUNT_PER_TX=500000000000000000
+# The finalization threshold. The number of blocks issued after the block with
+# the corresponding deposit transaction to guarantee the transaction will not be
+# rolled back.
+HOME_REQUIRED_BLOCK_CONFIRMATIONS=1
+# The default gas price used to send Home Network signature transactions for
+# deposit or withdrawl confirmations. This price is used if the Gas price oracle
+# is unreachable. 
+HOME_GAS_PRICE=1
+
+# The RPC channel to a Foreign node able to handle deployment/configuration
+# transactions.
+FOREIGN_RPC_URL=https://mainnet.infura.io
+# The address of an administrator on the Foreign network who can change bridge
+# parameters and the validator's contract. For extra security we recommended
+# using a multi-sig wallet contract address here.
+FOREIGN_OWNER_MULTISIG=0x
+# The address from which a validator's contract can be upgraded on Foreign.
+FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS=0x
+# The address from which the bridge's contract can be upgraded on Foreign.
+FOREIGN_UPGRADEABLE_ADMIN_BRIDGE=0x
+# The daily limit in Wei. As soon as this limit is exceeded, any transaction
+# requesting to relay assets will fail.
+FOREIGN_DAILY_LIMIT=15000000000000000000000000
+# The maximum limit per one transaction in Wei. If a transaction tries to relay
+# funds exceeding this limit it will fail.
+FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
+# The minimum limit for one transaction in Wei. If a transaction tries to relay
+# funds below this limit it will fail. This is required to prevent dryout
+# validator accounts.
+FOREIGN_MIN_AMOUNT_PER_TX=500000000000000000
+# The finalization threshold. The number of blocks issued after the block with
+# the corresponding deposit transaction to guarantee the transaction will not be
+# rolled back.
+FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS=8
+# The default gas price used to send Foreign network transactions finalizing
+# asset deposits. This price is used if the Gas price oracle is unreachable.
+FOREIGN_GAS_PRICE=10
+
+# The minimum number of validators required to send their signatures confirming
+# the relay of assets. The same number of validators is expected on both sides
+# of the bridge.
+REQUIRED_NUMBER_OF_VALIDATORS=1
+# The set of validators' addresses. It is assumed that signatures from these
+# addresses are collected on the Home side. The same addresses will be used on
+# the Foreign network to confirm that the finalized agreement was transferred
+# correctly to the Foreign network.
+VALIDATORS="0x 0x 0x"
+```
+
+
+## `ERC-TO-ERC` Bridge Mode Configuration Example. 
+
+This example of an `.env` file for the `erc-to-erc` bridge mode includes comments describing each parameter.
+
+```bash
+# The type of bridge. Defines set of contracts to be deployed.
+BRIDGE_MODE=ERC_TO_ERC
+
+# The private key hex value of the account responsible for contracts
+# deployments and initial configuration. The account's balance must contain
+# funds from both networks.
+DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
+# The "gas" parameter set in every deployment/configuration transaction.
+DEPLOYMENT_GAS_LIMIT=4000000
+# The "gasPrice" parameter set in every deployment/configuration transaction on
+# both networks.
+DEPLOYMENT_GAS_PRICE=10
+# The timeout limit to wait for receipt of the deployment/configuration
+# transaction.
+GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
+
+# The name of the ERC677 token to be deployed on the Home network.
+BRIDGEABLE_TOKEN_NAME="Your New Bridged Token"
+# The symbol name of the ERC677 token to be deployed on the Home network.
+BRIDGEABLE_TOKEN_SYMBOL="TEST"
+# The number of supportable decimal digits after the "point" in the ERC677 token
+# to be deployed on the Home network.
+BRIDGEABLE_TOKEN_DECIMALS="18"
+
+# The RPC channel to a Home node able to handle deployment/configuration
+# transactions.
+HOME_RPC_URL=https://poa.infura.io
+# The address of an administrator on the Home network who can change bridge
+# parameters and a validator's contract. For extra security we recommended using
+# a multi-sig wallet contract address here.
+HOME_OWNER_MULTISIG=0x
+# The address from which a validator's contract can be upgraded on Home.
+HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
+# The address from which the bridge's contract can be upgraded on Home.
+HOME_UPGRADEABLE_ADMIN_BRIDGE=0x 
+# The daily transaction limit in Wei. As soon as this limit is exceeded, any
+# transaction which requests to relay assets will fail.
+HOME_DAILY_LIMIT=30000000000000000000000000
+# The maximum limit for one transaction in Wei. If a single transaction tries to
+# relay funds exceeding this limit it will fail.
+HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
+# The minimum limit for one transaction in Wei. If a transaction tries to relay
+# funds below this limit it will fail. This is required to prevent dryout
+# validator accounts.
+HOME_MIN_AMOUNT_PER_TX=500000000000000000
+# The finalization threshold. The number of blocks issued after the block with
+# the corresponding deposit transaction to guarantee the transaction will not be
+# rolled back.
+HOME_REQUIRED_BLOCK_CONFIRMATIONS=1
+# The default gas price used to send Home Network signature transactions for
+# deposit or withdrawl confirmations. This price is used if the Gas price oracle
+# is unreachable. 
+HOME_GAS_PRICE=1
+
+# The RPC channel to a Foreign node able to handle deployment/configuration
+# transactions.
+FOREIGN_RPC_URL=https://mainnet.infura.io
+# The address of an administrator on the Foreign network who can change bridge
+# parameters and the validator's contract. For extra security we recommended
+# using a multi-sig wallet contract address here.
+FOREIGN_OWNER_MULTISIG=0x
+# The address from which a validator's contract can be upgraded on Foreign.
+FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS=0x
+# The address from which the bridge's contract can be upgraded on Foreign.
+FOREIGN_UPGRADEABLE_ADMIN_BRIDGE=0x
+# These three parameters are not used in this mode, but the deployment script
+# requires it to be set to some value.
+FOREIGN_DAILY_LIMIT=15000000000000000000000000
+FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
+FOREIGN_MIN_AMOUNT_PER_TX=500000000000000000
+# The finalization threshold. The number of blocks issued after the block with
+# the corresponding deposit transaction to guarantee the transaction will not be
+# rolled back.
+FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS=8
+# The default gas price used to send Foreign network transactions finalizing
+# asset deposits. This price is used if the Gas price oracle is unreachable.
+FOREIGN_GAS_PRICE=10
+# The address of the existing ERC20 compatible token in the Foreign network to
+# be exchanged to the ERC20/ERC677 token deployed on Home.
+ERC20_TOKEN_ADDRESS=0x
+
+# The minimum number of validators required to send their signatures confirming
+# the relay of assets. The same number of validators is expected on both sides
+# of the bridge.
+REQUIRED_NUMBER_OF_VALIDATORS=1
+# The set of validators' addresses. It is assumed that signatures from these
+# addresses are collected on the Home side. The same addresses will be used on
+# the Foreign network to confirm that the finalized agreement was transferred
+# correctly to the Foreign network.
+VALIDATORS="0x 0x 0x"
+```

@@ -1,18 +1,22 @@
-pragma solidity 0.4.23;
+pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./IBurnableMintableERC677Token.sol";
 import "./ERC677Receiver.sol";
+import "./libraries/Version.sol";
 
 
-contract POA20 is
+contract ERC677BridgeToken is
     IBurnableMintableERC677Token,
     DetailedERC20,
     BurnableToken,
     MintableToken {
-    function POA20(
+
+    Version.Version public getTokenInterfacesVersion = Version.Version(2, 0, 0);
+
+    constructor(
         string _name,
         string _symbol,
         uint8 _decimals)
@@ -26,10 +30,25 @@ contract POA20 is
     function transferAndCall(address _to, uint _value, bytes _data)
         external validRecipient(_to) returns (bool)
     {
-        require(transfer(_to, _value));
+        require(superTransfer(_to, _value));
         emit Transfer(msg.sender, _to, _value, _data);
+
         if (isContract(_to)) {
             require(contractFallback(_to, _value, _data));
+        }
+        return true;
+    }
+
+    function superTransfer(address _to, uint256 _value) internal returns(bool)
+    {
+        return super.transfer(_to, _value);
+    }
+
+    function transfer(address _to, uint256 _value) public returns (bool)
+    {
+        require(superTransfer(_to, _value));
+        if (isContract(_to)) {
+            contractFallback(_to, _value, new bytes(0));
         }
         return true;
     }
@@ -38,8 +57,7 @@ contract POA20 is
         private
         returns(bool)
     {
-        ERC677Receiver receiver = ERC677Receiver(_to);
-        return receiver.onTokenTransfer(msg.sender, _value, _data);
+        return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)",  msg.sender, _value, _data));
     }
 
     function isContract(address _addr)
@@ -53,6 +71,10 @@ contract POA20 is
     }
 
     function finishMinting() public returns (bool) {
+        revert();
+    }
+
+    function renounceOwnership() public onlyOwner {
         revert();
     }
 

@@ -1,11 +1,11 @@
-const POA20 = artifacts.require("./POA20.sol");
+const POA20 = artifacts.require("./ERC677BridgeToken.sol");
 const BridgeValidators = artifacts.require("./BridgeValidators.sol");
-const HomeBridge = artifacts.require("./HomeBridge.sol");
-const ForeignBridge = artifacts.require("./ForeignBridge.sol");
+const HomeBridge = artifacts.require("./HomeBridgeNativeToErc.sol");
+const ForeignBridge = artifacts.require("./ForeignBridgeNativeToErc.sol");
 const EternalStorageProxy = artifacts.require('EternalStorageProxy')
 
 module.exports = async function(deployer, network, accounts) {
-  if(network !== 'test'){
+  if(network !== 'test' && network !== 'ganache'){
     const VALIDATORS = process.env.VALIDATORS ? process.env.VALIDATORS.split(" ") : [accounts[0]];
     const REQUIRED_NUMBER_OF_VALIDATORS = process.env.REQUIRED_VALIDATORS || VALIDATORS.length
     const PROXY_OWNER = process.env.PROXY_OWNER || accounts[0];

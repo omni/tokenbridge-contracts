@@ -1,45 +1,39 @@
 const Web3Utils = require('web3-utils')
 require('dotenv').config({
-  path: __dirname + '/../.env'
+  path: __dirname + '../../.env'
 });
 
 const assert = require('assert');
 
-const {deployContract, sendRawTx} = require('./deploymentUtils');
-const {web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL} = require('./web3');
+const {deployContract, privateKeyToAddress, sendRawTx} = require('../deploymentUtils');
+const {web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL} = require('../web3');
 
-const POA20 = require('../../build/contracts/POA20.json');
-const EternalStorageProxy = require('../../build/contracts/EternalStorageProxy.json');
-const BridgeValidators = require('../../build/contracts/BridgeValidators.json')
-const ForeignBridge = require('../../build/contracts/ForeignBridge.json')
+const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json');
+const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
+const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToErc.json')
 
 const VALIDATORS = process.env.VALIDATORS.split(" ")
-const FOREIGN_GAS_PRICE =  Web3Utils.toWei(process.env.FOREIGN_GAS_PRICE, 'gwei');
 
 const {
-  DEPLOYMENT_ACCOUNT_ADDRESS,
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   FOREIGN_OWNER_MULTISIG,
   FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
   FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,
-  FOREIGN_DAILY_LIMIT,
-  FOREIGN_MAX_AMOUNT_PER_TX,
-  FOREIGN_MIN_AMOUNT_PER_TX,
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-
+  ERC20_TOKEN_ADDRESS
 } = process.env;
 
+const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
+
 async function deployForeign() {
+  if(!Web3Utils.isAddress(ERC20_TOKEN_ADDRESS)){
+    throw "ERC20_TOKEN_ADDRESS env var is not defined"
+  }
   let foreignNonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS);
   console.log('========================================')
   console.log('deploying ForeignBridge')
   console.log('========================================\n')
-
-  console.log('\n[Foreign] deploying POA20 token')
-  const poa20foreign = await deployContract(POA20, ["POA ERC20 on Foundation", "POA20", 18], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
-  foreignNonce++;
-  console.log('[Foreign] POA20: ', poa20foreign.options.address)
-
 
   console.log('deploying storage for foreign validators')
   const storageValidatorsForeign = await deployContract(EternalStorageProxy, [], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
@@ -78,8 +72,6 @@ async function deployForeign() {
     url: FOREIGN_RPC_URL
   });
   assert.equal(txInitializeForeign.status, '0x1', 'Transaction Failed');
-  const validatorOwner = await bridgeValidatorsForeign.methods.owner().call();
-  assert.equal(validatorOwner.toLowerCase(), FOREIGN_OWNER_MULTISIG.toLocaleLowerCase());
   foreignNonce++;
 
   console.log('\nTransferring ownership of ValidatorsProxy\n')
@@ -94,8 +86,6 @@ async function deployForeign() {
   });
   assert.equal(txValidatorsForeignOwnershipData.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  const newProxyValidatorsOwner = await storageValidatorsForeign.methods.proxyOwner().call();
-  assert.equal(newProxyValidatorsOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS.toLowerCase());
 
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
@@ -122,13 +112,10 @@ async function deployForeign() {
 
   console.log('\ninitializing Foreign Bridge with following parameters:\n')
   console.log(`Foreign Validators: ${storageValidatorsForeign.options.address},
-  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
-  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(FOREIGN_MAX_AMOUNT_PER_TX)} in eth,
-  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(FOREIGN_MIN_AMOUNT_PER_TX)} in eth
   `)
   foreignBridgeImplementation.options.address = foreignBridgeStorage.options.address
   const initializeFBridgeData = await foreignBridgeImplementation.methods.initialize(
-    storageValidatorsForeign.options.address, poa20foreign.options.address, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, FOREIGN_GAS_PRICE, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
+    storageValidatorsForeign.options.address, ERC20_TOKEN_ADDRESS, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeBridge = await sendRawTx({
     data: initializeFBridgeData,
@@ -138,19 +125,6 @@ async function deployForeign() {
     url: FOREIGN_RPC_URL
   });
   assert.equal(txInitializeBridge.status, '0x1', 'Transaction Failed');
-  foreignNonce++;
-
-  console.log('transferring ownership of POA20 token to foreignBridge contract')
-  const txOwnershipData = await poa20foreign.methods.transferOwnership(foreignBridgeStorage.options.address)
-          .encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS})
-  const txOwnership = await sendRawTx({
-    data: txOwnershipData,
-    nonce: foreignNonce,
-    to: poa20foreign.options.address,
-    privateKey: deploymentPrivateKey,
-    url: FOREIGN_RPC_URL
-  });
-  assert.equal(txOwnership.status, '0x1', 'Transaction Failed');
   foreignNonce++;
 
   const bridgeOwnershipData = await foreignBridgeStorage.methods.transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_BRIDGE)
@@ -164,16 +138,13 @@ async function deployForeign() {
   });
   assert.equal(txBridgeOwnershipData.status, '0x1', 'Transaction Failed');
   foreignNonce++;
-  const newProxyBridgeOwner = await foreignBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_BRIDGE.toLowerCase());
 
   return {
     foreignBridge:
       {
         address: foreignBridgeStorage.options.address,
         deployedBlockNumber: Web3Utils.hexToNumber(foreignBridgeStorage.deployedBlockNumber)
-      },
-    erc677: {address: poa20foreign.options.address}
+      }
   }
 }
 

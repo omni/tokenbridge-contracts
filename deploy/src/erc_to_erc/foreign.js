@@ -13,6 +13,7 @@ const BridgeValidators = require('../../../build/contracts/BridgeValidators.json
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToErc.json')
 
 const VALIDATORS = process.env.VALIDATORS.split(" ")
+const FOREIGN_GAS_PRICE = process.env.FOREIGN_GAS_PRICE
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -125,6 +126,21 @@ async function deployForeign() {
     url: FOREIGN_RPC_URL
   });
   assert.equal(txInitializeBridge.status, '0x1', 'Transaction Failed');
+  foreignNonce++;
+
+  console.log('\ninitializing fallback gas price initializing in Foreign Bridge:\n');
+  const initializeFBridgeGasPrice = await foreignBridgeImplementation.methods
+    .setGasPrice(
+      Web3Utils.toHex(FOREIGN_GAS_PRICE)
+    ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
+  const txGasPriceInitializeBridge = await sendRawTx({
+    data: initializeFBridgeGasPrice,
+    nonce: foreignNonce,
+    to: foreignBridgeStorage.options.address,
+    privateKey: deploymentPrivateKey,
+    url: FOREIGN_RPC_URL
+  });
+  assert.equal(txGasPriceInitializeBridge.status, '0x1', 'Transaction Failed');
   foreignNonce++;
 
   const bridgeOwnershipData = await foreignBridgeStorage.methods.transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_BRIDGE)

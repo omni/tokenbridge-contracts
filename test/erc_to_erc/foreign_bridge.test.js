@@ -32,6 +32,11 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
 
       await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations).should.be.rejectedWith(INVALID_ARGUMENTS);
 
+      await foreignBridge.initialize(ZERO_ADDRESS, token.address, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, token.address, 0, gasPrice).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, 0).should.be.rejectedWith(ERROR_MSG);
+
       await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice);
 
       token.address.should.be.equal(await foreignBridge.erc20token());

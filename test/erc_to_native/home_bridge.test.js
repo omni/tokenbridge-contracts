@@ -108,6 +108,10 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const currentDay = await homeContract.getCurrentDay()
       '0'.should.be.bignumber.equal(await homeContract.totalSpentPerDay(currentDay))
 
+      await blockRewardContract.addMintedTotallyByBridge(10, homeContract.address)
+      const minted = await blockRewardContract.mintedTotallyByBridge(homeContract.address)
+      minted.should.be.bignumber.equal(10)
+
       const {logs} = await homeContract.sendTransaction({ from: accounts[1], value: 1 }).should.be.fulfilled
 
       logs[0].event.should.be.equal('UserRequestForSignature')
@@ -119,6 +123,8 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
     })
 
     it('should accumulate burnt coins', async () => {
+      await blockRewardContract.addMintedTotallyByBridge(10, homeContract.address)
+
       const currentDay = await homeContract.getCurrentDay()
       '0'.should.be.bignumber.equal(await homeContract.totalSpentPerDay(currentDay))
 
@@ -136,6 +142,8 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
     })
 
     it('doesnt let you send more than daily limit', async () => {
+      await blockRewardContract.addMintedTotallyByBridge(10, homeContract.address)
+
       const currentDay = await homeContract.getCurrentDay()
       '0'.should.be.bignumber.equal(await homeContract.totalSpentPerDay(currentDay))
 
@@ -156,6 +164,8 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
     })
 
     it('doesnt let you send more than max amount per tx', async () => {
+      await blockRewardContract.addMintedTotallyByBridge(200, homeContract.address)
+
       await homeContract.sendTransaction({
         from: accounts[1],
         value: 1
@@ -185,12 +195,44 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const newMaxPerTx = 50;
       const newMinPerTx = 20;
 
+      await blockRewardContract.addMintedTotallyByBridge(200, homeContract.address)
+
       await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled;
       await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled;
       await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled;
 
       await homeContract.sendTransaction({ from: accounts[1], value: newMinPerTx }).should.be.fulfilled
       await homeContract.sendTransaction({ from: accounts[1], value: newMinPerTx - 1 }).should.be.rejectedWith(ERROR_MSG)
+    })
+
+    it('should fail if not enough bridged tokens', async () => {
+
+      const initiallyMinted = await blockRewardContract.mintedTotallyByBridge(homeContract.address)
+      initiallyMinted.should.be.bignumber.equal(0)
+
+      await homeContract.sendTransaction({ from: accounts[1], value: 1 }).should.be.rejectedWith(ERROR_MSG)
+
+      await blockRewardContract.addMintedTotallyByBridge(2, homeContract.address)
+
+      await homeContract.sendTransaction({ from: accounts[1], value: 1 }).should.be.fulfilled
+
+      await homeContract.sendTransaction({ from: accounts[1], value: 1 }).should.be.fulfilled
+
+      await homeContract.sendTransaction({ from: accounts[1], value: 1 }).should.be.rejectedWith(ERROR_MSG)
+
+      const minted = await blockRewardContract.mintedTotallyByBridge(homeContract.address)
+      const burnt = await homeContract.totalBurntCoins()
+
+      minted.should.be.bignumber.equal(2)
+      burnt.should.be.bignumber.equal(2)
+    })
+
+    it('should work if mintedTotallyByBridge does not exists', async () => {
+
+      await homeContract.setBlockRewardContract(validatorContract.address)
+      validatorContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      await homeContract.sendTransaction({ from: accounts[1], value: 1 }).should.be.fulfilled
     })
   })
 

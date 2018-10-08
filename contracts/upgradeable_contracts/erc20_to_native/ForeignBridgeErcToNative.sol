@@ -17,9 +17,9 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice
     ) public returns(bool) {
-        require(!isInitialized(), "already initialized");
-        require(_validatorContract != address(0), "address cannot be empty");
-        require(_requiredBlockConfirmations != 0, "requiredBlockConfirmations cannot be 0");
+        require(!isInitialized());
+        require(_validatorContract != address(0));
+        require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc20token(_erc20token);

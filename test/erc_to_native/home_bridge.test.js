@@ -73,6 +73,21 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       secondBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
     })
 
+    it('can update block reward contract only if bridge is allowed', async () => {
+      ZERO_ADDRESS.should.be.equal(await homeContract.blockRewardContract())
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address).should.be.fulfilled
+      blockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      await homeContract.setBlockRewardContract(blockRewardContract.address)
+      blockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      const notAllowedHomeBridge = await HomeBridge.new()
+
+      await notAllowedHomeBridge.setBlockRewardContract(blockRewardContract.address).should.be.rejectedWith(ERROR_MSG)
+
+      ZERO_ADDRESS.should.be.equal(await notAllowedHomeBridge.blockRewardContract())
+    })
+
     it('cant set maxPerTx > dailyLimit', async () => {
       false.should.be.equal(await homeContract.isInitialized())
 

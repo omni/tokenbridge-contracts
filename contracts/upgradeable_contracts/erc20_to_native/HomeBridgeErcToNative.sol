@@ -15,12 +15,9 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         require(msg.value > 0);
         require(msg.data.length == 0);
         require(withinLimit(msg.value));
-        address blockRewardAddress = blockRewardContract();
-        if(blockRewardAddress.call(abi.encodeWithSignature("mintedTotallyByBridge(address)",  address(this)))) {
-            IBlockReward blockReward = IBlockReward(blockRewardAddress);
-            uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
-            require(msg.value <= totalMinted.sub(totalBurntCoins()));
-        }
+        IBlockReward blockReward = blockRewardContract();
+        uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
+        require(msg.value <= totalMinted.sub(totalBurntCoins()));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         setTotalBurntCoins(totalBurntCoins().add(msg.value));
         address(0).transfer(msg.value);

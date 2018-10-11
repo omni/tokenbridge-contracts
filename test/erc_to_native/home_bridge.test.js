@@ -226,14 +226,6 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       minted.should.be.bignumber.equal(2)
       burnt.should.be.bignumber.equal(2)
     })
-
-    it('should work if mintedTotallyByBridge does not exists', async () => {
-
-      await homeContract.setBlockRewardContract(validatorContract.address)
-      validatorContract.address.should.be.equal(await homeContract.blockRewardContract())
-
-      await homeContract.sendTransaction({ from: accounts[1], value: 1 }).should.be.fulfilled
-    })
   })
 
   describe('#setting limits', async () => {

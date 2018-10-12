@@ -71,6 +71,9 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const notAContract = accounts[5]
       await homeContract.setBlockRewardContract(notAContract).should.be.rejectedWith(ERROR_MSG)
       secondBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      await homeContract.setBlockRewardContract(validatorContract.address).should.be.rejectedWith(ERROR_MSG)
+      secondBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
     })
 
     it('cant set maxPerTx > dailyLimit', async () => {

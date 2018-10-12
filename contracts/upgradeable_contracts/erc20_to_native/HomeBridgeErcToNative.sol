@@ -66,7 +66,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
     }
 
     function setBlockRewardContract(address _blockReward) public onlyOwner {
-        require(_blockReward != address(0) && isContract(_blockReward));
+        require(_blockReward != address(0) && isContract(_blockReward) && (IBlockReward(_blockReward).bridgesAllowedLength() != 0));
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
     }
 

@@ -14,6 +14,10 @@ contract BlockReward is IBlockReward {
     function () external payable {
     }
 
+    function bridgesAllowedLength() external view returns(uint256) {
+        return 3;
+    }
+
     function addExtraReceiver(uint256 _amount, address _receiver) external {
         require(_amount > 0);
         require(_receiver != address(0));

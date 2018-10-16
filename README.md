@@ -7,7 +7,18 @@ These contracts provide the core functionality for the POA bridge. They implemen
 The POA bridge smart contracts are intended to work with [the bridge process implemented on NodeJS](https://github.com/poanetwork/bridge-nodejs).
 Please refer to the bridge process documentation to configure and deploy the bridge.
 
-## Summary
+## Bridge Overview
+
+The POA Bridge allows users to transfer assets between two chains in the Ethereum ecosystem. It is composed of several elements which are located in different POA Network repositories:
+
+**Bridge Elements**
+1. Solidity smart contracts, contained in this repository.
+2. [Token Bridge](https://github.com/poanetwork/bridge-nodejs). A NodeJS oracle responsible for listening to events and sending transactions to authorize asset transfers.
+3. [Bridge UI Application](https://github.com/poanetwork/bridge-ui). A DApp interface to transfer tokens and coins between chains.
+4. [Bridge Monitor](https://github.com/poanetwork/bridge-monitor). A tool for checking balances and unprocessed events in bridged networks.
+5. [Bridge Deployment Playbooks](https://github.com/poanetwork/deployment-bridge). Manages configuration instructions for remote deployments.
+
+## Bridge Smart Contracts Summary
 
 ### Operations
 

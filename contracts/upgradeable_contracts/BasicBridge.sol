@@ -10,7 +10,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 contract BasicBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
 
-    Version.Version public getBridgeInterfacesVersion = Version.Version(2, 0, 0);
+    Version.Version public getBridgeInterfacesVersion = Version.Version(2, 1, 0);
 
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
@@ -104,4 +104,11 @@ contract BasicBridge is EternalStorage, Validatable {
         require(token.transfer(_to, balance));
     }
 
+
+    function isContract(address _addr) internal view returns (bool)
+    {
+        uint length;
+        assembly { length := extcodesize(_addr) }
+        return length > 0;
+    }
 }

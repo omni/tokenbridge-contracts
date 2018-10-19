@@ -7,25 +7,22 @@ const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
-const HomeBridge = require('../../../build/contracts/HomeBridgeErcToErc.json')
-const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
+const HomeBridge = require('../../../build/contracts/HomeBridgeErcToNative.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 
 const {
+  BLOCK_REWARD_ADDRESS,
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
+  HOME_GAS_PRICE,
   HOME_OWNER_MULTISIG,
   HOME_UPGRADEABLE_ADMIN_VALIDATORS,
   HOME_UPGRADEABLE_ADMIN_BRIDGE,
   HOME_DAILY_LIMIT,
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
-  HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-  HOME_GAS_PRICE,
-  BRIDGEABLE_TOKEN_NAME,
-  BRIDGEABLE_TOKEN_SYMBOL,
-  BRIDGEABLE_TOKEN_DECIMALS
+  HOME_REQUIRED_BLOCK_CONFIRMATIONS
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -124,43 +121,6 @@ async function deployHome() {
   assert.equal(txUpgradeToHomeBridge.status, '0x1', 'Transaction Failed')
   homeNonce++
 
-  console.log('\n[Home] deploying Bridgeble token')
-  const erc677token = await deployContract(
-    ERC677BridgeToken,
-    [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
-    { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce: homeNonce }
-  )
-  homeNonce++
-  console.log('[Home] Bridgeble Token: ', erc677token.options.address)
-
-  console.log('\nset bridge contract on ERC677BridgeToken')
-  const setBridgeContractData = await erc677token.methods
-    .setBridgeContract(homeBridgeStorage.options.address)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const setBridgeContract = await sendRawTxHome({
-    data: setBridgeContractData,
-    nonce: homeNonce,
-    to: erc677token.options.address,
-    privateKey: deploymentPrivateKey,
-    url: HOME_RPC_URL
-  })
-  assert.equal(setBridgeContract.status, '0x1', 'Transaction Failed')
-  homeNonce++
-
-  console.log('transferring ownership of Bridgeble token to homeBridge contract')
-  const txOwnershipData = await erc677token.methods
-    .transferOwnership(homeBridgeStorage.options.address)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txOwnership = await sendRawTxHome({
-    data: txOwnershipData,
-    nonce: homeNonce,
-    to: erc677token.options.address,
-    privateKey: deploymentPrivateKey,
-    url: HOME_RPC_URL
-  })
-  assert.equal(txOwnership.status, '0x1', 'Transaction Failed')
-  homeNonce++
-
   console.log('\ninitializing Home Bridge with following parameters:\n')
   console.log(`Home Validators: ${storageValidatorsHome.options.address},
   HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
@@ -170,8 +130,7 @@ async function deployHome() {
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
     HOME_MIN_AMOUNT_PER_TX
   )} in eth,
-  HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}
-  `)
+  HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}`)
   homeBridgeImplementation.options.address = homeBridgeStorage.options.address
   const initializeHomeBridgeData = await homeBridgeImplementation.methods
     .initialize(
@@ -181,7 +140,7 @@ async function deployHome() {
       HOME_MIN_AMOUNT_PER_TX,
       HOME_GAS_PRICE,
       HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-      erc677token.options.address
+      BLOCK_REWARD_ADDRESS
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeHomeBridge = await sendRawTxHome({
@@ -211,7 +170,6 @@ async function deployHome() {
   console.log('\nHome Deployment Bridge is complete\n')
   return {
     homeBridgeAddress: homeBridgeStorage.options.address,
-    erc677tokenAddress: erc677token.options.address,
     deployedBlockNumber: Web3Utils.hexToNumber(homeBridgeStorage.deployedBlockNumber)
   }
 }

@@ -14,7 +14,7 @@ contract BasicBridge is EternalStorage, Validatable {
     event DailyLimitChanged(uint256 newLimit);
 
     function getBridgeInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
-        return (2, 0, 0);
+        return (2, 1, 0);
     }
 
     function setGasPrice(uint256 _gasPrice) public onlyOwner {
@@ -105,4 +105,11 @@ contract BasicBridge is EternalStorage, Validatable {
         require(token.transfer(_to, balance));
     }
 
+
+    function isContract(address _addr) internal view returns (bool)
+    {
+        uint length;
+        assembly { length := extcodesize(_addr) }
+        return length > 0;
+    }
 }

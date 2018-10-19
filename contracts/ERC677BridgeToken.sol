@@ -13,11 +13,20 @@ contract ERC677BridgeToken is
     BurnableToken,
     MintableToken {
 
+    address public bridgeContract;
+
+    event ContractFallbackCallFailed(address from, address to, uint value);
+
     constructor(
         string _name,
         string _symbol,
         uint8 _decimals)
     public DetailedERC20(_name, _symbol, _decimals) {}
+
+    function setBridgeContract(address _bridgeContract) onlyOwner public {
+        require(_bridgeContract != address(0) && isContract(_bridgeContract));
+        bridgeContract = _bridgeContract;
+    }
 
     modifier validRecipient(address _recipient) {
         require(_recipient != address(0) && _recipient != address(this));
@@ -48,8 +57,12 @@ contract ERC677BridgeToken is
     function transfer(address _to, uint256 _value) public returns (bool)
     {
         require(superTransfer(_to, _value));
-        if (isContract(_to)) {
-            contractFallback(_to, _value, new bytes(0));
+        if (isContract(_to) && !contractFallback(_to, _value, new bytes(0))) {
+            if (_to == bridgeContract) {
+                revert();
+            } else {
+                emit ContractFallbackCallFailed(msg.sender, _to, _value);
+            }
         }
         return true;
     }

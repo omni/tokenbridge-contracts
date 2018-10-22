@@ -228,6 +228,38 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       balanceBefore.add(value).should.be.bignumber.equal(await token2sig.balanceOf(recipient))
 
     })
+    it('works with 5 validators and 3 required signatures', async () => {
+      const recipient = accounts[8]
+      const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
+      let ownerOfValidators = accounts[0]
+      const validatorContractWith3Signatures = await BridgeValidators.new()
+      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
+      const token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
+
+      const homeBridgeWithThreeSigs = await HomeBridge.new();
+      await homeBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address);
+      await token.transferOwnership(homeBridgeWithThreeSigs.address);
+
+      const value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+
+      const {logs} = await homeBridgeWithThreeSigs.executeAffirmation(recipient, value, transactionHash, {from: authoritiesFiveAccs[0]}).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        transactionHash
+      });
+
+      await homeBridgeWithThreeSigs.executeAffirmation(recipient, value, transactionHash, {from: authoritiesFiveAccs[1]}).should.be.fulfilled;
+      const thirdSignature = await homeBridgeWithThreeSigs.executeAffirmation(recipient, value, transactionHash, {from: authoritiesFiveAccs[2]}).should.be.fulfilled;
+
+      thirdSignature.logs[1].event.should.be.equal("AffirmationCompleted");
+      thirdSignature.logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+    })
   })
   describe('#isAlreadyProcessed', async () => {
     it('returns ', async () => {

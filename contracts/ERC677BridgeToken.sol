@@ -5,7 +5,6 @@ import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./IBurnableMintableERC677Token.sol";
 import "./ERC677Receiver.sol";
-import "./libraries/Version.sol";
 
 
 contract ERC677BridgeToken is
@@ -14,7 +13,6 @@ contract ERC677BridgeToken is
     BurnableToken,
     MintableToken {
 
-    Version.Version public getTokenInterfacesVersion = Version.Version(2, 0, 0);
     address public bridgeContract;
 
     event ContractFallbackCallFailed(address from, address to, uint value);
@@ -45,6 +43,10 @@ contract ERC677BridgeToken is
             require(contractFallback(_to, _value, _data));
         }
         return true;
+    }
+
+    function getTokenInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
+        return (2, 0, 0);
     }
 
     function superTransfer(address _to, uint256 _value) internal returns(bool)

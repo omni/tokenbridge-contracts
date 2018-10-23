@@ -28,7 +28,7 @@ const getEvents = function(contract, filter) {
   });
 }
 contract('ForeignBridge', async (accounts) => {
-  let homeContract, validatorContract, authorities, owner, token;
+  let validatorContract, authorities, owner, token;
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]];
@@ -411,6 +411,15 @@ contract('ForeignBridge', async (accounts) => {
       FOREIGN_DAILY_LIMIT.should.be.bignumber.equal(await finalContract.dailyLimit())
       FOREIGN_MAX_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.maxPerTx())
       FOREIGN_MIN_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.minPerTx())
+    })
+    it('can transfer ownership', async () => {
+      const token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+      const foreignBridge =  await ForeignBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      const data = foreignBridge.initialize.request(
+        validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations).params[0].data
+      await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
+      await storageProxy.transferProxyOwnership(owner).should.be.fulfilled
     })
   })
 

@@ -62,6 +62,12 @@ contract('HomeBridge', async (accounts) => {
       "2".should.be.bignumber.equal(await finalContract.maxPerTx())
       "1".should.be.bignumber.equal(await finalContract.minPerTx())
     })
+    it('can transfer ownership', async () => {
+      let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      let data = homeContract.initialize.request(validatorContract.address, "3", "2", "1", gasPrice, requireBlockConfirmations).params[0].data
+      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled;
+      await storageProxy.transferProxyOwnership(owner).should.be.fulfilled
+    })
   })
 
   describe('#fallback', async () => {

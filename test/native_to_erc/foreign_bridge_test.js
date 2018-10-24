@@ -46,6 +46,12 @@ contract('ForeignBridge', async (accounts) => {
       '0'.should.be.bignumber.equal(await foreignBridge.dailyLimit())
       '0'.should.be.bignumber.equal(await foreignBridge.maxPerTx())
       false.should.be.equal(await foreignBridge.isInitialized())
+
+      await foreignBridge.initialize(ZERO_ADDRESS, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, 0, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(owner, token.address, oneEther, halfEther, minPerTx, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
+
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
 
       true.should.be.equal(await foreignBridge.isInitialized())
@@ -360,7 +366,7 @@ contract('ForeignBridge', async (accounts) => {
     })
     it('can be deployed via upgradeToAndCall', async () => {
       const fakeTokenAddress = accounts[7]
-      const fakeValidatorsAddress = accounts[6]
+      const validatorsAddress = validatorContract.address
       const FOREIGN_DAILY_LIMIT = oneEther;
       const FOREIGN_MAX_AMOUNT_PER_TX = halfEther;
       const FOREIGN_MIN_AMOUNT_PER_TX = minPerTx;
@@ -368,11 +374,11 @@ contract('ForeignBridge', async (accounts) => {
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       let foreignBridge =  await ForeignBridge.new();
       let data = foreignBridge.initialize.request(
-        fakeValidatorsAddress, fakeTokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, gasPrice, requireBlockConfirmations).params[0].data
+        validatorsAddress, fakeTokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, gasPrice, requireBlockConfirmations).params[0].data
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
       let finalContract = await ForeignBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
-      fakeValidatorsAddress.should.be.equal(await finalContract.validatorContract())
+      validatorsAddress.should.be.equal(await finalContract.validatorContract())
       FOREIGN_DAILY_LIMIT.should.be.bignumber.equal(await finalContract.dailyLimit())
       FOREIGN_MAX_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.maxPerTx())
       FOREIGN_MIN_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.minPerTx())

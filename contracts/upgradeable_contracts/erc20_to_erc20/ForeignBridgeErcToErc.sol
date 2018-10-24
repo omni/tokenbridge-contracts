@@ -19,7 +19,7 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         uint256 _gasPrice
     ) public returns(bool) {
         require(!isInitialized());
-        require(_validatorContract != address(0));
+        require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;

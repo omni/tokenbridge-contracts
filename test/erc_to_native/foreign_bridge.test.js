@@ -34,6 +34,7 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
       await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.initialize(validatorContract.address, token.address, 0, gasPrice).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, 0).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, owner, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.initialize(owner, token.address, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
 
       await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice);
@@ -231,12 +232,12 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
     })
 
     it('can be deployed via upgradeToAndCall', async () => {
-      const fakeTokenAddress = accounts[7]
+      const tokenAddress = token.address
       const validatorsAddress = validatorContract.address
 
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       const foreignBridge =  await ForeignBridge.new();
-      const data = foreignBridge.initialize.request(validatorsAddress, fakeTokenAddress, requireBlockConfirmations, gasPrice).params[0].data
+      const data = foreignBridge.initialize.request(validatorsAddress, tokenAddress, requireBlockConfirmations, gasPrice).params[0].data
 
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
 

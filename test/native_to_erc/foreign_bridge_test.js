@@ -51,7 +51,7 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, 0, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.initialize(owner, token.address, oneEther, halfEther, minPerTx, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
-
+      await foreignBridge.initialize(validatorContract.address, owner, oneEther, halfEther, minPerTx, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
 
       true.should.be.equal(await foreignBridge.isInitialized())
@@ -365,7 +365,7 @@ contract('ForeignBridge', async (accounts) => {
       await token.transferOwnership(foreignBridgeProxy.address, {from: accounts[2]}).should.be.fulfilled;
     })
     it('can be deployed via upgradeToAndCall', async () => {
-      const fakeTokenAddress = accounts[7]
+      const tokenAddress = token.address
       const validatorsAddress = validatorContract.address
       const FOREIGN_DAILY_LIMIT = oneEther;
       const FOREIGN_MAX_AMOUNT_PER_TX = halfEther;
@@ -374,7 +374,7 @@ contract('ForeignBridge', async (accounts) => {
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       let foreignBridge =  await ForeignBridge.new();
       let data = foreignBridge.initialize.request(
-        validatorsAddress, fakeTokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, gasPrice, requireBlockConfirmations).params[0].data
+        validatorsAddress, tokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, gasPrice, requireBlockConfirmations).params[0].data
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
       let finalContract = await ForeignBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());

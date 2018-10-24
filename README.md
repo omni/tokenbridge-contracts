@@ -67,6 +67,10 @@ npm test
 npm run flatten
 ```
 
+### Gas Consumption
+See the [GAS_CONSUMPTION](GAS_CONSUMPTION.md) document to get a description of gas consumption.
+
+
 ## Contributing
 
 See the [CONTRIBUTING](CONTRIBUTING.md) document for contribution, testing and pull request protocol.

@@ -22,6 +22,7 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "chai-bignumber": "^2.0.2",
+    "eth-gas-reporter": "^0.1.12",
     "nodemon": "^1.17.3",
     "solidity-coverage": "^0.4.15",
     "truffle-flattener": "^1.2.3"

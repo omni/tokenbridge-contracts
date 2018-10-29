@@ -8,6 +8,7 @@ import "../upgradeability/EternalStorage.sol";
 
 contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     using SafeMath for uint256;
+
     event ValidatorAdded (address indexed validator);
     event ValidatorRemoved (address indexed validator);
     event RequiredSignaturesChanged (uint256 requiredSignatures);
@@ -55,6 +56,10 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         require(_requiredSignatures != 0);
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
         emit RequiredSignaturesChanged(_requiredSignatures);
+    }
+
+    function getBridgeValidatorsInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
+        return (2, 0, 0);
     }
 
     function requiredSignatures() public view returns(uint256) {

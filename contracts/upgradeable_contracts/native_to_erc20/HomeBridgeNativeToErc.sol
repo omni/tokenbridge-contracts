@@ -24,7 +24,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
       returns(bool)
     {
         require(!isInitialized());
-        require(_validatorContract != address(0));
+        require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_homeGasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
@@ -45,6 +45,10 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         emit UserRequestForSignature(msg.sender, msg.value);
+    }
+
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {

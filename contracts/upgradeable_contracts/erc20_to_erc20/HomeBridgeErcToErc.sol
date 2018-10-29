@@ -24,7 +24,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
       returns(bool)
     {
         require(!isInitialized());
-        require(_validatorContract != address(0));
+        require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_homeGasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
@@ -39,6 +39,10 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         setErc677token(_erc677token);
 
         return isInitialized();
+    }
+
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 
     function () public {

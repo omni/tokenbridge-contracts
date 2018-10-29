@@ -7,6 +7,7 @@ fi
 mkdir -p flats/native_to_erc20
 mkdir -p flats/erc20_to_erc20
 mkdir -p flats/erc20_to_native
+mkdir -p flats/arbitrary_message
 
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/native_to_erc20/ForeignBridgeNativeToErc.sol > flats/native_to_erc20/ForeignBridgeNativeToErc_flat.sol
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/native_to_erc20/HomeBridgeNativeToErc.sol > flats/native_to_erc20/HomeBridgeNativeToErc_flat.sol
@@ -16,6 +17,9 @@ mkdir -p flats/erc20_to_native
 
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/erc20_to_native/HomeBridgeErcToNative.sol > flats/erc20_to_native/HomeBridgeErcToNative_flat.sol
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/erc20_to_native/ForeignBridgeErcToNative.sol > flats/erc20_to_native/ForeignBridgeErcToNative_flat.sol
+
+./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/arbitrary_message/HomeAMB.sol > flats/arbitrary_message/HomeAMB_flat.sol
+./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/arbitrary_message/ForeignAMB.sol > flats/arbitrary_message/ForeignAMB_flat.sol
 
 ./node_modules/.bin/truffle-flattener contracts/upgradeability/EternalStorageProxy.sol > flats/EternalStorageProxy_flat.sol
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/BridgeValidators.sol > flats/BridgeValidators_flat.sol

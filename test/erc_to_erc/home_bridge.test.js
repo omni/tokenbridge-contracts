@@ -64,6 +64,18 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       "2".should.be.bignumber.equal(await finalContract.maxPerTx())
       "1".should.be.bignumber.equal(await finalContract.minPerTx())
     })
+
+    it('cant initialize with invalid arguments', async () => {
+      false.should.be.equal(await homeContract.isInitialized())
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', 0, requireBlockConfirmations, token.address).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, 0, token.address).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(owner, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(ZERO_ADDRESS, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, ZERO_ADDRESS).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, owner).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address).should.be.fulfilled;
+      true.should.be.equal(await homeContract.isInitialized())
+    })
   })
 
   describe('#fallback', async () => {

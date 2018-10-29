@@ -62,6 +62,14 @@ contract('HomeBridge', async (accounts) => {
       "2".should.be.bignumber.equal(await finalContract.maxPerTx())
       "1".should.be.bignumber.equal(await finalContract.minPerTx())
     })
+    it('cant initialize with invalid arguments', async () => {
+      false.should.be.equal(await homeContract.isInitialized())
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, 0).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(owner, '3', '2', '1', gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(ZERO_ADDRESS, '3', '2', '1', gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations).should.be.fulfilled;
+      true.should.be.equal(await homeContract.isInitialized())
+    })
     it('can transfer ownership', async () => {
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       let data = homeContract.initialize.request(validatorContract.address, "3", "2", "1", gasPrice, requireBlockConfirmations).params[0].data

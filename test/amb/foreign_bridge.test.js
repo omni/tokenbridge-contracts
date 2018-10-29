@@ -1,15 +1,11 @@
 const ForeignBridge = artifacts.require("ForeignAMB.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
-const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 const Box = artifacts.require("Box.sol");
 
 const {ERROR_MSG, ZERO_ADDRESS} = require('../setup');
-const {createMessage, sign, signatureToVRS} = require('../helpers/helpers');
-const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
-const requireBlockConfirmations = 8;
 
-contract('ForeignBridge_AMB', async (accounts) => {
-  let validatorContract, boxContract, authorities, owner, token;
+contract('ForeignAMB', async (accounts) => {
+  let validatorContract, boxContract, authorities, owner;
 
   before(async () => {
     validatorContract = await BridgeValidators.new()
@@ -44,6 +40,15 @@ contract('ForeignBridge_AMB', async (accounts) => {
         from: accounts[1],
         value: 1
       }).should.be.rejectedWith(ERROR_MSG)
+    })
+  })
+
+  describe('getBridgeMode', () => {
+    it('should return arbitrary message bridging mode', async () => {
+      const homeContract = await ForeignBridge.new()
+      const bridgeModeHash = '0x2544fbb9' // 4 bytes of keccak256('arbitrary-message-bridge-core')
+      const bridgeMode = await homeContract.getBridgeMode()
+      bridgeMode.should.be.equal(bridgeModeHash)
     })
   })
 })

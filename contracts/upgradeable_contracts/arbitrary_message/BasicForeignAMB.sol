@@ -5,8 +5,8 @@ import "../../libraries/ArbitraryMessage.sol";
 
 
 contract BasicForeignAMB is BasicAMB {
+
     uint256 internal constant PASS_MESSAGE_GAS = 100000;
-    address internal accountForAction = address(0);
 
     event RelayedMessage(address sender, address executor, bytes32 transactionHash);
 
@@ -16,33 +16,8 @@ contract BasicForeignAMB is BasicAMB {
         processMessage(_data);
     }
 
-    function withdrawFromDeposit(address _recipient) public {
-        require(msg.sender == address(this));
-        require(accountForAction != address(0));
-        require(balanceOf(accountForAction) > 0);
-        uint256 withdrawValue = balanceOf(accountForAction);
-        setBalanceOf(accountForAction, 0);
-        _recipient.transfer(withdrawValue);
-        accountForAction = address(0);
-    }
-
     function relayedMessages(bytes32 _txHash) public view returns(bool) {
         return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
-    }
-
-    function balanceOf(address _balanceHolder) public view returns(uint) {
-        return uintStorage[keccak256(abi.encodePacked("balances", _balanceHolder))];
-    }
-
-    function isWithdrawFromDepositSelector(bytes _data) internal pure returns(bool _retval) {
-        _retval = false;
-        bytes4 withdrawFromDepositSelector = this.withdrawFromDeposit.selector;
-        if ((_data[0] == withdrawFromDepositSelector[0]) &&
-            (_data[1] == withdrawFromDepositSelector[1]) &&
-            (_data[2] == withdrawFromDepositSelector[2]) &&
-            (_data[3] == withdrawFromDepositSelector[3])) {
-            _retval = true;
-        }
     }
 
     function _passMessage(address _sender, address _contract, bytes _data, uint256 _gas) internal {
@@ -104,7 +79,4 @@ contract BasicForeignAMB is BasicAMB {
         boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))] = _status;
     }
 
-    function setBalanceOf(address _balanceHolder, uint _amount) internal {
-        uintStorage[keccak256(abi.encodePacked("balances", _balanceHolder))] = _amount;
-    }
 }

@@ -5,11 +5,8 @@ import "./BasicForeignAMB.sol";
 
 
 contract HomeAMB is BasicHomeAMB {
-    event RequestForSignature(bytes encodedData);
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("arbitrary-message-bridge-core")));
-    }
+    event RequestForSignature(bytes encodedData);
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public {
         require(keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE));

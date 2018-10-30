@@ -6,6 +6,7 @@ import "./BasicAMB.sol";
 
 
 contract BasicHomeAMB is BasicAMB {
+
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
 
     event CollectedSignatures(

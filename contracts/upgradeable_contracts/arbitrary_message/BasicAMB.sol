@@ -7,8 +7,10 @@ import "../BasicBridge.sol";
 
 
 contract BasicAMB is BasicBridge {
+
     bytes constant internal SUBSIDIZED_MODE = bytes(abi.encodePacked("AMB-subsidized-mode"));
     bytes constant internal DEFRAYAL_MODE = bytes(abi.encodePacked("AMB-defrayal-mode"));
+    address internal accountForAction = address(0);
 
     function initialize(
         address _validatorContract,
@@ -27,8 +29,32 @@ contract BasicAMB is BasicBridge {
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         setDefrayalModeForHomeToForeign();
+        setDefrayalModeForForeignToHome();
         setInitialize(true);
         return isInitialized();
+    }
+
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("arbitrary-message-bridge-core")));
+    }
+
+    function depositForContractSender(address _contract) public payable {
+        require(_contract != address(0));
+        setBalanceOf(_contract, balanceOf(_contract).add(msg.value));
+    }
+
+    function withdrawFromDeposit(address _recipient) public {
+        require(msg.sender == address(this));
+        require(accountForAction != address(0));
+        require(balanceOf(accountForAction) > 0);
+        uint256 withdrawValue = balanceOf(accountForAction);
+        setBalanceOf(accountForAction, 0);
+        _recipient.transfer(withdrawValue);
+        accountForAction = address(0);
+    }
+
+    function balanceOf(address _balanceHolder) public view returns(uint) {
+        return uintStorage[keccak256(abi.encodePacked("balances", _balanceHolder))];
     }
 
     function setSubsidizedModeForHomeToForeign() public onlyOwner {
@@ -39,7 +65,19 @@ contract BasicAMB is BasicBridge {
         bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = DEFRAYAL_MODE;
     }
 
+    function setSubsidizedModeForForeignToHome() public onlyOwner {
+        bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))] = SUBSIDIZED_MODE;
+    }
+
+    function setDefrayalModeForForeignToHome() public onlyOwner {
+        bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))] = DEFRAYAL_MODE;
+    }
+
     function homeToForeignMode() public view returns(bytes) {
+        return bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))];
+    }
+
+    function foreignToHomeMode() public view returns(bytes) {
         return bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))];
     }
 
@@ -47,6 +85,21 @@ contract BasicAMB is BasicBridge {
         //From Ethereum Yellow Paper
         // 68 gas is paid for every non-zero byte of data or code for a transaction
         return _data.length.mul(68);
+    }
+
+    function setBalanceOf(address _balanceHolder, uint _amount) internal {
+        uintStorage[keccak256(abi.encodePacked("balances", _balanceHolder))] = _amount;
+    }
+
+    function isWithdrawFromDepositSelector(bytes _data) internal pure returns(bool _retval) {
+        _retval = false;
+        bytes4 withdrawFromDepositSelector = this.withdrawFromDeposit.selector;
+        if ((_data[0] == withdrawFromDepositSelector[0]) &&
+        (_data[1] == withdrawFromDepositSelector[1]) &&
+        (_data[2] == withdrawFromDepositSelector[2]) &&
+            (_data[3] == withdrawFromDepositSelector[3])) {
+            _retval = true;
+        }
     }
 }
 

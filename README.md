@@ -50,22 +50,41 @@ Responsibilities and roles of the bridge:
 
 ## Usage
 
-### Install Dependencies
+There are two ways to deploy contracts: one option is to install and use NodeJS directly on the system,
+another way is for those systems where it is more preferable to use NodeJS in the docker environment. 
+
+### Deployment with NodeJS
+
+#### Install Dependencies
 ```bash
 npm install
 ```
-### Deploy
+#### Deploy
 Please the [README.md](deploy/README.md) in the `deploy` folder for instructions and .env file configuration
 
-### Test
+#### Test
 ```bash
 npm test
 ```
 
-### Flatten
+#### Flatten
+The flatten contracts can be used to verify code of contracts in a block explorer like BlockScout or Etherscan.
+The following command will prepare flattened version of the contracts:
+
 ```bash
 npm run flatten
 ```
+The flattened contracts can be found in the `flats` directory.
+
+### Usage of Docker
+[Docker](https://www.docker.com/community-edition) and [Docker Compose](https://docs.docker.com/compose/install/) could be used to deploy contracts without NodeJS installation on the system. 
+f you are on Linux, it's also recommended that you [create a docker group and add your user to it](https://docs.docker.com/install/linux/linux-postinstall/), so that you can use the CLI without `sudo`.
+
+#### Prepare the docker container
+```bash
+docker-compose up --build
+```
+_Note: The container must be rebuild every time when you change code of contracts or deployment script._
 
 ### Gas Consumption
 See the [GAS_CONSUMPTION](GAS_CONSUMPTION.md) document to get a description of gas consumption.

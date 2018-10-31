@@ -28,8 +28,8 @@ contract BasicAMB is BasicBridge {
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        setDefrayalModeForHomeToForeign();
-        setDefrayalModeForForeignToHome();
+        bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = DEFRAYAL_MODE;
+        bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))] = DEFRAYAL_MODE;
         setInitialize(true);
         return isInitialized();
     }
@@ -79,12 +79,6 @@ contract BasicAMB is BasicBridge {
 
     function foreignToHomeMode() public view returns(bytes) {
         return bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))];
-    }
-
-    function getMinimumGasUsage(bytes _data) public pure returns(uint256 gas) {
-        //From Ethereum Yellow Paper
-        // 68 gas is paid for every non-zero byte of data or code for a transaction
-        return _data.length.mul(68);
     }
 
     function setBalanceOf(address _balanceHolder, uint _amount) internal {

@@ -1,36 +1,24 @@
 pragma solidity 0.4.24;
 
 import "./BasicHomeAMB.sol";
-import "./BasicForeignAMB.sol";
+import "./MessageDelivery.sol";
+import "../../upgradeability/EternalStorage.sol";
+import "../BasicBridge.sol";
 
 
-contract HomeAMB is BasicHomeAMB {
+contract HomeAMB is EternalStorage, BasicBridge, BasicHomeAMB, MessageDelivery {
 
-    event RequestForSignature(bytes encodedData);
+    event UserRequestForSignature(bytes encodedData);
 
-    function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public {
-        require(keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE));
-        require(_gas >= getMinimumGasUsage(_data) && _gas <= maxPerTx());
-        emit RequestForSignature(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x00), _data));
+    function isSubsidizedMode() internal returns(bool) {
+        return keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE);
     }
 
-    function requireToPassMessage(address _contract, bytes _data, uint256 _gas, uint256 _gasPrice) public {
-        if (keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE))
-            requireToPassMessage(_contract, _data, _gas);
-        else {
-            require(_gas >= getMinimumGasUsage(_data) && _gas <= maxPerTx());
-            emit RequestForSignature(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x01), _gasPrice, _data));
-        }
+    function emitEventOnMessageReceived(bytes encodedData) internal {
+        emit UserRequestForSignature(encodedData);
     }
 
-    function requireToPassMessage(address _contract, bytes _data, uint256 _gas, bytes1 _oracleGasPriceSpeed) public {
-        if (keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE))
-            requireToPassMessage(_contract, _data, _gas);
-        else {
-            require(_gas >= getMinimumGasUsage(_data) && _gas <= maxPerTx());
-            emit RequestForSignature(
-                abi.encodePacked(msg.sender, _contract, _gas, uint8(0x02), _oracleGasPriceSpeed, _data)
-            );
-        }
+    function maxGasPerTx() public view returns(uint256) {
+        return maxPerTx();
     }
 }

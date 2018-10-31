@@ -2,11 +2,9 @@ pragma solidity 0.4.24;
 
 import "./BasicHomeAMB.sol";
 import "./MessageDelivery.sol";
-import "../../upgradeability/EternalStorage.sol";
-import "../BasicBridge.sol";
 
 
-contract HomeAMB is EternalStorage, BasicBridge, BasicHomeAMB, MessageDelivery {
+contract HomeAMB is BasicHomeAMB, MessageDelivery {
 
     event UserRequestForSignature(bytes encodedData);
 

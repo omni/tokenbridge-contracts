@@ -73,7 +73,7 @@ contract('ForeignAMB', async (accounts) => {
   })
   describe('requireToPassMessage', () => {
     let foreignBridge
-    before(async () => {
+    beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
     })

@@ -38,15 +38,15 @@ contract MessageDelivery {
         return _data.length.mul(68);
     }
 
+    function maxGasPerTx() public view returns(uint256) {
+        // should be overridden
+    }
+
     function isMessageDeliverySubsidizedMode() internal returns(bool) {
         // should be overridden
     }
 
     function emitEventOnMessageRequest(bytes encodedData) internal {
-        // should be overridden
-    }
-
-    function maxGasPerTx() public view returns(uint256) {
         // should be overridden
     }
 }

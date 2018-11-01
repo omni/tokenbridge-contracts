@@ -12,7 +12,7 @@ contract ForeignAMB is BasicForeignAMB {
         return maxPerTx();
     }
 
-    function messageProcessed(bytes32 _txHash) public view returns(bool) {
+    function messageProcessed(bytes32 _txHash) internal view returns(bool) {
         return relayedMessages(_txHash);
     }
 

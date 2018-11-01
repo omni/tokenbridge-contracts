@@ -4,17 +4,41 @@ import "../BasicBridge.sol";
 import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
+import "./MessageProcessor.sol";
 
 
-contract BasicHomeAMB is BasicAMB, MessageDelivery {
+contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
 
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
+    event SignedForAffirmation(address indexed signer, bytes32 messageHash);
 
     event CollectedSignatures(
         address authorityResponsibleForRelay,
         bytes32 messageHash,
         uint256 NumberOfCollectedSignatures
     );
+
+    function executeAffirmation(bytes message) external onlyValidator {
+        bytes32 hashMsg = keccak256(abi.encodePacked(message));
+        bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
+        // Duplicated affirmations
+        require(!affirmationsSigned(hashSender));
+        setAffirmationsSigned(hashSender, true);
+
+        uint256 signed = numAffirmationsSigned(hashMsg);
+        require(!isAlreadyProcessed(signed));
+        // the check above assumes that the case when the value could be overflew will not happen in the addition operation below
+        signed = signed + 1;
+
+        setNumAffirmationsSigned(hashMsg, signed);
+
+        emit SignedForAffirmation(msg.sender, hashMsg);
+
+        if (signed >= requiredSignatures()) {
+            setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
+            processMessage(message);
+        }
+    }
 
     function submitSignature(bytes signature, bytes message) external onlyValidator {
         // ensure that `signature` is really `message` signed by `msg.sender`
@@ -70,6 +94,14 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
         return messages(_hash);
     }
 
+    function affirmationsSigned(bytes32 _hash) public view returns(bool) {
+        return boolStorage[keccak256(abi.encodePacked("affirmationsSigned", _hash))];
+    }
+
+    function numAffirmationsSigned(bytes32 _hash) public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _hash))];
+    }
+
     function setMessagesSigned(bytes32 _hash, bool _status) internal {
         boolStorage[keccak256(abi.encodePacked("messagesSigned", _hash))] = _status;
     }
@@ -96,5 +128,13 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
 
     function markAsProcessed(uint256 _v) internal pure returns(uint256) {
         return _v | 2 ** 255;
+    }
+
+    function setAffirmationsSigned(bytes32 _hash, bool _status) internal {
+        boolStorage[keccak256(abi.encodePacked("affirmationsSigned", _hash))] = _status;
+    }
+
+    function setNumAffirmationsSigned(bytes32 _hash, uint256 _number) internal {
+        uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _hash))] = _number;
     }
 }

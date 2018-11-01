@@ -69,7 +69,7 @@ contract MessageProcessor is BalanceHandler {
         // should be overridden
     }
 
-    function messageProcessed(bytes32 _txHash) public view returns(bool) {
+    function messageProcessed(bytes32 _txHash) internal view returns(bool) {
         // should be overridden
     }
 

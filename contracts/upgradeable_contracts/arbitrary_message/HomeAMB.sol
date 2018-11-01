@@ -6,6 +6,11 @@ import "./BasicHomeAMB.sol";
 contract HomeAMB is BasicHomeAMB {
 
     event UserRequestForSignature(bytes encodedData);
+    event AffirmationCompleted(address sender, address executor, bytes32 txHash);
+
+    function maxGasPerTx() public view returns(uint256) {
+        return maxPerTx();
+    }
 
     function isMessageDeliverySubsidizedMode() internal returns(bool) {
         return keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE);
@@ -15,7 +20,11 @@ contract HomeAMB is BasicHomeAMB {
         emit UserRequestForSignature(encodedData);
     }
 
-    function maxGasPerTx() public view returns(uint256) {
-        return maxPerTx();
+    function isMessageProcessorSubsidizedMode() internal returns(bool) {
+        return keccak256(foreignToHomeMode()) == keccak256(SUBSIDIZED_MODE);
+    }
+
+    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash) internal {
+        emit AffirmationCompleted(sender, executor, txHash);
     }
 }

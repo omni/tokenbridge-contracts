@@ -3,9 +3,10 @@ pragma solidity 0.4.24;
 import "../BasicBridge.sol";
 import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
+import "./MessageDelivery.sol";
 
 
-contract BasicHomeAMB is BasicAMB {
+contract BasicHomeAMB is BasicAMB, MessageDelivery {
 
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
 

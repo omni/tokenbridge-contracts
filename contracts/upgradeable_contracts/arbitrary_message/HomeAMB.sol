@@ -1,18 +1,17 @@
 pragma solidity 0.4.24;
 
 import "./BasicHomeAMB.sol";
-import "./MessageDelivery.sol";
 
 
-contract HomeAMB is BasicHomeAMB, MessageDelivery {
+contract HomeAMB is BasicHomeAMB {
 
     event UserRequestForSignature(bytes encodedData);
 
-    function isSubsidizedMode() internal returns(bool) {
+    function isMessageDeliverySubsidizedMode() internal returns(bool) {
         return keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE);
     }
 
-    function emitEventOnMessageReceived(bytes encodedData) internal {
+    function emitEventOnMessageRequest(bytes encodedData) internal {
         emit UserRequestForSignature(encodedData);
     }
 

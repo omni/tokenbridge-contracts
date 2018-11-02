@@ -103,7 +103,7 @@ _Note: The container must be rebuild every time when you change the code of cont
    ```bash
    docker-compose images bridge-contracts
    ```
-2. Use the contaner name in the following comand to copy the flattened code of the contracts to the current workin directory. The contracts will be located in the `flats` directory.
+2. Use the contaner name in the following comand to copy the flattened code of the contracts to the current working directory. The contracts will be located in the `flats` directory.
    ```bash
    docker cp name-of-your-container:/contracts/flats ./
    ```

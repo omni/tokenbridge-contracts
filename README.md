@@ -76,7 +76,7 @@ npm run flatten
 ```
 The flattened contracts can be found in the `flats` directory.
 
-### Usage of Docker
+### Deployment in the Docker environment
 [Docker](https://www.docker.com/community-edition) and [Docker Compose](https://docs.docker.com/compose/install/) could be used to deploy contracts without NodeJS installation on the system. 
 f you are on Linux, it's also recommended that you [create a docker group and add your user to it](https://docs.docker.com/install/linux/linux-postinstall/), so that you can use the CLI without `sudo`.
 
@@ -84,11 +84,50 @@ f you are on Linux, it's also recommended that you [create a docker group and ad
 ```bash
 docker-compose up --build
 ```
-_Note: The container must be rebuild every time when you change code of contracts or deployment script._
+_Note: The container must be rebuild every time when you change the code of contracts or the deployment scripts._
+
+#### Deploy the contracts
+1. Create the `.env` file in the `deploy` directory as it is described in deployment [README.md](deploy/README.md).
+2. Run deployment process by
+   ```bash
+   docker-compose run bridge-contracts deploy.sh
+   ```
+   or (in case of Linux system)
+   ```bash
+   ./deploy.sh
+   ```
+
+#### Copy flatten sources (if it is needed)
+1. Discover the container name by
+   ```bash
+   docker-compose images bridge-contracts
+   ```
+2. Use contaner name in the following comand to copy flatten sources to the current workin directory. Sources will be located in the `flats` directory.
+   ```bash
+   docker cp name-of-your-container:/contracts/flats ./
+   ```
+
+#### Shutdown the container
+If the container is not needed any more it could be shutdown by the command
+
+```bash
+docker-compose down
+```
 
 ### Gas Consumption
 See the [GAS_CONSUMPTION](GAS_CONSUMPTION.md) document to get a description of gas consumption.
 
+### Testing environment
+In order to test the bridge scripts working in `ERC20-to-ERC20` mode in testnet like Sokol or Kovan, it is required to deploy an ERC20 token to
+the Foreign network. This can be done by running the following command:
+```bash
+cd deploy
+node testenv-deploy.js token
+```
+or in case of usage of Docker environment
+```bash
+./deploy.sh token
+```
 
 ## Contributing
 

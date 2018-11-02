@@ -88,7 +88,7 @@ docker-compose up --build
 _Note: The container must be rebuild every time when you change the code of contracts or the deployment scripts._
 
 #### Deploy the contracts
-1. Create the `.env` file in the `deploy` directory as it is described in deployment [README.md](deploy/README.md).
+1. Create the `.env` file in the `deploy` directory as it is described in the deployment [README](deploy/README.md).
 2. Run deployment process by
    ```bash
    docker-compose run bridge-contracts deploy.sh
@@ -103,7 +103,7 @@ _Note: The container must be rebuild every time when you change the code of cont
    ```bash
    docker-compose images bridge-contracts
    ```
-2. Use contaner name in the following comand to copy flatten sources to the current workin directory. Sources will be located in the `flats` directory.
+2. Use the contaner name in the following comand to copy the flattened code of the contracts to the current workin directory. The contracts will be located in the `flats` directory.
    ```bash
    docker cp name-of-your-container:/contracts/flats ./
    ```

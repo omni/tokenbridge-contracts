@@ -50,8 +50,9 @@ Responsibilities and roles of the bridge:
 
 ## Usage
 
-There are two ways to deploy contracts: one option is to install and use NodeJS directly on the system,
-another way is for those systems where it is more preferable to use NodeJS in the docker environment. 
+There are two ways to deploy contracts:
+* install and use NodeJS
+* use Docker to deploy 
 
 ### Deployment with NodeJS
 
@@ -68,7 +69,7 @@ npm test
 ```
 
 #### Flatten
-The flatten contracts can be used to verify code of contracts in a block explorer like BlockScout or Etherscan.
+Fattened contracts can be used to verify the contract code in a block explorer like BlockScout or Etherscan.
 The following command will prepare flattened version of the contracts:
 
 ```bash
@@ -77,8 +78,8 @@ npm run flatten
 The flattened contracts can be found in the `flats` directory.
 
 ### Deployment in the Docker environment
-[Docker](https://www.docker.com/community-edition) and [Docker Compose](https://docs.docker.com/compose/install/) could be used to deploy contracts without NodeJS installation on the system. 
-f you are on Linux, it's also recommended that you [create a docker group and add your user to it](https://docs.docker.com/install/linux/linux-postinstall/), so that you can use the CLI without `sudo`.
+[Docker](https://www.docker.com/community-edition) and [Docker Compose](https://docs.docker.com/compose/install/) can be used to deploy contracts without NodeJS installed on the system. 
+If you are on Linux, we recommend you [create a docker group and add your user to it](https://docs.docker.com/install/linux/linux-postinstall/), so that you can use the CLI without `sudo`.
 
 #### Prepare the docker container
 ```bash
@@ -115,7 +116,7 @@ docker-compose down
 ```
 
 ### Gas Consumption
-See the [GAS_CONSUMPTION](GAS_CONSUMPTION.md) document to get a description of gas consumption.
+The [GAS_CONSUMPTION](GAS_CONSUMPTION.md) file includes Min, Max, and Avg gas consumption figures for contracts associated with each bridge mode.
 
 ### Testing environment
 In order to test the bridge scripts working in `ERC20-to-ERC20` mode in testnet like Sokol or Kovan, it is required to deploy an ERC20 token to

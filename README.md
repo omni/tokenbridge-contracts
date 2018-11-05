@@ -50,26 +50,84 @@ Responsibilities and roles of the bridge:
 
 ## Usage
 
-### Install Dependencies
+There are two ways to deploy contracts:
+* install and use NodeJS
+* use Docker to deploy 
+
+### Deployment with NodeJS
+
+#### Install Dependencies
 ```bash
 npm install
 ```
-### Deploy
+#### Deploy
 Please the [README.md](deploy/README.md) in the `deploy` folder for instructions and .env file configuration
 
-### Test
+#### Test
 ```bash
 npm test
 ```
 
-### Flatten
+#### Flatten
+Fattened contracts can be used to verify the contract code in a block explorer like BlockScout or Etherscan.
+The following command will prepare flattened version of the contracts:
+
 ```bash
 npm run flatten
 ```
+The flattened contracts can be found in the `flats` directory.
+
+### Deployment in the Docker environment
+[Docker](https://www.docker.com/community-edition) and [Docker Compose](https://docs.docker.com/compose/install/) can be used to deploy contracts without NodeJS installed on the system. 
+If you are on Linux, we recommend you [create a docker group and add your user to it](https://docs.docker.com/install/linux/linux-postinstall/), so that you can use the CLI without `sudo`.
+
+#### Prepare the docker container
+```bash
+docker-compose up --build
+```
+_Note: The container must be rebuilt every time the code in a contract or deployment script is changed._
+
+#### Deploy the contracts
+1. Create the `.env` file in the `deploy` directory as described in the deployment [README.md](deploy/README.md).
+2. Run deployment process:
+   ```bash
+   docker-compose run bridge-contracts deploy.sh
+   ```
+   or with Linux:
+   ```bash
+   ./deploy.sh
+   ```
+
+#### Copy flatten sources (if needed)
+1. Discover the container name:
+   ```bash
+   docker-compose images bridge-contracts
+   ```
+2. In the following command, use the container name to copy the flattened contracts code to the current working directory. The contracts will be located in the `flats` directory.
+   ```bash
+   docker cp name-of-your-container:/contracts/flats ./
+   ```
+
+#### Shutdown the container
+If the container is no longer needed, it can be shutdown:
+```bash
+docker-compose down
+```
 
 ### Gas Consumption
-See the [GAS_CONSUMPTION](GAS_CONSUMPTION.md) document to get a description of gas consumption.
+The [GAS_CONSUMPTION](GAS_CONSUMPTION.md) file includes Min, Max, and Avg gas consumption figures for contracts associated with each bridge mode.
 
+### Testing environment
+To test the bridge scripts in ERC20-to-ERC20 mode on a testnet like Sokol or Kovan, you must deploy an ERC20 token to the foreign network.
+This can be done by running the following command:
+```bash
+cd deploy
+node testenv-deploy.js token
+```
+or with Docker:
+```bash
+./deploy.sh token
+```
 
 ## Contributing
 

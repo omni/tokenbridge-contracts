@@ -88,7 +88,7 @@ docker-compose up --build
 _Note: The container must be rebuilt every time the code in a contract or deployment script is changed._
 
 #### Deploy the contracts
-1. Create the `.env` file in the `deploy` directory as described in deployment [README.md](deploy/README.md).
+1. Create the `.env` file in the `deploy` directory as described in the deployment [README.md](deploy/README.md).
 2. Run deployment process:
    ```bash
    docker-compose run bridge-contracts deploy.sh

@@ -167,10 +167,12 @@ async function deployHome() {
   assert.equal(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed')
   homeNonce++
 
-  console.log('\nHome Deployment Bridge is complete\n')
+  console.log('\nHome Deployment Bridge completed\n')
   return {
-    homeBridgeAddress: homeBridgeStorage.options.address,
-    deployedBlockNumber: Web3Utils.hexToNumber(homeBridgeStorage.deployedBlockNumber)
+    homeBridge: {
+      address: homeBridgeStorage.options.address,
+      deployedBlockNumber: Web3Utils.hexToNumber(homeBridgeStorage.deployedBlockNumber)
+    }
   }
 }
 module.exports = deployHome

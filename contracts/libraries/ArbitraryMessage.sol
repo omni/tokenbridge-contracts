@@ -19,7 +19,24 @@ library ArbitraryMessage {
 
     function hashMessage(bytes message) internal pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        return keccak256(abi.encodePacked(prefix, message));
+        return keccak256(abi.encodePacked(prefix, uintToString(message.length), message));
+    }
+
+    function uintToString(uint i) internal pure returns (string) {
+        if (i == 0) return "0";
+        uint j = i;
+        uint length;
+        while (j != 0){
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint k = length - 1;
+        while (i != 0){
+            bstr[k--] = byte(48 + i % 10);
+            i /= 10;
+        }
+        return string(bstr);
     }
 
     function hasEnoughValidSignatures(

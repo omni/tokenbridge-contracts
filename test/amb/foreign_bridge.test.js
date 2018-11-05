@@ -14,7 +14,7 @@ contract('ForeignAMB', async (accounts) => {
   before(async () => {
     validatorContract = await BridgeValidators.new()
     boxContract = await Box.new()
-    authorities = [accounts[1], accounts[2]];
+    authorities = [accounts[1]];
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
   })
@@ -87,7 +87,7 @@ contract('ForeignAMB', async (accounts) => {
       logs[0].event.should.be.equal('UserRequestForAffirmation')
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
-      await foreignBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled;
+      await foreignBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled;
       const tx = await foreignBridge.contract.requireToPassMessage['address,bytes,uint256'](
         "0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955",
         "0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03",

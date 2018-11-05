@@ -58,7 +58,7 @@ contract BasicAMB is BasicBridge {
     }
 
     function foreignToHomeMode() public view returns(bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))];
+        return bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))];
     }
 }
 

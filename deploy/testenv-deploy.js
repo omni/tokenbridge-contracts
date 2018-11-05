@@ -5,9 +5,6 @@ const deployToken = require('./src/utils/deployERC20Token')
 const mode = process.argv[2]
 
 async function main() {
-  //If other components of testing env needs to be initialized
-  //the script must be modified to handle the corresponding
-  //component through 'switch-case
   switch(mode) {
     case 'token':
       const token = await deployToken()

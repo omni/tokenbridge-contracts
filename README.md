@@ -85,32 +85,31 @@ If you are on Linux, we recommend you [create a docker group and add your user t
 ```bash
 docker-compose up --build
 ```
-_Note: The container must be rebuild every time when you change the code of contracts or the deployment scripts._
+_Note: The container must be rebuilt every time the code in a contract or deployment script is changed._
 
 #### Deploy the contracts
-1. Create the `.env` file in the `deploy` directory as it is described in deployment [README.md](deploy/README.md).
-2. Run deployment process by
+1. Create the `.env` file in the `deploy` directory as described in deployment [README.md](deploy/README.md).
+2. Run deployment process:
    ```bash
    docker-compose run bridge-contracts deploy.sh
    ```
-   or (in case of Linux system)
+   or with Linux:
    ```bash
    ./deploy.sh
    ```
 
-#### Copy flatten sources (if it is needed)
-1. Discover the container name by
+#### Copy flatten sources (if needed)
+1. Discover the container name:
    ```bash
    docker-compose images bridge-contracts
    ```
-2. Use contaner name in the following comand to copy flatten sources to the current workin directory. Sources will be located in the `flats` directory.
+2. In the following command, use the container name to copy the flattened contracts code to the current working directory. The contracts will be located in the `flats` directory.
    ```bash
    docker cp name-of-your-container:/contracts/flats ./
    ```
 
 #### Shutdown the container
-If the container is not needed any more it could be shutdown by the command
-
+If the container is no longer needed, it can be shutdown:
 ```bash
 docker-compose down
 ```
@@ -119,13 +118,13 @@ docker-compose down
 The [GAS_CONSUMPTION](GAS_CONSUMPTION.md) file includes Min, Max, and Avg gas consumption figures for contracts associated with each bridge mode.
 
 ### Testing environment
-In order to test the bridge scripts working in `ERC20-to-ERC20` mode in testnet like Sokol or Kovan, it is required to deploy an ERC20 token to
-the Foreign network. This can be done by running the following command:
+To test the bridge scripts in ERC20-to-ERC20 mode on a testnet like Sokol or Kovan, you must deploy an ERC20 token to the foreign network.
+This can be done by running the following command:
 ```bash
 cd deploy
 node testenv-deploy.js token
 ```
-or in case of usage of Docker environment
+or with Docker:
 ```bash
 ./deploy.sh token
 ```

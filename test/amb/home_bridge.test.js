@@ -1,10 +1,13 @@
 const Web3Utils = require('web3-utils');
 const HomeAMB = artifacts.require("HomeAMB.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
+const Box = artifacts.require("Box.sol");
 const requiredBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const { ERROR_MSG } = require('../setup');
+const { strip0x } = require('../helpers/helpers');
+
 
 contract('HomeAMB', async (accounts) => {
   let validatorContract, authorities, owner;
@@ -187,6 +190,88 @@ contract('HomeAMB', async (accounts) => {
         "0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03",
         twoEther,
         1).should.be.rejectedWith(ERROR_MSG)
+    })
+  })
+  describe('executeAffirmation', () => {
+    let homeBridge, setValueData, box
+    beforeEach(async () => {
+      homeBridge = await HomeAMB.new()
+      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
+
+      box = await Box.new()
+      // Generate data for method we want to call on Box contract
+      const result = await box.getSetValueData(3)
+      setValueData = result.logs[0].args.selectorData
+    })
+    it('should succeed on Subsidized mode', async () => {
+      // set Home bridge on subsidized mode
+      await homeBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled;
+
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(0)
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      await homeBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled;
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        221254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] })
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        txHash: resultPassMessageTx.tx
+      })
+
+      //check Box value
+      const boxValue = await box.value()
+      boxValue.should.be.bignumber.equal(3)
+    })
+    it('should succeed on defrayal mode', async () => {
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(0)
+
+      // Deposit for user
+      await homeBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] })
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        txHash: resultPassMessageTx.tx
+      })
+
+      //check Box value
+      const boxValue = await box.value()
+      boxValue.should.be.bignumber.equal(3)
     })
   })
 })

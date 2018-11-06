@@ -7,7 +7,7 @@ const mode = process.argv[2]
 async function main() {
   switch(mode) {
     case 'token':
-      const token = await deployToken()
+      await deployToken()
       break
     case 'block-reward':
       console.log('The mode "block-reward" is not implemented yet.')

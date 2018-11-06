@@ -1,17 +1,17 @@
 pragma solidity 0.4.24;
 
-import "./BasicAMB.sol";
-import "./MessageProcessor.sol";
 import "../../libraries/ArbitraryMessage.sol";
+import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
+import "./MessageProcessor.sol";
 
 
 contract BasicForeignAMB is BasicAMB, MessageDelivery, MessageProcessor {
 
-    function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes _data) external onlyValidator {
+    function executeSignatures(bytes _data, uint8[] vs, bytes32[] rs, bytes32[] ss) external onlyValidator {
         ArbitraryMessage.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
 
-        processMessage(_data);
+        processMessage(_data, true);
     }
 
     function relayedMessages(bytes32 _txHash) public view returns(bool) {

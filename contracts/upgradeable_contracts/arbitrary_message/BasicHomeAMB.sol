@@ -1,6 +1,5 @@
 pragma solidity 0.4.24;
 
-import "../BasicBridge.sol";
 import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
@@ -36,7 +35,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
 
         if (signed >= requiredSignatures()) {
             setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-            processMessage(message);
+            processMessage(message, false);
         }
     }
 

@@ -89,7 +89,7 @@ library ArbitraryMessage {
     // for more details see discussion in:
     // https://github.com/paritytech/parity-bridge/issues/61
 
-    function unpackData(bytes _data)
+    function unpackData(bytes _data, bool applyDataOffset)
     internal
     pure
     returns(
@@ -102,6 +102,7 @@ library ArbitraryMessage {
         bytes memory data
     )
     {
+        uint256 dataOffset = 0;
         uint256 datasize;
         // 20 (sender)  + 20 (executor) + 32 (tx hash) + 32 (gasLimit) + 1 (dataType)
         uint256 srcdataptr = 20 + 20 + 32 + 32 + 1 ;
@@ -114,14 +115,17 @@ library ArbitraryMessage {
             switch dataType
             case 0x0000000000000000000000000000000000000000000000000000000000000000 {
                 gasPrice := 0
+                if eq(applyDataOffset, 1) { dataOffset := sub(srcdataptr, 9) }
             }
             case 0x0100000000000000000000000000000000000000000000000000000000000000 {
                 gasPrice := mload(add(_data, 137)) // 32
                 srcdataptr := add(srcdataptr, 0x20)
+                if eq(applyDataOffset, 1) { dataOffset := sub(srcdataptr, 41) }
             }
             case 0x0200000000000000000000000000000000000000000000000000000000000000 {
                 gasPrice := 0
                 srcdataptr := add(srcdataptr, 0x01)
+                if eq(applyDataOffset, 1) { dataOffset := sub(srcdataptr, 10) }
             }
             default {
                 revert(0, 1)
@@ -133,7 +137,7 @@ library ArbitraryMessage {
             // BYTES_HEADER_SIZE
             let dataptr := add(data, 32)
             // 68 = 4 (selector) + 32 (bytes header) + 32 (bytes length)
-            calldatacopy(dataptr, add(68, srcdataptr), datasize)
+            calldatacopy(dataptr, add(add(68, srcdataptr), dataOffset), datasize)
         }
     }
 }

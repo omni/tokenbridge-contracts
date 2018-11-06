@@ -8,7 +8,7 @@ contract MessageProcessor is BalanceHandler {
 
     uint256 internal constant PASS_MESSAGE_GAS = 100000;
 
-    function processMessage(bytes _data) internal {
+    function processMessage(bytes _data, bool applyDataOffset) internal {
         address sender;
         address executor;
         uint256 gasLimit;
@@ -16,7 +16,7 @@ contract MessageProcessor is BalanceHandler {
         uint256 gasPrice;
         bytes32 txHash;
         bytes memory data;
-        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data);
+        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data, applyDataOffset);
 
         require(!messageProcessed(txHash));
         setMessageProcessed(txHash, true);

@@ -170,6 +170,7 @@ async function deployForeign() {
   assert.equal(txBridgeOwnershipData.status, '0x1', 'Transaction Failed')
   foreignNonce++
 
+  console.log('\nForeign Deployment Bridge completed\n')
   return {
     foreignBridge: {
       address: foreignBridgeStorage.options.address,

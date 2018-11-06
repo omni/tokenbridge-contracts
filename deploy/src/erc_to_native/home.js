@@ -56,7 +56,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(txUpgradeToBridgeVHome.status, '0x1', 'Transaction Failed')
+  assert.equal(Web3Utils.hexToNumber(txUpgradeToBridgeVHome.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ninitializing Home Bridge Validators with following parameters:\n')
@@ -74,7 +74,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(txInitialize.status, '0x1', 'Transaction Failed')
+  assert.equal(Web3Utils.hexToNumber(txInitialize.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('transferring proxy ownership to multisig for Validators Proxy contract')
@@ -88,7 +88,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(txProxyDataTransfer.status, '0x1', 'Transaction Failed')
+  assert.equal(Web3Utils.hexToNumber(txProxyDataTransfer.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ndeploying homeBridge storage\n')
@@ -118,7 +118,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(txUpgradeToHomeBridge.status, '0x1', 'Transaction Failed')
+  assert.equal(Web3Utils.hexToNumber(txUpgradeToHomeBridge.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ninitializing Home Bridge with following parameters:\n')
@@ -150,7 +150,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(txInitializeHomeBridge.status, '0x1', 'Transaction Failed')
+  assert.equal(Web3Utils.hexToNumber(txInitializeHomeBridge.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('transferring proxy ownership to multisig for Home bridge Proxy contract')
@@ -164,7 +164,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed')
+  assert.equal(Web3Utils.hexToNumber(txhomeBridgeProxyData.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\nHome Deployment Bridge completed\n')

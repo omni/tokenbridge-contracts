@@ -23,7 +23,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         uint256 _requiredBlockConfirmations
     ) public returns(bool) {
         require(!isInitialized());
-        require(_validatorContract != address(0));
+        require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignGasPrice > 0);
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;

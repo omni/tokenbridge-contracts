@@ -1,17 +1,18 @@
 const assert = require('assert')
 const Web3Utils = require('web3-utils')
-
 const env = require('../loadEnv')
+
 const { deployContract, privateKeyToAddress, sendRawTxHome } = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
-const HomeBridge = require('../../../build/contracts/HomeBridgeNativeToErc.json')
+const HomeBridge = require('../../../build/contracts/HomeBridgeErcToNative.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 
 const {
+  BLOCK_REWARD_ADDRESS,
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   HOME_GAS_PRICE,
@@ -129,8 +130,7 @@ async function deployHome() {
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
     HOME_MIN_AMOUNT_PER_TX
   )} in eth,
-  HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}
-  `)
+  HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}`)
   homeBridgeImplementation.options.address = homeBridgeStorage.options.address
   const initializeHomeBridgeData = await homeBridgeImplementation.methods
     .initialize(
@@ -139,7 +139,8 @@ async function deployHome() {
       HOME_MAX_AMOUNT_PER_TX,
       HOME_MIN_AMOUNT_PER_TX,
       HOME_GAS_PRICE,
-      HOME_REQUIRED_BLOCK_CONFIRMATIONS
+      HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+      BLOCK_REWARD_ADDRESS
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeHomeBridge = await sendRawTxHome({

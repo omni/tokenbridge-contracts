@@ -7,19 +7,19 @@ const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3'
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
-const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToErc.json')
+const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToNative.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
+  FOREIGN_GAS_PRICE,
   FOREIGN_OWNER_MULTISIG,
   FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
   FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-  ERC20_TOKEN_ADDRESS,
-  FOREIGN_GAS_PRICE
+  ERC20_TOKEN_ADDRESS
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)

@@ -2,7 +2,6 @@ pragma solidity 0.4.24;
 import "../IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
-import "../libraries/Version.sol";
 import "./Validatable.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
@@ -10,11 +9,13 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 contract BasicBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
 
-    Version.Version public getBridgeInterfacesVersion = Version.Version(2, 0, 0);
-
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
     event DailyLimitChanged(uint256 newLimit);
+
+    function getBridgeInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
+        return (2, 1, 0);
+    }
 
     function setGasPrice(uint256 _gasPrice) public onlyOwner {
         require(_gasPrice > 0);
@@ -104,4 +105,11 @@ contract BasicBridge is EternalStorage, Validatable {
         require(token.transfer(_to, balance));
     }
 
+
+    function isContract(address _addr) internal view returns (bool)
+    {
+        uint length;
+        assembly { length := extcodesize(_addr) }
+        return length > 0;
+    }
 }

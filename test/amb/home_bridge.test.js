@@ -5,7 +5,7 @@ const Box = artifacts.require("Box.sol");
 const requiredBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-const { ERROR_MSG } = require('../setup');
+const { ERROR_MSG, ZERO_ADDRESS } = require('../setup');
 const { strip0x } = require('../helpers/helpers');
 
 
@@ -13,9 +13,40 @@ contract('HomeAMB', async (accounts) => {
   let validatorContract, authorities, owner;
   before(async () => {
     validatorContract = await BridgeValidators.new()
-    authorities = [accounts[1]];
+    authorities = [accounts[1], accounts[2]];
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
+  })
+  describe('balance', () => {
+    let boxContract
+    before(async () => {
+      boxContract = await Box.new()
+    })
+    it('should start with zero balance', async () => {
+      const homeBridge = await HomeAMB.new()
+      const balance = await homeBridge.balanceOf(boxContract.address)
+      '0'.should.be.bignumber.equal(balance)
+    })
+
+    it('should receive balance for a contract', async () => {
+      const homeBridge = await HomeAMB.new()
+      await homeBridge.depositForContractSender(boxContract.address, {
+        from: accounts[1],
+        value: 1
+      })
+      const deposit = await homeBridge.balanceOf(boxContract.address)
+      const balance = await web3.eth.getBalance(homeBridge.address)
+      '1'.should.be.bignumber.equal(deposit)
+      '1'.should.be.bignumber.equal(balance)
+    })
+
+    it('should revert for address 0', async () => {
+      const homeBridge = await HomeAMB.new()
+      await homeBridge.depositForContractSender(ZERO_ADDRESS, {
+        from: accounts[1],
+        value: 1
+      }).should.be.rejectedWith(ERROR_MSG)
+    })
   })
   describe('getBridgeMode', () => {
     it('should return arbitrary message bridging mode and interface', async () => {
@@ -224,7 +255,7 @@ contract('HomeAMB', async (accounts) => {
       const { encodedData } = resultPassMessageTx.logs[0].args
       const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
 
-      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] })
+      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] }).should.be.fulfilled;
       logs[0].event.should.be.equal("SignedForAffirmation");
       logs[1].event.should.be.equal("AffirmationCompleted");
       logs[1].args.should.be.deep.equal({
@@ -260,7 +291,7 @@ contract('HomeAMB', async (accounts) => {
       const { encodedData } = resultPassMessageTx.logs[0].args
       const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
 
-      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] })
+      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] }).should.be.fulfilled;
       logs[0].event.should.be.equal("SignedForAffirmation");
       logs[1].event.should.be.equal("AffirmationCompleted");
       logs[1].args.should.be.deep.equal({
@@ -272,6 +303,141 @@ contract('HomeAMB', async (accounts) => {
       //check Box value
       const boxValue = await box.value()
       boxValue.should.be.bignumber.equal(3)
+    })
+    it('test with 3 signatures required', async () => {
+      // set validator
+      const validatorContractWith3Signatures = await BridgeValidators.new()
+      const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
+      const ownerOfValidators = accounts[0]
+      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
+
+      // set bridge
+      const homeBridgeWithThreeSigs = await HomeAMB.new()
+      await homeBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, oneEther, gasPrice, requiredBlockConfirmations)
+
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(0)
+
+      // Deposit for user
+      await homeBridgeWithThreeSigs.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const resultPassMessageTx = await homeBridgeWithThreeSigs.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const msgHash = Web3Utils.soliditySha3(message);
+
+      const {logs} = await homeBridgeWithThreeSigs.executeAffirmation(message, {from: authoritiesFiveAccs[0]}).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: authoritiesFiveAccs[0],
+        messageHash: msgHash
+      });
+
+      const notProcessed = await homeBridgeWithThreeSigs.numAffirmationsSigned(msgHash);
+      notProcessed.should.be.bignumber.equal(1);
+
+      await homeBridgeWithThreeSigs.executeAffirmation(message, {from: authoritiesFiveAccs[0]}).should.be.rejectedWith(ERROR_MSG);
+      const secondSignature = await homeBridgeWithThreeSigs.executeAffirmation(message, {from: authoritiesFiveAccs[1]}).should.be.fulfilled;
+
+      secondSignature.logs[0].event.should.be.equal("SignedForAffirmation");
+      secondSignature.logs[0].args.should.be.deep.equal({
+        signer: authoritiesFiveAccs[1],
+        messageHash: msgHash
+      })
+
+      const thirdSignature = await homeBridgeWithThreeSigs.executeAffirmation(message, {from: authoritiesFiveAccs[2]}).should.be.fulfilled;
+
+      thirdSignature.logs[1].event.should.be.equal("AffirmationCompleted");
+      thirdSignature.logs[1].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        txHash: resultPassMessageTx.tx
+      })
+
+      const senderHash = Web3Utils.soliditySha3(authoritiesFiveAccs[0], msgHash)
+      true.should.be.equal(await homeBridgeWithThreeSigs.affirmationsSigned(senderHash))
+
+      const senderHash2 = Web3Utils.soliditySha3(authoritiesFiveAccs[1], msgHash);
+      true.should.be.equal(await homeBridgeWithThreeSigs.affirmationsSigned(senderHash2))
+
+      const senderHash3 = Web3Utils.soliditySha3(authoritiesFiveAccs[2], msgHash);
+      true.should.be.equal(await homeBridgeWithThreeSigs.affirmationsSigned(senderHash3))
+
+      //check Box value
+      const boxValue = await box.value()
+      boxValue.should.be.bignumber.equal(3)
+    })
+    it('should not allow to double execute', async () => {
+      const user = accounts[8]
+
+      // Deposit for user
+      await homeBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] }).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        txHash: resultPassMessageTx.tx
+      })
+
+      await homeBridge.executeAffirmation(message, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.executeAffirmation(message, {from: authorities[1]}).should.be.rejectedWith(ERROR_MSG);
+    })
+
+    it('should not allow non-authorities to execute withdraw', async () => {
+      const user = accounts[8]
+
+      // Deposit for user
+      await homeBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      await homeBridge.executeAffirmation(message, {from: user}).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.executeAffirmation(message, {from: accounts[7]}).should.be.rejectedWith(ERROR_MSG);
+
+      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] }).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[1].event.should.be.equal("AffirmationCompleted");
     })
   })
 })

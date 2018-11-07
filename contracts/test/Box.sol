@@ -14,4 +14,13 @@ contract Box {
     emit dataEvent(encodedData);
   }
 
+  function withdrawFromDeposit(address _recipient) public {
+  }
+
+  function getWithdrawFromDepositData(address _recipient) public {
+    bytes4 methodSelector = this.withdrawFromDeposit.selector;
+    bytes memory encodedData = abi.encodeWithSelector(methodSelector, _recipient);
+    emit dataEvent(encodedData);
+  }
+
 }

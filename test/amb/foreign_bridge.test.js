@@ -46,6 +46,47 @@ contract('ForeignAMB', async (accounts) => {
         value: 1
       }).should.be.rejectedWith(ERROR_MSG)
     })
+
+    it('user should be able to withdraw balance', async () => {
+      const user = accounts[8]
+
+      const foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
+
+      await foreignBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      const userBalanceOnBridgeAfterDeposit = await foreignBridge.balanceOf(user)
+      const userBalanceAfterDeposit = await web3.eth.getBalance(user)
+      userBalanceOnBridgeAfterDeposit.should.be.bignumber.equal(oneEther)
+
+      const result = await boxContract.getWithdrawFromDepositData(user)
+      const withdrawFromDepositData = result.logs[0].args.selectorData
+
+      // Use these calls to simulate home bridge on Foreign network
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(
+        foreignBridge.address,
+        withdrawFromDepositData,
+        821254,
+        1, { from: user })
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
+
+      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[0] }).should.be.fulfilled;
+      logs[0].event.should.be.equal("RelayedMessage");
+
+      const userBalanceOnBridgeAfterWithdraw = await foreignBridge.balanceOf(user)
+      const userBalanceAfterWithdraw = await web3.eth.getBalance(user)
+      userBalanceOnBridgeAfterWithdraw.should.be.bignumber.equal(0)
+      userBalanceAfterWithdraw.should.be.bignumber.gt(userBalanceAfterDeposit)
+    })
   })
 
   describe('getBridgeMode', () => {

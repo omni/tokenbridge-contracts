@@ -48,6 +48,45 @@ contract('HomeAMB', async (accounts) => {
         value: 1
       }).should.be.rejectedWith(ERROR_MSG)
     })
+
+    it('user should be able to withdraw balance', async () => {
+      const user = accounts[8]
+
+      const homeBridge = await HomeAMB.new()
+      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
+
+      await homeBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      const userBalanceOnBridgeAfterDeposit = await homeBridge.balanceOf(user)
+      const userBalanceAfterDeposit = await web3.eth.getBalance(user)
+      userBalanceOnBridgeAfterDeposit.should.be.bignumber.equal(oneEther)
+
+      const result = await boxContract.getWithdrawFromDepositData(user)
+      const withdrawFromDepositData = result.logs[0].args.selectorData
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        homeBridge.address,
+        withdrawFromDepositData,
+        821254,
+        1, { from: user })
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const { logs } = await homeBridge.executeAffirmation(message, { from: authorities[0] }).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[1].event.should.be.equal("AffirmationCompleted");
+
+      const userBalanceOnBridgeAfterWithdraw = await homeBridge.balanceOf(user)
+      const userBalanceAfterWithdraw = await web3.eth.getBalance(user)
+      userBalanceOnBridgeAfterWithdraw.should.be.bignumber.equal(0)
+      userBalanceAfterWithdraw.should.be.bignumber.gt(userBalanceAfterDeposit)
+    })
   })
   describe('getBridgeMode', () => {
     it('should return arbitrary message bridging mode and interface', async () => {

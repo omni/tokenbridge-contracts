@@ -6,16 +6,17 @@ const requiredBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const { ERROR_MSG, ZERO_ADDRESS } = require('../setup');
-const { strip0x } = require('../helpers/helpers');
+const { strip0x, sign } = require('../helpers/helpers');
 
 
 contract('HomeAMB', async (accounts) => {
-  let validatorContract, authorities, owner;
+  let validatorContract, authorities, owner, validatorsRequiredSignatures;
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]];
     owner = accounts[0]
-    await validatorContract.initialize(1, authorities, owner)
+    validatorsRequiredSignatures = 1
+    await validatorContract.initialize(validatorsRequiredSignatures, authorities, owner)
   })
   describe('balance', () => {
     let boxContract
@@ -438,6 +439,169 @@ contract('HomeAMB', async (accounts) => {
       const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0] }).should.be.fulfilled;
       logs[0].event.should.be.equal("SignedForAffirmation");
       logs[1].event.should.be.equal("AffirmationCompleted");
+    })
+  })
+  describe('submitSignature', () => {
+    let homeBridge, setValueData, box
+    beforeEach(async () => {
+      homeBridge = await HomeAMB.new()
+      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
+
+      box = await Box.new()
+      // Generate data for method we want to call on Box contract
+      const result = await box.getSetValueData(3)
+      setValueData = result.logs[0].args.selectorData
+    })
+    it('allows a validator to submit a signature', async () => {
+      const user = accounts[8]
+
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const signature = await sign(authorities[0], message)
+      const msgHash = Web3Utils.soliditySha3(message);
+
+      const {logs} = await homeBridge.submitSignature(signature, message, { from: authorities[0] }).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForUserRequest");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        messageHash: msgHash
+      })
+
+      const signatureFromContract = await homeBridge.signature(msgHash, 0);
+      const messageFromContract = await homeBridge.message(msgHash);
+      signature.should.be.equal(signatureFromContract);
+      messageFromContract.should.be.equal(message);
+
+      logs[1].event.should.be.equal("CollectedSignatures");
+      logs[1].args.authorityResponsibleForRelay.should.be.equal(authorities[0])
+      logs[1].args.messageHash.should.be.equal(msgHash)
+      logs[1].args.NumberOfCollectedSignatures.should.be.bignumber.equal(validatorsRequiredSignatures)
+
+      const hashMsg = Web3Utils.soliditySha3(message);
+      const hashSenderMsg = Web3Utils.soliditySha3(authorities[0], hashMsg)
+      true.should.be.equal(await homeBridge.messagesSigned(hashSenderMsg));
+    })
+    it('test with 3 signatures required', async () => {
+      // set validator
+      const validatorContractWith3Signatures = await BridgeValidators.new()
+      const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
+      const ownerOfValidators = accounts[0]
+      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
+
+      // set bridge
+      const homeBridgeWithThreeSigs = await HomeAMB.new()
+      await homeBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, oneEther, gasPrice, requiredBlockConfirmations)
+
+      const user = accounts[8]
+
+      const resultPassMessageTx = await homeBridgeWithThreeSigs.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const signature1 = await sign(authoritiesFiveAccs[0], message)
+      const signature2 = await sign(authoritiesFiveAccs[1], message)
+      const signature3 = await sign(authoritiesFiveAccs[2], message)
+      const msgHash = Web3Utils.soliditySha3(message);
+
+      const {logs} = await homeBridgeWithThreeSigs.submitSignature(signature1, message, { from: authoritiesFiveAccs[0] }).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForUserRequest");
+      logs[0].args.should.be.deep.equal({
+        signer: authoritiesFiveAccs[0],
+        messageHash: msgHash
+      })
+
+      const secondSignature = await homeBridgeWithThreeSigs.submitSignature(signature2, message, { from: authoritiesFiveAccs[1] }).should.be.fulfilled;
+      secondSignature.logs[0].event.should.be.equal("SignedForUserRequest");
+      secondSignature.logs[0].args.should.be.deep.equal({
+        signer: authoritiesFiveAccs[1],
+        messageHash: msgHash
+      })
+
+      const thirdSignature = await homeBridgeWithThreeSigs.submitSignature(signature3, message, { from: authoritiesFiveAccs[2] }).should.be.fulfilled;
+      thirdSignature.logs[0].event.should.be.equal("SignedForUserRequest");
+      thirdSignature.logs[0].args.should.be.deep.equal({
+        signer: authoritiesFiveAccs[2],
+        messageHash: msgHash
+      })
+
+      const messageFromContract = await homeBridgeWithThreeSigs.message(msgHash);
+      messageFromContract.should.be.equal(message);
+
+      const signature1FromContract = await homeBridgeWithThreeSigs.signature(msgHash, 0);
+      signature1.should.be.equal(signature1FromContract);
+
+      const signature2FromContract = await homeBridgeWithThreeSigs.signature(msgHash, 1);
+      signature2.should.be.equal(signature2FromContract);
+
+      const signature3FromContract = await homeBridgeWithThreeSigs.signature(msgHash, 2);
+      signature3.should.be.equal(signature3FromContract);
+
+      thirdSignature.logs[1].event.should.be.equal("CollectedSignatures");
+      thirdSignature.logs[1].args.authorityResponsibleForRelay.should.be.equal(authoritiesFiveAccs[2])
+      thirdSignature.logs[1].args.messageHash.should.be.equal(msgHash)
+      thirdSignature.logs[1].args.NumberOfCollectedSignatures.should.be.bignumber.equal(3)
+    })
+    it('should not allow to double submit', async () => {
+      const user = accounts[8]
+
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const signature = await sign(authorities[0], message)
+      const signature2 = await sign(authorities[1], message)
+
+      // can't submit signature with other validator signature
+      await homeBridge.submitSignature(signature2, message, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+
+      const {logs} = await homeBridge.submitSignature(signature, message, { from: authorities[0] }).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForUserRequest");
+      logs[1].event.should.be.equal("CollectedSignatures");
+
+      await homeBridge.submitSignature(signature, message, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.submitSignature(signature2, message, {from: authorities[1]}).should.be.rejectedWith(ERROR_MSG);
+    })
+
+    it('should not allow non-authorities to submit signatures', async () => {
+      const user = accounts[8]
+
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const signature = await sign(authorities[0], message)
+      const userSignature = await sign(user, message)
+      const user2Signature = await sign(accounts[7], message)
+
+      await homeBridge.submitSignature(userSignature, message, {from: user}).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.submitSignature(user2Signature, message, {from: accounts[7]}).should.be.rejectedWith(ERROR_MSG);
+
+      const {logs} = await homeBridge.submitSignature(signature, message, { from: authorities[0] }).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForUserRequest");
+      logs[1].event.should.be.equal("CollectedSignatures");
     })
   })
 })

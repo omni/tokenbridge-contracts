@@ -18,7 +18,7 @@ contract BasicAMB is BasicBridge {
         uint256 _requiredBlockConfirmations
     ) public returns(bool) {
         require(!isInitialized());
-        require(_validatorContract != address(0));
+        require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_gasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(_maxPerTx > 0);

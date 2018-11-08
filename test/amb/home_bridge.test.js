@@ -117,6 +117,17 @@ contract('HomeAMB', async (accounts) => {
       (await homeBridge.gasPrice()).should.be.bignumber.equal(gasPrice);
       (await homeBridge.requiredBlockConfirmations()).should.be.bignumber.equal(requiredBlockConfirmations);
     })
+    it('should fail with invalid arguments', async () => {
+      const homeBridge = await HomeAMB.new()
+      false.should.be.equal(await homeBridge.isInitialized())
+      await homeBridge.initialize(ZERO_ADDRESS, oneEther, gasPrice, requiredBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.initialize(accounts[0], oneEther, gasPrice, requiredBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.initialize(validatorContract.address, 0, gasPrice, requiredBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.initialize(validatorContract.address, oneEther, 0, requiredBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, 0).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+      true.should.be.equal(await homeBridge.isInitialized())
+    })
   })
   describe('requireToPassMessage', () => {
     let homeBridge

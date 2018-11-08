@@ -8,8 +8,8 @@ contract ForeignAMB is BasicForeignAMB {
     event UserRequestForAffirmation(bytes encodedData);
     event RelayedMessage(address sender, address executor, bytes32 transactionHash);
 
-    function maxGasPerTx() public view returns(uint256) {
-        return maxPerTx();
+    function getMaxGasPerTx() internal returns(uint256) {
+        return maxGasPerTx();
     }
 
     function messageProcessed(bytes32 _txHash) internal view returns(bool) {

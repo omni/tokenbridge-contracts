@@ -8,7 +8,7 @@ contract MessageDelivery {
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public {
         require(isMessageDeliverySubsidizedMode());
-        require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
+        require(_gas >= getMinimumGasUsage(_data) && _gas <= getMaxGasPerTx());
         emitEventOnMessageRequest(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x00), _data));
     }
 
@@ -16,7 +16,7 @@ contract MessageDelivery {
         if (isMessageDeliverySubsidizedMode())
             requireToPassMessage(_contract, _data, _gas);
         else {
-            require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
+            require(_gas >= getMinimumGasUsage(_data) && _gas <= getMaxGasPerTx());
             emitEventOnMessageRequest(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x01), _gasPrice, _data));
         }
     }
@@ -25,7 +25,7 @@ contract MessageDelivery {
         if (isMessageDeliverySubsidizedMode())
             requireToPassMessage(_contract, _data, _gas);
         else {
-            require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
+            require(_gas >= getMinimumGasUsage(_data) && _gas <= getMaxGasPerTx());
             emitEventOnMessageRequest(
                 abi.encodePacked(msg.sender, _contract, _gas, uint8(0x02), _oracleGasPriceSpeed, _data)
             );
@@ -38,7 +38,7 @@ contract MessageDelivery {
         return _data.length.mul(68);
     }
 
-    function maxGasPerTx() public view returns(uint256) {
+    function getMaxGasPerTx() internal returns(uint256) {
         // should be overridden
     }
 

@@ -108,7 +108,7 @@ contract('ForeignAMB', async (accounts) => {
 
       (await foreignBridge.deployedAtBlock()).should.be.bignumber.above(0);
       (await foreignBridge.validatorContract()).should.be.equal(validatorContract.address);
-      (await foreignBridge.maxPerTx()).should.be.bignumber.equal(oneEther);
+      (await foreignBridge.maxGasPerTx()).should.be.bignumber.equal(oneEther);
       (await foreignBridge.gasPrice()).should.be.bignumber.equal(gasPrice);
       (await foreignBridge.requiredBlockConfirmations()).should.be.bignumber.equal(requiredBlockConfirmations);
     })

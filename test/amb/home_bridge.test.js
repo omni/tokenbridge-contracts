@@ -113,7 +113,7 @@ contract('HomeAMB', async (accounts) => {
 
       (await homeBridge.deployedAtBlock()).should.be.bignumber.above(0);
       (await homeBridge.validatorContract()).should.be.equal(validatorContract.address);
-      (await homeBridge.maxPerTx()).should.be.bignumber.equal(oneEther);
+      (await homeBridge.maxGasPerTx()).should.be.bignumber.equal(oneEther);
       (await homeBridge.gasPrice()).should.be.bignumber.equal(gasPrice);
       (await homeBridge.requiredBlockConfirmations()).should.be.bignumber.equal(requiredBlockConfirmations);
     })

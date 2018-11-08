@@ -13,7 +13,7 @@ contract BasicAMB is BasicBridge {
 
     function initialize(
         address _validatorContract,
-        uint256 _maxPerTx,
+        uint256 _maxGasPerTx,
         uint256 _gasPrice,
         uint256 _requiredBlockConfirmations
     ) public returns(bool) {
@@ -21,10 +21,10 @@ contract BasicAMB is BasicBridge {
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_gasPrice > 0);
         require(_requiredBlockConfirmations > 0);
-        require(_maxPerTx > 0);
+        require(_maxGasPerTx > 0);
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
+        uintStorage[keccak256(abi.encodePacked("maxGasPerTx"))] = _maxGasPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = DEFRAYAL_MODE;
@@ -59,6 +59,14 @@ contract BasicAMB is BasicBridge {
 
     function foreignToHomeMode() public view returns(bytes) {
         return bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))];
+    }
+
+    function maxGasPerTx() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("maxGasPerTx"))];
+    }
+
+    function setMaxGasPerTx(uint256 _maxGasPerTx) external onlyOwner {
+        uintStorage[keccak256(abi.encodePacked("maxGasPerTx"))] = _maxGasPerTx;
     }
 }
 

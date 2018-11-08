@@ -344,6 +344,47 @@ contract('HomeAMB', async (accounts) => {
       const boxValue = await box.value()
       boxValue.should.be.bignumber.equal(3)
     })
+    it('should succeed on defrayal mode using message with gas price parameter', async () => {
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(0)
+
+      // Deposit for user
+      await homeBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const tx = await homeBridge.contract.requireToPassMessage['address,bytes,uint256,uint256'](
+        box.address,
+        setValueData,
+        821254,
+        4000000000, { from: user })
+      const resultPassMessageTx = await web3.eth.getTransactionReceipt(tx)
+      const { data } = resultPassMessageTx.logs[0]
+      const encodedData = data.slice(0,2) + data.slice(130, data.length - 38)
+
+      // Validator on token-bridge add txHash to message
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.transactionHash) + encodedData.slice(82)
+
+      // should fail because a different gas price was used
+      await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice: "3000000000" }).should.be.rejectedWith(ERROR_MSG);
+
+      const {logs} = await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice: "4000000000" }).should.be.fulfilled;
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        txHash: resultPassMessageTx.transactionHash
+      })
+
+      //check Box value
+      const boxValue = await box.value()
+      boxValue.should.be.bignumber.equal(3)
+    })
     it('test with 3 signatures required', async () => {
       // set validator
       const validatorContractWith3Signatures = await BridgeValidators.new()

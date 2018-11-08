@@ -184,7 +184,7 @@ contract('ForeignAMB', async (accounts) => {
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature);
 
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]})
+      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]}).should.be.fulfilled;
       logs[0].event.should.be.equal("RelayedMessage");
       logs[0].args.should.be.deep.equal({
         sender: user,
@@ -221,13 +221,55 @@ contract('ForeignAMB', async (accounts) => {
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature);
-      console.log("message length", message.length)
-      const {logs} = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]})
+
+      const {logs} = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]}).should.be.fulfilled;
       logs[0].event.should.be.equal("RelayedMessage");
       logs[0].args.should.be.deep.equal({
         sender: user,
         executor: box.address,
         transactionHash: resultPassMessageTx.tx
+      })
+
+      //check Box value
+      const boxValue = await box.value()
+      boxValue.should.be.bignumber.equal(3)
+    })
+    it('should succeed on defrayal mode using message with gas price parameter', async () => {
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(0)
+
+      // Deposit for user
+      await foreignBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const tx = await foreignBridge.contract.requireToPassMessage['address,bytes,uint256,uint256'](
+        box.address,
+        setValueData,
+        821254,
+        4000000000, { from: user })
+      const resultPassMessageTx = await web3.eth.getTransactionReceipt(tx)
+      const { data } = resultPassMessageTx.logs[0]
+      const encodedData = data.slice(0,2) + data.slice(130, data.length - 38)
+
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.transactionHash) + encodedData.slice(82)
+
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
+
+      // should fail because a different gas price was used
+      await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0], gasPrice: "3000000000"}).should.be.rejectedWith(ERROR_MSG);
+
+      const {logs} = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0], gasPrice: "4000000000"}).should.be.fulfilled;
+      logs[0].event.should.be.equal("RelayedMessage");
+      logs[0].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        transactionHash: resultPassMessageTx.transactionHash
       })
 
       //check Box value

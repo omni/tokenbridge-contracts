@@ -15,7 +15,7 @@ contract('ForeignAMB', async (accounts) => {
   before(async () => {
     validatorContract = await BridgeValidators.new()
     boxContract = await Box.new()
-    authorities = [accounts[1]];
+    authorities = [accounts[1], accounts[2]];
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
   })
@@ -208,7 +208,7 @@ contract('ForeignAMB', async (accounts) => {
         value: oneEther
       })
 
-      // Use these calls to simulate foreign bridge on Foreign network
+      // Use these calls to simulate home bridge on home network
       const resultPassMessageTx = await foreignBridge.requireToPassMessage(
         box.address,
         setValueData,
@@ -275,6 +275,132 @@ contract('ForeignAMB', async (accounts) => {
       //check Box value
       const boxValue = await box.value()
       boxValue.should.be.bignumber.equal(3)
+    })
+    it('test with 3 signatures required', async () => {
+      // set validator
+      const validatorContractWith3Signatures = await BridgeValidators.new()
+      const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
+      const ownerOfValidators = accounts[0]
+      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
+
+      // set bridge
+      const foreignBridgeWithThreeSigs = await ForeignBridge.new()
+      await foreignBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, oneEther, gasPrice, requiredBlockConfirmations)
+
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(0)
+
+      // Deposit for user
+      await foreignBridgeWithThreeSigs.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await foreignBridgeWithThreeSigs.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const signature1 = await sign(authoritiesFiveAccs[0], message)
+      const vrs = signatureToVRS(signature1);
+
+      const signature2 = await sign(authoritiesFiveAccs[1], message)
+      const vrs2 = signatureToVRS(signature2);
+
+      const signature3 = await sign(authoritiesFiveAccs[2], message)
+      const vrs3 = signatureToVRS(signature3);
+
+      await foreignBridgeWithThreeSigs.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authoritiesFiveAccs[2]}).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridgeWithThreeSigs.executeSignatures(message, [vrs.v, vrs2.v], [vrs.r, vrs2.r], [vrs.s, vrs2.s], {from: authoritiesFiveAccs[2]}).should.be.rejectedWith(ERROR_MSG);
+
+      const {logs} = await foreignBridgeWithThreeSigs.executeSignatures(message, [vrs.v, vrs2.v, vrs3.v], [vrs.r, vrs2.r, vrs3.r], [vrs.s, vrs2.s, vrs3.s], {from: authoritiesFiveAccs[2]}).should.be.fulfilled;
+      logs[0].event.should.be.equal("RelayedMessage");
+      logs[0].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        transactionHash: resultPassMessageTx.tx
+      })
+
+      //check Box value
+      const boxValue = await box.value()
+      boxValue.should.be.bignumber.equal(3)
+    })
+    it('should not allow to double execute signatures', async () => {
+      const user = accounts[8]
+
+      // Deposit for user
+      await foreignBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
+
+      const {logs} = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]}).should.be.fulfilled;
+      logs[0].event.should.be.equal("RelayedMessage");
+      logs[0].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        transactionHash: resultPassMessageTx.tx
+      })
+
+      await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[1]}).should.be.rejectedWith(ERROR_MSG);
+    })
+    it('should not allow non-authorities to execute signatures', async () => {
+      const user = accounts[8]
+
+      // Deposit for user
+      await foreignBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        1, {from: user})
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
+
+      await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: user}).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: accounts[7]}).should.be.rejectedWith(ERROR_MSG);
+
+      const {logs} = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]}).should.be.fulfilled;
+      logs[0].event.should.be.equal("RelayedMessage");
+      logs[0].args.should.be.deep.equal({
+        sender: user,
+        executor: box.address,
+        transactionHash: resultPassMessageTx.tx
+      })
+
     })
   })
 })

@@ -493,7 +493,7 @@ contract('HomeAMB', async (accounts) => {
       await homeBridge.executeAffirmation(message, {from: authorities[1]}).should.be.rejectedWith(ERROR_MSG);
     })
 
-    it('should not allow non-authorities to execute withdraw', async () => {
+    it('should not allow non-authorities to execute affirmation', async () => {
       const user = accounts[8]
 
       // Deposit for user

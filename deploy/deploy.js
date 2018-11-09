@@ -1,9 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const env = require('./src/loadEnv')
-const { ZERO_ADDRESS } = require('./src/constants')
 
-const { BRIDGE_MODE, BLOCK_REWARD_ADDRESS, ERC20_TOKEN_ADDRESS } = env
+const { BRIDGE_MODE, ERC20_TOKEN_ADDRESS } = env
 
 const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
 
@@ -111,6 +110,39 @@ async function deployErcToNative() {
   console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
 }
 
+async function deployArbitraryMessage() {
+  const deployHome = require('./src/arbitrary_message/home')
+  const deployForeign = require('./src/arbitrary_message/foreign')
+
+  const homeBridge = await deployHome()
+  const foreignBridge = await deployForeign()
+  console.log('\nDeployment has been completed.\n\n')
+  console.log(
+    `[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`
+  )
+  console.log(
+    `[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${
+      foreignBridge.deployedBlockNumber
+    }`
+  )
+  fs.writeFileSync(
+    deployResultsPath,
+    JSON.stringify(
+      {
+        homeBridge: {
+          ...homeBridge
+        },
+        foreignBridge: {
+          ...foreignBridge
+        }
+      },
+      null,
+      4
+    )
+  )
+  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+}
+
 async function main() {
   console.log(`Bridge mode: ${BRIDGE_MODE}`)
   switch (BRIDGE_MODE) {
@@ -122,6 +154,9 @@ async function main() {
       break
     case 'ERC_TO_NATIVE':
       await deployErcToNative()
+      break
+    case 'ARBITRARY_MESSAGE':
+      await deployArbitraryMessage()
       break
     default:
       console.log(BRIDGE_MODE)

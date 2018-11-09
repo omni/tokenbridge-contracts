@@ -7,7 +7,7 @@ const envalid = require('envalid')
 const { ZERO_ADDRESS } = require('./constants')
 
 // Validations and constants
-const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
+const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE', 'ARBITRARY_MESSAGE']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
 const validateAddress = address => {
   if (isAddress(address)) {
@@ -38,9 +38,7 @@ let validations = {
   HOME_OWNER_MULTISIG: addressValidator(),
   HOME_UPGRADEABLE_ADMIN_VALIDATORS: addressesValidator(),
   HOME_UPGRADEABLE_ADMIN_BRIDGE: addressValidator(),
-  HOME_DAILY_LIMIT: bigNumValidator(),
   HOME_MAX_AMOUNT_PER_TX: bigNumValidator(),
-  HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
   HOME_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   HOME_GAS_PRICE: bigNumValidator(),
   FOREIGN_RPC_URL: envalid.str(),
@@ -59,6 +57,8 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
     BRIDGEABLE_TOKEN_NAME: envalid.str(),
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
+    HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
+    HOME_DAILY_LIMIT: bigNumValidator(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
     FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
@@ -70,7 +70,9 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     ERC20_TOKEN_ADDRESS: addressValidator(),
     BRIDGEABLE_TOKEN_NAME: envalid.str(),
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
-    BRIDGEABLE_TOKEN_DECIMALS: envalid.num()
+    BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
+    HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
+    HOME_DAILY_LIMIT: bigNumValidator()
   }
 }
 if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
@@ -79,7 +81,9 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     ERC20_TOKEN_ADDRESS: addressValidator(),
     BLOCK_REWARD_ADDRESS: addressValidator({
       default: ZERO_ADDRESS
-    })
+    }),
+    HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
+    HOME_DAILY_LIMIT: bigNumValidator()
   }
 }
 

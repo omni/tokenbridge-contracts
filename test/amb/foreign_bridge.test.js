@@ -2,6 +2,7 @@ const Web3Utils = require('web3-utils');
 const ForeignBridge = artifacts.require("ForeignAMB.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const Box = artifacts.require("Box.sol");
+const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 const requiredBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
@@ -147,10 +148,66 @@ contract('ForeignAMB', async (accounts) => {
       (await foreignBridge.requiredBlockConfirmations()).should.be.bignumber.equal(alternativeBlockConfirmations);
     })
   })
+  describe('upgradeable', async () => {
+    it('can be upgraded', async () => {
+
+      // foreignBridge V1 Contract
+      const foreignBridgeV1 = await ForeignBridge.new()
+
+      // create proxy
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled;
+
+      const foreignBridgeProxy = await ForeignBridge.at(proxy.address);
+      await foreignBridgeProxy.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+
+      // Deploy V2
+      const foreignBridgeV2 = await ForeignBridge.new()
+      await proxy.upgradeTo('2', foreignBridgeV2.address).should.be.fulfilled;
+
+      foreignBridgeV2.address.should.be.equal(await proxy.implementation())
+    })
+
+    it('can be deployed via upgradeToAndCall', async () => {
+
+      const foreignBridgeV1 = await ForeignBridge.new()
+
+      const proxy = await EternalStorageProxy.new();
+
+      const data = foreignBridgeV1.initialize.request(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).params[0].data;
+      await proxy.upgradeToAndCall('1', foreignBridgeV1.address, data).should.be.fulfilled;
+
+      const foreignBridgeProxy = await ForeignBridge.at(proxy.address);
+      true.should.be.equal(await foreignBridgeProxy.isInitialized());
+    })
+    it('can transfer ownership', async () => {
+
+      // foreignBridge V1 Contract
+      const foreignBridgeV1 = await ForeignBridge.new()
+
+      // create proxy
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled;
+
+      const foreignBridgeProxy = await ForeignBridge.at(proxy.address);
+      await foreignBridgeProxy.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+      (await proxy.proxyOwner()).should.be.equal(owner)
+
+      const newOwner = accounts[1]
+      await proxy.transferProxyOwnership(newOwner).should.be.fulfilled;
+      (await proxy.proxyOwner()).should.be.equal(newOwner)
+    })
+  })
   describe('requireToPassMessage', () => {
     let foreignBridge
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      const foreignBridgeV1 = await ForeignBridge.new()
+
+      // create proxy
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled;
+
+      foreignBridge = await ForeignBridge.at(proxy.address);
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
     })
     it('call requireToPassMessage(address, bytes, uint256, bytes1)', async () => {
@@ -186,7 +243,13 @@ contract('ForeignAMB', async (accounts) => {
   describe('executeSignatures', () => {
     let foreignBridge, setValueData, box
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      const foreignBridgeV1 = await ForeignBridge.new()
+
+      // create proxy
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled;
+
+      foreignBridge = await ForeignBridge.at(proxy.address);
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
 
       box = await Box.new()

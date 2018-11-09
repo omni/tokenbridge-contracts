@@ -2,6 +2,7 @@ const Web3Utils = require('web3-utils');
 const HomeAMB = artifacts.require("HomeAMB.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const Box = artifacts.require("Box.sol");
+const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 const requiredBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
@@ -152,10 +153,65 @@ contract('HomeAMB', async (accounts) => {
       (await homeBridge.requiredBlockConfirmations()).should.be.bignumber.equal(alternativeBlockConfirmations);
     })
   })
+  describe('upgradeable', async () => {
+    it('can be upgraded', async () => {
+
+      // homeBridge V1 Contract
+      const homeBridgeV1 = await HomeAMB.new()
+
+      // create proxy
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled;
+
+      const homeBridgeProxy = await HomeAMB.at(proxy.address);
+      await homeBridgeProxy.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+
+      // Deploy V2
+      const homeBridgeV2 = await HomeAMB.new()
+      await proxy.upgradeTo('2', homeBridgeV2.address).should.be.fulfilled;
+
+      homeBridgeV2.address.should.be.equal(await proxy.implementation())
+    })
+
+    it('can be deployed via upgradeToAndCall', async () => {
+
+      const homeBridgeV1 = await HomeAMB.new()
+
+      const proxy = await EternalStorageProxy.new();
+
+      const data = homeBridgeV1.initialize.request(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).params[0].data;
+      await proxy.upgradeToAndCall('1', homeBridgeV1.address, data).should.be.fulfilled;
+
+      const homeBridgeProxy = await HomeAMB.at(proxy.address);
+      true.should.be.equal(await homeBridgeProxy.isInitialized());
+    })
+    it('can transfer ownership', async () => {
+
+      // homeBridge V1 Contract
+      const homeBridgeV1 = await HomeAMB.new()
+
+      // create proxy
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled;
+
+      const homeBridgeProxy = await HomeAMB.at(proxy.address);
+      await homeBridgeProxy.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+      (await proxy.proxyOwner()).should.be.equal(owner)
+
+      const newOwner = accounts[1]
+      await proxy.transferProxyOwnership(newOwner).should.be.fulfilled;
+      (await proxy.proxyOwner()).should.be.equal(newOwner)
+    })
+  })
   describe('requireToPassMessage', () => {
     let homeBridge
     beforeEach(async () => {
-      homeBridge = await HomeAMB.new()
+      // create proxy
+      const homeBridgeV1 = await HomeAMB.new()
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled;
+
+      homeBridge = await HomeAMB.at(proxy.address);
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
@@ -300,7 +356,12 @@ contract('HomeAMB', async (accounts) => {
   describe('executeAffirmation', () => {
     let homeBridge, setValueData, box
     beforeEach(async () => {
-      homeBridge = await HomeAMB.new()
+      // create proxy
+      const homeBridgeV1 = await HomeAMB.new()
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled;
+
+      homeBridge = await HomeAMB.at(proxy.address);
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
 
       box = await Box.new()
@@ -558,7 +619,12 @@ contract('HomeAMB', async (accounts) => {
   describe('submitSignature', () => {
     let homeBridge, setValueData, box
     beforeEach(async () => {
-      homeBridge = await HomeAMB.new()
+      // create proxy
+      const homeBridgeV1 = await HomeAMB.new()
+      const proxy = await EternalStorageProxy.new();
+      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled;
+
+      homeBridge = await HomeAMB.at(proxy.address);
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations)
 
       box = await Box.new()

@@ -123,6 +123,29 @@ contract('ForeignAMB', async (accounts) => {
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
       true.should.be.equal(await foreignBridge.isInitialized())
     })
+    it('can update variables', async () => {
+      const twoEther = web3.toBigNumber(web3.toWei(2, "ether"));
+      const alternativeGasPrice = Web3Utils.toWei('2', 'gwei');
+      const alternativeBlockConfirmations = 1
+      const foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+
+      await foreignBridge.setMaxGasPerTx(0).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.setGasPrice(0).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.setRequiredBlockConfirmations(0).should.be.rejectedWith(ERROR_MSG);
+
+      (await foreignBridge.maxGasPerTx()).should.be.bignumber.equal(oneEther);
+      (await foreignBridge.gasPrice()).should.be.bignumber.equal(gasPrice);
+      (await foreignBridge.requiredBlockConfirmations()).should.be.bignumber.equal(requiredBlockConfirmations);
+
+      await foreignBridge.setMaxGasPerTx(twoEther).should.be.fulfilled;
+      await foreignBridge.setGasPrice(alternativeGasPrice).should.be.fulfilled;
+      await foreignBridge.setRequiredBlockConfirmations(alternativeBlockConfirmations).should.be.fulfilled;
+
+      (await foreignBridge.maxGasPerTx()).should.be.bignumber.equal(twoEther);
+      (await foreignBridge.gasPrice()).should.be.bignumber.equal(alternativeGasPrice);
+      (await foreignBridge.requiredBlockConfirmations()).should.be.bignumber.equal(alternativeBlockConfirmations);
+    })
   })
   describe('requireToPassMessage', () => {
     let foreignBridge

@@ -128,6 +128,29 @@ contract('HomeAMB', async (accounts) => {
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
       true.should.be.equal(await homeBridge.isInitialized())
     })
+    it('can update variables', async () => {
+      const twoEther = web3.toBigNumber(web3.toWei(2, "ether"));
+      const alternativeGasPrice = Web3Utils.toWei('2', 'gwei');
+      const alternativeBlockConfirmations = 1
+      const homeBridge = await HomeAMB.new()
+      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+
+      (await homeBridge.maxGasPerTx()).should.be.bignumber.equal(oneEther);
+      (await homeBridge.gasPrice()).should.be.bignumber.equal(gasPrice);
+      (await homeBridge.requiredBlockConfirmations()).should.be.bignumber.equal(requiredBlockConfirmations);
+
+      await homeBridge.setMaxGasPerTx(0).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.setGasPrice(0).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.setRequiredBlockConfirmations(0).should.be.rejectedWith(ERROR_MSG);
+
+      await homeBridge.setMaxGasPerTx(twoEther).should.be.fulfilled;
+      await homeBridge.setGasPrice(alternativeGasPrice).should.be.fulfilled;
+      await homeBridge.setRequiredBlockConfirmations(alternativeBlockConfirmations).should.be.fulfilled;
+
+      (await homeBridge.maxGasPerTx()).should.be.bignumber.equal(twoEther);
+      (await homeBridge.gasPrice()).should.be.bignumber.equal(alternativeGasPrice);
+      (await homeBridge.requiredBlockConfirmations()).should.be.bignumber.equal(alternativeBlockConfirmations);
+    })
   })
   describe('requireToPassMessage', () => {
     let homeBridge

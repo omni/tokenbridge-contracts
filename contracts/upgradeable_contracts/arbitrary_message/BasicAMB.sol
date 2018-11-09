@@ -66,6 +66,7 @@ contract BasicAMB is BasicBridge {
     }
 
     function setMaxGasPerTx(uint256 _maxGasPerTx) external onlyOwner {
+        require(_maxGasPerTx > 0);
         uintStorage[keccak256(abi.encodePacked("maxGasPerTx"))] = _maxGasPerTx;
     }
 }

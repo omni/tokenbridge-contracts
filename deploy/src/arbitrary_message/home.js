@@ -19,7 +19,9 @@ const {
   HOME_UPGRADEABLE_ADMIN_VALIDATORS,
   HOME_UPGRADEABLE_ADMIN_BRIDGE,
   HOME_MAX_AMOUNT_PER_TX,
-  HOME_REQUIRED_BLOCK_CONFIRMATIONS
+  HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+  HOME_AMB_SUBSIDIZED_MODE,
+  FOREIGN_AMB_SUBSIDIZED_MODE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -159,6 +161,46 @@ async function deployHome() {
     url: HOME_RPC_URL
   })
   assert.strictEqual(Web3Utils.hexToNumber(txhomeBridgeProxyData.status), 1, 'Transaction Failed')
+  homeNonce++
+
+  if (HOME_AMB_SUBSIDIZED_MODE === 'true') {
+    console.log('setting subsidized mode for home side')
+    const homeBridgeSubsidizedModeData = await homeBridgeImplementation.methods
+      .setSubsidizedModeForForeignToHome()
+      .encodeABI()
+    const txHomeBridgeSubsidizedModeData = await sendRawTxHome({
+      data: homeBridgeSubsidizedModeData,
+      nonce: homeNonce,
+      to: homeBridgeStorage.options.address,
+      privateKey: deploymentPrivateKey,
+      url: HOME_RPC_URL
+    })
+    assert.strictEqual(
+      Web3Utils.hexToNumber(txHomeBridgeSubsidizedModeData.status),
+      1,
+      'Transaction Failed'
+    )
+    homeNonce++
+  }
+
+  if (FOREIGN_AMB_SUBSIDIZED_MODE === 'true') {
+    console.log('setting subsidized mode for foreign side')
+    const foreignBridgeSubsidizedModeData = await homeBridgeImplementation.methods
+      .setSubsidizedModeForHomeToForeign()
+      .encodeABI()
+    const txForeignBridgeSubsidizedModeData = await sendRawTxHome({
+      data: foreignBridgeSubsidizedModeData,
+      nonce: homeNonce,
+      to: homeBridgeStorage.options.address,
+      privateKey: deploymentPrivateKey,
+      url: HOME_RPC_URL
+    })
+    assert.strictEqual(
+      Web3Utils.hexToNumber(txForeignBridgeSubsidizedModeData.status),
+      1,
+      'Transaction Failed'
+    )
+  }
 
   console.log('\nHome Deployment Bridge completed\n')
   return {

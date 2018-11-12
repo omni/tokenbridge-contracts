@@ -56,7 +56,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.strictEqual(txUpgradeToBridgeVHome.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txUpgradeToBridgeVHome.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ninitializing Home Bridge Validators with following parameters:\n')
@@ -74,7 +74,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.strictEqual(txInitialize.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txInitialize.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('transferring proxy ownership to multisig for Validators Proxy contract')
@@ -88,7 +88,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.strictEqual(txProxyDataTransfer.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txProxyDataTransfer.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ndeploying homeBridge storage\n')
@@ -118,7 +118,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.strictEqual(txUpgradeToHomeBridge.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txUpgradeToHomeBridge.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ninitializing Home Bridge with following parameters:\n')
@@ -144,7 +144,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.strictEqual(txInitializeHomeBridge.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txInitializeHomeBridge.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('transferring proxy ownership to multisig for Home bridge Proxy contract')
@@ -158,12 +158,14 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.strictEqual(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txhomeBridgeProxyData.status), 1, 'Transaction Failed')
 
-  console.log('\nHome Deployment Bridge is complete\n')
+  console.log('\nHome Deployment Bridge completed\n')
   return {
-    address: homeBridgeStorage.options.address,
-    deployedBlockNumber: Web3Utils.hexToNumber(homeBridgeStorage.deployedBlockNumber)
+    homeBridge: {
+      address: homeBridgeStorage.options.address,
+      deployedBlockNumber: Web3Utils.hexToNumber(homeBridgeStorage.deployedBlockNumber)
+    }
   }
 }
 module.exports = deployHome

@@ -62,7 +62,11 @@ async function deployForeign() {
     privateKey: deploymentPrivateKey,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(txUpgradeToBridgeVForeign.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(
+    Web3Utils.hexToNumber(txUpgradeToBridgeVForeign.status),
+    1,
+    'Transaction Failed'
+  )
   foreignNonce++
 
   console.log('\ninitializing Foreign Bridge Validators with following parameters:\n')
@@ -80,7 +84,7 @@ async function deployForeign() {
     privateKey: deploymentPrivateKey,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(txInitializeForeign.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txInitializeForeign.status), 1, 'Transaction Failed')
   foreignNonce++
 
   console.log('\nTransferring ownership of ValidatorsProxy\n')
@@ -94,7 +98,11 @@ async function deployForeign() {
     privateKey: deploymentPrivateKey,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(txValidatorsForeignOwnershipData.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(
+    Web3Utils.hexToNumber(txValidatorsForeignOwnershipData.status),
+    1,
+    'Transaction Failed'
+  )
   foreignNonce++
 
   console.log('\ndeploying foreignBridge storage\n')
@@ -129,7 +137,11 @@ async function deployForeign() {
     privateKey: deploymentPrivateKey,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(txUpgradeToForeignBridge.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(
+    Web3Utils.hexToNumber(txUpgradeToForeignBridge.status),
+    1,
+    'Transaction Failed'
+  )
   foreignNonce++
 
   console.log('\ninitializing Foreign Bridge with following parameters:\n')
@@ -155,7 +167,7 @@ async function deployForeign() {
     privateKey: deploymentPrivateKey,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(txInitializeBridge.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txInitializeBridge.status), 1, 'Transaction Failed')
   foreignNonce++
 
   console.log('transferring proxy ownership to multisig for Foreign bridge Proxy contract')
@@ -169,11 +181,15 @@ async function deployForeign() {
     privateKey: deploymentPrivateKey,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(txBridgeOwnershipData.status, '0x1', 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txBridgeOwnershipData.status), 1, 'Transaction Failed')
+
+  console.log('\nForeign Deployment Bridge completed\n')
 
   return {
-    address: foreignBridgeStorage.options.address,
-    deployedBlockNumber: Web3Utils.hexToNumber(foreignBridgeStorage.deployedBlockNumber)
+    foreignBridge: {
+      address: foreignBridgeStorage.options.address,
+      deployedBlockNumber: Web3Utils.hexToNumber(foreignBridgeStorage.deployedBlockNumber)
+    }
   }
 }
 

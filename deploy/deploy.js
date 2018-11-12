@@ -114,8 +114,8 @@ async function deployArbitraryMessage() {
   const deployHome = require('./src/arbitrary_message/home')
   const deployForeign = require('./src/arbitrary_message/foreign')
 
-  const homeBridge = await deployHome()
-  const foreignBridge = await deployForeign()
+  const { homeBridge } = await deployHome()
+  const { foreignBridge } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')
   console.log(
     `[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`

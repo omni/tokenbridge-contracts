@@ -103,6 +103,38 @@ contract('HomeAMB', async (accounts) => {
 
     })
   })
+  describe('compensation mode', () => {
+    it('should return homeToForeignMode', async () => {
+      const homeBridge = await HomeAMB.new()
+      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+
+      const defrayalHash = Web3Utils.toHex('AMB-defrayal-mode')
+      const subsidizedHash = Web3Utils.toHex('AMB-subsidized-mode')
+
+      const defrayalMode = await homeBridge.homeToForeignMode()
+      defrayalMode.should.be.equal(defrayalHash)
+
+      await homeBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled;
+
+      const subsidizedMode = await homeBridge.homeToForeignMode()
+      subsidizedMode.should.be.equal(subsidizedHash)
+    })
+    it('should return foreignToHomeMode', async () => {
+      const homeBridge = await HomeAMB.new()
+      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations).should.be.fulfilled;
+
+      const defrayalHash = Web3Utils.toHex('AMB-defrayal-mode')
+      const subsidizedHash = Web3Utils.toHex('AMB-subsidized-mode')
+
+      const defrayalMode = await homeBridge.foreignToHomeMode()
+      defrayalMode.should.be.equal(defrayalHash)
+
+      await homeBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled;
+
+      const subsidizedMode = await homeBridge.foreignToHomeMode()
+      subsidizedMode.should.be.equal(subsidizedHash)
+    })
+  })
   describe('initialize', () => {
     it('sets variables', async () => {
       const homeBridge = await HomeAMB.new()

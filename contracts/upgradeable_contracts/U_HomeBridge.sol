@@ -63,6 +63,10 @@ contract HomeBridge is EternalStorage, BasicBridge {
         return uintStorage[keccak256("homeDailyLimit")];
     }
 
+    function foreignDailyLimit() public view returns(uint256) {
+        return uintStorage[keccak256("foreignDailyLimit")];
+    }
+
     function totalSpentPerDay(uint256 _day) public view returns(uint256) {
         return uintStorage[keccak256("totalSpentPerDay", _day)];
     }
@@ -82,6 +86,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
         uint256 amount;
         bytes32 txHash;
         (recipient, amount, txHash) = Message.parseMessage(message);
+        require(withinForeignLimit(amount));
         require(!withdraws(txHash));
         setWithdraws(txHash, true);
 
@@ -103,6 +108,15 @@ contract HomeBridge is EternalStorage, BasicBridge {
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
     }
 
+    function setForeignDailyLimit(uint256 _foreignDailyLimit) external onlyOwner {
+        uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
+    }
+
+    function setForeignMaxPerTx(uint256 _maxPerTx) external onlyOwner {
+        require(_maxPerTx < foreignDailyLimit());
+        uintStorage[keccak256("foreignMaxPerTx")] = _maxPerTx;
+    }
+
     function setMinPerTx(uint256 _minPerTx) external onlyOwner {
         require(_minPerTx < homeDailyLimit() && _minPerTx < maxPerTx());
         uintStorage[keccak256("minPerTx")] = _minPerTx;
@@ -120,9 +134,18 @@ contract HomeBridge is EternalStorage, BasicBridge {
         return uintStorage[keccak256("maxPerTx")];
     }
 
+    function foreignMaxPerTx() public view returns(uint256) {
+        return uintStorage[keccak256("foreignMaxPerTx")];
+    }
+
     function withinLimit(uint256 _amount) public view returns(bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
         return homeDailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
+    }
+
+    function withinForeignLimit(uint256 _amount) public view returns(bool) {
+        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
+        return foreignDailyLimit() >= nextLimit && _amount <= foreignMaxPerTx();
     }
 
     function isInitialized() public view returns(bool) {

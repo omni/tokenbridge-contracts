@@ -134,6 +134,8 @@ contract('HomeBridge', async (accounts) => {
       const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
       await homeContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
       oneEther.should.be.bignumber.equal(await homeContract.homeDailyLimit());
+      await homeContract.setForeignDailyLimit(oneEther)
+      await homeContract.setForeignMaxPerTx(halfEther)
       await homeContract.sendTransaction({
         from: accounts[1],
         value: halfEther
@@ -242,6 +244,8 @@ contract('HomeBridge', async (accounts) => {
       homeContractWithMultiSignatures = await HomeBridge.new()
       const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
       await homeContractWithMultiSignatures.initialize(multisigValidatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, {from: ownerOfValidatorContract});
+      await homeContractWithMultiSignatures.setForeignDailyLimit(oneEther, {from: ownerOfValidatorContract})
+      await homeContractWithMultiSignatures.setForeignMaxPerTx(halfEther, {from: ownerOfValidatorContract})
       await homeContractWithMultiSignatures.sendTransaction({
         from: accounts[1],
         value: halfEther

@@ -63,6 +63,11 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uintStorage[keccak256("maxPerTx")] = _maxPerTx;
     }
 
+    function setHomeMaxPerTx(uint256 _maxPerTx) external onlyOwner {
+        require(_maxPerTx < homeDailyLimit());
+        uintStorage[keccak256("homeMaxPerTx")] = _maxPerTx;
+    }
+
     function setMinPerTx(uint256 _minPerTx) external onlyOwner {
         require(_minPerTx < foreignDailyLimit() && _minPerTx < maxPerTx());
         uintStorage[keccak256("minPerTx")] = _minPerTx;
@@ -92,6 +97,10 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         return uintStorage[keccak256("maxPerTx")];
     }
 
+    function homeMaxPerTx() public view returns(uint256) {
+        return uintStorage[keccak256("homeMaxPerTx")];
+    }
+
     function totalSpentPerDay(uint256 _day) public view returns(uint256) {
         return uintStorage[keccak256("totalSpentPerDay", _day)];
     }
@@ -112,6 +121,10 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         return uintStorage[keccak256("foreignDailyLimit")];
     }
 
+    function homeDailyLimit() public view returns(uint256) {
+        return uintStorage[keccak256("homeDailyLimit")];
+    }
+
     function erc677token() public view returns(IBurnableMintableERC677Token) {
         return IBurnableMintableERC677Token(addressStorage[keccak256("erc677token")]);
     }
@@ -125,6 +138,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
     function deposit(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
         bytes32 hashMsg = keccak256(recipient, value, transactionHash);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
+        require(withinHomeLimit(value));
         // Duplicated deposits
         require(!depositsSigned(hashSender));
         setDepositsSigned(hashSender, true);
@@ -215,9 +229,19 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         emit DailyLimit(_foreignDailyLimit);
     }
 
+    function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {
+        uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
+        emit DailyLimit(_homeDailyLimit);
+    }
+
     function withinLimit(uint256 _amount) public view returns(bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
         return foreignDailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
+    }
+
+    function withinHomeLimit(uint256 _amount) public view returns(bool) {
+        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
+        return homeDailyLimit() >= nextLimit && _amount <= homeMaxPerTx();
     }
 
     function isInitialized() public view returns(bool) {

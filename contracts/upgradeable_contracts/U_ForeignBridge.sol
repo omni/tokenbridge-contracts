@@ -31,11 +31,14 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uint256 _maxPerTx,
         uint256 _minPerTx,
         uint256 _foreignGasPrice,
-        uint256 _requiredBlockConfirmations
+        uint256 _requiredBlockConfirmations,
+        uint256 _homeDailyLimit,
+        uint256 _homeMaxPerTx
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _foreignDailyLimit > _maxPerTx);
+        require(_homeMaxPerTx < _homeDailyLimit);
         require(_foreignGasPrice > 0);
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
@@ -45,6 +48,8 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uintStorage[keccak256("minPerTx")] = _minPerTx;
         uintStorage[keccak256("gasPrice")] = _foreignGasPrice;
         uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
+        uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
+        uintStorage[keccak256("homeMaxPerTx")] = _homeMaxPerTx;
         setInitialize(true);
         return isInitialized();
     }
@@ -231,7 +236,6 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
 
     function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
-        emit DailyLimit(_homeDailyLimit);
     }
 
     function withinLimit(uint256 _amount) public view returns(bool) {

@@ -11,6 +11,8 @@ import "../ERC677Bridge.sol";
 
 contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
 
+    event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
+
     function () public payable {
         require(msg.value > 0);
         require(msg.data.length == 0);
@@ -31,8 +33,9 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         uint256 _minPerTx,
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        address _blockReward
-
+        address _blockReward,
+        uint256 _foreignDailyLimit,
+        uint256 _foreignMaxPerTx
     ) public returns(bool)
     {
         require(!isInitialized());
@@ -40,6 +43,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_blockReward == address(0) || isContract(_blockReward));
+        require(_foreignMaxPerTx < _foreignDailyLimit);
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
@@ -48,6 +52,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
+        uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _foreignDailyLimit;
+        uintStorage[keccak256(abi.encodePacked("oppositeSideMaxPerTx"))] = _foreignMaxPerTx;
         setInitialize(true);
 
         return isInitialized();
@@ -83,5 +89,14 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
 
     function setTotalBurntCoins(uint256 _amount) internal {
         uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
+    }
+
+    function affirmationWithinLimits(uint256 _amount) internal returns(bool) {
+        return withinOppositeSideLimit(_amount);
+    }
+
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
+        setOutOfLimitAmount(outOfLimitAmount().add(_value));
+        emit AmountLimitExceeded(_recipient, _value, _txHash);
     }
 }

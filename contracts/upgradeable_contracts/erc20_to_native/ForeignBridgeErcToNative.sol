@@ -15,17 +15,24 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         address _validatorContract,
         address _erc20token,
         uint256 _requiredBlockConfirmations,
-        uint256 _gasPrice
+        uint256 _gasPrice,
+        uint256 _maxPerTx,
+        uint256 _homeDailyLimit,
+        uint256 _homeMaxPerTx
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
+        require(_homeMaxPerTx < _homeDailyLimit);
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
+        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
+        uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _homeDailyLimit;
+        uintStorage[keccak256(abi.encodePacked("oppositeSideMaxPerTx"))] = _homeMaxPerTx;
         setInitialize(true);
         return isInitialized();
     }
@@ -44,11 +51,20 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool) {
+        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_amount));
         return erc20token().transfer(_recipient, _amount);
     }
 
     function setErc20token(address _token) private {
         require(_token != address(0) && isContract(_token));
         addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
+    }
+
+    function messageWithinLimits(uint256 _amount) internal returns(bool) {
+        return withinOppositeSideLimit(_amount);
+    }
+
+    function onFailedMessage(address, uint256, bytes32) internal {
+        revert();
     }
 }

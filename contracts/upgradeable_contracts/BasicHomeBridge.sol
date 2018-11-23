@@ -16,27 +16,31 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash, uint256 NumberOfCollectedSignatures);
 
     function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
-        bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
-        bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
-        // Duplicated affirmations
-        require(!affirmationsSigned(hashSender));
-        setAffirmationsSigned(hashSender, true);
+        if (affirmationWithinLimits(value)) {
+            bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
+            bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
+            // Duplicated affirmations
+            require(!affirmationsSigned(hashSender));
+            setAffirmationsSigned(hashSender, true);
 
-        uint256 signed = numAffirmationsSigned(hashMsg);
-        require(!isAlreadyProcessed(signed));
-        // the check above assumes that the case when the value could be overflew will not happen in the addition operation below
-        signed = signed + 1;
+            uint256 signed = numAffirmationsSigned(hashMsg);
+            require(!isAlreadyProcessed(signed));
+            // the check above assumes that the case when the value could be overflew will not happen in the addition operation below
+            signed = signed + 1;
 
-        setNumAffirmationsSigned(hashMsg, signed);
+            setNumAffirmationsSigned(hashMsg, signed);
 
-        emit SignedForAffirmation(msg.sender, transactionHash);
+            emit SignedForAffirmation(msg.sender, transactionHash);
 
-        if (signed >= requiredSignatures()) {
-            // If the bridge contract does not own enough tokens to transfer
-            // it will couse funds lock on the home side of the bridge
-            setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-            require(onExecuteAffirmation(recipient, value));
-            emit AffirmationCompleted(recipient, value, transactionHash);
+            if (signed >= requiredSignatures()) {
+                // If the bridge contract does not own enough tokens to transfer
+                // it will couse funds lock on the home side of the bridge
+                setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
+                require(onExecuteAffirmation(recipient, value));
+                emit AffirmationCompleted(recipient, value, transactionHash);
+            }
+        } else {
+            onFailedAffirmation(recipient, value, transactionHash);
         }
     }
 
@@ -143,5 +147,12 @@ contract BasicHomeBridge is EternalStorage, Validatable {
 
     function requiredMessageLength() public pure returns(uint256) {
         return Message.requiredMessageLength();
+    }
+
+    function affirmationWithinLimits(uint256) internal returns(bool) {
+        return true;
+    }
+
+    function onFailedAffirmation(address, uint256, bytes32) internal {
     }
 }

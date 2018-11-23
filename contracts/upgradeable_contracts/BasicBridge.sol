@@ -57,6 +57,10 @@ contract BasicBridge is EternalStorage, Validatable {
         return uintStorage[keccak256(abi.encodePacked("maxPerTx"))];
     }
 
+    function oppositeSideMaxPerTx() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("oppositeSideMaxPerTx"))];
+    }
+
     function setInitialize(bool _status) internal {
         boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
     }
@@ -78,6 +82,19 @@ contract BasicBridge is EternalStorage, Validatable {
         return uintStorage[keccak256(abi.encodePacked("dailyLimit"))];
     }
 
+    function setOppositeSideDailyLimit(uint256 _dailyLimit) public onlyOwner {
+        uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _dailyLimit;
+    }
+
+    function oppositeSideDailyLimit() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))];
+    }
+
+    function setOppositeSideMaxPerTx(uint256 _maxPerTx) external onlyOwner {
+        require(_maxPerTx < oppositeSideDailyLimit());
+        uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _maxPerTx;
+    }
+
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
         require(_maxPerTx < dailyLimit());
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
@@ -91,6 +108,19 @@ contract BasicBridge is EternalStorage, Validatable {
     function withinLimit(uint256 _amount) public view returns(bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
         return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
+    }
+
+    function withinOppositeSideLimit(uint256 _amount) public view returns(bool) {
+        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
+        return oppositeSideDailyLimit() >= nextLimit && _amount <= oppositeSideMaxPerTx();
+    }
+
+    function outOfLimitAmount() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))];
+    }
+
+    function setOutOfLimitAmount(uint256 _value) internal {
+        uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))] = _value;
     }
 
     function claimTokens(address _token, address _to) public onlyOwner {

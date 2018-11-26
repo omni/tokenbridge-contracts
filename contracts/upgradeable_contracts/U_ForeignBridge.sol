@@ -111,6 +111,10 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         return uintStorage[keccak256("totalSpentPerDay", _day)];
     }
 
+    function totalExecutedPerDay(uint256 _day) public view returns(uint256) {
+        return uintStorage[keccak256("totalExecutedPerDay", _day)];
+    }
+
     function deployedAtBlock() public view returns(uint256) {
         return uintStorage[keccak256("deployedAtBlock")];
     }
@@ -145,6 +149,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         bytes32 hashMsg = keccak256(recipient, value, transactionHash);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
         require(withinHomeLimit(value));
+        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(value));
         // Duplicated deposits
         require(!depositsSigned(hashSender));
         setDepositsSigned(hashSender, true);
@@ -246,7 +251,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
     }
 
     function withinHomeLimit(uint256 _amount) public view returns(bool) {
-        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
+        uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
         return homeDailyLimit() >= nextLimit && _amount <= homeMaxPerTx();
     }
 
@@ -308,6 +313,10 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
 
     function setTotalSpentPerDay(uint256 _day, uint256 _value) private {
         uintStorage[keccak256("totalSpentPerDay", _day)] = _value;
+    }
+
+    function setTotalExecutedPerDay(uint256 _day, uint256 _value) private {
+        uintStorage[keccak256("totalExecutedPerDay", _day)] = _value;
     }
 
     function setErc677token(address _token) private {

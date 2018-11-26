@@ -77,6 +77,10 @@ contract HomeBridge is EternalStorage, BasicBridge {
         return uintStorage[keccak256("totalSpentPerDay", _day)];
     }
 
+    function totalExecutedPerDay(uint256 _day) public view returns(uint256) {
+        return uintStorage[keccak256("totalExecutedPerDay", _day)];
+    }
+
     function withdraws(bytes32 _withdraw) public view returns(bool) {
         return boolStorage[keccak256("withdraws", _withdraw)];
     }
@@ -93,6 +97,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
         bytes32 txHash;
         (recipient, amount, txHash) = Message.parseMessage(message);
         require(withinForeignLimit(amount));
+        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(amount));
         require(!withdraws(txHash));
         setWithdraws(txHash, true);
 
@@ -151,7 +156,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
     }
 
     function withinForeignLimit(uint256 _amount) public view returns(bool) {
-        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
+        uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
         return foreignDailyLimit() >= nextLimit && _amount <= foreignMaxPerTx();
     }
 
@@ -161,6 +166,10 @@ contract HomeBridge is EternalStorage, BasicBridge {
 
     function setTotalSpentPerDay(uint256 _day, uint256 _value) private {
         uintStorage[keccak256("totalSpentPerDay", _day)] = _value;
+    }
+
+    function setTotalExecutedPerDay(uint256 _day, uint256 _value) private {
+        uintStorage[keccak256("totalExecutedPerDay", _day)] = _value;
     }
 
     function setWithdraws(bytes32 _withdraw, bool _status) private {

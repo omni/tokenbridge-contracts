@@ -206,6 +206,29 @@ contract('ForeignBridge', async (accounts) => {
         transactionHash
       })
     })
+    it('should not allow deposits out of home limits', async () => {
+      const recipient = accounts[5];
+
+      // tx value above max limit
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      await foreignBridge.deposit(recipient, value, transactionHash, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+
+      // tx 1
+      const value1 = halfEther;
+      const transactionHash1 = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      await foreignBridge.deposit(recipient, value1, transactionHash1, {from: authorities[0]}).should.be.fulfilled;
+
+      // tx 2
+      const value2 = halfEther;
+      const transactionHash2 = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      await foreignBridge.deposit(recipient, value2, transactionHash2, {from: authorities[0]}).should.be.fulfilled;
+
+      // tx 3 - above foreign daily limit
+      const value3 = halfEther;
+      const transactionHash3 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
+      await foreignBridge.deposit(recipient, value3, transactionHash3, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+    })
   })
 
   describe('#onTokenTransfer', async () => {

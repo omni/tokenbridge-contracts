@@ -231,6 +231,53 @@ contract('HomeBridge', async (accounts) => {
       true.should.be.equal(await homeContract.withdraws(transactionHash))
       await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message2).should.be.rejectedWith(ERROR_MSG)
     })
+    it('should not allow withdraws out of foreign limits', async ()=> {
+      const tenEthers = web3.toBigNumber(web3.toWei(10, "ether"));
+      const fiveEthers = web3.toBigNumber(web3.toWei(5, "ether"));
+
+      homeContract = await HomeBridge.new()
+      await homeContract.initialize(validatorContract.address, tenEthers, fiveEthers, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx);
+      await homeContract.sendTransaction({
+        from: accounts[1],
+        value: fiveEthers
+      }).should.be.fulfilled
+
+
+      const recipientAccount = accounts[3];
+      // tx value above max limit
+      const invalidValue = oneEther
+      const homeGasPrice = web3.toBigNumber(0);
+      const transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      const message = createMessage(recipientAccount, invalidValue, transactionHash, homeGasPrice);
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
+
+      await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
+
+      // tx 1
+      const value = halfEther
+      const transactionHash1 = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      const message1 = createMessage(recipientAccount, value, transactionHash1, homeGasPrice);
+      const signature1 = await sign(authorities[0], message1)
+      const vrs1 = signatureToVRS(signature1);
+
+      await homeContract.withdraw([vrs1.v], [vrs1.r], [vrs1.s], message1).should.be.fulfilled
+      // tx 2
+      const transactionHash2 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
+      const message2 = createMessage(recipientAccount, value, transactionHash2, homeGasPrice);
+      const signature2 = await sign(authorities[0], message2)
+      const vrs2 = signatureToVRS(signature2);
+
+      await homeContract.withdraw([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
+
+      // tx 3 - above foreign daily limit
+      const transactionHash3 = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const message3 = createMessage(recipientAccount, value, transactionHash3, homeGasPrice);
+      const signature3 = await sign(authorities[0], message3)
+      const vrs3 = signatureToVRS(signature3);
+
+      await homeContract.withdraw([vrs3.v], [vrs3.r], [vrs3.s], message3).should.be.rejectedWith(ERROR_MSG)
+    })
   })
 
   describe('#withdraw with 2 minimum signatures', async () => {

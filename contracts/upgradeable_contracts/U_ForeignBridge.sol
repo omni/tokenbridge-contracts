@@ -149,7 +149,6 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         bytes32 hashMsg = keccak256(recipient, value, transactionHash);
         bytes32 hashSender = keccak256(msg.sender, hashMsg);
         require(withinHomeLimit(value));
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(value));
         // Duplicated deposits
         require(!depositsSigned(hashSender));
         setDepositsSigned(hashSender, true);
@@ -166,6 +165,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         if (signed >= validatorContract().requiredSignatures()) {
             // If the bridge contract does not own enough tokens to transfer
             // it will couse funds lock on the home side of the bridge
+            setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(value));
             setNumDepositsSigned(hashMsg, markAsProcessed(signed));
             erc677token().mint(recipient, value);
             emit Deposit(recipient, value, transactionHash);

@@ -12,6 +12,7 @@ contract BasicBridge is EternalStorage, Validatable {
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
     event DailyLimitChanged(uint256 newLimit);
+    event OppositeSideDailyLimitChanged(uint256 newLimit);
 
     function getBridgeInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
         return (2, 1, 0);
@@ -49,6 +50,14 @@ contract BasicBridge is EternalStorage, Validatable {
         return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
     }
 
+    function setTotalExecutedPerDay(uint256 _day, uint256 _value) internal {
+        uintStorage[keccak256("totalExecutedPerDay", _day)] = _value;
+    }
+
+    function totalExecutedPerDay(uint256 _day) public view returns(uint256) {
+        return uintStorage[keccak256("totalExecutedPerDay", _day)];
+    }
+
     function minPerTx() public view returns(uint256) {
         return uintStorage[keccak256(abi.encodePacked("minPerTx"))];
     }
@@ -84,6 +93,7 @@ contract BasicBridge is EternalStorage, Validatable {
 
     function setOppositeSideDailyLimit(uint256 _dailyLimit) public onlyOwner {
         uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _dailyLimit;
+        emit OppositeSideDailyLimitChanged(_dailyLimit);
     }
 
     function oppositeSideDailyLimit() public view returns(uint256) {
@@ -111,7 +121,7 @@ contract BasicBridge is EternalStorage, Validatable {
     }
 
     function withinOppositeSideLimit(uint256 _amount) public view returns(bool) {
-        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
+        uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
         return oppositeSideDailyLimit() >= nextLimit && _amount <= oppositeSideMaxPerTx();
     }
 

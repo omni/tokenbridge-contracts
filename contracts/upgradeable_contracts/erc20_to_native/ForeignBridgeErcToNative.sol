@@ -51,7 +51,7 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool) {
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_amount));
+        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         return erc20token().transfer(_recipient, _amount);
     }
 

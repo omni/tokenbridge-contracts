@@ -447,6 +447,23 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
         value,
         transactionHash: transactionHash3
       });
+
+      const outOfLimitAmount = await homeBridge.outOfLimitAmount()
+
+      outOfLimitAmount.should.be.bignumber.equal(halfEther)
+
+      const transactionHash4 = "0xc9ffe298d85ec5c515153608924b7bdcf1835539813dcc82cdbcc071170c3196";
+      const { logs: logs4 } = await homeBridge.executeAffirmation(recipient, value, transactionHash4, {from: authorities[0]}).should.be.fulfilled;
+
+      logs4[0].event.should.be.equal("AmountLimitExceeded");
+      logs4[0].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash: transactionHash4
+      });
+
+      const newOutOfLimitAmount = await homeBridge.outOfLimitAmount()
+      newOutOfLimitAmount.should.be.bignumber.equal(oneEther)
     })
   })
 

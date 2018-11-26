@@ -16,6 +16,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
     event Deposit (address recipient, uint256 value);
     event Withdraw (address recipient, uint256 value, bytes32 transactionHash);
     event DailyLimit(uint256 newLimit);
+    event ForeignDailyLimit(uint256 newLimit);
 
     function initialize (
         address _validatorContract,
@@ -115,6 +116,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
 
     function setForeignDailyLimit(uint256 _foreignDailyLimit) external onlyOwner {
         uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
+        emit ForeignDailyLimit(_foreignDailyLimit);
     }
 
     function setForeignMaxPerTx(uint256 _maxPerTx) external onlyOwner {

@@ -23,6 +23,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
     event SignedForDeposit(address indexed signer, bytes32 transactionHash);
     event SignedForWithdraw(address indexed signer, bytes32 messageHash);
     event DailyLimit(uint256 newLimit);
+    event HomeDailyLimit(uint256 newLimit);
 
     function initialize(
         address _validatorContract,
@@ -236,6 +237,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
 
     function setHomeDailyLimit(uint256 _homeDailyLimit) external onlyOwner {
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
+        emit HomeDailyLimit(_homeDailyLimit);
     }
 
     function withinLimit(uint256 _amount) public view returns(bool) {

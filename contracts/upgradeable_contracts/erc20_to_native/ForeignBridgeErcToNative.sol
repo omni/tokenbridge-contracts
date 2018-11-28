@@ -31,8 +31,8 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _homeDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("oppositeSideMaxPerTx"))] = _homeMaxPerTx;
+        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
+        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
         setInitialize(true);
         return isInitialized();
     }
@@ -61,7 +61,7 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
     }
 
     function messageWithinLimits(uint256 _amount) internal returns(bool) {
-        return withinOppositeSideLimit(_amount);
+        return withinExecutionLimit(_amount);
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {

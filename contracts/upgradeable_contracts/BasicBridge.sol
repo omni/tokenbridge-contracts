@@ -12,7 +12,7 @@ contract BasicBridge is EternalStorage, Validatable {
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
     event DailyLimitChanged(uint256 newLimit);
-    event OppositeSideDailyLimitChanged(uint256 newLimit);
+    event ExecutionDailyLimitChanged(uint256 newLimit);
 
     function getBridgeInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
         return (2, 1, 0);
@@ -66,8 +66,8 @@ contract BasicBridge is EternalStorage, Validatable {
         return uintStorage[keccak256(abi.encodePacked("maxPerTx"))];
     }
 
-    function oppositeSideMaxPerTx() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("oppositeSideMaxPerTx"))];
+    function executionMaxPerTx() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))];
     }
 
     function setInitialize(bool _status) internal {
@@ -91,18 +91,18 @@ contract BasicBridge is EternalStorage, Validatable {
         return uintStorage[keccak256(abi.encodePacked("dailyLimit"))];
     }
 
-    function setOppositeSideDailyLimit(uint256 _dailyLimit) public onlyOwner {
-        uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _dailyLimit;
-        emit OppositeSideDailyLimitChanged(_dailyLimit);
+    function setExecutionDailyLimit(uint256 _dailyLimit) public onlyOwner {
+        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _dailyLimit;
+        emit ExecutionDailyLimitChanged(_dailyLimit);
     }
 
-    function oppositeSideDailyLimit() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))];
+    function executionDailyLimit() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))];
     }
 
-    function setOppositeSideMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < oppositeSideDailyLimit());
-        uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _maxPerTx;
+    function setExecutionMaxPerTx(uint256 _maxPerTx) external onlyOwner {
+        require(_maxPerTx < executionDailyLimit());
+        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _maxPerTx;
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
@@ -120,9 +120,9 @@ contract BasicBridge is EternalStorage, Validatable {
         return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
     }
 
-    function withinOppositeSideLimit(uint256 _amount) public view returns(bool) {
+    function withinExecutionLimit(uint256 _amount) public view returns(bool) {
         uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
-        return oppositeSideDailyLimit() >= nextLimit && _amount <= oppositeSideMaxPerTx();
+        return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
     }
 
     function claimTokens(address _token, address _to) public onlyOwner {

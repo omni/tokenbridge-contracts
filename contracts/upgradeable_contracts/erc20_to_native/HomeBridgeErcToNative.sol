@@ -52,8 +52,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
-        uintStorage[keccak256(abi.encodePacked("oppositeSideDailyLimit"))] = _foreignDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("oppositeSideMaxPerTx"))] = _foreignMaxPerTx;
+        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
+        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
         setInitialize(true);
 
         return isInitialized();
@@ -93,7 +93,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
     }
 
     function affirmationWithinLimits(uint256 _amount) internal returns(bool) {
-        return withinOppositeSideLimit(_amount);
+        return withinExecutionLimit(_amount);
     }
 
     function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {

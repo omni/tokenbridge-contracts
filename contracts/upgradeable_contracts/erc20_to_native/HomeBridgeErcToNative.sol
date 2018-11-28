@@ -92,7 +92,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
     }
 
-    function affirmationWithinLimits(uint256 _amount) internal returns(bool) {
+    function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {
         return withinExecutionLimit(_amount);
     }
 

@@ -40,7 +40,7 @@ contract BasicForeignBridge is EternalStorage, Validatable {
         return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
     }
 
-    function messageWithinLimits(uint256) internal returns(bool) {
+    function messageWithinLimits(uint256) internal view returns(bool) {
         return true;
     }
 

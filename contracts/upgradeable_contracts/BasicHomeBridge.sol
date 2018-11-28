@@ -149,7 +149,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         return Message.requiredMessageLength();
     }
 
-    function affirmationWithinLimits(uint256) internal returns(bool) {
+    function affirmationWithinLimits(uint256) internal view returns(bool) {
         return true;
     }
 

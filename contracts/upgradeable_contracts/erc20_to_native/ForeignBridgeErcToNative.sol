@@ -60,7 +60,7 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
     }
 
-    function messageWithinLimits(uint256 _amount) internal returns(bool) {
+    function messageWithinLimits(uint256 _amount) internal view returns(bool) {
         return withinExecutionLimit(_amount);
     }
 

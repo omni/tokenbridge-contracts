@@ -51,11 +51,11 @@ contract BasicBridge is EternalStorage, Validatable {
     }
 
     function setTotalExecutedPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256("totalExecutedPerDay", _day)] = _value;
+        uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = _value;
     }
 
     function totalExecutedPerDay(uint256 _day) public view returns(uint256) {
-        return uintStorage[keccak256("totalExecutedPerDay", _day)];
+        return uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))];
     }
 
     function minPerTx() public view returns(uint256) {

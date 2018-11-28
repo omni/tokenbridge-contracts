@@ -595,4 +595,102 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       '104'.should.be.bignumber.equal(requiredMessageLength)
     })
   })
+  describe('#fixAssetsAboveLimits', async () => {
+    let homeBridge;
+    const zeroValue = web3.toBigNumber(web3.toWei(0, "ether"))
+    beforeEach(async () => {
+      homeBridge = await HomeBridge.new();
+      await homeBridge.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx);
+    })
+    it('Should reduce outOfLimitAmount and not emit any event', async () => {
+      const recipient = accounts[5];
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs: affirmationLogs} = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.fulfilled
+
+      affirmationLogs[0].event.should.be.equal("AmountLimitExceeded");
+
+      const outOfLimitAmount = await homeBridge.outOfLimitAmount()
+      outOfLimitAmount.should.be.bignumber.equal(value)
+
+      const { logs } = await homeBridge.fixAssetsAboveLimits(transactionHash, false).should.be.fulfilled
+
+      logs.length.should.be.equal(0)
+
+      const newOutOfLimitAmount = await homeBridge.outOfLimitAmount()
+      newOutOfLimitAmount.should.be.bignumber.equal(zeroValue)
+    })
+    it('Should reduce outOfLimitAmount and emit UserRequestForSignature', async () => {
+      const recipient = accounts[5];
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs: affirmationLogs} = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.fulfilled
+
+      affirmationLogs[0].event.should.be.equal("AmountLimitExceeded");
+
+      const outOfLimitAmount = await homeBridge.outOfLimitAmount()
+      outOfLimitAmount.should.be.bignumber.equal(value)
+
+      const { logs } = await homeBridge.fixAssetsAboveLimits(transactionHash, true).should.be.fulfilled
+
+      logs.length.should.be.equal(1)
+      logs[0].event.should.be.equal('UserRequestForSignature')
+      logs[0].args.should.be.deep.equal({
+        recipient,
+        value
+      })
+
+      const newOutOfLimitAmount = await homeBridge.outOfLimitAmount()
+      newOutOfLimitAmount.should.be.bignumber.equal(zeroValue)
+    })
+    it('Should not be allow to be called by an already fixed txHash', async () => {
+      const recipient = accounts[5];
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const transactionHash2 = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+
+      await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.fulfilled
+      await homeBridge.executeAffirmation(recipient, value, transactionHash2, {from: authorities[0]}).should.be.fulfilled
+
+      const outOfLimitAmount = await homeBridge.outOfLimitAmount()
+      outOfLimitAmount.should.be.bignumber.equal(value.add(value))
+
+      await homeBridge.fixAssetsAboveLimits(transactionHash, false).should.be.fulfilled
+
+      const newOutOfLimitAmount = await homeBridge.outOfLimitAmount()
+      newOutOfLimitAmount.should.be.bignumber.equal(value)
+
+      await homeBridge.fixAssetsAboveLimits(transactionHash, false).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.fixAssetsAboveLimits(transactionHash2, false).should.be.fulfilled
+
+      const updatedOutOfLimitAmount = await homeBridge.outOfLimitAmount()
+      updatedOutOfLimitAmount.should.be.bignumber.equal(zeroValue)
+
+      await homeBridge.fixAssetsAboveLimits(transactionHash2, false).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('Should fail if txHash didnt increase out of limit amount', async () => {
+      const recipient = accounts[5];
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const invalidTxHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+
+      const {logs: affirmationLogs} = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.fulfilled
+
+      affirmationLogs[0].event.should.be.equal("AmountLimitExceeded");
+
+      await homeBridge.fixAssetsAboveLimits(invalidTxHash, true).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('Should fail if not called by owner', async () => {
+      const recipient = accounts[5];
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+
+      const {logs: affirmationLogs} = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.fulfilled
+
+      affirmationLogs[0].event.should.be.equal("AmountLimitExceeded");
+
+      await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: recipient}).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: owner}).should.be.fulfilled
+    })
+  })
 })

@@ -155,4 +155,45 @@ contract BasicHomeBridge is EternalStorage, Validatable {
 
     function onFailedAffirmation(address, uint256, bytes32) internal {
     }
+
+    function outOfLimitAmount() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))];
+    }
+
+    function setOutOfLimitAmount(uint256 _value) internal {
+        uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))] = _value;
+    }
+
+    function fixAssetsAboveLimits(bytes32 txHash, bool unlock_on_foreign) external onlyOwner {
+        require(!fixedAssets(txHash));
+        address recipient;
+        uint256 value;
+        (recipient, value) = txAboveLimits(txHash);
+        require(recipient != address(0) && value > 0);
+        setOutOfLimitAmount(outOfLimitAmount().sub(value));
+        if (unlock_on_foreign) {
+            emit UserRequestForSignature(recipient, value);
+        }
+        setFixedAssets(txHash, true);
+    }
+
+    function txAboveLimits(bytes32 _txHash) internal view returns(address recipient, uint256 value) {
+        bytes memory data = bytesStorage[keccak256(abi.encodePacked("txOutOfLimit", _txHash))];
+        assembly {
+            recipient := and(mload(add(data, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            value := mload(add(data, 52))
+        }
+    }
+
+    function setTxAboveLimits(address _recipient, uint256 _value, bytes32 _txHash) internal {
+        bytesStorage[keccak256(abi.encodePacked("txOutOfLimit", _txHash))] = abi.encodePacked(_recipient, _value);
+    }
+
+    function setFixedAssets(bytes32 _txHash, bool _status) internal {
+        boolStorage[keccak256(abi.encodePacked("fixedAssets", _txHash))] = _status;
+    }
+
+    function fixedAssets(bytes32 _txHash) public view returns(bool) {
+        return boolStorage[keccak256(abi.encodePacked("fixedAssets", _txHash))];
+    }
 }

@@ -125,14 +125,6 @@ contract BasicBridge is EternalStorage, Validatable {
         return oppositeSideDailyLimit() >= nextLimit && _amount <= oppositeSideMaxPerTx();
     }
 
-    function outOfLimitAmount() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))];
-    }
-
-    function setOutOfLimitAmount(uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))] = _value;
-    }
-
     function claimTokens(address _token, address _to) public onlyOwner {
         require(_to != address(0));
         if (_token == address(0)) {

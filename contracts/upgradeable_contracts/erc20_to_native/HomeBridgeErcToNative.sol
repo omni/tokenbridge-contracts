@@ -98,6 +98,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
 
     function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
+        setTxAboveLimits(_recipient, _value, _txHash);
         emit AmountLimitExceeded(_recipient, _value, _txHash);
     }
 }

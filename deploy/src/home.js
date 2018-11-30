@@ -18,9 +18,9 @@ const HOME_GAS_PRICE =  Web3Utils.toWei(process.env.HOME_GAS_PRICE, 'gwei');
 const {
   DEPLOYMENT_ACCOUNT_ADDRESS,
   REQUIRED_NUMBER_OF_VALIDATORS,
-  HOME_OWNER_MULTISIG,
-  HOME_UPGRADEABLE_ADMIN_VALIDATORS,
-  HOME_UPGRADEABLE_ADMIN_BRIDGE,
+  HOME_BRIDGE_OWNER,
+  HOME_VALIDATORS_OWNER,
+  HOME_UPGRADEABLE_ADMIN,
   HOME_DAILY_LIMIT,
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
@@ -57,7 +57,7 @@ async function deployHome()
   console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
   bridgeValidatorsHome.options.address = storageValidatorsHome.options.address
   const initializeData = await bridgeValidatorsHome.methods.initialize(
-    REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_OWNER_MULTISIG
+    REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_VALIDATORS_OWNER
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS})
   const txInitialize = await sendRawTx({
     data: initializeData,
@@ -68,11 +68,11 @@ async function deployHome()
   })
   assert.equal(txInitialize.status, '0x1', 'Transaction Failed');
   const validatorOwner = await bridgeValidatorsHome.methods.owner().call();
-  assert.equal(validatorOwner.toLocaleLowerCase(), HOME_OWNER_MULTISIG.toLocaleLowerCase());
+  assert.equal(validatorOwner.toLocaleLowerCase(), HOME_VALIDATORS_OWNER.toLocaleLowerCase());
   homeNonce++;
 
   console.log('transferring proxy ownership to multisig for Validators Proxy contract');
-  const proxyDataTransfer = await storageValidatorsHome.methods.transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_VALIDATORS).encodeABI();
+  const proxyDataTransfer = await storageValidatorsHome.methods.transferProxyOwnership(HOME_UPGRADEABLE_ADMIN).encodeABI();
   const txProxyDataTransfer = await sendRawTx({
     data: proxyDataTransfer,
     nonce: homeNonce,
@@ -82,7 +82,7 @@ async function deployHome()
   })
   assert.equal(txProxyDataTransfer.status, '0x1', 'Transaction Failed');
   const newProxyOwner = await storageValidatorsHome.methods.proxyOwner().call();
-  assert.equal(newProxyOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_VALIDATORS.toLocaleLowerCase());
+  assert.equal(newProxyOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\ndeploying homeBridge storage\n')
@@ -117,7 +117,7 @@ async function deployHome()
   `)
   homeBridgeImplementation.options.address = homeBridgeStorage.options.address
   const initializeHomeBridgeData = await homeBridgeImplementation.methods.initialize(
-    storageValidatorsHome.options.address, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX, HOME_GAS_PRICE, HOME_REQUIRED_BLOCK_CONFIRMATIONS
+    storageValidatorsHome.options.address, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX, HOME_GAS_PRICE, HOME_REQUIRED_BLOCK_CONFIRMATIONS, HOME_BRIDGE_OWNER, HOME_UPGRADEABLE_ADMIN
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeHomeBridge = await sendRawTx({
     data: initializeHomeBridgeData,
@@ -130,7 +130,7 @@ async function deployHome()
   homeNonce++;
 
   console.log('transferring proxy ownership to multisig for Home bridge Proxy contract');
-  const homeBridgeProxyData = await homeBridgeStorage.methods.transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_BRIDGE).encodeABI();
+  const homeBridgeProxyData = await homeBridgeStorage.methods.transferProxyOwnership(HOME_UPGRADEABLE_ADMIN).encodeABI();
   const txhomeBridgeProxyData = await sendRawTx({
     data: homeBridgeProxyData,
     nonce: homeNonce,
@@ -140,7 +140,7 @@ async function deployHome()
   })
   assert.equal(txhomeBridgeProxyData.status, '0x1', 'Transaction Failed');
   const newProxyBridgeOwner = await homeBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN_BRIDGE.toLocaleLowerCase());
+  assert.equal(newProxyBridgeOwner.toLocaleLowerCase(), HOME_UPGRADEABLE_ADMIN.toLocaleLowerCase());
   homeNonce++;
 
   console.log('\nHome Deployment Bridge is complete\n')

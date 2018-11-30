@@ -24,9 +24,9 @@ It is assumed that steps listed below are executed in `deploy` folder.
    GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 
    HOME_RPC_URL=https://sokol.poa.network
-   HOME_OWNER_MULTISIG=0x
-   HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
-   HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
+   HOME_BRIDGE_OWNER=0x
+   HOME_VALIDATORS_OWNER=0x
+   HOME_UPGRADEABLE_ADMIN=0x
    HOME_DAILY_LIMIT=30000000000000000000000000
    HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
    HOME_MIN_AMOUNT_PER_TX=500000000000000000
@@ -34,9 +34,9 @@ It is assumed that steps listed below are executed in `deploy` folder.
    HOME_GAS_PRICE=1
 
    FOREIGN_RPC_URL=https://sokol.poa.network
-   FOREIGN_OWNER_MULTISIG=0x
-   FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS=0x
-   FOREIGN_UPGRADEABLE_ADMIN_BRIDGE=0x
+   FOREIGN_BRIDGE_OWNER=0x
+   FOREIGN_VALIDATORS_OWNER=0x
+   FOREIGN_UPGRADEABLE_ADMIN=0x
    FOREIGN_DAILY_LIMIT=15000000000000000000000000
    FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
    FOREIGN_MIN_AMOUNT_PER_TX=500000000000000000
@@ -64,18 +64,18 @@ DEPLOYMENT_GAS_LIMIT | Gas Limit to use for transactions during bridge contract 
 DEPLOYMENT_GAS_PRICE | Gas Price to use for transactions during bridge contract provisioning on both networks in gwei  
 GET_RECEIPT_INTERVAL_IN_MILLISECONDS | Interval that is used to wait for tx to be mined( 3 sec in example)
 HOME_RPC_URL | Public RPC Node URL for Home Network  
-HOME_OWNER_MULTISIG | Address of Administrator role on Home network to change parameters of the bridge and validator's contract
-HOME_UPGRADEABLE_ADMIN_VALIDATORS | Address from which Validator's contract could be upgraded
-HOME_UPGRADEABLE_ADMIN_BRIDGE | Address from which HomeBridge's contract could be upgraded
+HOME_BRIDGE_OWNER | Address on Home network with permissions to change parameters of the bridge contract.
+HOME_VALIDATORS_OWNER | Address on Home network with permissions to change parameters of bridge validator contract.
+HOME_UPGRADEABLE_ADMIN | Address on Home network with permissions to upgrade the bridge contract and the bridge validator contract.
 HOME_DAILY_LIMIT | Daily Limit in Wei. Example above is `1 eth`  
 HOME_MAX_AMOUNT_PER_TX | Max limit per 1 tx in Wei. Example above is `0.1 eth`  
 HOME_MIN_AMOUNT_PER_TX | Minimum amount per 1 tx in Wei. Example above is `0.01 eth`  
 HOME_REQUIRED_BLOCK_CONFIRMATIONS | Number of blocks issued after the block with the corresponding deposit transaction to make sure that the transaction will not be rolled back
 HOME_GAS_PRICE | Gas Price to use for transactions to relay withdraws to Home Network
 FOREIGN_RPC_URL | Public RPC Node URL for Foreign Network  
-FOREIGN_OWNER_MULTISIG | Address of Administrator role on FOREIGN network to change parameters of the bridge and validator's contract
-FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS | Address from which Validator's contract could be upgraded
-FOREIGN_UPGRADEABLE_ADMIN_BRIDGE | Address from which HomeBridge's contract could be upgraded
+FOREIGN_BRIDGE_OWNER | Address on Foreign network with permissions to change parameters of the bridge contract.
+FOREIGN_VALIDATORS_OWNER | Address on Foreign network with permissions to change parameters of bridge validator contract.
+FOREIGN_UPGRADEABLE_ADMIN | Address on Foreign network with permissions to upgrade the bridge contract and the bridge validator contract.
 FOREIGN_DAILY_LIMIT | Daily Limit in Wei. Example above is `1 eth`  
 FOREIGN_MAX_AMOUNT_PER_TX | Max limit per 1 tx in Wei. Example above is `0.1 eth`  
 FOREIGN_MIN_AMOUNT_PER_TX | Minimum amount per 1 tx in Wei. Example above is `0.01 eth`  

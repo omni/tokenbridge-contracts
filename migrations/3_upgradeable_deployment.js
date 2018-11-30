@@ -57,7 +57,9 @@ module.exports = async function(deployer, network, accounts) {
       MAX_AMOUNT_PER_TX,
       MIN_AMOUNT_PER_TX,
       HOME_GAS_PRICE,
-      HOME_REQUIRED_BLOCK_CONFIRMATIONS);
+      HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+      PROXY_OWNER,
+      PROXY_OWNER);
     await homeBridgeUpgradeable.upgradeTo('1', homeBridgeImplementation.address, {from: PROXY_OWNER});
     await web3.eth.sendTransaction({
       from: PROXY_OWNER,
@@ -75,7 +77,7 @@ module.exports = async function(deployer, network, accounts) {
     var foreignBridgeWeb3 = web3.eth.contract(ForeignBridge.abi);
     var foreignBridgeWeb3Instance = foreignBridgeWeb3.at(foreignBridgeImplementation.address);
     var initializeDataForeign = foreignBridgeWeb3Instance.initialize
-      .getData(storageBridgeValidators.address, erc677token.address, foreignDailyLimit, MAX_AMOUNT_PER_TX, MIN_AMOUNT_PER_TX, FOREIGN_GAS_PRICE, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS);
+      .getData(storageBridgeValidators.address, erc677token.address, foreignDailyLimit, MAX_AMOUNT_PER_TX, MIN_AMOUNT_PER_TX, FOREIGN_GAS_PRICE, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS, PROXY_OWNER, PROXY_OWNER);
     await foreignBridgeUpgradeable.upgradeTo('1', foreignBridgeImplementation.address, {from: PROXY_OWNER});
 
     await web3.eth.sendTransaction({

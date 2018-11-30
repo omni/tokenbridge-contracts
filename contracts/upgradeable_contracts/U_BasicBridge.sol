@@ -1,24 +1,12 @@
 pragma solidity 0.4.23;
 import "../IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
+import "./Validatable.sol";
 
 
-contract BasicBridge is EternalStorage {
+contract BasicBridge is EternalStorage, Validatable {
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
-    function validatorContract() public view returns(IBridgeValidators) {
-        return IBridgeValidators(addressStorage[keccak256("validatorContract")]);
-    }
-
-    modifier onlyValidator() {
-        require(validatorContract().isValidator(msg.sender));
-        _;
-    }
-
-    modifier onlyOwner() {
-        require(validatorContract().owner() == msg.sender);
-        _;
-    }
 
     function setGasPrice(uint256 _gasPrice) public onlyOwner {
         require(_gasPrice > 0);

@@ -400,6 +400,22 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
         transactionHash
       });
     })
+    it('should fail if txHash already set as above of limits', async () => {
+      const recipient = accounts[5];
+      const value = oneEther;
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs} = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.fulfilled;
+
+      logs[0].event.should.be.equal("AmountLimitExceeded");
+      logs[0].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      });
+
+      await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.executeAffirmation(accounts[6], value, transactionHash, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG)
+    })
     it('should not allow execute affirmation over daily foreign limit', async () => {
       await blockRewardContract.sendTransaction({
         from: accounts[2],

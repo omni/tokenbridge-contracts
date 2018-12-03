@@ -49,12 +49,12 @@ FOREIGN_DEPLOYMENT_GAS_PRICE=10000000000
 GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 
 # The name of the ERC677 token to be deployed on the Foreign network.
-BRIDGEABLE_TOKEN_NAME="Your New Bridged Token"
+BRIDGEABLE_TOKEN_NAME=Your New Bridged Token
 # The symbol name of the ERC677 token to be deployed on the Foreign network.
-BRIDGEABLE_TOKEN_SYMBOL="TEST"
+BRIDGEABLE_TOKEN_SYMBOL=TEST
 # The number of supportable decimal digits after the "point" in the ERC677 token
 # to be deployed on the Foreign network.
-BRIDGEABLE_TOKEN_DECIMALS="18"
+BRIDGEABLE_TOKEN_DECIMALS=18
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
@@ -124,7 +124,7 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # addresses are collected on the Home side. The same addresses will be used on
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
-VALIDATORS="0x 0x 0x"
+VALIDATORS=0x 0x 0x
 ```
 
 
@@ -153,12 +153,12 @@ FOREIGN_DEPLOYMENT_GAS_PRICE=10000000000
 GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 
 # The name of the ERC677 token to be deployed on the Home network.
-BRIDGEABLE_TOKEN_NAME="Your New Bridged Token"
+BRIDGEABLE_TOKEN_NAME=Your New Bridged Token
 # The symbol name of the ERC677 token to be deployed on the Home network.
-BRIDGEABLE_TOKEN_SYMBOL="TEST"
+BRIDGEABLE_TOKEN_SYMBOL=TEST
 # The number of supportable decimal digits after the "point" in the ERC677 token
 # to be deployed on the Home network.
-BRIDGEABLE_TOKEN_DECIMALS="18"
+BRIDGEABLE_TOKEN_DECIMALS=18
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
@@ -226,7 +226,7 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # addresses are collected on the Home side. The same addresses will be used on
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
-VALIDATORS="0x 0x 0x"
+VALIDATORS=0x 0x 0x
 ```
 
 ## `ERC-TO-NATIVE` Bridge Mode Configuration Example. 
@@ -323,5 +323,5 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # addresses are collected on the Home side. The same addresses will be used on
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
-VALIDATORS="0x 0x 0x"
+VALIDATORS=0x 0x 0x
 ```

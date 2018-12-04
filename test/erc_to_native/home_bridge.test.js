@@ -696,7 +696,7 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
 
       await homeBridge.fixAssetsAboveLimits(invalidTxHash, true).should.be.rejectedWith(ERROR_MSG)
     })
-    it('Should fail if not called by owner', async () => {
+    it('Should fail if not called by proxyOwner', async () => {
       const recipient = accounts[5];
       const value = oneEther;
       const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";

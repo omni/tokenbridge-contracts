@@ -3,14 +3,15 @@ pragma solidity 0.4.24;
 import "../upgradeability/EternalStorage.sol";
 import "./Validatable.sol";
 import "../libraries/SafeMath.sol";
+import "../upgradeability/OwnedUpgradeabilityProxy.sol";
 
 
-contract OverdrawManagement is EternalStorage, Validatable {
+contract OverdrawManagement is EternalStorage, OwnedUpgradeabilityProxy, Validatable {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
 
-    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign) external onlyOwner {
+    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign) external onlyProxyOwner {
         require(!fixedAssets(txHash));
         address recipient;
         uint256 value;

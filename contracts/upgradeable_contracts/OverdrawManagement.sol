@@ -36,20 +36,16 @@ contract OverdrawManagement is EternalStorage, Validatable {
     }
 
     function txAboveLimits(bytes32 _txHash) internal view returns(address recipient, uint256 value) {
-        bytes memory data = bytesStorage[keccak256(abi.encodePacked("txOutOfLimit", _txHash))];
-        assembly {
-            recipient := and(mload(add(data, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            value := mload(add(data, 52))
-        }
+        recipient = addressStorage[keccak256(abi.encodePacked("txOutOfLimitRecipient", _txHash))];
+        value = uintStorage[keccak256(abi.encodePacked("txOutOfLimitValue", _txHash))];
     }
 
     function setTxAboveLimits(address _recipient, uint256 _value, bytes32 _txHash) internal {
-        bytesStorage[keccak256(abi.encodePacked("txOutOfLimit", _txHash))] = abi.encodePacked(_recipient, _value);
+        addressStorage[keccak256(abi.encodePacked("txOutOfLimitRecipient", _txHash))] = _recipient;
+        uintStorage[keccak256(abi.encodePacked("txOutOfLimitValue", _txHash))] = _value;
     }
 
     function setFixedAssets(bytes32 _txHash, bool _status) internal {
         boolStorage[keccak256(abi.encodePacked("fixedAssets", _txHash))] = _status;
     }
-
-
 }

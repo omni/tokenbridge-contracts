@@ -27,10 +27,10 @@ contract Validatable is EternalStorage, Ownable {
         _;
     }
 
-    function transferOwnershipFromValidatorOwner(address newOwner) public onlyValidatorOwner {
-        require(newOwner != address(0));
+    function upgradeSecurityRoles(address _newOwner) public {
         require(owner() == address(0));
-        setOwner(newOwner);
+        require(_newOwner != address(0));
+        setOwner(_newOwner);
     }
 
     function admin() public view returns (address) {

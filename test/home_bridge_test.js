@@ -53,6 +53,16 @@ contract('HomeBridge', async (accounts) => {
       "2".should.be.bignumber.equal(await finalContract.maxPerTx())
       "1".should.be.bignumber.equal(await finalContract.minPerTx())
     })
+    it('can upgrade security roles', async () => {
+      const newOwner = accounts[4]
+      let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      let data = homeContract.upgradeSecurityRoles.request(newOwner).params[0].data
+      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled;
+      const finalContract = await HomeBridge.at(storageProxy.address);
+      const updatedOwner = await finalContract.owner()
+      updatedOwner.should.be.equal(newOwner)
+      finalContract.upgradeSecurityRoles(newOwner).should.be.rejectedWith(ERROR_MSG)
+    })
   })
 
   describe('#fallback', async () => {

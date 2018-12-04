@@ -2,11 +2,10 @@ pragma solidity 0.4.23;
 import "../IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
 import "./Ownable.sol";
+import "../upgradeability/OwnedUpgradeabilityProxy.sol";
 
 
-contract Validatable is EternalStorage, Ownable {
-
-    event AdminTransferred(address previousAdmin, address newAdmin);
+contract Validatable is EternalStorage, Ownable, OwnedUpgradeabilityProxy {
 
     function validatorContract() public view returns(IBridgeValidators) {
         return IBridgeValidators(addressStorage[keccak256("validatorContract")]);
@@ -17,33 +16,9 @@ contract Validatable is EternalStorage, Ownable {
         _;
     }
 
-    modifier onlyValidatorOwner() {
-        require(validatorContract().owner() == msg.sender);
-        _;
-    }
-
-    modifier onlyAdmin() {
-        require(msg.sender == admin());
-        _;
-    }
-
     function upgradeSecurityRoles(address _newOwner) public {
         require(owner() == address(0));
         require(_newOwner != address(0));
         setOwner(_newOwner);
-    }
-
-    function admin() public view returns (address) {
-        return addressStorage[keccak256("admin")];
-    }
-
-    function transferAdmin(address _newAdmin) public onlyOwner {
-        require(_newAdmin != address(0));
-        setAdmin(_newAdmin);
-    }
-
-    function setAdmin(address _newAdmin) internal {
-        emit AdminTransferred(admin(), _newAdmin);
-        addressStorage[keccak256("admin")] = _newAdmin;
     }
 }

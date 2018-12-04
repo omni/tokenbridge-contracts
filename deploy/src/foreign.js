@@ -134,8 +134,7 @@ async function deployForeign() {
     FOREIGN_MIN_AMOUNT_PER_TX,
     FOREIGN_GAS_PRICE,
     FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-    FOREIGN_BRIDGE_OWNER,
-    FOREIGN_VALIDATORS_OWNER
+    FOREIGN_BRIDGE_OWNER
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeBridge = await sendRawTx({
     data: initializeFBridgeData,

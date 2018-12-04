@@ -24,8 +24,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
         uint256 _minPerTx,
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        address _owner,
-        address _admin
+        address _owner
     ) public
       returns(bool)
     {
@@ -35,7 +34,6 @@ contract HomeBridge is EternalStorage, BasicBridge {
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _homeDailyLimit > _maxPerTx);
         require(_owner != address(0));
-        require(_admin != address(0));
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
@@ -44,7 +42,6 @@ contract HomeBridge is EternalStorage, BasicBridge {
         uintStorage[keccak256("gasPrice")] = _homeGasPrice;
         uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
         setOwner(_owner);
-        setAdmin(_admin);
         setInitialize(true);
         return isInitialized();
     }

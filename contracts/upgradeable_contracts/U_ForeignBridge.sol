@@ -32,15 +32,13 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uint256 _minPerTx,
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        address _owner,
-        address _admin
+        address _owner
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _foreignDailyLimit > _maxPerTx);
         require(_foreignGasPrice > 0);
         require(_owner != address(0));
-        require(_admin != address(0));
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
         uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
@@ -50,7 +48,6 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uintStorage[keccak256("gasPrice")] = _foreignGasPrice;
         uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
         setOwner(_owner);
-        setAdmin(_admin);
         setInitialize(true);
         return isInitialized();
     }
@@ -74,7 +71,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uintStorage[keccak256("minPerTx")] = _minPerTx;
     }
 
-    function claimTokens(address _token, address _to) external onlyAdmin {
+    function claimTokens(address _token, address _to) external onlyProxyOwner {
         require(_to != address(0));
         if (_token == address(0)) {
             _to.transfer(address(this).balance);
@@ -86,7 +83,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         require(token.transfer(_to, balance));
     }
 
-    function claimTokensFromErc677(address _token, address _to) external onlyAdmin {
+    function claimTokensFromErc677(address _token, address _to) external onlyProxyOwner {
         erc677token().claimTokens(_token, _to);
     }
 

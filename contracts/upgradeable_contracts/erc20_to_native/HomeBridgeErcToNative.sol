@@ -101,7 +101,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         address recipient;
         uint256 value;
         (recipient, value) = txAboveLimits(_txHash);
-        require(value == 0);
+        require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _txHash);
         emit AmountLimitExceeded(_recipient, _value, _txHash);

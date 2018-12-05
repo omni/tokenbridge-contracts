@@ -16,7 +16,7 @@ contract Validatable is EternalStorage, Ownable, OwnedUpgradeabilityProxy {
         _;
     }
 
-    function upgradeSecurityRoles(address _newOwner) public {
+    function upgradeSecurityRoles(address _newOwner) public onlyProxyOwner {
         require(owner() == address(0));
         require(_newOwner != address(0));
         setOwner(_newOwner);

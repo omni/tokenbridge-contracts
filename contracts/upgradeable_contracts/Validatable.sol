@@ -15,10 +15,4 @@ contract Validatable is EternalStorage, Ownable, OwnedUpgradeabilityProxy {
         require(validatorContract().isValidator(msg.sender));
         _;
     }
-
-    function upgradeSecurityRoles(address _newOwner) public onlyProxyOwner {
-        require(owner() == address(0));
-        require(_newOwner != address(0));
-        setOwner(_newOwner);
-    }
 }

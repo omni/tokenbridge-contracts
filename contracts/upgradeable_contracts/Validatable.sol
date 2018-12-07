@@ -5,7 +5,7 @@ import "./Ownable.sol";
 import "../upgradeability/OwnedUpgradeabilityProxy.sol";
 
 
-contract Validatable is EternalStorage, Ownable, OwnedUpgradeabilityProxy {
+contract Validatable is OwnedUpgradeabilityProxy, EternalStorage, Ownable {
 
     function validatorContract() public view returns(IBridgeValidators) {
         return IBridgeValidators(addressStorage[keccak256("validatorContract")]);

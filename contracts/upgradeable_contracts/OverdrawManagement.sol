@@ -6,7 +6,7 @@ import "../libraries/SafeMath.sol";
 import "../upgradeability/OwnedUpgradeabilityProxy.sol";
 
 
-contract OverdrawManagement is EternalStorage, OwnedUpgradeabilityProxy, Validatable {
+contract OverdrawManagement is OwnedUpgradeabilityProxy, EternalStorage, Validatable {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);

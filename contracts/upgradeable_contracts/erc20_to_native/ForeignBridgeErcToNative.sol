@@ -18,13 +18,15 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         uint256 _gasPrice,
         uint256 _maxPerTx,
         uint256 _homeDailyLimit,
-        uint256 _homeMaxPerTx
+        uint256 _homeMaxPerTx,
+        address _owner
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
+        require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
@@ -33,6 +35,7 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
+        setOwner(_owner);
         setInitialize(true);
         return isInitialized();
     }

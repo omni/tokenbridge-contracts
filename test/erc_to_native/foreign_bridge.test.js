@@ -34,15 +34,15 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
       false.should.be.equal(await foreignBridge.isInitialized())
       '0'.should.be.bignumber.equal(await foreignBridge.requiredBlockConfirmations())
 
-      await foreignBridge.initialize(ZERO_ADDRESS, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, token.address, 0, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, 0, maxPerTx, homeDailyLimit, homeMaxPerTx).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, owner, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(owner, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, halfEther, homeMaxPerTx).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(ZERO_ADDRESS, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, token.address, 0, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, 0, maxPerTx, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, owner, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(owner, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, halfEther, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
 
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner);
 
       token.address.should.be.equal(await foreignBridge.erc20token());
       true.should.be.equal(await foreignBridge.isInitialized())
@@ -68,7 +68,7 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
       token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner);
       await token.mint(foreignBridge.address,value);
     })
 
@@ -199,7 +199,7 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
       ownerOfValidatorContract = accounts[3]
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {from: ownerOfValidatorContract})
       foreignBridgeWithMultiSignatures = await ForeignBridge.new()
-      await foreignBridgeWithMultiSignatures.initialize(multisigValidatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, {from: ownerOfValidatorContract});
+      await foreignBridgeWithMultiSignatures.initialize(multisigValidatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner, {from: ownerOfValidatorContract});
       await token.mint(foreignBridgeWithMultiSignatures.address,value);
     })
 
@@ -247,7 +247,7 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
       const value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
 
-      await foreignBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, erc20Token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx);
+      await foreignBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, erc20Token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner);
       await erc20Token.mint(foreignBridgeWithThreeSigs.address, value);
 
       const txHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
@@ -296,18 +296,13 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
       await foreignBridgeProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled;
 
       foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address);
-      await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx)
+      await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner)
 
       // Deploy V2
       let foreignImplV2 = await ForeignBridgeV2.new();
       let foreignBridgeProxyUpgrade = await EternalStorageProxy.at(foreignBridgeProxy.address);
       await foreignBridgeProxyUpgrade.upgradeTo('2', foreignImplV2.address).should.be.fulfilled;
       foreignImplV2.address.should.be.equal(await foreignBridgeProxyUpgrade.implementation())
-
-      let foreignBridgeV2Proxy = await ForeignBridgeV2.at(foreignBridgeProxy.address)
-      await foreignBridgeV2Proxy.doSomething(accounts[2], {from: accounts[4]}).should.be.rejectedWith(ERROR_MSG)
-      await foreignBridgeV2Proxy.doSomething(accounts[2], {from: PROXY_OWNER}).should.be.fulfilled;
-      (await foreignBridgeV2Proxy.something()).should.be.equal(accounts[2])
     })
 
     it('can be deployed via upgradeToAndCall', async () => {
@@ -316,7 +311,7 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
 
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       const foreignBridge =  await ForeignBridge.new();
-      const data = foreignBridge.initialize.request(validatorsAddress, tokenAddress, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx).params[0].data
+      const data = foreignBridge.initialize.request(validatorsAddress, tokenAddress, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner).params[0].data
 
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
 
@@ -332,7 +327,7 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
       token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
       const foreignBridge = await ForeignBridge.new();
 
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, maxPerTx, homeDailyLimit, homeMaxPerTx, owner);
       const tokenSecond = await ERC677BridgeToken.new("Roman Token", "RST", 18);
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled;

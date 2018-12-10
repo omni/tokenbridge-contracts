@@ -31,7 +31,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       '0'.should.be.bignumber.equal(await homeContract.dailyLimit())
       '0'.should.be.bignumber.equal(await homeContract.maxPerTx())
       false.should.be.equal(await homeContract.isInitialized())
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address).should.be.fulfilled;
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address, owner).should.be.fulfilled;
       true.should.be.equal(await homeContract.isInitialized())
       validatorContract.address.should.be.equal(await homeContract.validatorContract());
       (await homeContract.deployedAtBlock()).should.be.bignumber.above(0);
@@ -48,14 +48,14 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
     })
     it('cant set maxPerTx > dailyLimit', async () => {
       false.should.be.equal(await homeContract.isInitialized())
-      await homeContract.initialize(validatorContract.address, '1', '2', '1', gasPrice, requireBlockConfirmations, token.address).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.initialize(validatorContract.address, '3', '2', '2', gasPrice, requireBlockConfirmations, token.address).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '1', '2', '1', gasPrice, requireBlockConfirmations, token.address, owner).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '2', gasPrice, requireBlockConfirmations, token.address, owner).should.be.rejectedWith(ERROR_MSG);
       false.should.be.equal(await homeContract.isInitialized())
     })
 
     it('can be deployed via upgradeToAndCall', async () => {
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
-      let data = homeContract.initialize.request(validatorContract.address, "3", "2", "1", gasPrice, requireBlockConfirmations, token.address).params[0].data
+      let data = homeContract.initialize.request(validatorContract.address, "3", "2", "1", gasPrice, requireBlockConfirmations, token.address, owner).params[0].data
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled;
       let finalContract = await HomeBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
@@ -67,13 +67,13 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
 
     it('cant initialize with invalid arguments', async () => {
       false.should.be.equal(await homeContract.isInitialized())
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', 0, requireBlockConfirmations, token.address).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, 0, token.address).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.initialize(owner, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.initialize(ZERO_ADDRESS, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, ZERO_ADDRESS).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, owner).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address).should.be.fulfilled;
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', 0, requireBlockConfirmations, token.address, owner).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, 0, token.address, owner).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(owner, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address, owner).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(ZERO_ADDRESS, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address, owner).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, ZERO_ADDRESS, owner).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, owner, owner).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address, owner).should.be.fulfilled;
       true.should.be.equal(await homeContract.isInitialized())
     })
   })
@@ -82,7 +82,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
     beforeEach(async () => {
       homeContract = await HomeBridge.new()
       token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address)
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address, owner)
     })
     it('reverts', async () => {
       const {logs} = await homeContract.sendTransaction({
@@ -97,7 +97,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
     beforeEach(async () => {
       homeContract = await HomeBridge.new()
       token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address)
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, token.address, owner)
     })
     it('#setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
       await homeContract.setMaxPerTx(2, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
@@ -119,7 +119,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
     beforeEach(async () => {
       homeBridge = await HomeBridge.new();
       token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
-      await homeBridge.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address);
+      await homeBridge.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, owner);
       await token.transferOwnership(homeBridge.address);
     })
     it('should allow validator to withdraw', async () => {
@@ -159,7 +159,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       let ownerOfValidators = accounts[0]
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       let homeBridgeWithTwoSigs = await HomeBridge.new();
-      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address);
+      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address, owner);
       await token2sig.transferOwnership(homeBridgeWithTwoSigs.address);
       const recipient = accounts[5];
       const value = halfEther;
@@ -222,7 +222,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       let ownerOfValidators = accounts[0]
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       let homeBridgeWithTwoSigs = await HomeBridge.new();
-      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address);
+      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address, owner);
       await token2sig.transferOwnership(homeBridgeWithTwoSigs.address);
       const recipient = accounts[5];
       const value = halfEther.div(2);
@@ -249,7 +249,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
 
       const homeBridgeWithThreeSigs = await HomeBridge.new();
-      await homeBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address);
+      await homeBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, owner);
       await token.transferOwnership(homeBridgeWithThreeSigs.address);
 
       const value = web3.toBigNumber(web3.toWei(0.5, "ether"));
@@ -293,7 +293,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       ownerOfValidators = accounts[0]
       await validatorContractWith2Signatures.initialize(2, authoritiesTwoAccs, ownerOfValidators)
       homeBridgeWithTwoSigs = await HomeBridge.new();
-      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address);
+      await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address, owner);
       await token2sig.transferOwnership(homeBridgeWithTwoSigs.address);
     })
     it('allows a validator to submit a signature', async () => {
@@ -343,7 +343,7 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
 
       const homeBridgeWithThreeSigs = await HomeBridge.new();
-      await homeBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address);
+      await homeBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, owner);
 
       const value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       const transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";

@@ -16,17 +16,20 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         address _validatorContract,
         address _erc20token,
         uint256 _requiredBlockConfirmations,
-        uint256 _gasPrice
+        uint256 _gasPrice,
+        address _owner
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
+        require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
+        setOwner(_owner);
         setInitialize(true);
         return isInitialized();
     }

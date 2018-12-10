@@ -36,7 +36,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _requiredBlockConfirmations,
         address _blockReward,
         uint256 _foreignDailyLimit,
-        uint256 _foreignMaxPerTx
+        uint256 _foreignMaxPerTx,
+        address _owner
     ) public returns(bool)
     {
         require(!isInitialized());
@@ -45,6 +46,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_blockReward == address(0) || isContract(_blockReward));
         require(_foreignMaxPerTx < _foreignDailyLimit);
+        require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
@@ -55,6 +57,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
+        setOwner(_owner);
         setInitialize(true);
 
         return isInitialized();

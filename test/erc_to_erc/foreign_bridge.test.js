@@ -30,16 +30,16 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       false.should.be.equal(await foreignBridge.isInitialized())
       '0'.should.be.bignumber.equal(await foreignBridge.requiredBlockConfirmations())
 
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations).should.be.rejectedWith(INVALID_ARGUMENTS);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, owner).should.be.rejectedWith(INVALID_ARGUMENTS);
 
-      await foreignBridge.initialize(ZERO_ADDRESS, token.address, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, owner, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, token.address, 0, gasPrice).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, 0).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.initialize(owner, token.address, requireBlockConfirmations, gasPrice).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(ZERO_ADDRESS, token.address, requireBlockConfirmations, gasPrice, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, requireBlockConfirmations, gasPrice, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, owner, requireBlockConfirmations, gasPrice, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, token.address, 0, gasPrice, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, 0, owner).should.be.rejectedWith(ERROR_MSG);
+      await foreignBridge.initialize(owner, token.address, requireBlockConfirmations, gasPrice, owner).should.be.rejectedWith(ERROR_MSG);
 
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, owner);
 
       token.address.should.be.equal(await foreignBridge.erc20token());
       true.should.be.equal(await foreignBridge.isInitialized())
@@ -63,7 +63,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
       token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, owner);
       await token.mint(foreignBridge.address,value);
     })
     it('should allow to executeSignatures', async () => {
@@ -147,7 +147,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {from: ownerOfValidatorContract})
       foreignBridgeWithMultiSignatures = await ForeignBridge.new()
       const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-      await foreignBridgeWithMultiSignatures.initialize(multisigValidatorContract.address, token.address, requireBlockConfirmations, gasPrice, {from: ownerOfValidatorContract});
+      await foreignBridgeWithMultiSignatures.initialize(multisigValidatorContract.address, token.address, requireBlockConfirmations, gasPrice, owner, {from: ownerOfValidatorContract});
       await token.mint(foreignBridgeWithMultiSignatures.address,value);
     })
     it('withdraw should fail if not enough signatures are provided', async () => {
@@ -191,7 +191,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       const value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
 
-      await foreignBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, erc20Token.address, requireBlockConfirmations, gasPrice);
+      await foreignBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, erc20Token.address, requireBlockConfirmations, gasPrice, owner);
       await erc20Token.mint(foreignBridgeWithThreeSigs.address, value);
 
       const txHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
@@ -240,7 +240,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       await foreignBridgeProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled;
 
       foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address);
-      await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, requireBlockConfirmations, gasPrice)
+      await foreignBridgeProxy.initialize(validatorsProxy.address, token.address, requireBlockConfirmations, gasPrice, owner)
 
       // Deploy V2
       let foreignImplV2 = await ForeignBridgeV2.new();
@@ -260,7 +260,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       let foreignBridge =  await ForeignBridge.new();
       let data = foreignBridge.initialize.request(
-        validatorsAddress, tokenAddress, requireBlockConfirmations, gasPrice).params[0].data
+        validatorsAddress, tokenAddress, requireBlockConfirmations, gasPrice, owner).params[0].data
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
       let finalContract = await ForeignBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
@@ -273,7 +273,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       const owner = accounts[0];
       token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
       foreignBridge = await ForeignBridge.new();
-      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice);
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, owner);
 
       let tokenSecond = await ERC677BridgeToken.new("Roman Token", "RST", 18);
 

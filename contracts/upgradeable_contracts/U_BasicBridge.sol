@@ -2,9 +2,10 @@ pragma solidity 0.4.23;
 import "../IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
 import "./Validatable.sol";
+import "./Ownable.sol";
 
 
-contract BasicBridge is EternalStorage, Validatable {
+contract BasicBridge is EternalStorage, Validatable, Ownable {
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
 

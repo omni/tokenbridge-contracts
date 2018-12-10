@@ -5,9 +5,10 @@ import "./U_BasicBridge.sol";
 import "../IBurnableMintableERC677Token.sol";
 import "../ERC677Receiver.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "../upgradeability/OwnedUpgradeabilityProxy.sol";
 
 
-contract ForeignBridge is ERC677Receiver, BasicBridge {
+contract ForeignBridge is OwnedUpgradeabilityProxy, ERC677Receiver, BasicBridge {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
     event Deposit(address recipient, uint value, bytes32 transactionHash);

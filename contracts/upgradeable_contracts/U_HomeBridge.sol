@@ -3,6 +3,8 @@ import "../libraries/SafeMath.sol";
 import "../libraries/Message.sol";
 import "./U_BasicBridge.sol";
 import "../upgradeability/EternalStorage.sol";
+import "../upgradeability/OwnedUpgradeabilityProxy.sol";
+
 
 contract Sacrifice {
     constructor(address _recipient) public payable {
@@ -10,7 +12,7 @@ contract Sacrifice {
     }
 }
 
-contract HomeBridge is EternalStorage, BasicBridge {
+contract HomeBridge is OwnedUpgradeabilityProxy, EternalStorage, BasicBridge {
     using SafeMath for uint256;
     event GasConsumptionLimitsUpdated(uint256 gas);
     event Deposit (address recipient, uint256 value);

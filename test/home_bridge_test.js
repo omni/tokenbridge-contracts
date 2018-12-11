@@ -7,6 +7,10 @@ const {createMessage, sign, signatureToVRS} = require('./helpers/helpers');
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
 const requireBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
+const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
+const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
+const foreignDailyLimit = oneEther;
+const foreignMaxPerTx = halfEther;
 
 contract('HomeBridge', async (accounts) => {
   let homeContract, validatorContract, authorities, owner;
@@ -26,7 +30,7 @@ contract('HomeBridge', async (accounts) => {
       '0'.should.be.bignumber.equal(await homeContract.homeDailyLimit())
       '0'.should.be.bignumber.equal(await homeContract.maxPerTx())
       false.should.be.equal(await homeContract.isInitialized())
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations).should.be.fulfilled;
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx).should.be.fulfilled;
       true.should.be.equal(await homeContract.isInitialized())
       validatorContract.address.should.be.equal(await homeContract.validatorContract());
       (await homeContract.deployedAtBlock()).should.be.bignumber.above(0);
@@ -36,14 +40,14 @@ contract('HomeBridge', async (accounts) => {
     })
     it('cant set maxPerTx > homeDailyLimit', async () => {
       false.should.be.equal(await homeContract.isInitialized())
-      await homeContract.initialize(validatorContract.address, '1', '2', '1', gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
-      await homeContract.initialize(validatorContract.address, '3', '2', '2', gasPrice, requireBlockConfirmations).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '1', '2', '1', gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.initialize(validatorContract.address, '3', '2', '2', gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx).should.be.rejectedWith(ERROR_MSG);
       false.should.be.equal(await homeContract.isInitialized())
     })
 
     it('can be deployed via upgradeToAndCall', async () => {
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
-      let data = homeContract.initialize.request(validatorContract.address, "3", "2", "1", gasPrice, requireBlockConfirmations).params[0].data
+      let data = homeContract.initialize.request(validatorContract.address, "3", "2", "1", gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx).params[0].data
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled;
       let finalContract = await HomeBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
@@ -57,7 +61,7 @@ contract('HomeBridge', async (accounts) => {
   describe('#fallback', async () => {
     beforeEach(async () => {
       homeContract = await HomeBridge.new()
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations)
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx)
     })
     it('should accept POA', async () => {
       const currentDay = await homeContract.getCurrentDay()
@@ -130,9 +134,7 @@ contract('HomeBridge', async (accounts) => {
   describe('#withdraw', async () => {
     beforeEach(async () => {
       homeContract = await HomeBridge.new()
-      const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-      const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
-      await homeContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+      await homeContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx);
       oneEther.should.be.bignumber.equal(await homeContract.homeDailyLimit());
       await homeContract.sendTransaction({
         from: accounts[1],
@@ -229,6 +231,53 @@ contract('HomeBridge', async (accounts) => {
       true.should.be.equal(await homeContract.withdraws(transactionHash))
       await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message2).should.be.rejectedWith(ERROR_MSG)
     })
+    it('should not allow withdraws out of foreign limits', async ()=> {
+      const tenEthers = web3.toBigNumber(web3.toWei(10, "ether"));
+      const fiveEthers = web3.toBigNumber(web3.toWei(5, "ether"));
+
+      homeContract = await HomeBridge.new()
+      await homeContract.initialize(validatorContract.address, tenEthers, fiveEthers, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx);
+      await homeContract.sendTransaction({
+        from: accounts[1],
+        value: fiveEthers
+      }).should.be.fulfilled
+
+
+      const recipientAccount = accounts[3];
+      // tx value above max limit
+      const invalidValue = oneEther
+      const homeGasPrice = web3.toBigNumber(0);
+      const transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      const message = createMessage(recipientAccount, invalidValue, transactionHash, homeGasPrice);
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
+
+      await homeContract.withdraw([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
+
+      // tx 1
+      const value = halfEther
+      const transactionHash1 = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      const message1 = createMessage(recipientAccount, value, transactionHash1, homeGasPrice);
+      const signature1 = await sign(authorities[0], message1)
+      const vrs1 = signatureToVRS(signature1);
+
+      await homeContract.withdraw([vrs1.v], [vrs1.r], [vrs1.s], message1).should.be.fulfilled
+      // tx 2
+      const transactionHash2 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
+      const message2 = createMessage(recipientAccount, value, transactionHash2, homeGasPrice);
+      const signature2 = await sign(authorities[0], message2)
+      const vrs2 = signatureToVRS(signature2);
+
+      await homeContract.withdraw([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
+
+      // tx 3 - above foreign daily limit
+      const transactionHash3 = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const message3 = createMessage(recipientAccount, value, transactionHash3, homeGasPrice);
+      const signature3 = await sign(authorities[0], message3)
+      const vrs3 = signatureToVRS(signature3);
+
+      await homeContract.withdraw([vrs3.v], [vrs3.r], [vrs3.s], message3).should.be.rejectedWith(ERROR_MSG)
+    })
   })
 
   describe('#withdraw with 2 minimum signatures', async () => {
@@ -241,7 +290,7 @@ contract('HomeBridge', async (accounts) => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {from: ownerOfValidatorContract})
       homeContractWithMultiSignatures = await HomeBridge.new()
       const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-      await homeContractWithMultiSignatures.initialize(multisigValidatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, {from: ownerOfValidatorContract});
+      await homeContractWithMultiSignatures.initialize(multisigValidatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, {from: ownerOfValidatorContract});
       await homeContractWithMultiSignatures.sendTransaction({
         from: accounts[1],
         value: halfEther
@@ -296,7 +345,7 @@ contract('HomeBridge', async (accounts) => {
     let homeContract;
     beforeEach(async () => {
       homeContract = await HomeBridge.new()
-      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations)
+      await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx)
     })
     it('#setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
       await homeContract.setMaxPerTx(2, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);

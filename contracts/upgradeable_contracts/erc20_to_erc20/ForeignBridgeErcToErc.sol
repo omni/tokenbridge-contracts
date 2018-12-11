@@ -38,7 +38,7 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 
-    function claimTokens(address _token, address _to) public onlyOwner {
+    function claimTokens(address _token, address _to) public onlyProxyOwner {
         require(_token != address(erc20token()));
         super.claimTokens(_token, _to);
     }

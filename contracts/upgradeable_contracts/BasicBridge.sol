@@ -127,7 +127,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
         return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
     }
 
-    function claimTokens(address _token, address _to) public onlyProxyOwner {
+    function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy {
         require(_to != address(0));
         if (_token == address(0)) {
             _to.transfer(address(this).balance);

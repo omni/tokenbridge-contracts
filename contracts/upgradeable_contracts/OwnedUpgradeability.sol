@@ -9,7 +9,8 @@ contract OwnedUpgradeability {
         return IOwnedUpgradeabilityProxy(this).proxyOwner();
     }
 
-    modifier onlyProxyOwner() {
+    // Avoid using onlyProxyOwner name to prevent issues with implementation from proxy contract
+    modifier onlyIfOwnerOfProxy() {
         require(msg.sender == upgradeabilityAdmin());
         _;
     }

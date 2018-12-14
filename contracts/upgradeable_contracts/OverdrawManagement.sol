@@ -10,7 +10,7 @@ contract OverdrawManagement is EternalStorage, OwnedUpgradeability {
 
     event UserRequestForSignature(address recipient, uint256 value);
 
-    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign) external onlyProxyOwner {
+    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign) external onlyIfOwnerOfProxy {
         require(!fixedAssets(txHash));
         address recipient;
         uint256 value;

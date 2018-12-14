@@ -2,10 +2,10 @@ pragma solidity 0.4.24;
 
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
-import "../upgradeability/OwnedUpgradeabilityProxy.sol";
+import "./OwnedUpgradeability.sol";
 
 
-contract OverdrawManagement is OwnedUpgradeabilityProxy, EternalStorage {
+contract OverdrawManagement is EternalStorage, OwnedUpgradeability {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);

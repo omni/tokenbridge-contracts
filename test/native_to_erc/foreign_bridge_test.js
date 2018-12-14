@@ -428,7 +428,10 @@ contract('ForeignBridge', async (accounts) => {
     it('can send erc20', async () => {
       const owner = accounts[0];
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
-      foreignBridge = await ForeignBridge.new();
+      const foreignBridgeImpl = await ForeignBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
+      const foreignBridge = await ForeignBridge.at(storageProxy.address);
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, owner);
       await token.transferOwnership(foreignBridge.address)
 
@@ -448,7 +451,10 @@ contract('ForeignBridge', async (accounts) => {
     it('also calls claimTokens on tokenAddress', async () => {
       const owner = accounts[0];
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
-      foreignBridge = await ForeignBridge.new();
+      const foreignBridgeImpl = await ForeignBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
+      const foreignBridge = await ForeignBridge.at(storageProxy.address);
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, owner);
       await token.transferOwnership(foreignBridge.address)
 

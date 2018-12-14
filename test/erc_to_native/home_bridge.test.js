@@ -102,6 +102,36 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       "2".should.be.bignumber.equal(await finalContract.maxPerTx())
       "1".should.be.bignumber.equal(await finalContract.minPerTx())
     })
+    it('can be upgraded keeping the state', async () => {
+      const homeOwner = accounts[8]
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      const proxyOwner = await storageProxy.proxyOwner()
+      const data = homeContract.initialize.request(validatorContract.address, "3", "2", "1", gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, homeOwner).params[0].data
+
+      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
+      const finalContract = await HomeBridge.at(storageProxy.address);
+
+      true.should.be.equal(await finalContract.isInitialized())
+      validatorContract.address.should.be.equal(await finalContract.validatorContract())
+      blockRewardContract.address.should.be.equal(await finalContract.blockRewardContract())
+      "3".should.be.bignumber.equal(await finalContract.dailyLimit())
+      "2".should.be.bignumber.equal(await finalContract.maxPerTx())
+      "1".should.be.bignumber.equal(await finalContract.minPerTx())
+      const upgradeabilityAdmin =  await finalContract.upgradeabilityAdmin()
+      upgradeabilityAdmin.should.be.equal(proxyOwner)
+
+      const homeContractV2 = await HomeBridge.new()
+      await storageProxy.upgradeTo('2', homeContractV2.address).should.be.fulfilled
+      const finalContractV2 = await HomeBridge.at(storageProxy.address);
+
+      validatorContract.address.should.be.equal(await finalContractV2.validatorContract())
+      blockRewardContract.address.should.be.equal(await finalContractV2.blockRewardContract())
+      "3".should.be.bignumber.equal(await finalContractV2.dailyLimit())
+      "2".should.be.bignumber.equal(await finalContractV2.maxPerTx())
+      "1".should.be.bignumber.equal(await finalContractV2.minPerTx())
+      const upgradeabilityAdminV2 =  await finalContractV2.upgradeabilityAdmin()
+      upgradeabilityAdminV2.should.be.equal(proxyOwner)
+    })
     it('cant initialize with invalid arguments', async () => {
       false.should.be.equal(await homeContract.isInitialized())
       await homeContract.initialize(validatorContract.address, '3', '2', '1', gasPrice, 0, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
@@ -615,7 +645,10 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
     let homeBridge;
     const zeroValue = web3.toBigNumber(web3.toWei(0, "ether"))
     beforeEach(async () => {
-      homeBridge = await HomeBridge.new();
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      homeBridge = await HomeBridge.at(storageProxy.address);
       await homeBridge.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner);
     })
     it('Should reduce outOfLimitAmount and not emit any event', async () => {
@@ -707,6 +740,20 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
 
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: recipient}).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: owner}).should.be.fulfilled
+    })
+  })
+  describe('#OwnedUpgradeability', async () => {
+
+    it('upgradeabilityAdmin should return the proxy owner', async () => {
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address);
+
+      const proxyOwner = await storageProxy.proxyOwner()
+      const upgradeabilityAdmin = await homeBridge.upgradeabilityAdmin()
+
+      upgradeabilityAdmin.should.be.equal(proxyOwner)
     })
   })
 })

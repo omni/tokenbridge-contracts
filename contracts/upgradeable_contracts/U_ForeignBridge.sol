@@ -5,10 +5,10 @@ import "./U_BasicBridge.sol";
 import "../IBurnableMintableERC677Token.sol";
 import "../ERC677Receiver.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
-import "../upgradeability/OwnedUpgradeabilityProxy.sol";
+import "./OwnedUpgradeability.sol";
 
 
-contract ForeignBridge is OwnedUpgradeabilityProxy, ERC677Receiver, BasicBridge {
+contract ForeignBridge is ERC677Receiver, BasicBridge, OwnedUpgradeability {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
     event Deposit(address recipient, uint value, bytes32 transactionHash);
@@ -72,7 +72,7 @@ contract ForeignBridge is OwnedUpgradeabilityProxy, ERC677Receiver, BasicBridge 
         uintStorage[keccak256("minPerTx")] = _minPerTx;
     }
 
-    function claimTokens(address _token, address _to) external onlyProxyOwner {
+    function claimTokens(address _token, address _to) external onlyIfOwnerOfProxy {
         require(_to != address(0));
         if (_token == address(0)) {
             _to.transfer(address(this).balance);
@@ -84,7 +84,7 @@ contract ForeignBridge is OwnedUpgradeabilityProxy, ERC677Receiver, BasicBridge 
         require(token.transfer(_to, balance));
     }
 
-    function claimTokensFromErc677(address _token, address _to) external onlyProxyOwner {
+    function claimTokensFromErc677(address _token, address _to) external onlyIfOwnerOfProxy {
         erc677token().claimTokens(_token, _to);
     }
 

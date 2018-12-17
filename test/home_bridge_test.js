@@ -236,7 +236,7 @@ contract('HomeBridge', async (accounts) => {
       const fiveEthers = web3.toBigNumber(web3.toWei(5, "ether"));
 
       homeContract = await HomeBridge.new()
-      await homeContract.initialize(validatorContract.address, tenEthers, fiveEthers, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx);
+      await homeContract.initialize(validatorContract.address, tenEthers, fiveEthers, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner);
       await homeContract.sendTransaction({
         from: accounts[1],
         value: fiveEthers

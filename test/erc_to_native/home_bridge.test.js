@@ -285,6 +285,8 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       await homeContract.setMaxPerTx(2, {from: owner}).should.be.fulfilled;
 
       await homeContract.setMaxPerTx(3, {from: owner}).should.be.rejectedWith(ERROR_MSG);
+      const maxPerTx = await homeContract.maxPerTx()
+      maxPerTx.should.be.bignumber.equal(web3.toBigNumber(2))
     })
 
     it('setMinPerTx allows to set only to owner and cannot be more than daily limit and should be less than maxPerTx', async () => {
@@ -292,6 +294,37 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       await homeContract.setMinPerTx(1, {from: owner}).should.be.fulfilled;
 
       await homeContract.setMinPerTx(2, {from: owner}).should.be.rejectedWith(ERROR_MSG);
+      const minPerTx = await homeContract.minPerTx()
+      minPerTx.should.be.bignumber.equal(web3.toBigNumber(1))
+    })
+
+    it('setExecutionMaxPerTx allows to set only to owner and cannot be more than execution daily limit', async () => {
+      const newValue = web3.toBigNumber(web3.toWei(0.3, "ether"));
+
+      const initialExecutionMaxPerTx = await homeContract.executionMaxPerTx()
+
+      initialExecutionMaxPerTx.should.be.bignumber.not.equal(newValue)
+
+      await homeContract.setExecutionMaxPerTx(newValue, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.setExecutionMaxPerTx(newValue, {from: owner}).should.be.fulfilled;
+
+      await homeContract.setExecutionMaxPerTx(oneEther, {from: owner}).should.be.rejectedWith(ERROR_MSG);
+      const executionMaxPerTx = await homeContract.executionMaxPerTx()
+      executionMaxPerTx.should.be.bignumber.equal(newValue)
+    })
+
+    it('executionDailyLimit allows to set only to owner', async () => {
+      const newValue = web3.toBigNumber(web3.toWei(1.5, "ether"));
+
+      const initialExecutionDailyLimit= await homeContract.executionDailyLimit()
+
+      initialExecutionDailyLimit.should.be.bignumber.not.equal(newValue)
+
+      await homeContract.setExecutionDailyLimit(newValue, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.setExecutionDailyLimit(newValue, {from: owner}).should.be.fulfilled;
+
+      const executionDailyLimit = await homeContract.executionDailyLimit()
+      executionDailyLimit.should.be.bignumber.equal(newValue)
     })
   })
 

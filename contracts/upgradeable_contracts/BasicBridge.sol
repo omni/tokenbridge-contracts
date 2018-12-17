@@ -104,7 +104,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
 
     function setExecutionMaxPerTx(uint256 _maxPerTx) external onlyOwner {
         require(_maxPerTx < executionDailyLimit());
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _maxPerTx;
+        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _maxPerTx;
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {

@@ -10,6 +10,8 @@ const requireBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
+const foreignDailyLimit = oneEther
+const foreignMaxPerTx = halfEther
 
 contract('ERC677BridgeToken', async (accounts) => {
   let token
@@ -101,7 +103,7 @@ contract('ERC677BridgeToken', async (accounts) => {
       const authorities = [accounts[2]];
       await validatorContract.initialize(1, authorities, owner)
       homeErcToErcContract = await HomeErcToErcBridge.new()
-      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, owner)
+      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, foreignDailyLimit, foreignMaxPerTx, owner)
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
       await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, owner);
     })
@@ -189,7 +191,7 @@ contract('ERC677BridgeToken', async (accounts) => {
       const authorities = [accounts[2]];
       await validatorContract.initialize(1, authorities, owner)
       homeErcToErcContract = await HomeErcToErcBridge.new()
-      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, owner)
+      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, foreignDailyLimit, foreignMaxPerTx, owner)
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
       await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, owner);
     })

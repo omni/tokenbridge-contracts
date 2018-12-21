@@ -15,9 +15,9 @@ const VALIDATORS = env.VALIDATORS.split(' ')
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
-  HOME_OWNER_MULTISIG,
-  HOME_UPGRADEABLE_ADMIN_VALIDATORS,
-  HOME_UPGRADEABLE_ADMIN_BRIDGE,
+  HOME_BRIDGE_OWNER,
+  HOME_VALIDATORS_OWNER,
+  HOME_UPGRADEABLE_ADMIN,
   HOME_DAILY_LIMIT,
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
@@ -25,7 +25,9 @@ const {
   HOME_GAS_PRICE,
   BRIDGEABLE_TOKEN_NAME,
   BRIDGEABLE_TOKEN_SYMBOL,
-  BRIDGEABLE_TOKEN_DECIMALS
+  BRIDGEABLE_TOKEN_DECIMALS,
+  FOREIGN_DAILY_LIMIT,
+  FOREIGN_MAX_AMOUNT_PER_TX
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -68,7 +70,7 @@ async function deployHome() {
   )
   bridgeValidatorsHome.options.address = storageValidatorsHome.options.address
   const initializeData = await bridgeValidatorsHome.methods
-    .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_OWNER_MULTISIG)
+    .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_VALIDATORS_OWNER)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitialize = await sendRawTxHome({
     data: initializeData,
@@ -82,7 +84,7 @@ async function deployHome() {
 
   console.log('transferring proxy ownership to multisig for Validators Proxy contract')
   const proxyDataTransfer = await storageValidatorsHome.methods
-    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_VALIDATORS)
+    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN)
     .encodeABI()
   const txProxyDataTransfer = await sendRawTxHome({
     data: proxyDataTransfer,
@@ -181,7 +183,10 @@ async function deployHome() {
       HOME_MIN_AMOUNT_PER_TX,
       HOME_GAS_PRICE,
       HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-      erc677token.options.address
+      erc677token.options.address,
+      FOREIGN_DAILY_LIMIT,
+      FOREIGN_MAX_AMOUNT_PER_TX,
+      HOME_BRIDGE_OWNER
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeHomeBridge = await sendRawTxHome({
@@ -196,7 +201,7 @@ async function deployHome() {
 
   console.log('transferring proxy ownership to multisig for Home bridge Proxy contract')
   const homeBridgeProxyData = await homeBridgeStorage.methods
-    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_BRIDGE)
+    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN)
     .encodeABI()
   const txhomeBridgeProxyData = await sendRawTxHome({
     data: homeBridgeProxyData,

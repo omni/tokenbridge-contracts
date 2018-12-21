@@ -28,9 +28,7 @@ contract BasicForeignBridge is EternalStorage, Validatable {
         }
     }
 
-    function onExecuteMessage(address, uint256) internal returns(bool){
-        // has to be defined
-    }
+    function onExecuteMessage(address, uint256) internal returns(bool);
 
     function setRelayedMessages(bytes32 _txHash, bool _status) internal {
         boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))] = _status;
@@ -40,10 +38,7 @@ contract BasicForeignBridge is EternalStorage, Validatable {
         return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
     }
 
-    function messageWithinLimits(uint256) internal view returns(bool) {
-        return true;
-    }
+    function messageWithinLimits(uint256) internal view returns(bool);
 
-    function onFailedMessage(address, uint256, bytes32) internal {
-    }
+    function onFailedMessage(address, uint256, bytes32) internal;
 }

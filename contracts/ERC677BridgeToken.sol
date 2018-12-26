@@ -14,8 +14,6 @@ contract ERC677BridgeToken is
     MintableToken {
 
     address public bridgeContract;
-    address public blockRewardContract;
-    address public validatorSetContract;
 
     event ContractFallbackCallFailed(address from, address to, uint value);
 
@@ -30,28 +28,8 @@ contract ERC677BridgeToken is
         bridgeContract = _bridgeContract;
     }
 
-    function setBlockRewardContract(address _blockRewardContract) onlyOwner public {
-        require(_blockRewardContract != address(0) && isContract(_blockRewardContract));
-        blockRewardContract = _blockRewardContract;
-    }
-
-    function setValidatorSetContract(address _validatorSetContract) onlyOwner public {
-        require(_validatorSetContract != address(0) && isContract(_validatorSetContract));
-        validatorSetContract = _validatorSetContract;
-    }
-
     modifier validRecipient(address _recipient) {
         require(_recipient != address(0) && _recipient != address(this));
-        _;
-    }
-
-    modifier onlyBlockRewardContract() {
-        require(msg.sender == blockRewardContract);
-        _;
-    }
-
-    modifier onlyValidatorSetContract() {
-        require(msg.sender == validatorSetContract);
         _;
     }
 
@@ -97,7 +75,7 @@ contract ERC677BridgeToken is
     }
 
     function isContract(address _addr)
-        private
+        internal
         view
         returns (bool)
     {
@@ -126,33 +104,5 @@ contract ERC677BridgeToken is
         require(token.transfer(_to, balance));
     }
 
-    function mintReward(address[] _receivers, uint256[] _rewards) external onlyBlockRewardContract {
-        for (uint256 i = 0; i < _receivers.length; i++) {
-            address to = _receivers[i];
-            uint256 amount = _rewards[i];
-
-            // Mint `amount` for `to`
-            totalSupply_ = totalSupply_.add(amount);
-            balances[to] = balances[to].add(amount);
-            emit Mint(to, amount);
-            emit Transfer(address(0), to, amount);
-        }
-    }
-
-    function stake(address _staker, uint256 _amount) external onlyValidatorSetContract {
-        // Transfer `_amount` from `_staker` to `validatorSetContract`
-        require(_amount <= balances[_staker]);
-        balances[_staker] = balances[_staker].sub(_amount);
-        balances[validatorSetContract] = balances[validatorSetContract].add(_amount);
-        emit Transfer(_staker, validatorSetContract, _amount);
-    }
-
-    function withdraw(address _staker, uint256 _amount) external onlyValidatorSetContract {
-        // Transfer `_amount` from `validatorSetContract` to `_staker`
-        require(_amount <= balances[validatorSetContract]);
-        balances[validatorSetContract] = balances[validatorSetContract].sub(_amount);
-        balances[_staker] = balances[_staker].add(_amount);
-        emit Transfer(validatorSetContract, _staker, _amount);
-    }
 
 }

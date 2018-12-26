@@ -11,12 +11,13 @@ const requireBlockConfirmations = 8;
 const gasPrice = web3.toWei('1', 'gwei');
 
 contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
-  let validatorContract, authorities, owner, token;
+  let validatorContract, authorities, rewards, owner, token;
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]];
+    rewards = [accounts[3], accounts[4]];
     owner = accounts[0]
-    await validatorContract.initialize(1, authorities, owner)
+    await validatorContract.initialize(1, authorities, rewards, owner)
   })
 
   describe('#initialize', async () => {
@@ -146,14 +147,15 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
   })
 
   describe('#withdraw with 2 minimum signatures', async () => {
-    let multisigValidatorContract, twoAuthorities, ownerOfValidatorContract, foreignBridgeWithMultiSignatures
+    let multisigValidatorContract, twoAuthorities, twoRewards, ownerOfValidatorContract, foreignBridgeWithMultiSignatures
     const value = web3.toBigNumber(web3.toWei(0.5, "ether"));
     beforeEach(async () => {
       multisigValidatorContract = await BridgeValidators.new()
       token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
       twoAuthorities = [accounts[0], accounts[1]];
+      twoRewards = [accounts[8], accounts[9]];
       ownerOfValidatorContract = accounts[3]
-      await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {from: ownerOfValidatorContract})
+      await multisigValidatorContract.initialize(2, twoAuthorities, twoRewards, ownerOfValidatorContract, {from: ownerOfValidatorContract})
       foreignBridgeWithMultiSignatures = await ForeignBridge.new()
       await foreignBridgeWithMultiSignatures.initialize(multisigValidatorContract.address, token.address, requireBlockConfirmations, gasPrice, {from: ownerOfValidatorContract});
       await token.mint(foreignBridgeWithMultiSignatures.address,value);
@@ -196,9 +198,10 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
     it('works with 5 validators and 3 required signatures', async () => {
       const recipient = accounts[8]
       const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
+      const rewardsFiveAccs = [accounts[6], accounts[7], accounts[8], accounts[9], accounts[0]]
       const ownerOfValidators = accounts[0]
       const validatorContractWith3Signatures = await BridgeValidators.new()
-      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
+      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, rewardsFiveAccs, ownerOfValidators)
       const erc20Token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
       const value = web3.toBigNumber(web3.toWei(0.5, "ether"));
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
@@ -234,6 +237,7 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
     it('can be upgraded', async () => {
       const REQUIRED_NUMBER_OF_VALIDATORS = 1
       const VALIDATORS = [accounts[1]]
+      const REWARDS = [accounts[2]]
       const PROXY_OWNER  = accounts[0]
       // Validators Contract
       let validatorsProxy = await EternalStorageProxy.new().should.be.fulfilled;
@@ -242,7 +246,7 @@ contract('ForeignBridge_ERC20_to_Native', async (accounts) => {
       validatorsContractImpl.address.should.be.equal(await validatorsProxy.implementation())
 
       validatorsProxy = await BridgeValidators.at(validatorsProxy.address);
-      await validatorsProxy.initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER).should.be.fulfilled;
+      await validatorsProxy.initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, REWARDS, PROXY_OWNER).should.be.fulfilled;
       let token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
 
       // ForeignBridge V1 Contract

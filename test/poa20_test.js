@@ -99,7 +99,8 @@ contract('ERC677BridgeToken', async (accounts) => {
     beforeEach(async () => {
       validatorContract = await BridgeValidators.new()
       const authorities = [accounts[2]];
-      await validatorContract.initialize(1, authorities, owner)
+      const rewards = [accounts[3]];
+      await validatorContract.initialize(1, authorities, rewards, owner)
       homeErcToErcContract = await HomeErcToErcBridge.new()
       await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address)
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
@@ -187,7 +188,8 @@ contract('ERC677BridgeToken', async (accounts) => {
     beforeEach(async () => {
       validatorContract = await BridgeValidators.new()
       const authorities = [accounts[2]];
-      await validatorContract.initialize(1, authorities, owner)
+      const rewards  = [accounts[3]];
+      await validatorContract.initialize(1, authorities, rewards, owner)
       homeErcToErcContract = await HomeErcToErcBridge.new()
       await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address)
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()

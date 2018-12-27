@@ -7,6 +7,7 @@ import "../../IBlockReward.sol";
 import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
+import "../../IFeeManager.sol";
 
 
 contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
@@ -19,9 +20,15 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
         require(msg.value <= totalMinted.sub(totalBurntCoins()));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
-        setTotalBurntCoins(totalBurntCoins().add(msg.value));
-        address(0).transfer(msg.value);
-        emit UserRequestForSignature(msg.sender, msg.value);
+        uint256 valueToTransfer = msg.value;
+        IFeeManager feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            uint256 fee = feeManager.delegateCall(abi.encodeWithSignature("calculateFee(uint256,bool)", valueToTransfer, false));
+            valueToTransfer = valueToTransfer - fee;
+        }
+        setTotalBurntCoins(totalBurntCoins().add(valueToTransfer));
+        address(0).transfer(valueToTransfer);
+        emit UserRequestForSignature(msg.sender, valueToTransfer);
     }
 
     function initialize (
@@ -73,7 +80,16 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
-        blockReward.addExtraReceiver(_value, _recipient);
+        uint256 valueToMint = msg.value;
+
+        IFeeManager feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            uint256 fee = feeManager.delegatecall(abi.encodeWithSignature("calculateFee(uint256,bool)", valueToMint, false));
+            feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromAffirmation(uint256)", fee));
+            valueToMint = valueToMint - fee;
+        }
+
+        blockReward.addExtraReceiver(valueToMint, _recipient);
         return true;
     }
 

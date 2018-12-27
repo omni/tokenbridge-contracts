@@ -5,6 +5,7 @@ import "../libraries/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
+import "../IFeeManager.sol";
 
 contract BasicHomeBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
@@ -70,6 +71,17 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         if (signed >= reqSigs) {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
             emit CollectedSignatures(msg.sender, hashMsg, reqSigs);
+
+            IFeeManager feeManager = feeManagerContract();
+            if (feeManager != address(0)) {
+                address receipt;
+                uint256 amount;
+                bytes32 txHash;
+                address contractAddress;
+                (recipient, amount, txHash, contractAddress) = Message.parseMessage(message);
+                uint256 fee = feeManager.delegatecall(abi.encodeWithSignatures("calculateFee(uint256,bool)", amount, true));
+                feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromSignatures(uint256)", fee));
+            }
         }
     }
 

@@ -125,6 +125,16 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
 VALIDATORS="0x 0x 0x"
+
+# The flag defining whether to use ERC677BridgeTokenRewardable contract instead of
+# ERC677BridgeToken.
+DEPLOY_REWARDABLE_TOKEN=false
+# The address of ValidatorSet contract used by ERC677BridgeTokenRewardable contract.
+# Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
+VALIDATOR_SET_ADDRESS=0x
+# The address of BlockReward contract used by ERC677BridgeTokenRewardable contract.
+# Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
+BLOCK_REWARD_ADDRESS=0x
 ```
 
 

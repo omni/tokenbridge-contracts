@@ -131,7 +131,7 @@ VALIDATORS="0x 0x 0x"
 DEPLOY_REWARDABLE_TOKEN=false
 # The address of ValidatorSet contract used by ERC677BridgeTokenRewardable contract.
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
-VALIDATOR_SET_ADDRESS=0x
+DPOS_VALIDATOR_SET_ADDRESS=0x
 # The address of BlockReward contract used by ERC677BridgeTokenRewardable contract.
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
 BLOCK_REWARD_ADDRESS=0x

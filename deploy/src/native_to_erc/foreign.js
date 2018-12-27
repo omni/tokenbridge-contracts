@@ -29,7 +29,7 @@ const {
   BRIDGEABLE_TOKEN_DECIMALS,
   DEPLOY_REWARDABLE_TOKEN,
   BLOCK_REWARD_ADDRESS,
-  VALIDATOR_SET_ADDRESS
+  DPOS_VALIDATOR_SET_ADDRESS
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -216,7 +216,7 @@ async function deployForeign() {
 
     console.log('\nset ValidatorSet contract on ERC677BridgeTokenRewardable')
     const setValidatorSetContractData = await erc677bridgeToken.methods
-      .setValidatorSetContract(VALIDATOR_SET_ADDRESS)
+      .setValidatorSetContract(DPOS_VALIDATOR_SET_ADDRESS)
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
     const setValidatorSetContract = await sendRawTxForeign({
       data: setValidatorSetContractData,

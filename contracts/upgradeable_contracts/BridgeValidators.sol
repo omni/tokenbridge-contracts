@@ -9,7 +9,7 @@ import "../upgradeability/EternalStorage.sol";
 contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     using SafeMath for uint256;
 
-    address constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
     event ValidatorAdded (address indexed validator);
     event ValidatorRemoved (address indexed validator);
@@ -138,7 +138,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         return addressStorage[keccak256(abi.encodePacked("validatorsRewards", _validator))];
     }
 
-    function getNextValidator(address _address) internal view returns (address) {
+    function getNextValidator(address _address) public view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("validatorsList", _address))];
     }
 

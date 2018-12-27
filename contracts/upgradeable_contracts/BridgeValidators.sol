@@ -32,7 +32,8 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         require(_initialValidators.length == _initialRewards.length);
 
         for (uint256 i = 0; i < _initialValidators.length; i++) {
-            require(_initialValidators[i] != address(0) || _initialValidators[i] != F_ADDR);
+            require(_initialValidators[i] != address(0) && _initialValidators[i] != F_ADDR);
+            require(_initialRewards[i] != address(0));
             require(!isValidator(_initialValidators[i]));
 
             if (i == 0) {
@@ -61,7 +62,8 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
     }
 
     function addValidator(address _validator, address _reward) external onlyOwner {
-        require(_validator != address(0));
+        require(_validator != address(0) && _validator != F_ADDR);
+        require(_reward != address(0));
         require(!isValidator(_validator));
 
         address firstValidator = getNextValidator(F_ADDR);

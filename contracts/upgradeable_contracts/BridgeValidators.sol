@@ -60,12 +60,13 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         return isInitialized();
     }
 
-    function addValidator(address _validator) external onlyOwner {
+    function addValidator(address _validator, address _reward) external onlyOwner {
         require(_validator != address(0));
         require(!isValidator(_validator));
 
         address firstValidator = getNextValidator(F_ADDR);
         setValidator(_validator, firstValidator);
+        setValidatorRewardAddress(_validator, _reward);
         setValidator(F_ADDR, _validator);
 
         setValidatorCount(validatorCount().add(1));

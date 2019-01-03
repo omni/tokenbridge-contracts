@@ -7,9 +7,12 @@ import "../../IBlockReward.sol";
 import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
+import "../OverdrawManagement.sol";
 
 
-contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
+contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement {
+
+    event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
     function () public payable {
         require(msg.value > 0);
@@ -31,8 +34,10 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         uint256 _minPerTx,
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        address _blockReward
-
+        address _blockReward,
+        uint256 _foreignDailyLimit,
+        uint256 _foreignMaxPerTx,
+        address _owner
     ) public returns(bool)
     {
         require(!isInitialized());
@@ -40,6 +45,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_blockReward == address(0) || isContract(_blockReward));
+        require(_foreignMaxPerTx < _foreignDailyLimit);
+        require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
@@ -48,6 +55,9 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
+        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
+        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
+        setOwner(_owner);
         setInitialize(true);
 
         return isInitialized();
@@ -71,6 +81,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
+        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
         blockReward.addExtraReceiver(_value, _recipient);
@@ -83,5 +94,19 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
 
     function setTotalBurntCoins(uint256 _amount) internal {
         uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
+    }
+
+    function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {
+        return withinExecutionLimit(_amount);
+    }
+
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
+        address recipient;
+        uint256 value;
+        (recipient, value) = txAboveLimits(_txHash);
+        require(recipient == address(0) && value == 0);
+        setOutOfLimitAmount(outOfLimitAmount().add(_value));
+        setTxAboveLimits(_recipient, _value, _txHash);
+        emit AmountLimitExceeded(_recipient, _value, _txHash);
     }
 }

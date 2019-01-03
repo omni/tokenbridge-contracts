@@ -44,7 +44,7 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     to: null,
     privateKey: deploymentPrivateKey,
     url,
-    gasPrice: gasPrice
+    gasPrice
   })
   if (Web3Utils.hexToNumber(tx.status) !== 1) {
     throw new Error('Tx failed')
@@ -110,7 +110,7 @@ async function sendNodeRequest(url, method, signedData) {
   })
   const json = await request.json()
   if (method === 'eth_sendRawTransaction') {
-    assert.equal(json.result.length, 66, `Tx wasn't sent ${json}`)
+    assert.strictEqual(json.result.length, 66, `Tx wasn't sent ${json}`)
   }
   return json.result
 }

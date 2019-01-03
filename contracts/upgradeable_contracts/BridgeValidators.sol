@@ -142,6 +142,20 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         return addressStorage[keccak256(abi.encodePacked("validatorsList", _address))];
     }
 
+    function validatorList() public view returns (address[]) {
+        address [] memory list = new address[](validatorCount());
+        uint256 counter = 0;
+        address nextValidator = getNextValidator(F_ADDR);
+
+        while (nextValidator != F_ADDR) {
+            list[counter] = nextValidator;
+            nextValidator = getNextValidator(nextValidator);
+            counter++;
+        }
+
+        return list;
+    }
+
     function setValidatorRewardAddress(address _validator, address _reward) internal {
         addressStorage[keccak256(abi.encodePacked("validatorsRewards", _validator))] = _reward;
     }

@@ -13,6 +13,8 @@ const requireBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
+const executionDailyLimit = oneEther
+const executionMaxPerTx = halfEther
 
 async function testERC677BridgeToken(accounts, rewardable) {
   let token
@@ -259,9 +261,9 @@ async function testERC677BridgeToken(accounts, rewardable) {
       const authorities = [accounts[2]];
       await validatorContract.initialize(1, authorities, owner)
       homeErcToErcContract = await HomeErcToErcBridge.new()
-      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address)
+      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, executionDailyLimit, executionMaxPerTx, owner)
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
-      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, executionDailyLimit, executionMaxPerTx, owner);
     })
     it('sends tokens to recipient', async () => {
       await token.mint(user, 1, {from: owner }).should.be.fulfilled;
@@ -347,9 +349,9 @@ async function testERC677BridgeToken(accounts, rewardable) {
       const authorities = [accounts[2]];
       await validatorContract.initialize(1, authorities, owner)
       homeErcToErcContract = await HomeErcToErcBridge.new()
-      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address)
+      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, executionDailyLimit, executionMaxPerTx, owner)
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
-      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, executionDailyLimit, executionMaxPerTx, owner);
     })
     it('calls contractFallback', async () => {
       const receiver = await ERC677ReceiverTest.new();

@@ -61,7 +61,10 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
     FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
-    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
+    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
+    DPOS_VALIDATOR_SET_ADDRESS: addressValidator(),
+    BLOCK_REWARD_ADDRESS: addressValidator()
   }
 }
 if (BRIDGE_MODE === 'ERC_TO_ERC') {

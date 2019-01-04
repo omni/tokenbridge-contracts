@@ -21,9 +21,9 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         require(msg.value <= totalMinted.sub(totalBurntCoins()));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         uint256 valueToTransfer = msg.value;
-        IFeeManager feeManager = feeManagerContract();
+        address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = feeManager.delegateCall(abi.encodeWithSignature("calculateFee(uint256,bool)", valueToTransfer, false));
+            uint256 fee = calculateFee(valueToTransfer, false, feeManager);
             valueToTransfer = valueToTransfer - fee;
         }
         setTotalBurntCoins(totalBurntCoins().add(valueToTransfer));
@@ -82,9 +82,9 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         require(blockReward != address(0));
         uint256 valueToMint = msg.value;
 
-        IFeeManager feeManager = feeManagerContract();
+        address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = feeManager.delegatecall(abi.encodeWithSignature("calculateFee(uint256,bool)", valueToMint, false));
+            uint256 fee = calculateFee(valueToMint, false, feeManager);
             feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromAffirmation(uint256)", fee));
             valueToMint = valueToMint - fee;
         }
@@ -99,5 +99,13 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
 
     function setTotalBurntCoins(uint256 _amount) internal {
         uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
+    }
+
+    function setFee(uint256 _fee) external onlyOwner {
+        require(feeManagerContract().delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
+    }
+
+    function getFee() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("fee"))];
     }
 }

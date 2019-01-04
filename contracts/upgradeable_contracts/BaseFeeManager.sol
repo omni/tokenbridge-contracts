@@ -3,11 +3,12 @@ pragma solidity 0.4.24;
 import "../upgradeability/EternalStorage.sol";
 import "../IFeeManager.sol";
 import "../libraries/SafeMath.sol";
+import "../IBridgeValidators.sol";
 
 contract BaseFeeManager is EternalStorage {
     using SafeMath for uint256;
 
-    event FeeUpdated(uint256 fee, uint256 fee);
+    event FeeUpdated(uint256 fee);
 
     function calculateFee(uint256 _value, bool _recover) external view returns(uint256) {
         uint256 fee = getFee();
@@ -15,22 +16,50 @@ contract BaseFeeManager is EternalStorage {
         if (!_recover) {
             return _value.mul(fee).div(eth);
         }
-        return _value.mul(fee).div(eth.sub(fee)); // value * fee / (1 ether - fee)
-    }
-
-    function distributeFeeFromSignatures(uint256 _fee) external {
-    }
-
-    function distributeFeeFromAffirmation(uint256 _fee) external {
+        return _value.mul(fee).div(eth.sub(fee));
     }
 
     function setFee(uint256 _fee) external {
-        uint256 fee = _fee.mul(1 ether);
-        uintStorage[keccak256(abi.encodePacked("fee"))] = fee;
-        emit FeeUpdated(_fee, fee);
+        uintStorage[keccak256(abi.encodePacked("fee"))] = _fee;
+        emit FeeUpdated(_fee);
     }
 
     function getFee() public view returns(uint256) {
         return uintStorage[keccak256(abi.encodePacked("fee"))];
+    }
+
+    function distributeFeeFromAffirmation(uint256 _fee) external {
+        distributeFeeProportionally(_fee, true);
+    }
+
+    function distributeFeeFromSignatures(uint256 _fee) external {
+        distributeFeeProportionally(_fee, false);
+    }
+
+    function distributeFeeProportionally(uint256 _fee, bool _isAffirmation) internal {
+        IBridgeValidators validators = validatorContract();
+        address [] memory validatorList = validators.validatorList();
+        uint256 feePerValidator = _fee.div(validatorList.length);
+
+        for (uint256 i = 0; i < validatorList.length; i++) {
+            address rewardAddress = validators.getValidatorRewardAddress(validatorList[i]);
+            onFeeDistribution(rewardAddress, feePerValidator, _isAffirmation);
+        }
+    }
+
+    function onFeeDistribution(address _rewardAddress, uint256 _fee, bool _isAffirmation) internal {
+        if (_isAffirmation) {
+            onAffirmationFeeDistribution(_rewardAddress, _fee);
+        } else {
+            onSignatureFeeDistribution(_rewardAddress, _fee);
+        }
+    }
+
+    function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal;
+
+    function onSignatureFeeDistribution(address _rewardAddress, uint256 _fee) internal;
+
+    function validatorContract() public view returns(IBridgeValidators) {
+        return IBridgeValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
     }
 }

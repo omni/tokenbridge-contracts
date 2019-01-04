@@ -72,17 +72,21 @@ contract BasicHomeBridge is EternalStorage, Validatable {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
             emit CollectedSignatures(msg.sender, hashMsg, reqSigs);
 
-            IFeeManager feeManager = feeManagerContract();
+            address feeManager = feeManagerContract();
             if (feeManager != address(0)) {
-                address receipt;
-                uint256 amount;
-                bytes32 txHash;
-                address contractAddress;
-                (recipient, amount, txHash, contractAddress) = Message.parseMessage(message);
-                uint256 fee = feeManager.delegatecall(abi.encodeWithSignatures("calculateFee(uint256,bool)", amount, true));
-                feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromSignatures(uint256)", fee));
+                handleSignatureFeeDistribution(feeManager, message);
             }
         }
+    }
+
+    function handleSignatureFeeDistribution(address feeManager, bytes message) internal {
+        address recipient;
+        uint256 amount;
+        bytes32 txHash;
+        address contractAddress;
+        (recipient, amount, txHash, contractAddress) = Message.parseMessage(message);
+        uint256 fee = calculateFee(amount, true, feeManager);
+        feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromSignatures(uint256)", fee));
     }
 
     function setMessagesSigned(bytes32 _hash, bool _status) internal {
@@ -155,5 +159,41 @@ contract BasicHomeBridge is EternalStorage, Validatable {
 
     function requiredMessageLength() public pure returns(uint256) {
         return Message.requiredMessageLength();
+    }
+
+    function feeManagerContract() public view returns(address) {
+        return addressStorage[keccak256(abi.encodePacked("feeManagerContract"))];
+    }
+
+    function setFeeManagerContract(address _feeManager) public onlyOwner {
+        require(_feeManager == address(0) || isContract(_feeManager));
+        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+    }
+
+    function isContract(address _addr) internal view returns (bool)
+    {
+        uint length;
+        assembly { length := extcodesize(_addr) }
+        return length > 0;
+    }
+
+    function calculateFee(uint256 _value, bool _recover, address _impl) internal view returns(uint256) {
+        uint256 fee;
+        assembly {
+            let ptr := mload(0x40)
+
+            calldatacopy(ptr, 0, calldatasize)
+
+            let result := delegatecall(gas, _impl, ptr, calldatasize, 0, 0)
+
+            mstore(0x40, add(ptr, returndatasize))
+            returndatacopy(ptr, 0, returndatasize)
+
+            switch result
+            case 0 { revert(ptr, returndatasize) }
+            default { fee := ptr }
+        }
+
+        return fee;
     }
 }

@@ -182,6 +182,26 @@ contract('BridgeValidators', async (accounts) => {
       logs[0].args.should.be.deep.equal({ validator: accounts[0] })
     })
 
+    it(`Removed validator should return zero address on nextValidator`, async () => {
+      // Given
+      const { initialize, isInitialized, removeValidator, getNextValidator } = bridgeValidators
+      await initialize(1, accounts.slice(0, 2), accounts.slice(2, 4), owner, { from: owner }).should.be.fulfilled
+      true.should.be.equal(await isInitialized())
+      const initialNextValidator = await getNextValidator(accounts[0])
+
+      // When
+      const { logs } = await removeValidator(accounts[0], { from: owner }).should.be.fulfilled
+
+      // Then
+      logs[0].event.should.be.equal('ValidatorRemoved')
+      logs[0].args.should.be.deep.equal({ validator: accounts[0] })
+
+      const updatedNextValidator = await getNextValidator(accounts[0])
+
+      initialNextValidator.should.be.equals(accounts[1])
+      updatedNextValidator.should.be.equals(ZERO_ADDRESS)
+    })
+
     accounts.slice(0, 5).forEach(validator => {
       it(`should remove ${validator} - with Proxy`, async () => {
         // Given

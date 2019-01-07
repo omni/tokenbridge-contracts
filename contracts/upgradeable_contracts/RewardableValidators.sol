@@ -5,7 +5,7 @@ import "./BaseBridgeValidators.sol";
 
 contract RewardableValidators is BaseBridgeValidators {
 
-    event ValidatorAdded (address indexed validator);
+    event ValidatorAdded (address indexed validator, address reward);
     event ValidatorRemoved (address indexed validator);
 
     function initialize(
@@ -43,7 +43,7 @@ contract RewardableValidators is BaseBridgeValidators {
 
             setValidatorCount(validatorCount().add(1));
             setValidatorRewardAddress(_initialValidators[i], _initialRewards[i]);
-            emit ValidatorAdded(_initialValidators[i]);
+            emit ValidatorAdded(_initialValidators[i], _initialRewards[i]);
         }
 
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
@@ -65,7 +65,7 @@ contract RewardableValidators is BaseBridgeValidators {
         setValidator(F_ADDR, _validator);
 
         setValidatorCount(validatorCount().add(1));
-        emit ValidatorAdded(_validator);
+        emit ValidatorAdded(_validator, _reward);
     }
 
     function removeValidator(address _validator) external onlyOwner {

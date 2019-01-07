@@ -58,7 +58,7 @@ contract('RewardableValidators', async (accounts) => {
       true.should.be.equal(await bridgeValidators.isValidator(newValidator))
       '3'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
       logs[0].event.should.be.equal('ValidatorAdded')
-      logs[0].args.should.be.deep.equal({validator: newValidator})
+      logs[0].args.should.be.deep.equal({ validator: newValidator, reward: newReward })
     })
 
     it('cannot add already existing validator', async () => {

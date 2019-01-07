@@ -13,13 +13,12 @@ const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 
 
 contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
-  let homeContract, validatorContract, authorities, rewards, owner, token;
+  let homeContract, validatorContract, authorities, owner, token;
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1]];
-    rewards = [accounts[2]];
     owner = accounts[0]
-    await validatorContract.initialize(1, authorities, rewards, owner)
+    await validatorContract.initialize(1, authorities, owner)
   })
   describe('#initialize', async() => {
     beforeEach(async () => {
@@ -157,9 +156,8 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       let token2sig = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
       let validatorContractWith2Signatures = await BridgeValidators.new()
       let authoritiesThreeAccs = [accounts[1], accounts[2], accounts[3]];
-      let rewardsThreeAccs = [accounts[4], accounts[5], accounts[6]];
       let ownerOfValidators = accounts[0]
-      await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, rewardsThreeAccs, ownerOfValidators)
+      await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, ownerOfValidators)
       let homeBridgeWithTwoSigs = await HomeBridge.new();
       await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address);
       await token2sig.transferOwnership(homeBridgeWithTwoSigs.address);
@@ -221,9 +219,8 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       let token2sig = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
       let validatorContractWith2Signatures = await BridgeValidators.new()
       let authoritiesThreeAccs = [accounts[1], accounts[2], accounts[3]];
-      let rewardsThreeAccs = [accounts[4], accounts[5], accounts[6]];
       let ownerOfValidators = accounts[0]
-      await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, rewardsThreeAccs, ownerOfValidators)
+      await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, ownerOfValidators)
       let homeBridgeWithTwoSigs = await HomeBridge.new();
       await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address);
       await token2sig.transferOwnership(homeBridgeWithTwoSigs.address);
@@ -246,10 +243,9 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
     it('works with 5 validators and 3 required signatures', async () => {
       const recipient = accounts[8]
       const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
-      const rewardsFiveAccs = [accounts[6], accounts[7], accounts[8], accounts[9], accounts[0]]
       let ownerOfValidators = accounts[0]
       const validatorContractWith3Signatures = await BridgeValidators.new()
-      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, rewardsFiveAccs, ownerOfValidators)
+      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
 
       const homeBridgeWithThreeSigs = await HomeBridge.new();
@@ -289,14 +285,13 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
   })
 
   describe('#submitSignature', async () => {
-    let validatorContractWith2Signatures,authoritiesThreeAccs,rewardsThreeAccs,ownerOfValidators,tokenPOA20,homeBridgeWithTwoSigs
+    let validatorContractWith2Signatures,authoritiesThreeAccs,ownerOfValidators,tokenPOA20,homeBridgeWithTwoSigs
     beforeEach(async () => {
       let token2sig = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
       validatorContractWith2Signatures = await BridgeValidators.new()
       authoritiesThreeAccs = [accounts[1], accounts[2], accounts[3]];
-      rewardsThreeAccs = [accounts[4], accounts[5], accounts[6]];
       ownerOfValidators = accounts[0]
-      await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, rewardsThreeAccs, ownerOfValidators)
+      await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, ownerOfValidators)
       homeBridgeWithTwoSigs = await HomeBridge.new();
       await homeBridgeWithTwoSigs.initialize(validatorContractWith2Signatures.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token2sig.address);
       await token2sig.transferOwnership(homeBridgeWithTwoSigs.address);
@@ -343,9 +338,8 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
     it('works with 5 validators and 3 required signatures', async () => {
       const recipientAccount = accounts[8]
       const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
-      const rewardsFiveAccs = [accounts[6], accounts[7], accounts[8], accounts[9], accounts[0]]
       const validatorContractWith3Signatures = await BridgeValidators.new()
-      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, rewardsFiveAccs, ownerOfValidators)
+      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const token = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
 
       const homeBridgeWithThreeSigs = await HomeBridge.new();

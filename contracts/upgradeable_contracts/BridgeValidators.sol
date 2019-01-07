@@ -111,7 +111,7 @@ contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
         pure
         returns (uint64 major, uint64 minor, uint64 patch)
     {
-        return (2, 0, 0);
+        return (2, 1, 0);
     }
 
     function requiredSignatures() public view returns (uint256) {

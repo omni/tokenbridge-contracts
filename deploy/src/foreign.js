@@ -19,9 +19,9 @@ const FOREIGN_GAS_PRICE =  Web3Utils.toWei(process.env.FOREIGN_GAS_PRICE, 'gwei'
 const {
   DEPLOYMENT_ACCOUNT_ADDRESS,
   REQUIRED_NUMBER_OF_VALIDATORS,
-  FOREIGN_OWNER_MULTISIG,
-  FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
-  FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,
+  FOREIGN_BRIDGE_OWNER,
+  FOREIGN_VALIDATORS_OWNER,
+  FOREIGN_UPGRADEABLE_ADMIN,
   FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
   FOREIGN_MIN_AMOUNT_PER_TX,
@@ -69,7 +69,7 @@ async function deployForeign() {
   console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`)
   bridgeValidatorsForeign.options.address = storageValidatorsForeign.options.address
   const initializeForeignData = await bridgeValidatorsForeign.methods.initialize(
-    REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_OWNER_MULTISIG
+    REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_VALIDATORS_OWNER
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeForeign = await sendRawTx({
     data: initializeForeignData,
@@ -80,11 +80,11 @@ async function deployForeign() {
   });
   assert.equal(txInitializeForeign.status, '0x1', 'Transaction Failed');
   const validatorOwner = await bridgeValidatorsForeign.methods.owner().call();
-  assert.equal(validatorOwner.toLocaleLowerCase(), FOREIGN_OWNER_MULTISIG.toLocaleLowerCase());
+  assert.equal(validatorOwner.toLocaleLowerCase(), FOREIGN_VALIDATORS_OWNER.toLocaleLowerCase());
   foreignNonce++;
 
   console.log('\nTransferring ownership of ValidatorsProxy\n')
-  const validatorsForeignOwnershipData = await storageValidatorsForeign.methods.transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS)
+  const validatorsForeignOwnershipData = await storageValidatorsForeign.methods.transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN)
     .encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txValidatorsForeignOwnershipData = await sendRawTx({
     data: validatorsForeignOwnershipData,
@@ -96,7 +96,7 @@ async function deployForeign() {
   assert.equal(txValidatorsForeignOwnershipData.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   const newProxyValidatorsOwner = await storageValidatorsForeign.methods.proxyOwner().call();
-  assert.equal(newProxyValidatorsOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS.toLowerCase());
+  assert.equal(newProxyValidatorsOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN.toLowerCase());
 
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce})
@@ -139,7 +139,8 @@ async function deployForeign() {
     FOREIGN_GAS_PRICE,
     FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
     HOME_DAILY_LIMIT,
-    HOME_MAX_AMOUNT_PER_TX
+    HOME_MAX_AMOUNT_PER_TX,
+    FOREIGN_BRIDGE_OWNER
   ).encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txInitializeBridge = await sendRawTx({
     data: initializeFBridgeData,
@@ -164,7 +165,7 @@ async function deployForeign() {
   assert.equal(txOwnership.status, '0x1', 'Transaction Failed');
   foreignNonce++;
 
-  const bridgeOwnershipData = await foreignBridgeStorage.methods.transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_BRIDGE)
+  const bridgeOwnershipData = await foreignBridgeStorage.methods.transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN)
     .encodeABI({from: DEPLOYMENT_ACCOUNT_ADDRESS});
   const txBridgeOwnershipData = await sendRawTx({
     data: bridgeOwnershipData,
@@ -176,7 +177,7 @@ async function deployForeign() {
   assert.equal(txBridgeOwnershipData.status, '0x1', 'Transaction Failed');
   foreignNonce++;
   const newProxyBridgeOwner = await foreignBridgeStorage.methods.proxyOwner().call();
-  assert.equal(newProxyBridgeOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN_BRIDGE.toLowerCase());
+  assert.equal(newProxyBridgeOwner.toLowerCase(), FOREIGN_UPGRADEABLE_ADMIN.toLowerCase());
 
   return {
     foreignBridge:

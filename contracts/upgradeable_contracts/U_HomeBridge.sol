@@ -3,6 +3,8 @@ import "../libraries/SafeMath.sol";
 import "../libraries/Message.sol";
 import "./U_BasicBridge.sol";
 import "../upgradeability/EternalStorage.sol";
+import "./OwnedUpgradeability.sol";
+
 
 contract Sacrifice {
     constructor(address _recipient) public payable {
@@ -10,7 +12,7 @@ contract Sacrifice {
     }
 }
 
-contract HomeBridge is EternalStorage, BasicBridge {
+contract HomeBridge is EternalStorage, BasicBridge, OwnedUpgradeability {
     using SafeMath for uint256;
     event GasConsumptionLimitsUpdated(uint256 gas);
     event Deposit (address recipient, uint256 value);
@@ -26,7 +28,8 @@ contract HomeBridge is EternalStorage, BasicBridge {
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         uint256 _foreignDailyLimit,
-        uint256 _foreignMaxPerTx
+        uint256 _foreignMaxPerTx,
+        address _owner
     ) public
       returns(bool)
     {
@@ -36,6 +39,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _homeDailyLimit > _maxPerTx);
         require(_foreignMaxPerTx < _foreignDailyLimit);
+        require(_owner != address(0));
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
@@ -45,6 +49,7 @@ contract HomeBridge is EternalStorage, BasicBridge {
         uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
         uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
         uintStorage[keccak256("foreignMaxPerTx")] = _foreignMaxPerTx;
+        setOwner(_owner);
         setInitialize(true);
         return isInitialized();
     }

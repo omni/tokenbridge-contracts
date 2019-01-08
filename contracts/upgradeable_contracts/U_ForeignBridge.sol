@@ -5,9 +5,10 @@ import "./U_BasicBridge.sol";
 import "../IBurnableMintableERC677Token.sol";
 import "../ERC677Receiver.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "./OwnedUpgradeability.sol";
 
 
-contract ForeignBridge is ERC677Receiver, BasicBridge {
+contract ForeignBridge is ERC677Receiver, BasicBridge, OwnedUpgradeability {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
     event Deposit(address recipient, uint value, bytes32 transactionHash);
@@ -34,13 +35,15 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
         uint256 _homeDailyLimit,
-        uint256 _homeMaxPerTx
+        uint256 _homeMaxPerTx,
+        address _owner
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _foreignDailyLimit > _maxPerTx);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_foreignGasPrice > 0);
+        require(_owner != address(0));
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
         uintStorage[keccak256("foreignDailyLimit")] = _foreignDailyLimit;
@@ -51,6 +54,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
         uintStorage[keccak256("homeDailyLimit")] = _homeDailyLimit;
         uintStorage[keccak256("homeMaxPerTx")] = _homeMaxPerTx;
+        setOwner(_owner);
         setInitialize(true);
         return isInitialized();
     }
@@ -79,7 +83,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         uintStorage[keccak256("minPerTx")] = _minPerTx;
     }
 
-    function claimTokens(address _token, address _to) external onlyOwner {
+    function claimTokens(address _token, address _to) external onlyIfOwnerOfProxy {
         require(_to != address(0));
         if (_token == address(0)) {
             _to.transfer(address(this).balance);
@@ -91,7 +95,7 @@ contract ForeignBridge is ERC677Receiver, BasicBridge {
         require(token.transfer(_to, balance));
     }
 
-    function claimTokensFromErc677(address _token, address _to) external onlyOwner {
+    function claimTokensFromErc677(address _token, address _to) external onlyIfOwnerOfProxy {
         erc677token().claimTokens(_token, _to);
     }
 

@@ -35,8 +35,8 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         require(!isValidator(_validator));
 
         address firstValidator = getNextValidator(F_ADDR);
-        setValidator(_validator, firstValidator);
-        setValidator(F_ADDR, _validator);
+        setNextValidator(_validator, firstValidator);
+        setNextValidator(F_ADDR, _validator);
         setValidatorCount(validatorCount().add(1));
     }
 
@@ -56,7 +56,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
             }
         }
 
-        setValidator(index, validatorsNext);
+        setNextValidator(index, validatorsNext);
         deleteItemFromAddressStorage("validatorsList", _validator);
         setValidatorCount(validatorCount().sub(1));
     }
@@ -107,7 +107,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         uintStorage[keccak256(abi.encodePacked("validatorCount"))] = _validatorCount;
     }
 
-    function setValidator(address _prevValidator, address _validator) internal {
+    function setNextValidator(address _prevValidator, address _validator) internal {
         addressStorage[keccak256(abi.encodePacked("validatorsList", _prevValidator))] = _validator;
     }
 

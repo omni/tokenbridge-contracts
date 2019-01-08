@@ -27,15 +27,15 @@ contract BridgeValidators is BaseBridgeValidators {
             require(!isValidator(_initialValidators[i]));
 
             if (i == 0) {
-                setValidator(F_ADDR, _initialValidators[i]);
+                setNextValidator(F_ADDR, _initialValidators[i]);
                 if (_initialValidators.length == 1) {
-                    setValidator(_initialValidators[i], F_ADDR);
+                    setNextValidator(_initialValidators[i], F_ADDR);
                 }
             } else if (i == _initialValidators.length - 1) {
-                setValidator(_initialValidators[i - 1], _initialValidators[i]);
-                setValidator(_initialValidators[i], F_ADDR);
+                setNextValidator(_initialValidators[i - 1], _initialValidators[i]);
+                setNextValidator(_initialValidators[i], F_ADDR);
             } else {
-                setValidator(_initialValidators[i - 1], _initialValidators[i]);
+                setNextValidator(_initialValidators[i - 1], _initialValidators[i]);
             }
 
             setValidatorCount(validatorCount().add(1));

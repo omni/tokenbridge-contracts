@@ -51,7 +51,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
             index = next;
             next = getNextValidator(index);
 
-            if (next == F_ADDR) {
+            if (next == F_ADDR || next == address(0) ) {
                 revert();
             }
         }
@@ -94,6 +94,10 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
             list[counter] = nextValidator;
             nextValidator = getNextValidator(nextValidator);
             counter++;
+
+            if (nextValidator == address(0) ) {
+                revert();
+            }
         }
 
         return list;

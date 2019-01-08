@@ -80,7 +80,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
-        uint256 valueToMint = msg.value;
+        uint256 valueToMint = _value;
 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {

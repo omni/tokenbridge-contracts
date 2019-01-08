@@ -30,6 +30,37 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         return (2, 1, 0);
     }
 
+    function _addValidator(address _validator) internal onlyOwner {
+        require(_validator != address(0) && _validator != F_ADDR);
+        require(!isValidator(_validator));
+
+        address firstValidator = getNextValidator(F_ADDR);
+        setValidator(_validator, firstValidator);
+        setValidator(F_ADDR, _validator);
+        setValidatorCount(validatorCount().add(1));
+    }
+
+    function _removeValidator(address _validator) internal onlyOwner {
+        require(validatorCount() > requiredSignatures());
+        require(isValidator(_validator));
+        address validatorsNext = getNextValidator(_validator);
+        address index = F_ADDR;
+        address next = getNextValidator(index);
+
+        while (next != _validator) {
+            index = next;
+            next = getNextValidator(index);
+
+            if (next == F_ADDR) {
+                revert();
+            }
+        }
+
+        setValidator(index, validatorsNext);
+        deleteItemFromAddressStorage("validatorsList", _validator);
+        setValidatorCount(validatorCount().sub(1));
+    }
+
     function requiredSignatures() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("requiredSignatures"))];
     }

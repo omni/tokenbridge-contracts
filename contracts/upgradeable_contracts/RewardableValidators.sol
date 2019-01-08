@@ -55,41 +55,15 @@ contract RewardableValidators is BaseBridgeValidators {
     }
 
     function addValidator(address _validator, address _reward) external onlyOwner {
-        require(_validator != address(0) && _validator != F_ADDR);
         require(_reward != address(0));
-        require(!isValidator(_validator));
-
-        address firstValidator = getNextValidator(F_ADDR);
-        setValidator(_validator, firstValidator);
+        _addValidator(_validator);
         setValidatorRewardAddress(_validator, _reward);
-        setValidator(F_ADDR, _validator);
-
-        setValidatorCount(validatorCount().add(1));
         emit ValidatorAdded(_validator, _reward);
     }
 
     function removeValidator(address _validator) external onlyOwner {
-        require(validatorCount() > requiredSignatures());
-        require(isValidator(_validator));
-        address validatorsNext = getNextValidator(_validator);
-        address index = F_ADDR;
-        address next = getNextValidator(index);
-
-        // find the element in the list pointing to _validator
-        while (next != _validator) {
-            index = next;
-            next = getNextValidator(index);
-
-            if (next == F_ADDR) {
-                revert();
-            }
-        }
-
-        setValidator(index, validatorsNext);
-        deleteItemFromAddressStorage("validatorsList", _validator);
+        _removeValidator(_validator);
         deleteItemFromAddressStorage("validatorsRewards", _validator);
-        setValidatorCount(validatorCount().sub(1));
-
         emit ValidatorRemoved(_validator);
     }
 

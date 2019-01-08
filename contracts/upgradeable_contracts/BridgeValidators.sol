@@ -51,38 +51,12 @@ contract BridgeValidators is BaseBridgeValidators {
     }
 
     function addValidator(address _validator) external onlyOwner {
-        require(_validator != address(0) && _validator != F_ADDR);
-        require(!isValidator(_validator));
-
-        address firstValidator = getNextValidator(F_ADDR);
-        setValidator(_validator, firstValidator);
-        setValidator(F_ADDR, _validator);
-
-        setValidatorCount(validatorCount().add(1));
+        _addValidator(_validator);
         emit ValidatorAdded(_validator);
     }
 
     function removeValidator(address _validator) external onlyOwner {
-        require(validatorCount() > requiredSignatures());
-        require(isValidator(_validator));
-        address validatorsNext = getNextValidator(_validator);
-        address index = F_ADDR;
-        address next = getNextValidator(index);
-
-        // find the element in the list pointing to _validator
-        while (next != _validator) {
-            index = next;
-            next = getNextValidator(index);
-
-            if (next == F_ADDR) {
-                revert();
-            }
-        }
-
-        setValidator(index, validatorsNext);
-        deleteItemFromAddressStorage("validatorsList", _validator);
-        setValidatorCount(validatorCount().sub(1));
-
+        _removeValidator(_validator);
         emit ValidatorRemoved(_validator);
     }
 }

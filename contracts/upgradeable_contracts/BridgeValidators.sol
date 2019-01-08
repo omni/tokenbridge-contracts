@@ -73,6 +73,10 @@ contract BridgeValidators is BaseBridgeValidators {
         while (next != _validator) {
             index = next;
             next = getNextValidator(index);
+
+            if (next == F_ADDR) {
+                revert();
+            }
         }
 
         setValidator(index, validatorsNext);

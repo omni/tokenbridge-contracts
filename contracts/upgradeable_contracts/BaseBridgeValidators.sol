@@ -85,24 +85,6 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         return addressStorage[keccak256(abi.encodePacked("validatorsList", _address))];
     }
 
-    function validatorList() public view returns (address[]) {
-        address [] memory list = new address[](validatorCount());
-        uint256 counter = 0;
-        address nextValidator = getNextValidator(F_ADDR);
-
-        while (nextValidator != F_ADDR) {
-            list[counter] = nextValidator;
-            nextValidator = getNextValidator(nextValidator);
-            counter++;
-
-            if (nextValidator == address(0) ) {
-                revert();
-            }
-        }
-
-        return list;
-    }
-
     function deleteItemFromAddressStorage(string _mapName, address _address) internal {
         delete addressStorage[keccak256(abi.encodePacked(_mapName, _address))];
     }

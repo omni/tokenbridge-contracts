@@ -178,22 +178,13 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     }
 
     function calculateFee(uint256 _value, bool _recover, address _impl) internal view returns(uint256) {
-        uint256 fee;
+        bytes memory callData = abi.encodeWithSignature("calculateFee(uint256,bool)", _value, _recover);
         assembly {
-            let ptr := mload(0x40)
-
-            calldatacopy(ptr, 0, calldatasize)
-
-            let result := delegatecall(gas, _impl, ptr, calldatasize, 0, 0)
-
-            mstore(0x40, add(ptr, returndatasize))
-            returndatacopy(ptr, 0, returndatasize)
+            let result := delegatecall(gas, _impl, add(callData, 0x20), mload(callData), 0, 32)
 
             switch result
-            case 0 { revert(ptr, returndatasize) }
-            default { fee := ptr }
+            case 0 { revert(0, 0) }
+            default { return(0, 32) }
         }
-
-        return fee;
     }
 }

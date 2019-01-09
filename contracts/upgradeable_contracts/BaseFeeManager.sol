@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "../upgradeability/EternalStorage.sol";
 import "../IFeeManager.sol";
 import "../libraries/SafeMath.sol";
-import "../IBridgeValidators.sol";
+import "../IRewardableValidators.sol";
 
 contract BaseFeeManager is EternalStorage {
     using SafeMath for uint256;
@@ -37,7 +37,7 @@ contract BaseFeeManager is EternalStorage {
     }
 
     function distributeFeeProportionally(uint256 _fee, bool _isAffirmation) internal {
-        IBridgeValidators validators = validatorContract();
+        IRewardableValidators validators = rewardableValidatorContract();
         address [] memory validatorList = validators.validatorList();
         uint256 feePerValidator = _fee.div(validatorList.length);
 
@@ -59,7 +59,7 @@ contract BaseFeeManager is EternalStorage {
 
     function onSignatureFeeDistribution(address _rewardAddress, uint256 _fee) internal;
 
-    function validatorContract() public view returns(IBridgeValidators) {
-        return IBridgeValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
+    function rewardableValidatorContract() public view returns(IRewardableValidators) {
+        return IRewardableValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
     }
 }

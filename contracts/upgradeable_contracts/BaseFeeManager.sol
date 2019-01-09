@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 
 import "../upgradeability/EternalStorage.sol";
-import "../IFeeManager.sol";
 import "../libraries/SafeMath.sol";
 import "../IRewardableValidators.sol";
+
 
 contract BaseFeeManager is EternalStorage {
     using SafeMath for uint256;

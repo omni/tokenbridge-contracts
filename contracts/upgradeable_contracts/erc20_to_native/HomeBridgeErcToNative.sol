@@ -7,7 +7,6 @@ import "../../IBlockReward.sol";
 import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
-import "../../IFeeManager.sol";
 
 
 contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {

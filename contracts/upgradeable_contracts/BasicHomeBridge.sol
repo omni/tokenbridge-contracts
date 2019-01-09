@@ -5,7 +5,7 @@ import "../libraries/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
-import "../IFeeManager.sol";
+
 
 contract BasicHomeBridge is EternalStorage, Validatable {
     using SafeMath for uint256;

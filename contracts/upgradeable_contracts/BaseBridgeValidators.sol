@@ -35,6 +35,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         require(!isValidator(_validator));
 
         address firstValidator = getNextValidator(F_ADDR);
+        require(firstValidator != address(0));
         setNextValidator(_validator, firstValidator);
         setNextValidator(F_ADDR, _validator);
         setValidatorCount(validatorCount().add(1));
@@ -46,6 +47,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         address validatorsNext = getNextValidator(_validator);
         address index = F_ADDR;
         address next = getNextValidator(index);
+        require(next != address(0));
 
         while (next != _validator) {
             index = next;

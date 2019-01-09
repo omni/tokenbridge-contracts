@@ -71,6 +71,7 @@ contract RewardableValidators is BaseBridgeValidators {
         address [] memory list = new address[](validatorCount());
         uint256 counter = 0;
         address nextValidator = getNextValidator(F_ADDR);
+        require(nextValidator != address(0));
 
         while (nextValidator != F_ADDR) {
             list[counter] = nextValidator;

@@ -58,6 +58,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       patch.should.be.bignumber.gte(0)
     })
   })
+
   describe('#executeSignatures', async () => {
     var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
     beforeEach(async () => {

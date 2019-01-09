@@ -28,7 +28,7 @@ const getEvents = function(contract, filter) {
   });
 }
 contract('ForeignBridge', async (accounts) => {
-  let validatorContract, authorities, owner, token;
+  let validatorContract, authorities, rewards, owner, token;
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]];
@@ -69,6 +69,7 @@ contract('ForeignBridge', async (accounts) => {
       patch.should.be.bignumber.gte(0)
     })
   })
+
   describe('#executeSignatures', async () => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
@@ -258,7 +259,6 @@ contract('ForeignBridge', async (accounts) => {
       true.should.be.equal(await foreignBridgeWithThreeSigs.relayedMessages(txHash))
     })
   })
-
 
   describe('#onTokenTransfer', async () => {
     it('can only be called from token contract', async ()=> {

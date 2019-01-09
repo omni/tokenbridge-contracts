@@ -30,7 +30,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         return (2, 1, 0);
     }
 
-    function _addValidator(address _validator) internal onlyOwner {
+    function _addValidator(address _validator) internal {
         require(_validator != address(0) && _validator != F_ADDR);
         require(!isValidator(_validator));
 
@@ -40,7 +40,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         setValidatorCount(validatorCount().add(1));
     }
 
-    function _removeValidator(address _validator) internal onlyOwner {
+    function _removeValidator(address _validator) internal {
         require(validatorCount() > requiredSignatures());
         require(isValidator(_validator));
         address validatorsNext = getNextValidator(_validator);

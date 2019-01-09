@@ -1,10 +1,9 @@
 pragma solidity 0.4.24;
 
 import "../BaseFeeManager.sol";
-import "../Validatable.sol";
 import "../../IBlockReward.sol";
 
-contract FeeManagerErcToNative is BaseFeeManager, Validatable {
+contract FeeManagerErcToNative is BaseFeeManager {
 
     function blockRewardContract() internal view returns(IBlockReward) {
         return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);

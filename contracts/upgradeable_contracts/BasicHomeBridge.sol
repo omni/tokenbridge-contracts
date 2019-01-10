@@ -170,6 +170,14 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
     }
 
+    function setFee(uint256 _fee) external onlyOwner {
+        require(feeManagerContract().delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
+    }
+
+    function getFee() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("fee"))];
+    }
+
     function isContract(address _addr) internal view returns (bool)
     {
         uint length;
@@ -178,13 +186,15 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     }
 
     function calculateFee(uint256 _value, bool _recover, address _impl) internal view returns(uint256) {
+        uint256 fee;
         bytes memory callData = abi.encodeWithSignature("calculateFee(uint256,bool)", _value, _recover);
         assembly {
             let result := delegatecall(gas, _impl, add(callData, 0x20), mload(callData), 0, 32)
+            fee := mload(0)
 
             switch result
             case 0 { revert(0, 0) }
-            default { return(0, 32) }
         }
+        return fee;
     }
 }

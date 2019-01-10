@@ -23,7 +23,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToTransfer, false, feeManager);
-            valueToTransfer = valueToTransfer - fee;
+            valueToTransfer = valueToTransfer.sub(fee);
         }
         setTotalBurntCoins(totalBurntCoins().add(valueToTransfer));
         address(0).transfer(valueToTransfer);
@@ -85,9 +85,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager);
             feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromAffirmation(uint256)", fee));
-            valueToMint = valueToMint - fee;
+            valueToMint = valueToMint.sub(fee);
         }
-
         blockReward.addExtraReceiver(valueToMint, _recipient);
         return true;
     }
@@ -98,13 +97,5 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge {
 
     function setTotalBurntCoins(uint256 _amount) internal {
         uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
-    }
-
-    function setFee(uint256 _fee) external onlyOwner {
-        require(feeManagerContract().delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
-    }
-
-    function getFee() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("fee"))];
     }
 }

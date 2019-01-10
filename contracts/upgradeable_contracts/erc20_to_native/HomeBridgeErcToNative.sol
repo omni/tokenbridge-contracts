@@ -95,7 +95,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager);
-            feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromAffirmation(uint256)", fee));
+            require(feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromAffirmation(uint256)", fee)));
             valueToMint = valueToMint.sub(fee);
         }
         blockReward.addExtraReceiver(valueToMint, _recipient);

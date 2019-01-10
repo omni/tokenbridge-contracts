@@ -92,7 +92,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeab
         address contractAddress;
         (recipient, amount, txHash, contractAddress) = Message.parseMessage(message);
         uint256 fee = calculateFee(amount, true, feeManager);
-        feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromSignatures(uint256)", fee));
+        require(feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromSignatures(uint256)", fee)));
     }
 
     function setMessagesSigned(bytes32 _hash, bool _status) internal {

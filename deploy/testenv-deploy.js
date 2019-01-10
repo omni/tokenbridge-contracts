@@ -1,11 +1,9 @@
-const env = require('./src/loadEnv')
-
 const deployToken = require('./src/utils/deployERC20Token')
 
 const mode = process.argv[2]
 
 async function main() {
-  switch(mode) {
+  switch (mode) {
     case 'token':
       await deployToken()
       break

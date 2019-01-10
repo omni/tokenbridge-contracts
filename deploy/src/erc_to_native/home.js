@@ -16,13 +16,15 @@ const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   HOME_GAS_PRICE,
-  HOME_OWNER_MULTISIG,
-  HOME_UPGRADEABLE_ADMIN_VALIDATORS,
-  HOME_UPGRADEABLE_ADMIN_BRIDGE,
+  HOME_BRIDGE_OWNER,
+  HOME_VALIDATORS_OWNER,
+  HOME_UPGRADEABLE_ADMIN,
   HOME_DAILY_LIMIT,
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
-  HOME_REQUIRED_BLOCK_CONFIRMATIONS
+  HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+  FOREIGN_DAILY_LIMIT,
+  FOREIGN_MAX_AMOUNT_PER_TX
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -56,7 +58,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(Web3Utils.hexToNumber(txUpgradeToBridgeVHome.status), 1, 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txUpgradeToBridgeVHome.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ninitializing Home Bridge Validators with following parameters:\n')
@@ -65,7 +67,7 @@ async function deployHome() {
   )
   bridgeValidatorsHome.options.address = storageValidatorsHome.options.address
   const initializeData = await bridgeValidatorsHome.methods
-    .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_OWNER_MULTISIG)
+    .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, HOME_VALIDATORS_OWNER)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitialize = await sendRawTxHome({
     data: initializeData,
@@ -74,12 +76,12 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(Web3Utils.hexToNumber(txInitialize.status), 1, 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txInitialize.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('transferring proxy ownership to multisig for Validators Proxy contract')
   const proxyDataTransfer = await storageValidatorsHome.methods
-    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_VALIDATORS)
+    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN)
     .encodeABI()
   const txProxyDataTransfer = await sendRawTxHome({
     data: proxyDataTransfer,
@@ -88,7 +90,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(Web3Utils.hexToNumber(txProxyDataTransfer.status), 1, 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txProxyDataTransfer.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ndeploying homeBridge storage\n')
@@ -118,7 +120,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(Web3Utils.hexToNumber(txUpgradeToHomeBridge.status), 1, 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txUpgradeToHomeBridge.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\ninitializing Home Bridge with following parameters:\n')
@@ -140,7 +142,10 @@ async function deployHome() {
       HOME_MIN_AMOUNT_PER_TX,
       HOME_GAS_PRICE,
       HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-      BLOCK_REWARD_ADDRESS
+      BLOCK_REWARD_ADDRESS,
+      FOREIGN_DAILY_LIMIT,
+      FOREIGN_MAX_AMOUNT_PER_TX,
+      HOME_BRIDGE_OWNER
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeHomeBridge = await sendRawTxHome({
@@ -150,12 +155,12 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(Web3Utils.hexToNumber(txInitializeHomeBridge.status), 1, 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txInitializeHomeBridge.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('transferring proxy ownership to multisig for Home bridge Proxy contract')
   const homeBridgeProxyData = await homeBridgeStorage.methods
-    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_BRIDGE)
+    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN)
     .encodeABI()
   const txhomeBridgeProxyData = await sendRawTxHome({
     data: homeBridgeProxyData,
@@ -164,7 +169,7 @@ async function deployHome() {
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.equal(Web3Utils.hexToNumber(txhomeBridgeProxyData.status), 1, 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txhomeBridgeProxyData.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\nHome Deployment Bridge completed\n')

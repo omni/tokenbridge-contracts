@@ -20,12 +20,17 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         uint256 _maxPerTx,
         uint256 _minPerTx,
         uint256 _foreignGasPrice,
-        uint256 _requiredBlockConfirmations
+        uint256 _requiredBlockConfirmations,
+        uint256 _homeDailyLimit,
+        uint256 _homeMaxPerTx,
+        address _owner
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignGasPrice > 0);
+        require(_homeMaxPerTx < _homeDailyLimit);
+        require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc677token(_erc677token);
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
@@ -34,6 +39,9 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _foreignGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
+        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
+        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
+        setOwner(_owner);
         setInitialize(true);
         return isInitialized();
     }
@@ -42,11 +50,12 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 
-    function claimTokensFromErc677(address _token, address _to) external onlyOwner {
+    function claimTokensFromErc677(address _token, address _to) external onlyIfOwnerOfProxy {
         erc677token().claimTokens(_token, _to);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool){
+        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         return erc677token().mint(_recipient, _amount);
     }
 
@@ -54,4 +63,11 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         emit UserRequestForAffirmation(_from, _value);
     }
 
+    function messageWithinLimits(uint256 _amount) internal view returns(bool) {
+        return withinExecutionLimit(_amount);
+    }
+
+    function onFailedMessage(address, uint256, bytes32) internal {
+        revert();
+    }
 }

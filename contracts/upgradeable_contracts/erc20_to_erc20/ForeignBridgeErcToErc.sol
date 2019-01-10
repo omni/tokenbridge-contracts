@@ -16,17 +16,27 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         address _validatorContract,
         address _erc20token,
         uint256 _requiredBlockConfirmations,
-        uint256 _gasPrice
+        uint256 _gasPrice,
+        uint256 _maxPerTx,
+        uint256 _homeDailyLimit,
+        uint256 _homeMaxPerTx,
+        address _owner
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
+        require(_homeMaxPerTx < _homeDailyLimit);
+        require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
+        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
+        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
+        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
+        setOwner(_owner);
         setInitialize(true);
         return isInitialized();
     }
@@ -35,7 +45,7 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 
-    function claimTokens(address _token, address _to) public onlyOwner {
+    function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy {
         require(_token != address(erc20token()));
         super.claimTokens(_token, _to);
     }
@@ -45,11 +55,20 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool){
+        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         return erc20token().transfer(_recipient, _amount);
     }
 
     function setErc20token(address _token) private {
         require(_token != address(0) && isContract(_token));
         addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
+    }
+
+    function messageWithinLimits(uint256 _amount) internal view returns(bool) {
+        return withinExecutionLimit(_amount);
+    }
+
+    function onFailedMessage(address, uint256, bytes32) internal {
+        revert();
     }
 }

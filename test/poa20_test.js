@@ -1,5 +1,8 @@
 const POA20 = artifacts.require("ERC677BridgeToken.sol");
+const POA20RewardableMock = artifacts.require("./mockContracts/ERC677BridgeTokenRewardableMock");
 const ERC677ReceiverTest = artifacts.require("ERC677ReceiverTest.sol")
+const BlockRewardTest = artifacts.require("BlockReward.sol")
+const ValidatorSetTest = artifacts.require("ValidatorSet.sol")
 const { ERROR_MSG, ZERO_ADDRESS} = require('./setup');
 const Web3Utils = require('web3-utils');
 const HomeErcToErcBridge = artifacts.require("HomeBridgeErcToErc.sol");
@@ -10,13 +13,16 @@ const requireBlockConfirmations = 8;
 const gasPrice = Web3Utils.toWei('1', 'gwei');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
+const executionDailyLimit = oneEther
+const executionMaxPerTx = halfEther
 
-contract('ERC677BridgeToken', async (accounts) => {
+async function testERC677BridgeToken(accounts, rewardable) {
   let token
   let owner = accounts[0]
   const user = accounts[1];
+  const tokenContract = rewardable ? POA20RewardableMock : POA20;
   beforeEach(async () => {
-    token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
+    token = await tokenContract.new("POA ERC20 Foundation", "POA20", 18);
   })
   it('default values', async () => {
 
@@ -74,6 +80,160 @@ contract('ERC677BridgeToken', async (accounts) => {
     })
   })
 
+  if (rewardable) {
+    describe('#blockRewardContract', async() => {
+      it('can set BlockReward contract', async () => {
+        const blockRewardContract = await BlockRewardTest.new();
+        (await token.blockRewardContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setBlockRewardContract(blockRewardContract.address).should.be.fulfilled;
+
+        (await token.blockRewardContract()).should.be.equal(blockRewardContract.address);
+      })
+
+      it('only owner can set BlockReward contract', async () => {
+        const blockRewardContract = await BlockRewardTest.new();
+        (await token.blockRewardContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setBlockRewardContract(blockRewardContract.address, {from: user }).should.be.rejectedWith(ERROR_MSG);
+        (await token.blockRewardContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setBlockRewardContract(blockRewardContract.address, {from: owner }).should.be.fulfilled;
+        (await token.blockRewardContract()).should.be.equal(blockRewardContract.address);
+      })
+
+      it('fail to set invalid BlockReward contract address', async () => {
+        const invalidContractAddress = '0xaaB52d66283F7A1D5978bcFcB55721ACB467384b';
+        (await token.blockRewardContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setBlockRewardContract(invalidContractAddress).should.be.rejectedWith(ERROR_MSG);
+        (await token.blockRewardContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setBlockRewardContract(ZERO_ADDRESS).should.be.rejectedWith(ERROR_MSG);
+        (await token.blockRewardContract()).should.be.equal(ZERO_ADDRESS);
+      })
+    })
+
+    describe('#validatorSetContract', async() => {
+      it('can set ValidatorSet contract', async () => {
+        const validatorSetContract = await ValidatorSetTest.new();
+        (await token.validatorSetContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setValidatorSetContract(validatorSetContract.address).should.be.fulfilled;
+
+        (await token.validatorSetContract()).should.be.equal(validatorSetContract.address);
+      })
+
+      it('only owner can set ValidatorSet contract', async () => {
+        const validatorSetContract = await ValidatorSetTest.new();
+        (await token.validatorSetContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setValidatorSetContract(validatorSetContract.address, {from: user }).should.be.rejectedWith(ERROR_MSG);
+        (await token.validatorSetContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setValidatorSetContract(validatorSetContract.address, {from: owner }).should.be.fulfilled;
+        (await token.validatorSetContract()).should.be.equal(validatorSetContract.address);
+      })
+
+      it('fail to set invalid ValidatorSet contract address', async () => {
+        const invalidContractAddress = '0xaaB52d66283F7A1D5978bcFcB55721ACB467384b';
+        (await token.validatorSetContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setValidatorSetContract(invalidContractAddress).should.be.rejectedWith(ERROR_MSG);
+        (await token.validatorSetContract()).should.be.equal(ZERO_ADDRESS);
+
+        await token.setValidatorSetContract(ZERO_ADDRESS).should.be.rejectedWith(ERROR_MSG);
+        (await token.validatorSetContract()).should.be.equal(ZERO_ADDRESS);
+      })
+    })
+
+    describe('#mintReward', async() => {
+      it('can only be called by BlockReward contract', async () => {
+        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled;
+        await token.mintReward([], [], {from: user }).should.be.rejectedWith(ERROR_MSG);
+        await token.mintReward([], [], {from: accounts[2] }).should.be.fulfilled;
+      })
+      it('should increase totalSupply and balances', async () => {
+        const user1 = accounts[1];
+        const user2 = accounts[2];
+        const user3 = accounts[3];
+
+        assert.equal(await token.totalSupply(), 0);
+        (await token.balanceOf(user1)).should.be.bignumber.equal(0);
+        (await token.balanceOf(user2)).should.be.bignumber.equal(0);
+        (await token.balanceOf(user3)).should.be.bignumber.equal(0);
+
+        await token.setBlockRewardContractMock(accounts[4]).should.be.fulfilled;
+        await token.mintReward([user1, user2, user3], [100, 200, 300], {from: accounts[4] }).should.be.fulfilled;
+        
+        assert.equal(await token.totalSupply(), 600);
+        (await token.balanceOf(user1)).should.be.bignumber.equal(100);
+        (await token.balanceOf(user2)).should.be.bignumber.equal(200);
+        (await token.balanceOf(user3)).should.be.bignumber.equal(300);
+      })
+    })
+
+    describe('#stake', async() => {
+      it('can only be called by ValidatorSet contract', async () => {
+        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled;
+        await token.mintReward([user], [100], {from: accounts[2] }).should.be.fulfilled;
+        await token.setValidatorSetContractMock(accounts[3]).should.be.fulfilled;
+        await token.stake(user, 100, {from: accounts[4] }).should.be.rejectedWith(ERROR_MSG);
+        await token.stake(user, 100, {from: accounts[3] }).should.be.fulfilled;
+      })
+      it('should revert if user doesn\'t have enough balance', async () => {
+        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled;
+        await token.mintReward([user], [99], {from: accounts[2] }).should.be.fulfilled;
+        (await token.balanceOf(user)).should.be.bignumber.equal(99);
+        await token.setValidatorSetContractMock(accounts[3]).should.be.fulfilled;
+        await token.stake(user, 100, {from: accounts[3] }).should.be.rejectedWith(ERROR_MSG);
+      })
+      it('should decrease user\'s balance and increase ValidatorSet\'s balance', async () => {
+        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled;
+        await token.mintReward([user], [100], {from: accounts[2] }).should.be.fulfilled;
+        (await token.balanceOf(user)).should.be.bignumber.equal(100);
+        (await token.balanceOf(accounts[3])).should.be.bignumber.equal(0);
+        await token.setValidatorSetContractMock(accounts[3]).should.be.fulfilled;
+        await token.stake(user, 100, {from: accounts[3] }).should.be.fulfilled;
+        (await token.balanceOf(user)).should.be.bignumber.equal(0);
+        (await token.balanceOf(accounts[3])).should.be.bignumber.equal(100);
+      })
+    })
+
+    describe('#withdraw', async() => {
+      it('can only be called by ValidatorSet contract', async () => {
+        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled;
+        await token.mintReward([user], [100], {from: accounts[2] }).should.be.fulfilled;
+        await token.setValidatorSetContractMock(accounts[3]).should.be.fulfilled;
+        await token.stake(user, 100, {from: accounts[3] }).should.be.fulfilled;
+        await token.withdraw(user, 100, {from: accounts[4] }).should.be.rejectedWith(ERROR_MSG);
+        await token.withdraw(user, 100, {from: accounts[3] }).should.be.fulfilled;
+      })
+      it('should revert if ValidatorSet doesn\'t have enough balance', async () => {
+        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled;
+        await token.mintReward([user], [100], {from: accounts[2] }).should.be.fulfilled;
+        (await token.balanceOf(user)).should.be.bignumber.equal(100);
+        await token.setValidatorSetContractMock(accounts[3]).should.be.fulfilled;
+        await token.stake(user, 100, {from: accounts[3] }).should.be.fulfilled;
+        await token.withdraw(user, 101, {from: accounts[3] }).should.be.rejectedWith(ERROR_MSG);
+        await token.withdraw(user, 100, {from: accounts[3] }).should.be.fulfilled;
+      })
+      it('should decrease ValidatorSet\'s balance and increase user\'s balance', async () => {
+        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled;
+        await token.mintReward([user], [100], {from: accounts[2] }).should.be.fulfilled;
+        (await token.balanceOf(user)).should.be.bignumber.equal(100);
+        (await token.balanceOf(accounts[3])).should.be.bignumber.equal(0);
+        await token.setValidatorSetContractMock(accounts[3]).should.be.fulfilled;
+        await token.stake(user, 100, {from: accounts[3] }).should.be.fulfilled;
+        (await token.balanceOf(user)).should.be.bignumber.equal(0);
+        (await token.balanceOf(accounts[3])).should.be.bignumber.equal(100);
+        await token.withdraw(user, 60, {from: accounts[3] }).should.be.fulfilled;
+        (await token.balanceOf(user)).should.be.bignumber.equal(60);
+        (await token.balanceOf(accounts[3])).should.be.bignumber.equal(40);
+      })
+    })
+  }
+
   describe('#mint', async() => {
     it('can mint by owner', async () => {
       (await token.totalSupply()).should.be.bignumber.equal(0);
@@ -101,9 +261,9 @@ contract('ERC677BridgeToken', async (accounts) => {
       const authorities = [accounts[2]];
       await validatorContract.initialize(1, authorities, owner)
       homeErcToErcContract = await HomeErcToErcBridge.new()
-      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address)
+      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, executionDailyLimit, executionMaxPerTx, owner)
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
-      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, executionDailyLimit, executionMaxPerTx, owner);
     })
     it('sends tokens to recipient', async () => {
       await token.mint(user, 1, {from: owner }).should.be.fulfilled;
@@ -189,9 +349,9 @@ contract('ERC677BridgeToken', async (accounts) => {
       const authorities = [accounts[2]];
       await validatorContract.initialize(1, authorities, owner)
       homeErcToErcContract = await HomeErcToErcBridge.new()
-      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address)
+      await homeErcToErcContract.initialize(validatorContract.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, token.address, executionDailyLimit, executionMaxPerTx, owner)
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
-      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations);
+      await foreignNativeToErcBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, executionDailyLimit, executionMaxPerTx, owner);
     })
     it('calls contractFallback', async () => {
       const receiver = await ERC677ReceiverTest.new();
@@ -260,7 +420,7 @@ contract('ERC677BridgeToken', async (accounts) => {
     it('can take send ERC20 tokens', async ()=> {
       const owner = accounts[0];
       const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
-      let tokenSecond = await POA20.new("Roman Token", "RST", 18);
+      let tokenSecond = await tokenContract.new("Roman Token", "RST", 18);
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled;
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
@@ -271,7 +431,6 @@ contract('ERC677BridgeToken', async (accounts) => {
       await token.claimTokens(tokenSecond.address, accounts[3], {from: owner});
       '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(token.address))
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
-
     })
   })
   describe('#transfer', async () => {
@@ -293,7 +452,7 @@ contract('ERC677BridgeToken', async (accounts) => {
       logs[0].event.should.be.equal("Transfer")
     })
     it('if transfer called on contract, still works even if onTokenTransfer doesnot exist', async () => {
-      const someContract = await POA20.new("Some", "Token", 18);
+      const someContract = await tokenContract.new("Some", "Token", 18);
       await token.mint(user, 2, {from: owner }).should.be.fulfilled;
       const tokenTransfer = await token.transfer(someContract.address, 1, {from: user}).should.be.fulfilled;
       const tokenTransfer2 = await token.transfer(accounts[0], 1, {from: user}).should.be.fulfilled;
@@ -301,7 +460,14 @@ contract('ERC677BridgeToken', async (accounts) => {
       (await token.balanceOf(user)).should.be.bignumber.equal(0);
       tokenTransfer.logs[0].event.should.be.equal("Transfer")
       tokenTransfer2.logs[0].event.should.be.equal("Transfer")
-
     })
   })
+}
+
+contract('ERC677BridgeToken', async (accounts) => {
+  await testERC677BridgeToken(accounts, false);
+})
+
+contract('ERC677BridgeTokenRewardable', async (accounts) => {
+  await testERC677BridgeToken(accounts, true);
 })

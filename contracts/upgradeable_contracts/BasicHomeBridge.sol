@@ -5,9 +5,11 @@ import "../libraries/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
+import "./OwnedUpgradeability.sol";
+import "./Ownable.sol";
 
 
-contract BasicHomeBridge is EternalStorage, Validatable {
+contract BasicHomeBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeability {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
@@ -181,7 +183,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
     }
 
-    function setFee(uint256 _fee) external onlyOwner {
+    function setFee(uint256 _fee) external onlyIfOwnerOfProxy {
         require(feeManagerContract().delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
     }
 

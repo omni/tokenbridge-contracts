@@ -2,6 +2,8 @@ pragma solidity 0.4.24;
 
 import "../BaseFeeManager.sol";
 import "../../IBlockReward.sol";
+import "../Sacrifice.sol";
+
 
 contract FeeManagerErcToNative is BaseFeeManager {
 
@@ -15,6 +17,8 @@ contract FeeManagerErcToNative is BaseFeeManager {
     }
 
     function onSignatureFeeDistribution(address _rewardAddress, uint256 _fee) internal {
-        _rewardAddress.send(_fee);
+        if (!_rewardAddress.send(_fee)) {
+            (new Sacrifice).value(_fee)(_rewardAddress);
+        }
     }
 }

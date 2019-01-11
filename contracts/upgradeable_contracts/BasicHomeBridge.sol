@@ -78,10 +78,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeab
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
             emit CollectedSignatures(msg.sender, hashMsg, reqSigs);
 
-            address feeManager = feeManagerContract();
-            if (feeManager != address(0)) {
-                handleSignatureFeeDistribution(feeManager, message);
-            }
+            onSignaturesCollected(message);
         }
     }
 
@@ -100,6 +97,9 @@ contract BasicHomeBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeab
     }
 
     function onExecuteAffirmation(address, uint256) internal returns(bool) {
+    }
+
+    function onSignaturesCollected(bytes) internal {
     }
 
     function numAffirmationsSigned(bytes32 _withdrawal) public view returns(uint256) {

@@ -102,6 +102,13 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         return true;
     }
 
+    function onSignaturesCollected(bytes _message) internal {
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            handleSignatureFeeDistribution(feeManager, _message);
+        }
+    }
+
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
         emit UserRequestForSignature(_from, _value);
     }

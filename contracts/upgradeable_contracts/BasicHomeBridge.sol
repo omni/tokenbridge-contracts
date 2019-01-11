@@ -188,7 +188,17 @@ contract BasicHomeBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeab
     }
 
     function getFee() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("fee"))];
+        uint256 fee;
+        bytes memory callData = abi.encodeWithSignature("getFee()");
+        address feeManager = feeManagerContract();
+        assembly {
+            let result := delegatecall(gas, feeManager, add(callData, 0x20), mload(callData), 0, 32)
+            fee := mload(0)
+
+            switch result
+            case 0 { revert(0, 0) }
+        }
+        return fee;
     }
 
     function isContract(address _addr) internal view returns (bool)

@@ -8,9 +8,10 @@ import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
+import "../RewardableBridge.sol";
 
 
-contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement {
+contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement, RewardableBridge {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
@@ -95,7 +96,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager);
-            require(feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromAffirmation(uint256)", fee)));
+            distributeFeeFromAffirmation(fee, feeManager);
             valueToMint = valueToMint.sub(fee);
         }
         blockReward.addExtraReceiver(valueToMint, _recipient);
@@ -105,7 +106,13 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
     function onSignaturesCollected(bytes _message) internal {
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            handleSignatureFeeDistribution(feeManager, _message);
+            address recipient;
+            uint256 amount;
+            bytes32 txHash;
+            address contractAddress;
+            (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
+            uint256 fee = calculateFee(amount, true, feeManager);
+            distributeFeeFromSignatures(fee, feeManager);
         }
     }
 

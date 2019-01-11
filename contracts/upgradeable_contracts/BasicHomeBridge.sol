@@ -5,11 +5,9 @@ import "../libraries/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
-import "./OwnedUpgradeability.sol";
-import "./Ownable.sol";
 
 
-contract BasicHomeBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeability {
+contract BasicHomeBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
@@ -80,16 +78,6 @@ contract BasicHomeBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeab
 
             onSignaturesCollected(message);
         }
-    }
-
-    function handleSignatureFeeDistribution(address feeManager, bytes message) internal {
-        address recipient;
-        uint256 amount;
-        bytes32 txHash;
-        address contractAddress;
-        (recipient, amount, txHash, contractAddress) = Message.parseMessage(message);
-        uint256 fee = calculateFee(amount, true, feeManager);
-        require(feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromSignatures(uint256)", fee)));
     }
 
     function setMessagesSigned(bytes32 _hash, bool _status) internal {
@@ -172,52 +160,5 @@ contract BasicHomeBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeab
     }
 
     function onFailedAffirmation(address, uint256, bytes32) internal {
-    }
-
-    function feeManagerContract() public view returns(address) {
-        return addressStorage[keccak256(abi.encodePacked("feeManagerContract"))];
-    }
-
-    function setFeeManagerContract(address _feeManager) public onlyOwner {
-        require(_feeManager == address(0) || isContract(_feeManager));
-        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
-    }
-
-    function setFee(uint256 _fee) external onlyIfOwnerOfProxy {
-        require(feeManagerContract().delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
-    }
-
-    function getFee() public view returns(uint256) {
-        uint256 fee;
-        bytes memory callData = abi.encodeWithSignature("getFee()");
-        address feeManager = feeManagerContract();
-        assembly {
-            let result := delegatecall(gas, feeManager, add(callData, 0x20), mload(callData), 0, 32)
-            fee := mload(0)
-
-            switch result
-            case 0 { revert(0, 0) }
-        }
-        return fee;
-    }
-
-    function isContract(address _addr) internal view returns (bool)
-    {
-        uint length;
-        assembly { length := extcodesize(_addr) }
-        return length > 0;
-    }
-
-    function calculateFee(uint256 _value, bool _recover, address _impl) internal view returns(uint256) {
-        uint256 fee;
-        bytes memory callData = abi.encodeWithSignature("calculateFee(uint256,bool)", _value, _recover);
-        assembly {
-            let result := delegatecall(gas, _impl, add(callData, 0x20), mload(callData), 0, 32)
-            fee := mload(0)
-
-            switch result
-            case 0 { revert(0, 0) }
-        }
-        return fee;
     }
 }

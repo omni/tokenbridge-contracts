@@ -44,7 +44,7 @@ contract RewardableBridge is Ownable, OwnedUpgradeability {
         uint256 fee;
         bytes memory callData = abi.encodeWithSignature("calculateFee(uint256,bool)", _value, _recover);
         assembly {
-            let result := delegatecall(gas, _impl, add(callData, 0x20), mload(callData), 0, 32)
+            let result := callcode(gas, _impl, 0x0, add(callData, 0x20), mload(callData), 0, 32)
             fee := mload(0)
 
             switch result

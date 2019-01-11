@@ -10,7 +10,7 @@ contract BaseFeeManager is EternalStorage {
 
     event FeeUpdated(uint256 fee);
 
-    function calculateFee(uint256 _value, bool _recover) external payable returns(uint256) {
+    function calculateFee(uint256 _value, bool _recover) external view returns(uint256) {
         uint256 fee = getFee();
         uint256 eth = 1 ether;
         if (!_recover) {

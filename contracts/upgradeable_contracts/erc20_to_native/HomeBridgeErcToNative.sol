@@ -8,9 +8,10 @@ import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
+import "../RewardableBridge.sol";
 
 
-contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement {
+contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement, RewardableBridge {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
@@ -22,9 +23,15 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
         require(msg.value <= totalMinted.sub(totalBurntCoins()));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
-        setTotalBurntCoins(totalBurntCoins().add(msg.value));
-        address(0).transfer(msg.value);
-        emit UserRequestForSignature(msg.sender, msg.value);
+        uint256 valueToTransfer = msg.value;
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            uint256 fee = calculateFee(valueToTransfer, false, feeManager);
+            valueToTransfer = valueToTransfer.sub(fee);
+        }
+        setTotalBurntCoins(totalBurntCoins().add(valueToTransfer));
+        address(0).transfer(valueToTransfer);
+        emit UserRequestForSignature(msg.sender, valueToTransfer);
     }
 
     function initialize (
@@ -84,8 +91,29 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
-        blockReward.addExtraReceiver(_value, _recipient);
+        uint256 valueToMint = _value;
+
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            uint256 fee = calculateFee(valueToMint, false, feeManager);
+            distributeFeeFromAffirmation(fee, feeManager);
+            valueToMint = valueToMint.sub(fee);
+        }
+        blockReward.addExtraReceiver(valueToMint, _recipient);
         return true;
+    }
+
+    function onSignaturesCollected(bytes _message) internal {
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            address recipient;
+            uint256 amount;
+            bytes32 txHash;
+            address contractAddress;
+            (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
+            uint256 fee = calculateFee(amount, true, feeManager);
+            distributeFeeFromSignatures(fee, feeManager);
+        }
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {

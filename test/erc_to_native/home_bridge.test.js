@@ -3,6 +3,8 @@ const HomeBridge = artifacts.require('HomeBridgeErcToNative.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const BlockReward = artifacts.require('BlockReward')
+const RewardableValidators = artifacts.require("RewardableValidators.sol");
+const FeeManagerErcToNative = artifacts.require("FeeManagerErcToNative.sol");
 const {ERROR_MSG, ZERO_ADDRESS} = require('../setup');
 const {createMessage, sign } = require('../helpers/helpers');
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
@@ -787,6 +789,533 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const upgradeabilityAdmin = await homeBridge.upgradeabilityAdmin()
 
       upgradeabilityAdmin.should.be.equal(proxyOwner)
+    })
+  })
+
+  describe('#feeManager', async () => {
+    let homeBridge, rewardableValidators
+    let owner = accounts[9]
+    let validators = [accounts[1]]
+    let rewards = [accounts[2]]
+    let requiredSignatures = 1
+    beforeEach(async () => {
+      rewardableValidators = await RewardableValidators.new()
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      homeBridge = await HomeBridge.at(storageProxy.address);
+      await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
+      await blockRewardContract.sendTransaction({
+        from: accounts[2],
+        value: oneEther
+      }).should.be.fulfilled
+    })
+    it('should be able to set and get fee manager contract', async () => {
+      // Given
+      const feeManager = await FeeManagerErcToNative.new()
+
+      // When
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+
+      // Then
+      const feeManagerContract = await homeBridge.feeManagerContract()
+      feeManagerContract.should.be.equals(feeManager.address)
+    })
+    it('should be able to set and get fee', async () => {
+      // Given
+      // 10% fee
+      const fee = web3.toBigNumber(web3.toWei(0.1, "ether"))
+      const feeManager = await FeeManagerErcToNative.new()
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+
+      // When
+      await homeBridge.setFee(fee, { from: owner }).should.be.fulfilled
+
+      // Then
+      const bridgeFee = await homeBridge.getFee()
+      bridgeFee.should.be.bignumber.equal(fee)
+    })
+  })
+  describe('#feeManager_ExecuteAffirmation', async () => {
+    it('should distribute fee to validator', async () => {
+      // Initialize
+      const owner = accounts[9]
+      const validators = [accounts[1]]
+      const rewards = [accounts[2]]
+      const requiredSignatures = 1
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address);
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
+      await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
+      await blockRewardContract.sendTransaction({
+        from: accounts[2],
+        value: oneEther
+      }).should.be.fulfilled
+
+      // Given
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const feeManager = await FeeManagerErcToNative.new()
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
+
+      const recipient = accounts[5];
+      const value = halfEther;
+      const balanceBefore = await web3.eth.getBalance(recipient)
+      const rewardAddressBalanceBefore = await web3.eth.getBalance(rewards[0])
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+
+      // When
+      const { logs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: validators[0]}).should.be.fulfilled
+
+      // Then
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: validators[0],
+        transactionHash
+      });
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+      const balanceAfter = await web3.eth.getBalance(recipient)
+      const rewardAddressBalanceAfter = await web3.eth.getBalance(rewards[0])
+
+      rewardAddressBalanceAfter.should.be.bignumber.equal(rewardAddressBalanceBefore.add(value.mul(web3.toBigNumber(fee))))
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value.mul(web3.toBigNumber(1 - fee))))
+    })
+    it('should distribute fee to 3 validators', async () => {
+      // Initialize
+      const owner = accounts[9]
+      const validators = [accounts[1], accounts[2], accounts[3]]
+      const rewards = [accounts[4], accounts[5], accounts[6]]
+      const requiredSignatures = 2
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridgeImpl = await HomeBridge.new();
+      const blockRewardContract = await BlockReward.new()
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address);
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
+      await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
+      await blockRewardContract.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
+
+      // Given
+      const initialBlockRewardBalance = await web3.eth.getBalance(blockRewardContract.address)
+      initialBlockRewardBalance.should.be.bignumber.equal(halfEther)
+
+      const value = halfEther;
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      // totalFee / 3
+      const feePerValidator = web3.toBigNumber(166666666666666)
+      const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
+      const feeManager = await FeeManagerErcToNative.new()
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
+
+      const recipient = accounts[8];
+      const balanceBefore = await web3.eth.getBalance(recipient)
+
+      const initialBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
+      const initialBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
+      const initialBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
+
+
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+
+      // When
+      const { logs: logsValidator1 } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: validators[0]}).should.be.fulfilled
+      const { logs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: validators[1]}).should.be.fulfilled
+
+      // Then
+      logsValidator1.length.should.be.equals(1)
+
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: validators[1],
+        transactionHash
+      });
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+      const balanceAfter = await web3.eth.getBalance(recipient)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value.mul(web3.toBigNumber(1 - fee))))
+
+      const updatedBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
+      const updatedBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
+      const updatedBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
+
+      expect(
+        updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidator))
+        || updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidatorPlusDiff))).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator))
+        || updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidator))
+        || updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidatorPlusDiff))).to.equal(true)
+
+      const blockRewardBalance = await web3.eth.getBalance(blockRewardContract.address)
+      blockRewardBalance.should.be.bignumber.equal('0')
+    })
+    it('should distribute fee to 5 validators', async () => {
+      // Initialize
+      const owner = accounts[0]
+      const validators = [accounts[0], accounts[1], accounts[2], accounts[3], accounts[4]]
+      const rewards = [accounts[5], accounts[6], accounts[7], accounts[8], accounts[9]]
+      const requiredSignatures = 5
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address);
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
+      await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
+      await blockRewardContract.sendTransaction({
+        from: accounts[0],
+        value: oneEther
+      }).should.be.fulfilled
+
+      // Given
+      const value = halfEther;
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const feeAmount = value.mul(web3.toBigNumber(fee))
+      const feePerValidator = feeAmount.div(web3.toBigNumber(5))
+      const feeManager = await FeeManagerErcToNative.new()
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
+
+      const recipient = "0xf4bef13f9f4f2b203faf0c3cbbaabe1afe056955";
+      const balanceBefore = await web3.eth.getBalance(recipient)
+
+      const initialBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
+      const initialBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
+      const initialBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
+      const initialBalanceRewardAddress4 = await web3.eth.getBalance(rewards[3])
+      const initialBalanceRewardAddress5 = await web3.eth.getBalance(rewards[4])
+
+
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+
+      // When
+      const { logs: logsValidator1 } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: validators[0]}).should.be.fulfilled
+      await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: validators[1]}).should.be.fulfilled
+      await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: validators[2]}).should.be.fulfilled
+      await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: validators[3]}).should.be.fulfilled
+      const { logs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: validators[4]}).should.be.fulfilled
+
+      // Then
+      logsValidator1.length.should.be.equals(1)
+
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: validators[4],
+        transactionHash
+      });
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+      const balanceAfter = await web3.eth.getBalance(recipient)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value.sub(feeAmount)))
+
+      const updatedBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
+      const updatedBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
+      const updatedBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
+      const updatedBalanceRewardAddress4 = await web3.eth.getBalance(rewards[3])
+      const updatedBalanceRewardAddress5 = await web3.eth.getBalance(rewards[4])
+
+      updatedBalanceRewardAddress1.should.be.bignumber.equal(initialBalanceRewardAddress1.add(feePerValidator))
+      updatedBalanceRewardAddress2.should.be.bignumber.equal(initialBalanceRewardAddress2.add(feePerValidator))
+      updatedBalanceRewardAddress3.should.be.bignumber.equal(initialBalanceRewardAddress3.add(feePerValidator))
+      updatedBalanceRewardAddress4.should.be.bignumber.equal(initialBalanceRewardAddress4.add(feePerValidator))
+      updatedBalanceRewardAddress5.should.be.bignumber.equal(initialBalanceRewardAddress5.add(feePerValidator))
+    })
+  })
+  describe('#feeManager_fallback', function () {
+    let homeBridge, rewardableValidators
+    let owner = accounts[9]
+    let validators = [accounts[1]]
+    let rewards = [accounts[2]]
+    let requiredSignatures = 1
+    beforeEach(async () => {
+      rewardableValidators = await RewardableValidators.new()
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      homeBridge = await HomeBridge.at(storageProxy.address);
+      await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
+      await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
+    })
+
+    it('should subtract fee from value', async () => {
+      // Given
+      // 0.1% fee
+      const value = halfEther
+      const recipient = accounts[8];
+      const fee = 0.001
+      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const feeManager = await FeeManagerErcToNative.new()
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
+
+      // When
+      const { logs } = await homeBridge.sendTransaction({ from: recipient, value }).should.be.fulfilled
+
+      // Then
+      const finalValue = value.mul(web3.toBigNumber(1 - fee))
+      logs[0].event.should.be.equal('UserRequestForSignature')
+      logs[0].args.should.be.deep.equal({ recipient: recipient, value: finalValue })
+      const currentDay = await homeBridge.getCurrentDay()
+      value.should.be.bignumber.equal(await homeBridge.totalSpentPerDay(currentDay))
+      finalValue.should.be.bignumber.equal(await homeBridge.totalBurntCoins())
+      const homeBridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      homeBridgeBalance.should.be.bignumber.equal(value.sub(finalValue))
+    })
+  })
+  describe('#feeManager_submitSignature', async () => {
+    it('should distribute fee to validator', async () => {
+      // Initialize
+      const owner = accounts[9]
+      const validators = [accounts[1]]
+      const rewards = [accounts[2]]
+      const requiredSignatures = 1
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address);
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
+      await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
+      await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
+
+      // Given
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const feeManager = await FeeManagerErcToNative.new()
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
+
+      const recipient = accounts[5];
+      const initialValue = halfEther
+      const value = halfEther.mul(web3.toBigNumber(1-fee));
+      const feeAmount = initialValue.mul(web3.toBigNumber(fee))
+      const rewardAddressBalanceBefore = await web3.eth.getBalance(rewards[0])
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+
+      const initialBridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      initialBridgeBalance.should.be.bignumber.equal('0')
+
+      // When
+      await homeBridge.sendTransaction({ from: recipient, value: initialValue }).should.be.fulfilled
+
+      const afterTransferBridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      afterTransferBridgeBalance.should.be.bignumber.equal(feeAmount)
+
+      const message = createMessage(recipient, value, transactionHash,  homeBridge.address);
+
+      const signature = await sign(validators[0], message)
+
+      const { logs } = await homeBridge.submitSignature(signature, message, {from: validators[0]}).should.be.fulfilled;
+
+      // Then
+      logs.length.should.be.equal(2)
+      logs[1].event.should.be.equal('CollectedSignatures')
+
+      const finalBridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      finalBridgeBalance.should.be.bignumber.equal('0')
+
+      const rewardAddressBalanceAfter = await web3.eth.getBalance(rewards[0])
+      rewardAddressBalanceAfter.should.be.bignumber.equal(rewardAddressBalanceBefore.add(feeAmount))
+    })
+    it('should distribute fee to 3 validators', async () => {
+      // Initialize
+      const owner = accounts[9]
+      const validators = [accounts[1], accounts[2], accounts[3]]
+      const rewards = [accounts[4], accounts[5], accounts[6]]
+      const requiredSignatures = 3
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address);
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
+      await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
+      await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
+
+      // Given
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const feeManager = await FeeManagerErcToNative.new()
+      const feePerValidator = web3.toBigNumber(166666666666666)
+      const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
+
+      const recipient = accounts[7];
+      const initialValue = halfEther
+      const value = halfEther.mul(web3.toBigNumber(1-fee));
+      const feeAmount = initialValue.mul(web3.toBigNumber(fee))
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+
+      const initialBridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      initialBridgeBalance.should.be.bignumber.equal('0')
+
+      const initialBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
+      const initialBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
+      const initialBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
+
+      // When
+      await homeBridge.sendTransaction({ from: recipient, value: initialValue }).should.be.fulfilled
+
+      const afterTransferBridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      afterTransferBridgeBalance.should.be.bignumber.equal(feeAmount)
+
+      const message = createMessage(recipient, value, transactionHash,  homeBridge.address);
+
+      const signature = await sign(validators[0], message)
+      const signature2 = await sign(validators[1], message)
+      const signature3 = await sign(validators[2], message)
+
+      await homeBridge.submitSignature(signature, message, {from: validators[0]}).should.be.fulfilled;
+      await homeBridge.submitSignature(signature2, message, {from: validators[1]}).should.be.fulfilled;
+      const { logs } = await homeBridge.submitSignature(signature3, message, {from: validators[2]}).should.be.fulfilled;
+
+      // Then
+      logs.length.should.be.equal(2)
+      logs[1].event.should.be.equal('CollectedSignatures')
+
+      const updatedBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
+      const updatedBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
+      const updatedBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
+
+      const bridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      bridgeBalance.should.be.bignumber.equal('0')
+
+      expect(
+        updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidator))
+        || updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidatorPlusDiff))).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator))
+        || updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidator))
+        || updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidatorPlusDiff))).to.equal(true)
+    })
+    it('should distribute fee to 5 validators', async () => {
+      // Initialize
+      const owner = accounts[0]
+      const validators = [accounts[0], accounts[1], accounts[2], accounts[3], accounts[4]]
+      const rewards = [accounts[5], accounts[6], accounts[7], accounts[8], accounts[9]]
+      const requiredSignatures = 5
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridgeImpl = await HomeBridge.new();
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address);
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
+      await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
+      await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
+
+      // Given
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const feeManager = await FeeManagerErcToNative.new()
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
+
+      const recipient = accounts[0];
+      const initialValue = halfEther
+      const value = halfEther.mul(web3.toBigNumber(1-fee));
+      const feeAmount = initialValue.mul(web3.toBigNumber(fee))
+      const feePerValidator = feeAmount.div(web3.toBigNumber(5))
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+
+      const initialBridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      initialBridgeBalance.should.be.bignumber.equal('0')
+
+      const initialBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
+      const initialBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
+      const initialBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
+      const initialBalanceRewardAddress4 = await web3.eth.getBalance(rewards[3])
+      const initialBalanceRewardAddress5 = await web3.eth.getBalance(rewards[4])
+
+      // When
+      await homeBridge.sendTransaction({ from: recipient, value: initialValue }).should.be.fulfilled
+
+      const afterTransferBridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      afterTransferBridgeBalance.should.be.bignumber.equal(feeAmount)
+
+      const message = createMessage(recipient, value, transactionHash,  homeBridge.address);
+
+      const signature = await sign(validators[0], message)
+      const signature2 = await sign(validators[1], message)
+      const signature3 = await sign(validators[2], message)
+      const signature4 = await sign(validators[3], message)
+      const signature5 = await sign(validators[4], message)
+
+      await homeBridge.submitSignature(signature, message, {from: validators[0]}).should.be.fulfilled;
+      await homeBridge.submitSignature(signature2, message, {from: validators[1]}).should.be.fulfilled;
+      await homeBridge.submitSignature(signature3, message, {from: validators[2]}).should.be.fulfilled;
+      await homeBridge.submitSignature(signature4, message, {from: validators[3]}).should.be.fulfilled;
+      const { logs } = await homeBridge.submitSignature(signature5, message, {from: validators[4]}).should.be.fulfilled;
+
+      // Then
+      logs.length.should.be.equal(2)
+      logs[1].event.should.be.equal('CollectedSignatures')
+
+      const updatedBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
+      const updatedBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
+      const updatedBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
+      const updatedBalanceRewardAddress4 = await web3.eth.getBalance(rewards[3])
+      const updatedBalanceRewardAddress5 = await web3.eth.getBalance(rewards[4])
+
+      updatedBalanceRewardAddress1.should.be.bignumber.equal(initialBalanceRewardAddress1.add(feePerValidator))
+      updatedBalanceRewardAddress2.should.be.bignumber.equal(initialBalanceRewardAddress2.add(feePerValidator))
+      updatedBalanceRewardAddress3.should.be.bignumber.equal(initialBalanceRewardAddress3.add(feePerValidator))
+      updatedBalanceRewardAddress4.should.be.bignumber.equal(initialBalanceRewardAddress4.add(feePerValidator))
+      updatedBalanceRewardAddress5.should.be.bignumber.equal(initialBalanceRewardAddress5.add(feePerValidator))
+    })
+  })
+  describe('#FeeManager_random', async () => {
+    it('should return value between 0 and 3', async () => {
+      // Given
+      const feeManager = await FeeManagerErcToNative.new()
+
+      for (let i = 0; i < 10; i++) {
+        // send Tx to generate new blocks
+        await feeManager.setFee(0).should.be.fulfilled
+
+        // When
+        const result = await feeManager.random(3);
+
+        // Then
+        result.should.be.bignumber.gte(0);
+        result.should.be.bignumber.lt(3);
+      }
     })
   })
 })

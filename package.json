@@ -25,6 +25,6 @@
     "eth-gas-reporter": "^0.1.12",
     "nodemon": "^1.17.3",
     "solidity-coverage": "^0.4.15",
-    "truffle-flattener": "^1.2.3"
+    "truffle-flattener": "^1.2.10"
   }
 }

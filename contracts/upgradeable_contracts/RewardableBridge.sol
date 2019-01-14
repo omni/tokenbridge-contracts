@@ -1,12 +1,11 @@
 pragma solidity 0.4.24;
 
-import "./OwnedUpgradeability.sol";
 import "./Ownable.sol";
 
 
-contract RewardableBridge is Ownable, OwnedUpgradeability {
+contract RewardableBridge is Ownable {
 
-    function setFee(uint256 _fee) external onlyIfOwnerOfProxy {
+    function setFee(uint256 _fee) external onlyOwner {
         require(feeManagerContract().delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
     }
 

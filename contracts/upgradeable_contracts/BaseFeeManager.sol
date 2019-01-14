@@ -8,6 +8,10 @@ import "../IRewardableValidators.sol";
 contract BaseFeeManager is EternalStorage {
     using SafeMath for uint256;
 
+    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = keccak256(abi.encodePacked("reward-transferring-from-home"));
+
+    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_FOREIGN = keccak256(abi.encodePacked("reward-transferring-from-foreign"));
+
     event FeeUpdated(uint256 fee);
 
     function calculateFee(uint256 _value, bool _recover) external view returns(uint256) {
@@ -29,26 +33,26 @@ contract BaseFeeManager is EternalStorage {
     }
 
     function distributeFeeFromAffirmation(uint256 _fee) external {
-        distributeFeeProportionally(_fee, true);
+        distributeFeeProportionally(_fee, REWARD_FOR_TRANSFERRING_FROM_FOREIGN);
     }
 
     function distributeFeeFromSignatures(uint256 _fee) external {
-        distributeFeeProportionally(_fee, false);
+        distributeFeeProportionally(_fee, REWARD_FOR_TRANSFERRING_FROM_HOME);
     }
 
-    function distributeFeeProportionally(uint256 _fee, bool _isAffirmation) internal {
+    function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {
         IRewardableValidators validators = rewardableValidatorContract();
         address [] memory validatorList = validators.validatorList();
         uint256 feePerValidator = _fee.div(validatorList.length);
 
         for (uint256 i = 0; i < validatorList.length; i++) {
             address rewardAddress = validators.getValidatorRewardAddress(validatorList[i]);
-            onFeeDistribution(rewardAddress, feePerValidator, _isAffirmation);
+            onFeeDistribution(rewardAddress, feePerValidator, _direction);
         }
     }
 
-    function onFeeDistribution(address _rewardAddress, uint256 _fee, bool _isAffirmation) internal {
-        if (_isAffirmation) {
+    function onFeeDistribution(address _rewardAddress, uint256 _fee, bytes32 _direction) internal {
+        if (_direction == REWARD_FOR_TRANSFERRING_FROM_FOREIGN) {
             onAffirmationFeeDistribution(_rewardAddress, _fee);
         } else {
             onSignatureFeeDistribution(_rewardAddress, _fee);

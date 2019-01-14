@@ -40,14 +40,28 @@ contract BaseFeeManager is EternalStorage {
         distributeFeeProportionally(_fee, REWARD_FOR_TRANSFERRING_FROM_HOME);
     }
 
+    function random(uint256 _count) public view returns(uint256) {
+        return uint256(blockhash(block.number.sub(1))) % _count;
+    }
+
     function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {
         IRewardableValidators validators = rewardableValidatorContract();
-        address [] memory validatorList = validators.validatorList();
+        address[] memory validatorList = validators.validatorList();
         uint256 feePerValidator = _fee.div(validatorList.length);
 
+        uint256 randomValidatorIndex;
+        uint256 diff = _fee.sub(feePerValidator.mul(validatorList.length));
+        if (diff > 0) {
+            randomValidatorIndex = random(validatorList.length);
+        }
+
         for (uint256 i = 0; i < validatorList.length; i++) {
+            uint256 feeToDistribute = feePerValidator;
+            if (diff > 0 && randomValidatorIndex == i) {
+                feeToDistribute = feeToDistribute.add(diff);
+            }
             address rewardAddress = validators.getValidatorRewardAddress(validatorList[i]);
-            onFeeDistribution(rewardAddress, feePerValidator, _direction);
+            onFeeDistribution(rewardAddress, feeToDistribute, _direction);
         }
     }
 

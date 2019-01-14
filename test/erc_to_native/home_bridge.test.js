@@ -899,6 +899,7 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const requiredSignatures = 2
       const rewardableValidators = await RewardableValidators.new()
       const homeBridgeImpl = await HomeBridge.new();
+      const blockRewardContract = await BlockReward.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
       const homeBridge = await HomeBridge.at(storageProxy.address);
@@ -906,16 +907,20 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       await homeBridge.initialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[0],
-        value: oneEther
+        value: halfEther
       }).should.be.fulfilled
 
       // Given
+      const initialBlockRewardBalance = await web3.eth.getBalance(blockRewardContract.address)
+      initialBlockRewardBalance.should.be.bignumber.equal(halfEther)
+
       const value = halfEther;
       // 0.1% fee
       const fee = 0.001
       const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
       // totalFee / 3
       const feePerValidator = web3.toBigNumber(166666666666666)
+      const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
       const feeManager = await FeeManagerErcToNative.new()
       await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
       await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
@@ -955,9 +960,18 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const updatedBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
       const updatedBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
 
-      updatedBalanceRewardAddress1.should.be.bignumber.equal(initialBalanceRewardAddress1.add(feePerValidator))
-      updatedBalanceRewardAddress2.should.be.bignumber.equal(initialBalanceRewardAddress2.add(feePerValidator))
-      updatedBalanceRewardAddress3.should.be.bignumber.equal(initialBalanceRewardAddress3.add(feePerValidator))
+      expect(
+        updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidator))
+        || updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidatorPlusDiff))).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator))
+        || updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidator))
+        || updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidatorPlusDiff))).to.equal(true)
+
+      const blockRewardBalance = await web3.eth.getBalance(blockRewardContract.address)
+      blockRewardBalance.should.be.bignumber.equal('0')
     })
     it('should distribute fee to 5 validators', async () => {
       // Initialize
@@ -1156,6 +1170,7 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
       const feeManager = await FeeManagerErcToNative.new()
       const feePerValidator = web3.toBigNumber(166666666666666)
+      const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
       await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
       await homeBridge.setFee(feeInWei, { from: owner }).should.be.fulfilled
 
@@ -1196,9 +1211,18 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const updatedBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
       const updatedBalanceRewardAddress3 = await web3.eth.getBalance(rewards[2])
 
-      updatedBalanceRewardAddress1.should.be.bignumber.equal(initialBalanceRewardAddress1.add(feePerValidator))
-      updatedBalanceRewardAddress2.should.be.bignumber.equal(initialBalanceRewardAddress2.add(feePerValidator))
-      updatedBalanceRewardAddress3.should.be.bignumber.equal(initialBalanceRewardAddress3.add(feePerValidator))
+      const bridgeBalance = await web3.eth.getBalance(homeBridge.address)
+      bridgeBalance.should.be.bignumber.equal('0')
+
+      expect(
+        updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidator))
+        || updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidatorPlusDiff))).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator))
+        || updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidator))
+        || updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidatorPlusDiff))).to.equal(true)
     })
     it('should distribute fee to 5 validators', async () => {
       // Initialize
@@ -1274,6 +1298,24 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       updatedBalanceRewardAddress3.should.be.bignumber.equal(initialBalanceRewardAddress3.add(feePerValidator))
       updatedBalanceRewardAddress4.should.be.bignumber.equal(initialBalanceRewardAddress4.add(feePerValidator))
       updatedBalanceRewardAddress5.should.be.bignumber.equal(initialBalanceRewardAddress5.add(feePerValidator))
+    })
+  })
+  describe('#FeeManager_random', async () => {
+    it('should return value between 0 and 3', async () => {
+      // Given
+      const feeManager = await FeeManagerErcToNative.new()
+
+      for (let i = 0; i < 10; i++) {
+        // send Tx to generate new blocks
+        await feeManager.setFee(0).should.be.fulfilled
+
+        // When
+        const result = await feeManager.random(3);
+
+        // Then
+        result.should.be.bignumber.gte(0);
+        result.should.be.bignumber.lt(3);
+      }
     })
   })
 })

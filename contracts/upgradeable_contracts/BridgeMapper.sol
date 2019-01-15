@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 
-import "./Ownable.sol";
+import "./EternalOwnable.sol";
 import "../upgradeability/EternalStorage.sol";
 
-contract BridgeMapper is EternalStorage, Ownable {
+contract BridgeMapper is EternalStorage, EternalOwnable {
 
   event BridgeMappingAdded(address indexed foreignToken, address homeToken, address foreignBridge, address homeBridge, uint256 foreignStartBlock, uint256 homeStartBlock);
   event BridgeMappingRemoved(address indexed foreignToken);

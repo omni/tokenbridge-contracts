@@ -4,10 +4,10 @@ import "../upgradeability/EternalStorage.sol";
 
 
 /**
- * @title Ownable
+ * @title EternalOwnable
  * @dev This contract has an owner address providing basic authorization control
  */
-contract Ownable is EternalStorage {
+contract EternalOwnable is EternalStorage {
     /**
     * @dev Event to show ownership has been transferred
     * @param previousOwner representing the address of the previous owner

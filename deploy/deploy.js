@@ -111,6 +111,39 @@ async function deployErcToNative() {
   console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
 }
 
+async function deployFactory() {
+  const deployHome = require('./src/factories/home')
+  const deployForeign = require('./src/factories/foreign')
+
+  const { homeFactory, mapper } = await deployHome()
+  const { foreignFactory } = await deployForeign()
+  console.log('\nDeployment has been completed.\n\n')
+  console.log(`[   Home  ] HomeFactory: ${homeFactory.address} at block ${homeFactory.deployedBlockNumber}`)
+  console.log(`[   Home  ] mapper: ${mapper.address}`)
+  console.log(
+    `[ Foreign ] ForeignFactory: ${foreignFactory.address} at block ${
+      foreignFactory.deployedBlockNumber
+    }`
+  )
+  fs.writeFileSync(
+    deployResultsPath,
+    JSON.stringify(
+      {
+        homeFactory: {
+          ...homeFactory,
+          mapper
+        },
+        foreignFactory: {
+          ...foreignFactory
+        }
+      },
+      null,
+      4
+    )
+  )
+  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+}
+
 async function main() {
   console.log(`Bridge mode: ${BRIDGE_MODE}`)
   switch (BRIDGE_MODE) {
@@ -123,9 +156,12 @@ async function main() {
     case 'ERC_TO_NATIVE':
       await deployErcToNative()
       break
+    case 'FACTORY':
+      await deployFactory()
+      break
     default:
       console.log(BRIDGE_MODE)
-      throw new Error('Please specify BRIDGE_MODE: NATIVE_TO_ERC or ERC_TO_ERC')
+      throw new Error('Please specify BRIDGE_MODE: NATIVE_TO_ERC or ERC_TO_ERC or ERC_TO_NATIVE or FACTORY')
   }
 }
 

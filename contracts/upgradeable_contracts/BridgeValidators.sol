@@ -1,12 +1,12 @@
 pragma solidity 0.4.24;
 
-import "./Ownable.sol";
+import "./EternalOwnable.sol";
 import "../IBridgeValidators.sol";
 import "../libraries/SafeMath.sol";
 import "../upgradeability/EternalStorage.sol";
 
 
-contract BridgeValidators is IBridgeValidators, EternalStorage, Ownable {
+contract BridgeValidators is IBridgeValidators, EternalStorage, EternalOwnable {
     using SafeMath for uint256;
 
     event ValidatorAdded (address indexed validator);

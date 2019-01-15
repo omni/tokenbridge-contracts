@@ -146,6 +146,87 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
     })
   })
 
+  describe('#rewardableInitialize', async() => {
+    let feeManager, fee
+    beforeEach(async () => {
+      feeManager = await FeeManagerErcToNative.new()
+      homeContract = await HomeBridge.new()
+      fee = web3.toBigNumber(web3.toWei(0.001, "ether"))
+    })
+    it('sets variables', async () => {
+      ZERO_ADDRESS.should.be.equal(await homeContract.validatorContract())
+      '0'.should.be.bignumber.equal(await homeContract.deployedAtBlock())
+      '0'.should.be.bignumber.equal(await homeContract.dailyLimit())
+      '0'.should.be.bignumber.equal(await homeContract.maxPerTx())
+      false.should.be.equal(await homeContract.isInitialized())
+      ZERO_ADDRESS.should.be.equal(await homeContract.blockRewardContract())
+
+      await homeContract.rewardableInitialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled
+
+      true.should.be.equal(await homeContract.isInitialized())
+      validatorContract.address.should.be.equal(await homeContract.validatorContract())
+      blockRewardContract.address.should.be.equal(await homeContract.blockRewardContract());
+      (await homeContract.deployedAtBlock()).should.be.bignumber.above(0)
+      '3'.should.be.bignumber.equal(await homeContract.dailyLimit())
+      '2'.should.be.bignumber.equal(await homeContract.maxPerTx())
+      '1'.should.be.bignumber.equal(await homeContract.minPerTx())
+      const contractGasPrice = await homeContract.gasPrice()
+      contractGasPrice.should.be.bignumber.equal(gasPrice)
+      const bridgeMode = '0x18762d46' // 4 bytes of keccak256('erc-to-native-core')
+      const mode = await homeContract.getBridgeMode();
+      mode.should.be.equal(bridgeMode)
+      const [major, minor, patch] = await homeContract.getBridgeInterfacesVersion()
+      major.should.be.bignumber.gte(0)
+      minor.should.be.bignumber.gte(0)
+      patch.should.be.bignumber.gte(0)
+
+      const feeManagerContract = await homeContract.feeManagerContract()
+      feeManagerContract.should.be.equals(feeManager.address)
+      const bridgeFee = await homeContract.getFee()
+      bridgeFee.should.be.bignumber.equal(fee)
+    })
+
+    it('cant initialize with invalid arguments', async () => {
+      false.should.be.equal(await homeContract.isInitialized())
+      await homeContract.rewardableInitialize(validatorContract.address, '3', '2', '1', gasPrice, 0, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.rewardableInitialize(owner, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.rewardableInitialize(ZERO_ADDRESS, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.rewardableInitialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, owner, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.rewardableInitialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address, halfEther, oneEther, owner, feeManager.address, fee).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.rewardableInitialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner, ZERO_ADDRESS, fee).should.be.rejectedWith(ERROR_MSG);
+      await homeContract.rewardableInitialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled;
+      true.should.be.equal(await homeContract.isInitialized())
+    })
+
+    it('can update fee contract', async () => {
+      await homeContract.rewardableInitialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled;
+
+      // Given
+      const newFeeManager = await FeeManagerErcToNative.new()
+
+      // When
+      await homeContract.setFeeManagerContract(newFeeManager.address, { from: owner }).should.be.fulfilled
+
+      // Then
+      const feeManagerContract = await homeContract.feeManagerContract()
+      feeManagerContract.should.be.equals(newFeeManager.address)
+    })
+
+    it('can update fee', async () => {
+      await homeContract.rewardableInitialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, blockRewardContract.address, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled;
+
+      // Given
+      const newFee = web3.toBigNumber(web3.toWei(0.1, "ether"))
+
+      // When
+      await homeContract.setFee(newFee, { from: owner }).should.be.fulfilled
+
+      // Then
+      const bridgeFee = await homeContract.getFee()
+      bridgeFee.should.be.bignumber.equal(newFee)
+    })
+  })
+
   describe('#fallback', async () => {
     beforeEach(async () => {
       homeContract = await HomeBridge.new()

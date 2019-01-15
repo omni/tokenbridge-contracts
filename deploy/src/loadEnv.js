@@ -22,7 +22,7 @@ const addressesValidator = envalid.makeValidator(addresses => {
   return addresses
 })
 
-const { BRIDGE_MODE } = process.env
+const { BRIDGE_MODE, REWARDABLE_VALIDATORS, VALIDATORS, VALIDATORS_REWARD_ACCOUNTS } = process.env
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)
@@ -83,6 +83,24 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     BLOCK_REWARD_ADDRESS: addressValidator({
       default: ZERO_ADDRESS
     })
+  }
+}
+
+if (REWARDABLE_VALIDATORS === 'true') {
+  const validatorsLength = VALIDATORS ? VALIDATORS.split(' ').length : 0
+  const validatorsRewardLength = VALIDATORS_REWARD_ACCOUNTS
+    ? VALIDATORS_REWARD_ACCOUNTS.split(' ').length
+    : 0
+  if (validatorsLength !== validatorsRewardLength) {
+    throw new Error(
+      `List of rewards accounts (${validatorsRewardLength} accounts) should be the same length as list of validators (${validatorsLength} accounts)`
+    )
+  }
+
+  validations = {
+    ...validations,
+    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
+    BRIDGE_FEE: envalid.num()
   }
 }
 

@@ -18,6 +18,7 @@ const {
   REQUIRED_NUMBER_OF_VALIDATORS,
   HOME_OWNER_MULTISIG,
   HOME_OWNER_FACTORY,
+  HOME_OWNER_MAPPER,
   HOME_UPGRADEABLE_ADMIN_VALIDATORS,
   HOME_UPGRADEABLE_ADMIN_BRIDGE,
   HOME_UPGRADEABLE_ADMIN_FACTORY,
@@ -175,6 +176,7 @@ async function deployHome() {
     '[Home] BridgeMapper Implementation: ',
     bridgeMapperHome.options.address
   )
+
   console.log('\nhooking up eternal storage to BridgeMapper')
   const upgradeToBridgeMapperData = await storageBridgeMapperHome.methods
     .upgradeTo('1', bridgeMapperHome.options.address)
@@ -187,6 +189,21 @@ async function deployHome() {
     url: HOME_RPC_URL
   })
   assert.equal(Web3Utils.hexToNumber(txUpgradeToBridgeMapper.status), 1, 'Transaction Failed')
+  homeNonce++
+
+  console.log('\ninitializing BridgeMapper:')
+  bridgeMapperHome.options.address = storageBridgeMapperHome.options.address
+  const initializeBridgeMapperData = await bridgeMapperHome.methods
+    .initialize(HOME_OWNER_MAPPER)
+    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  const txInitializeBridgeMapper = await sendRawTxHome({
+    data: initializeBridgeMapperData,
+    nonce: homeNonce,
+    to: bridgeMapperHome.options.address,
+    privateKey: deploymentPrivateKey,
+    url: HOME_RPC_URL
+  })
+  assert.equal(Web3Utils.hexToNumber(txInitializeBridgeMapper.status), 1, 'Transaction Failed')
   homeNonce++
 
   console.log('\nTransferring ownership of MapperProxy\n')

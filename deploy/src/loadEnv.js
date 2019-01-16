@@ -86,6 +86,7 @@ if(BRIDGE_MODE === 'FACROTY') {
   validations = {
     ...validations,
     HOME_OWNER_FACTORY: addressValidator(),
+    HOME_OWNER_MAPPER: addressValidator(),
     HOME_UPGRADEABLE_ADMIN_FACTORY: addressValidator(),
     HOME_UPGRADEABLE_ADMIN_MAPPER: addressValidator(),
     FOREIGN_OWNER_FACTORY: addressValidator(),

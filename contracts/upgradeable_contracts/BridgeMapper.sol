@@ -77,8 +77,8 @@ contract BridgeMapper is EternalStorage, EternalOwnable {
     return (1, 0, 0);
   }
 
-  constructor() public {
-    setOwner(msg.sender);
+  function initialize(address _owner) public {
+    setOwner(_owner);
   }
 
 }

@@ -156,12 +156,12 @@ async function main() {
     case 'ERC_TO_NATIVE':
       await deployErcToNative()
       break
-    case 'FACTORY':
+    case 'ERC_TO_ERC_MULTIPLE':
       await deployFactory()
       break
     default:
       console.log(BRIDGE_MODE)
-      throw new Error('Please specify BRIDGE_MODE: NATIVE_TO_ERC or ERC_TO_ERC or ERC_TO_NATIVE or FACTORY')
+      throw new Error('Please specify BRIDGE_MODE: NATIVE_TO_ERC or ERC_TO_ERC or ERC_TO_NATIVE or ERC_TO_ERC_MULTIPLE')
   }
 }
 

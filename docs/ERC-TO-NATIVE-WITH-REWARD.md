@@ -30,7 +30,7 @@ ForeignBridgeErcToNative|deployment|2863900|2863900|2863900
 EternalStorageProxy|upgradeTo|35871|30924|30913
 ForeignBridgeErcToNative|initialize|239130|239130|239130
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
-Total| |5555351|5641302|5555351	5641302	5605573
+Total| |5555351|5641302|5605573
 
 #### Usage
 

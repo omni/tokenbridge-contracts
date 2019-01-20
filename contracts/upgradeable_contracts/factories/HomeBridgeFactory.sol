@@ -9,7 +9,7 @@ import "../EternalOwnable.sol";
 
 contract HomeBridgeFactory is EternalStorage, EternalOwnable {
 
-  event HomeBridgeDeployed(address indexed _homeBridge, address indexed _homeValidators);
+  event HomeBridgeDeployed(address indexed _homeBridge, address indexed _homeValidators, address indexed _token, uint256 _blockNumber);
 
   function getBridgeFactoryVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
     return (2, 2, 0);
@@ -31,16 +31,16 @@ contract HomeBridgeFactory is EternalStorage, EternalOwnable {
       address _homeBridgeOwner,
       address _homeProxyOwner) public {
     
+
     require(_owner != address(0));
     require(_bridgeValidatorsImplementation != address(0));
     require(_requiredSignatures >= 1);
     require(_bridgeValidatorsOwner != address(0));
     require(_homeBridgeErcToErcImplementation != address(0));
+    require(_gasPrice > 0);
     require(_requiredBlockConfirmations > 0);
-    require(_dailyLimit >= 0);
-    require(_maxPerTx >= 0);
-    require(_minPerTx >= 0);
-    require(_foreignDailyLimit >= 0);
+    require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
+    require(_foreignMaxPerTx < _foreignDailyLimit);
     require(_homeBridgeOwner != address(0));
     require(_homeProxyOwner != address(0));
 
@@ -90,7 +90,7 @@ contract HomeBridgeFactory is EternalStorage, EternalOwnable {
     // transger proxy upgradeability admin
     proxy.transferProxyOwnership(homeBridgeProxyOwner());
     // emit event
-    emit HomeBridgeDeployed(homeBridge, bridgeValidators);
+    emit HomeBridgeDeployed(homeBridge, bridgeValidators, token, block.number);
   }
   
 

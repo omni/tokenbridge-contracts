@@ -8,7 +8,7 @@ import "../EternalOwnable.sol";
 
 contract ForeignBridgeFactory is EternalStorage, EternalOwnable {
 
-  event ForeignBridgeDeployed(address indexed _foreignBridge, address indexed _foreignValidators);
+  event ForeignBridgeDeployed(address indexed _foreignBridge, address indexed _foreignValidators, uint256 _blockNumber);
 
   function getBridgeFactoryVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
     return (2, 2, 0);
@@ -27,16 +27,17 @@ contract ForeignBridgeFactory is EternalStorage, EternalOwnable {
       uint256 _homeMaxPerTx,
       address _foreignBridgeOwner,
       address _foreignProxyOwner) public {
+
     
     require(_owner != address(0));
     require(_bridgeValidatorsImplementation != address(0));
     require(_requiredSignatures >= 1);
     require(_bridgeValidatorsOwner != address(0));
     require(_foreignBridgeErcToErcImplementation != address(0));
-    require(_requiredBlockConfirmations > 0);
+    require(_requiredBlockConfirmations != 0);
+    require(_gasPrice > 0);
     require(_foreignMaxPerTx >= 0);
-    require(_homeDailyLimit >= 0);
-    require(_homeMaxPerTx >= 0);
+    require(_homeMaxPerTx < _homeDailyLimit);
     require(_foreignBridgeOwner != address(0));
     require(_foreignProxyOwner != address(0));
 
@@ -78,7 +79,7 @@ contract ForeignBridgeFactory is EternalStorage, EternalOwnable {
     // transger proxy upgradeability admin
     proxy.transferProxyOwnership(foreignBridgeProxyOwner());
     // emit event
-    emit ForeignBridgeDeployed(foreignBridge, bridgeValidators);
+    emit ForeignBridgeDeployed(foreignBridge, bridgeValidators, block.number);
   }
   
 

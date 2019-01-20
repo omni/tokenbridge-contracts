@@ -106,7 +106,7 @@ async function deployHome() {
     VALIDATORS: ${VALIDATORS},
     HOME_VALIDATORS_OWNER: ${HOME_VALIDATORS_OWNER},
     HOME_BRIDGE_IMPLEMENTATION_ADDRESS: ${HOME_BRIDGE_IMPLEMENTATION_ADDRESS},
-    HOME_REQUIRED_BLOCK_CONFIRMATIONS" ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
+    HOME_REQUIRED_BLOCK_CONFIRMATIONS: ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
     HOME_GAS_PRICE: ${HOME_GAS_PRICE},
     HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT},
     HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX},
@@ -230,7 +230,10 @@ async function deployHome() {
       address: storageBridgeFactoryHome.options.address,
       deployedBlockNumber: Web3Utils.hexToNumber(storageBridgeFactoryHome.deployedBlockNumber)
     },
-    mapper: {address: storageBridgeMapperHome.options.address }
+    mapper: {
+      address: storageBridgeMapperHome.options.address,
+      deployedBlockNumber: Web3Utils.hexToNumber(storageBridgeMapperHome.deployedBlockNumber)
+    }
   }
 }
 module.exports = deployHome

@@ -38,11 +38,11 @@ async function deployToken() {
     privateKey: deploymentPrivateKey,
     url: FOREIGN_RPC_URL
   })
-  assert.equal(Web3Utils.hexToNumber(txMint.status), 1, 'Transaction Failed')
+  assert.strictEqual(Web3Utils.hexToNumber(txMint.status), 1, 'Transaction Failed')
 
   console.log('\nToken deployment is completed\n')
   return {
-    erc677tokenAddress: erc677token.options.address,
+    erc677tokenAddress: erc677token.options.address
   }
 }
 module.exports = deployToken

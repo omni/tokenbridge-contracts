@@ -49,24 +49,23 @@ FOREIGN_DEPLOYMENT_GAS_PRICE=10000000000
 GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 
 # The name of the ERC677 token to be deployed on the Foreign network.
-BRIDGEABLE_TOKEN_NAME="Your New Bridged Token"
+BRIDGEABLE_TOKEN_NAME=Your New Bridged Token
 # The symbol name of the ERC677 token to be deployed on the Foreign network.
-BRIDGEABLE_TOKEN_SYMBOL="TEST"
+BRIDGEABLE_TOKEN_SYMBOL=TEST
 # The number of supportable decimal digits after the "point" in the ERC677 token
 # to be deployed on the Foreign network.
-BRIDGEABLE_TOKEN_DECIMALS="18"
+BRIDGEABLE_TOKEN_DECIMALS=18
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
 HOME_RPC_URL=https://poa.infura.io
-# The address of an administrator on the Home network who can change bridge
-# parameters and a validator's contract. For extra security we recommended using
-# a multi-sig wallet contract address here.
-HOME_OWNER_MULTISIG=0x
-# The address from which a validator's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
-# The address from which the bridge's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
+# Address on Home network with permissions to change parameters of the bridge contract.
+# For extra security we recommended using a multi-sig wallet contract address here.
+HOME_BRIDGE_OWNER=0x
+# Address on Home network with permissions to change parameters of bridge validator contract.
+HOME_VALIDATORS_OWNER=0x
+# Address on Home network with permissions to upgrade the bridge contract and the bridge validator contract.
+HOME_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
@@ -89,14 +88,13 @@ HOME_GAS_PRICE=1000000000
 # The RPC channel to a Foreign node able to handle deployment/configuration
 # transactions.
 FOREIGN_RPC_URL=https://mainnet.infura.io
-# The address of an administrator on the Foreign network who can change bridge
-# parameters and the validator's contract. For extra security we recommended
-# using a multi-sig wallet contract address here.
-FOREIGN_OWNER_MULTISIG=0x
-# The address from which a validator's contract can be upgraded on Foreign.
-FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS=0x
-# The address from which the bridge's contract can be upgraded on Foreign.
-FOREIGN_UPGRADEABLE_ADMIN_BRIDGE=0x
+# Address on Foreign network with permissions to change parameters of the bridge contract.
+# For extra security we recommended using a multi-sig wallet contract address here.
+FOREIGN_BRIDGE_OWNER=0x
+# Address on Foreign network with permissions to change parameters of bridge validator contract.
+FOREIGN_VALIDATORS_OWNER=0x
+# Address on Foreign network with permissions to upgrade the bridge contract and the bridge validator contract.
+FOREIGN_UPGRADEABLE_ADMIN=0x
 # The daily limit in Wei. As soon as this limit is exceeded, any transaction
 # requesting to relay assets will fail.
 FOREIGN_DAILY_LIMIT=15000000000000000000000000
@@ -124,7 +122,7 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # addresses are collected on the Home side. The same addresses will be used on
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
-VALIDATORS="0x 0x 0x"
+VALIDATORS=0x 0x 0x
 ```
 
 
@@ -153,24 +151,23 @@ FOREIGN_DEPLOYMENT_GAS_PRICE=10000000000
 GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 
 # The name of the ERC677 token to be deployed on the Home network.
-BRIDGEABLE_TOKEN_NAME="Your New Bridged Token"
+BRIDGEABLE_TOKEN_NAME=Your New Bridged Token
 # The symbol name of the ERC677 token to be deployed on the Home network.
-BRIDGEABLE_TOKEN_SYMBOL="TEST"
+BRIDGEABLE_TOKEN_SYMBOL=TEST
 # The number of supportable decimal digits after the "point" in the ERC677 token
 # to be deployed on the Home network.
-BRIDGEABLE_TOKEN_DECIMALS="18"
+BRIDGEABLE_TOKEN_DECIMALS=18
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
 HOME_RPC_URL=https://poa.infura.io
-# The address of an administrator on the Home network who can change bridge
-# parameters and a validator's contract. For extra security we recommended using
-# a multi-sig wallet contract address here.
-HOME_OWNER_MULTISIG=0x
-# The address from which a validator's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
-# The address from which the bridge's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
+# Address on Home network with permissions to change parameters of the bridge contract.
+# For extra security we recommended using a multi-sig wallet contract address here.
+HOME_BRIDGE_OWNER=0x
+# Address on Home network with permissions to change parameters of bridge validator contract.
+HOME_VALIDATORS_OWNER=0x
+# Address on Home network with permissions to upgrade the bridge contract and the bridge validator contract.
+HOME_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
@@ -193,14 +190,13 @@ HOME_GAS_PRICE=1000000000
 # The RPC channel to a Foreign node able to handle deployment/configuration
 # transactions.
 FOREIGN_RPC_URL=https://mainnet.infura.io
-# The address of an administrator on the Foreign network who can change bridge
-# parameters and the validator's contract. For extra security we recommended
-# using a multi-sig wallet contract address here.
-FOREIGN_OWNER_MULTISIG=0x
-# The address from which a validator's contract can be upgraded on Foreign.
-FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS=0x
-# The address from which the bridge's contract can be upgraded on Foreign.
-FOREIGN_UPGRADEABLE_ADMIN_BRIDGE=0x
+# Address on Foreign network with permissions to change parameters of the bridge contract.
+# For extra security we recommended using a multi-sig wallet contract address here.
+FOREIGN_BRIDGE_OWNER=0x
+# Address on Foreign network with permissions to change parameters of bridge validator contract.
+FOREIGN_VALIDATORS_OWNER=0x
+# Address on Foreign network with permissions to upgrade the bridge contract and the bridge validator contract.
+FOREIGN_UPGRADEABLE_ADMIN=0x
 # These three parameters are not used in this mode, but the deployment script
 # requires it to be set to some value.
 FOREIGN_DAILY_LIMIT=0
@@ -226,7 +222,7 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # addresses are collected on the Home side. The same addresses will be used on
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
-VALIDATORS="0x 0x 0x"
+VALIDATORS=0x 0x 0x
 ```
 
 ## `ERC-TO-NATIVE` Bridge Mode Configuration Example. 
@@ -256,14 +252,13 @@ GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
 HOME_RPC_URL=https://poa.infura.io
-# The address of an administrator on the Home network who can change bridge
-# parameters and a validator's contract. For extra security we recommended using
-# a multi-sig wallet contract address here.
-HOME_OWNER_MULTISIG=0x
-# The address from which a validator's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
-# The address from which the bridge's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
+# Address on Home network with permissions to change parameters of the bridge contract.
+# For extra security we recommended using a multi-sig wallet contract address here.
+HOME_BRIDGE_OWNER=0x
+# Address on Home network with permissions to change parameters of bridge validator contract.
+HOME_VALIDATORS_OWNER=0x
+# Address on Home network with permissions to upgrade the bridge contract and the bridge validator contract.
+HOME_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
@@ -289,14 +284,13 @@ BLOCK_REWARD_ADDRESS=0x
 # The RPC channel to a Foreign node able to handle deployment/configuration
 # transactions.
 FOREIGN_RPC_URL=https://mainnet.infura.io
-# The address of an administrator on the Foreign network who can change bridge
-# parameters and the validator's contract. For extra security we recommended
-# using a multi-sig wallet contract address here.
-FOREIGN_OWNER_MULTISIG=0x
-# The address from which a validator's contract can be upgraded on Foreign.
-FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS=0x
-# The address from which the bridge's contract can be upgraded on Foreign.
-FOREIGN_UPGRADEABLE_ADMIN_BRIDGE=0x
+# Address on Foreign network with permissions to change parameters of the bridge contract.
+# For extra security we recommended using a multi-sig wallet contract address here.
+FOREIGN_BRIDGE_OWNER=0x
+# Address on Foreign network with permissions to change parameters of bridge validator contract.
+FOREIGN_VALIDATORS_OWNER=0x
+# Address on Foreign network with permissions to upgrade the bridge contract and the bridge validator contract.
+FOREIGN_UPGRADEABLE_ADMIN=0x
 # These three parameters are not used in this mode, but the deployment script
 # requires it to be set to some value.
 FOREIGN_DAILY_LIMIT=0
@@ -323,5 +317,5 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # addresses are collected on the Home side. The same addresses will be used on
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
-VALIDATORS="0x 0x 0x"
+VALIDATORS=0x 0x 0x
 ```

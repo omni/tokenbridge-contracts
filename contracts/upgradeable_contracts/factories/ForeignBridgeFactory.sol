@@ -8,36 +8,52 @@ import "../EternalOwnable.sol";
 
 contract ForeignBridgeFactory is EternalStorage, EternalOwnable {
 
+  event ForeignBridgeDeployed(address indexed _foreignBridge, address indexed _foreignValidators);
+
+  function getBridgeFactoryVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
+    return (2, 2, 0);
+  }
+
   function initialize(address _owner,
       address _bridgeValidatorsImplementation,
       uint256 _requiredSignatures,
       address[] _initialValidators,
       address _bridgeValidatorsOwner,
-      address _bridgeValidatorsProxyOwner,
       address _foreignBridgeErcToErcImplementation,
       uint256 _requiredBlockConfirmations,
       uint256 _gasPrice,
-      address _foreignBridgeProxyOwner) public {
+      uint256 _foreignMaxPerTx,
+      uint256 _homeDailyLimit,
+      uint256 _homeMaxPerTx,
+      address _foreignBridgeOwner,
+      address _foreignProxyOwner) public {
     
     require(_owner != address(0));
     require(_bridgeValidatorsImplementation != address(0));
     require(_requiredSignatures >= 1);
     require(_bridgeValidatorsOwner != address(0));
-    require(_bridgeValidatorsProxyOwner != address(0));
     require(_foreignBridgeErcToErcImplementation != address(0));
     require(_requiredBlockConfirmations > 0);
-    require(_foreignBridgeProxyOwner != address(0));
+    require(_foreignMaxPerTx >= 0);
+    require(_homeDailyLimit >= 0);
+    require(_homeMaxPerTx >= 0);
+    require(_foreignBridgeOwner != address(0));
+    require(_foreignProxyOwner != address(0));
 
     setOwner(_owner);
     setBridgeValidatorsImplementation(_bridgeValidatorsImplementation);
     setRequiredSignatures(_requiredSignatures);
     setInitialValidators(_initialValidators);
     setBridgeValidatorsOwner(_bridgeValidatorsOwner);
-    setBridgeValidatorsProxyOwner(_bridgeValidatorsProxyOwner);
+    setBridgeValidatorsProxyOwner(_foreignProxyOwner);
     setForeignBridgeErcToErcImplementation(_foreignBridgeErcToErcImplementation);
     setRequiredBlockConfirmations(_requiredBlockConfirmations);
     setGasPrice(_gasPrice);
-    setForeignBridgeProxyOwner(_foreignBridgeProxyOwner);
+    setForeignMaxPerTx(_foreignMaxPerTx);
+    setHomeDailyLimit(_homeDailyLimit);
+    setHomeMaxPerTx(_homeMaxPerTx);
+    setForeignBridgeOwner(_foreignBridgeOwner);
+    setForeignBridgeProxyOwner(_foreignProxyOwner);
   }
 
   function deployForeignBridge(address _erc20Token) public onlyOwner {
@@ -58,9 +74,11 @@ contract ForeignBridgeFactory is EternalStorage, EternalOwnable {
     // cast proxy as IForeignBridge
     IForeignBridge foreignBridge = IForeignBridge(proxy);
     // initialize foreignBridge
-    foreignBridge.initialize(bridgeValidators, _erc20Token, requiredBlockConfirmations(), gasPrice());
+    foreignBridge.initialize(bridgeValidators, _erc20Token, requiredBlockConfirmations(), gasPrice(), foreignMaxPerTx(), homeDailyLimit(), homeMaxPerTx(), foreignBridgeOwner());
     // transger proxy upgradeability admin
     proxy.transferProxyOwnership(foreignBridgeProxyOwner());
+    // emit event
+    emit ForeignBridgeDeployed(foreignBridge, bridgeValidators);
   }
   
 
@@ -126,6 +144,38 @@ contract ForeignBridgeFactory is EternalStorage, EternalOwnable {
 
   function setGasPrice(uint256 _gasPrice) public onlyOwner {
     uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
+  }
+  
+  function foreignMaxPerTx() public view returns(uint256) {
+    return uintStorage[keccak256(abi.encodePacked("foreignMaxPerTx"))];
+  }
+
+  function setForeignMaxPerTx(uint256 _foreignMaxPerTx) public onlyOwner {
+    uintStorage[keccak256(abi.encodePacked("foreignMaxPerTx"))] = _foreignMaxPerTx;
+  }
+
+  function homeDailyLimit() public view returns(uint256) {
+    return uintStorage[keccak256(abi.encodePacked("homeDailyLimit"))];
+  }
+
+  function setHomeDailyLimit(uint256 _homeDailyLimit) public onlyOwner {
+    uintStorage[keccak256(abi.encodePacked("homeDailyLimit"))] = _homeDailyLimit;
+  }
+
+  function homeMaxPerTx() public view returns(uint256) {
+    return uintStorage[keccak256(abi.encodePacked("homeMaxPerTx"))];
+  }
+
+  function setHomeMaxPerTx(uint256 _homeMaxPerTx) public onlyOwner {
+    uintStorage[keccak256(abi.encodePacked("homeMaxPerTx"))] = _homeMaxPerTx;
+  }
+
+  function foreignBridgeOwner() public view returns(address) {
+    return addressStorage[keccak256(abi.encodePacked("foreignBridgeOwner"))];
+  }
+
+  function setForeignBridgeOwner(address _foreignBridgeOwner) public onlyOwner {
+    addressStorage[keccak256(abi.encodePacked("foreignBridgeOwner"))] = _foreignBridgeOwner;
   }
 
   function foreignBridgeProxyOwner() public view returns(address) {

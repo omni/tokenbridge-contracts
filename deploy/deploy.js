@@ -1,9 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const env = require('./src/loadEnv')
-const { ZERO_ADDRESS } = require('./src/constants')
 
-const { BRIDGE_MODE, BLOCK_REWARD_ADDRESS, ERC20_TOKEN_ADDRESS } = env
+const { BRIDGE_MODE, ERC20_TOKEN_ADDRESS } = env
 
 const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
 
@@ -33,7 +32,7 @@ async function deployNativeToErc() {
         foreignBridge: {
           ...foreignBridge,
           erc677
-        },
+        }
       },
       null,
       4
@@ -49,7 +48,9 @@ async function deployErcToErc() {
   const { homeBridge, erc677 } = await deployHome()
   const { foreignBridge } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')
-  console.log(`[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
+  console.log(
+    `[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`
+  )
   console.log(`[   Home  ] ERC677 Bridgeable Token: ${erc677.address}`)
   console.log(
     `[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${
@@ -84,9 +85,7 @@ async function deployErcToNative() {
   const { foreignBridge } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')
   console.log(
-    `[ Home ] HomeBridge: ${homeBridge.address} at block ${
-      homeBridge.deployedBlockNumber
-    }`
+    `[ Home ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`
   )
   console.log(
     `[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${

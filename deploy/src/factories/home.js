@@ -16,18 +16,18 @@ const VALIDATORS = env.VALIDATORS.split(' ')
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
-  HOME_OWNER_MULTISIG,
-  HOME_OWNER_FACTORY,
-  HOME_OWNER_MAPPER,
-  HOME_UPGRADEABLE_ADMIN_VALIDATORS,
-  HOME_UPGRADEABLE_ADMIN_BRIDGE,
-  HOME_UPGRADEABLE_ADMIN_FACTORY,
-  HOME_UPGRADEABLE_ADMIN_MAPPER,
+  HOME_BRIDGE_OWNER,
+  HOME_VALIDATORS_OWNER,
+  HOME_FACTORY_OWNER,
+  HOME_MAPPER_OWNER,
+  HOME_UPGRADEABLE_ADMIN,
   HOME_DAILY_LIMIT,
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
   HOME_REQUIRED_BLOCK_CONFIRMATIONS,
   HOME_GAS_PRICE,
+  FOREIGN_DAILY_LIMIT,
+  FOREIGN_MAX_AMOUNT_PER_TX
 } = env
 
 let {
@@ -100,36 +100,40 @@ async function deployHome() {
   
   console.log('\ninitializing Home Bridge Factory with following parameters:\n')
   console.log(
-    `HOME_OWNER_FACTORY: ${HOME_OWNER_FACTORY},
+    `HOME_FACTORY_OWNER: ${HOME_FACTORY_OWNER},
     HOME_BRIDGE_VALIDATORS_IMPLEMENTATION_ADDRESS: ${HOME_BRIDGE_VALIDATORS_IMPLEMENTATION_ADDRESS},
     REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS},
     VALIDATORS: ${VALIDATORS},
-    HOME_OWNER_MULTISIG: ${HOME_OWNER_MULTISIG},
-    HOME_UPGRADEABLE_ADMIN_VALIDATORS: ${HOME_UPGRADEABLE_ADMIN_VALIDATORS},
+    HOME_VALIDATORS_OWNER: ${HOME_VALIDATORS_OWNER},
     HOME_BRIDGE_IMPLEMENTATION_ADDRESS: ${HOME_BRIDGE_IMPLEMENTATION_ADDRESS},
     HOME_REQUIRED_BLOCK_CONFIRMATIONS" ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
     HOME_GAS_PRICE: ${HOME_GAS_PRICE},
     HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT},
     HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX},
     HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX},
-    HOME_UPGRADEABLE_ADMIN_BRIDGE: ${HOME_UPGRADEABLE_ADMIN_BRIDGE}`
+    FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT},
+    FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX},
+    HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
+    HOME_UPGRADEABLE_ADMIN: ${HOME_UPGRADEABLE_ADMIN}`
   )
   bridgeFactoryHome.options.address = storageBridgeFactoryHome.options.address
   const initializeHomeData = await bridgeFactoryHome.methods
     .initialize(
-      HOME_OWNER_FACTORY,
+      HOME_FACTORY_OWNER,
       HOME_BRIDGE_VALIDATORS_IMPLEMENTATION_ADDRESS,
       REQUIRED_NUMBER_OF_VALIDATORS,
       VALIDATORS,
-      HOME_OWNER_MULTISIG,
-      HOME_UPGRADEABLE_ADMIN_VALIDATORS,
+      HOME_VALIDATORS_OWNER,
       HOME_BRIDGE_IMPLEMENTATION_ADDRESS,
       HOME_REQUIRED_BLOCK_CONFIRMATIONS,
       HOME_GAS_PRICE,
       HOME_DAILY_LIMIT,
       HOME_MAX_AMOUNT_PER_TX,
       HOME_MIN_AMOUNT_PER_TX,
-      HOME_UPGRADEABLE_ADMIN_BRIDGE
+      FOREIGN_DAILY_LIMIT,
+      FOREIGN_MAX_AMOUNT_PER_TX,
+      HOME_BRIDGE_OWNER,
+      HOME_UPGRADEABLE_ADMIN
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeHome = await sendRawTxHome({
@@ -144,7 +148,7 @@ async function deployHome() {
 
   console.log('\nTransferring ownership of FactoryProxy\n')
   const factoryHomeOwnershipData = await storageBridgeFactoryHome.methods
-    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_FACTORY)
+    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txFactoryHomeOwnershipData = await sendRawTxHome({
     data: factoryHomeOwnershipData,
@@ -194,7 +198,7 @@ async function deployHome() {
   console.log('\ninitializing BridgeMapper:')
   bridgeMapperHome.options.address = storageBridgeMapperHome.options.address
   const initializeBridgeMapperData = await bridgeMapperHome.methods
-    .initialize(HOME_OWNER_MAPPER)
+    .initialize(HOME_MAPPER_OWNER)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeBridgeMapper = await sendRawTxHome({
     data: initializeBridgeMapperData,
@@ -208,7 +212,7 @@ async function deployHome() {
 
   console.log('\nTransferring ownership of MapperProxy\n')
   const mapperOwnershipData = await storageBridgeMapperHome.methods
-    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN_MAPPER)
+    .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txMapperOwnershipData = await sendRawTxHome({
     data: mapperOwnershipData,

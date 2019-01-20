@@ -74,7 +74,7 @@ contract BridgeMapper is EternalStorage, EternalOwnable {
   }
 
   function getBridgeMapperVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
-    return (1, 0, 0);
+    return (2, 2, 0);
   }
 
   function initialize(address _owner) public {

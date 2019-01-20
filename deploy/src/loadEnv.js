@@ -35,18 +35,18 @@ let validations = {
   FOREIGN_DEPLOYMENT_GAS_PRICE: bigNumValidator(),
   GET_RECEIPT_INTERVAL_IN_MILLISECONDS: bigNumValidator(),
   HOME_RPC_URL: envalid.str(),
-  HOME_OWNER_MULTISIG: addressValidator(),
-  HOME_UPGRADEABLE_ADMIN_VALIDATORS: addressesValidator(),
-  HOME_UPGRADEABLE_ADMIN_BRIDGE: addressValidator(),
+  HOME_BRIDGE_OWNER: addressValidator(),
+  HOME_VALIDATORS_OWNER: addressesValidator(),
+  HOME_UPGRADEABLE_ADMIN: addressValidator(),
   HOME_DAILY_LIMIT: bigNumValidator(),
   HOME_MAX_AMOUNT_PER_TX: bigNumValidator(),
   HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
   HOME_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   HOME_GAS_PRICE: bigNumValidator(),
   FOREIGN_RPC_URL: envalid.str(),
-  FOREIGN_OWNER_MULTISIG: addressValidator(),
-  FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS: addressValidator(),
-  FOREIGN_UPGRADEABLE_ADMIN_BRIDGE: addressValidator(),
+  FOREIGN_BRIDGE_OWNER: addressValidator(),
+  FOREIGN_VALIDATORS_OWNER: addressValidator(),
+  FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   FOREIGN_GAS_PRICE: bigNumValidator(),
   REQUIRED_NUMBER_OF_VALIDATORS: envalid.num(),
@@ -85,12 +85,9 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
 if(BRIDGE_MODE === 'ERC_TO_ERC_MULTIPLE') {
   validations = {
     ...validations,
-    HOME_OWNER_FACTORY: addressValidator(),
-    HOME_OWNER_MAPPER: addressValidator(),
-    HOME_UPGRADEABLE_ADMIN_FACTORY: addressValidator(),
-    HOME_UPGRADEABLE_ADMIN_MAPPER: addressValidator(),
-    FOREIGN_OWNER_FACTORY: addressValidator(),
-    FOREIGN_UPGRADEABLE_ADMIN_FACTORY: addressValidator()
+    HOME_FACTORY_OWNER: addressValidator(),
+    HOME_MAPPER_OWNER: addressValidator(),
+    FOREIGN_FACTORY_OWNER: addressValidator(),
   }
 }
 

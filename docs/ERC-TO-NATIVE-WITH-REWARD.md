@@ -10,12 +10,12 @@ EternalStorageProxy|upgradeTo|35871|30924|30913
 RewardableValidators|initialize|202711|423292|318008
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
 EternalStorageProxy|deployment|378510|378510|378510
-HomeBridgeErcToNative|deployment|5155405|5155405|5155405
+HomeBridgeErcToNative|deployment|5088498|5088498|5088498
 EternalStorageProxy|upgradeTo|35871|30924|30913
 FeeManagerErcToNative|deployment|849694|849694|849694
-HomeBridgeErcToNative|rewardableInitialize|327016|327080|327064
+HomeBridgeErcToNative|rewardableInitialize|327113|327177|327161
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
-Total| |9040684|9251435|9146113
+Total| |8973874|9184625|9079303
 
 ##### Foreign
  Contract | Method | Min | Max | Avg

@@ -6,7 +6,7 @@ import "./Ownable.sol";
 contract RewardableBridge is Ownable {
 
     function setFee(uint256 _fee) external onlyOwner {
-        require(feeManagerContract().delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
+        _setFee(feeManagerContract(), _fee);
     }
 
     function getFee() public view returns(uint256) {
@@ -30,6 +30,10 @@ contract RewardableBridge is Ownable {
     function setFeeManagerContract(address _feeManager) public onlyOwner {
         require(_feeManager == address(0) || isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+    }
+
+    function _setFee(address _feeManager, uint256 _fee) internal {
+        require(_feeManager.delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
     }
 
     function isContract(address _addr) internal view returns (bool)

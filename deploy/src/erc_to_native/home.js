@@ -2,7 +2,12 @@ const assert = require('assert')
 const Web3Utils = require('web3-utils')
 const env = require('../loadEnv')
 
-const { deployContract, privateKeyToAddress, sendRawTxHome } = require('../deploymentUtils')
+const {
+  deployContract,
+  privateKeyToAddress,
+  sendRawTxHome,
+  logValidatorsAndRewardAccounts
+} = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
@@ -76,8 +81,9 @@ async function deployHome() {
 
   if (isRewardableBridge) {
     console.log(
-      `REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}, VALIDATORS_REWARD_ACCOUNTS: ${VALIDATORS_REWARD_ACCOUNTS}, HOME_VALIDATORS_OWNER: ${HOME_VALIDATORS_OWNER}`
+      `REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, HOME_VALIDATORS_OWNER: ${HOME_VALIDATORS_OWNER}`
     )
+    logValidatorsAndRewardAccounts(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
     initializeData = await bridgeValidatorsHome.methods
       .initialize(
         REQUIRED_NUMBER_OF_VALIDATORS,

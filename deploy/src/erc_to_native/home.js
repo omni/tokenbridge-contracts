@@ -29,7 +29,7 @@ const {
   FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
   HOME_REWARDABLE,
-  BRIDGE_FEE
+  HOME_TRANSACTIONS_FEE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -161,7 +161,7 @@ async function deployHome() {
     console.log('[Home] feeManager Implementation: ', feeManager.options.address)
     homeNonce++
 
-    const feeInWei = Web3Utils.toWei(BRIDGE_FEE.toString(), 'ether')
+    const feeInWei = Web3Utils.toWei(HOME_TRANSACTIONS_FEE.toString(), 'ether')
     console.log('\ninitializing Home Bridge with fee contract:\n')
     initializeHomeBridgeData = await homeBridgeImplementation.methods
       .rewardableInitialize(

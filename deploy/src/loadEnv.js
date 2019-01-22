@@ -21,6 +21,15 @@ const addressesValidator = envalid.makeValidator(addresses => {
   addresses.split(' ').forEach(validateAddress)
   return addresses
 })
+const validateRewardableAddresses = (validators, rewards) => {
+  const validatorsLength = validators ? validators.split(' ').length : 0
+  const validatorsRewardLength = rewards ? rewards.split(' ').length : 0
+  if (validatorsLength !== validatorsRewardLength) {
+    throw new Error(
+      `List of rewards accounts (${validatorsRewardLength} accounts) should be the same length as list of validators (${validatorsLength} accounts)`
+    )
+  }
+}
 
 const {
   BRIDGE_MODE,
@@ -98,21 +107,21 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (HOME_REWARDABLE === 'true' || FOREIGN_REWARDABLE === 'true') {
-  const validatorsLength = VALIDATORS ? VALIDATORS.split(' ').length : 0
-  const validatorsRewardLength = VALIDATORS_REWARD_ACCOUNTS
-    ? VALIDATORS_REWARD_ACCOUNTS.split(' ').length
-    : 0
-  if (validatorsLength !== validatorsRewardLength) {
-    throw new Error(
-      `List of rewards accounts (${validatorsRewardLength} accounts) should be the same length as list of validators (${validatorsLength} accounts)`
-    )
-  }
-
+if (HOME_REWARDABLE === 'true') {
+  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
   validations = {
     ...validations,
     VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
-    BRIDGE_FEE: envalid.num()
+    HOME_TRANSACTIONS_FEE: envalid.num()
+  }
+}
+
+if (FOREIGN_REWARDABLE === 'true') {
+  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
+  validations = {
+    ...validations,
+    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
+    FOREIGN_TRANSACTIONS_FEE: envalid.num()
   }
 }
 

@@ -28,13 +28,13 @@ const {
   HOME_REQUIRED_BLOCK_CONFIRMATIONS,
   FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
-  REWARDABLE_VALIDATORS,
+  HOME_REWARDABLE,
   BRIDGE_FEE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const isRewardableBridge = REWARDABLE_VALIDATORS === 'true'
+const isRewardableBridge = HOME_REWARDABLE === 'true'
 
 async function deployHome() {
   let homeNonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)

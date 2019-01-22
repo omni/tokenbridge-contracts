@@ -22,7 +22,13 @@ const addressesValidator = envalid.makeValidator(addresses => {
   return addresses
 })
 
-const { BRIDGE_MODE, REWARDABLE_VALIDATORS, VALIDATORS, VALIDATORS_REWARD_ACCOUNTS } = process.env
+const {
+  BRIDGE_MODE,
+  HOME_REWARDABLE,
+  FOREIGN_REWARDABLE,
+  VALIDATORS,
+  VALIDATORS_REWARD_ACCOUNTS
+} = process.env
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)
@@ -84,9 +90,15 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
       default: ZERO_ADDRESS
     })
   }
+
+  if (FOREIGN_REWARDABLE === 'true') {
+    throw new Error(
+      `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
+    )
+  }
 }
 
-if (REWARDABLE_VALIDATORS === 'true') {
+if (HOME_REWARDABLE === 'true' || FOREIGN_REWARDABLE === 'true') {
   const validatorsLength = VALIDATORS ? VALIDATORS.split(' ').length : 0
   const validatorsRewardLength = VALIDATORS_REWARD_ACCOUNTS
     ? VALIDATORS_REWARD_ACCOUNTS.split(' ').length

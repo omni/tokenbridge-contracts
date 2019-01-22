@@ -34,7 +34,7 @@ const {
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const useRewardableValidators = REWARDABLE_VALIDATORS === 'true'
+const isRewardableBridge = REWARDABLE_VALIDATORS === 'true'
 
 async function deployHome() {
   let homeNonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
@@ -47,7 +47,7 @@ async function deployHome() {
   homeNonce++
 
   console.log('\ndeploying implementation for home validators')
-  const bridgeValidatorsContract = useRewardableValidators ? RewardableValidators : BridgeValidators
+  const bridgeValidatorsContract = isRewardableBridge ? RewardableValidators : BridgeValidators
   const bridgeValidatorsHome = await deployContract(bridgeValidatorsContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce: homeNonce
@@ -74,7 +74,7 @@ async function deployHome() {
 
   let initializeData
 
-  if (useRewardableValidators) {
+  if (isRewardableBridge) {
     console.log(
       `REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}, VALIDATORS_REWARD_ACCOUNTS: ${VALIDATORS_REWARD_ACCOUNTS}, HOME_VALIDATORS_OWNER: ${HOME_VALIDATORS_OWNER}`
     )
@@ -152,7 +152,7 @@ async function deployHome() {
   let initializeHomeBridgeData
   homeBridgeImplementation.options.address = homeBridgeStorage.options.address
 
-  if (useRewardableValidators) {
+  if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
     const feeManager = await deployContract(FeeManagerErcToNative, [], {
       from: DEPLOYMENT_ACCOUNT_ADDRESS,

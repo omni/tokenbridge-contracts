@@ -47,24 +47,53 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         address _owner
     ) public returns(bool)
     {
-        require(!isInitialized());
-        require(_validatorContract != address(0) && isContract(_validatorContract));
-        require(_requiredBlockConfirmations > 0);
-        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
-        require(_blockReward == address(0) || isContract(_blockReward));
-        require(_foreignMaxPerTx < _foreignDailyLimit);
-        require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
-        setOwner(_owner);
+        _initialize(
+            _validatorContract,
+            _dailyLimit,
+            _maxPerTx,
+            _minPerTx,
+            _homeGasPrice,
+            _requiredBlockConfirmations,
+            _blockReward,
+            _foreignDailyLimit,
+            _foreignMaxPerTx,
+            _owner
+        );
+        setInitialize(true);
+
+        return isInitialized();
+    }
+
+    function rewardableInitialize (
+        address _validatorContract,
+        uint256 _dailyLimit,
+        uint256 _maxPerTx,
+        uint256 _minPerTx,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations,
+        address _blockReward,
+        uint256 _foreignDailyLimit,
+        uint256 _foreignMaxPerTx,
+        address _owner,
+        address _feeManager,
+        uint256 _fee
+    ) public returns(bool)
+    {
+        _initialize(
+            _validatorContract,
+            _dailyLimit,
+            _maxPerTx,
+            _minPerTx,
+            _homeGasPrice,
+            _requiredBlockConfirmations,
+            _blockReward,
+            _foreignDailyLimit,
+            _foreignMaxPerTx,
+            _owner
+        );
+        require(isContract(_feeManager));
+        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+        _setFee(_feeManager, _fee);
         setInitialize(true);
 
         return isInitialized();
@@ -85,6 +114,39 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
     function setBlockRewardContract(address _blockReward) public onlyOwner {
         require(_blockReward != address(0) && isContract(_blockReward) && (IBlockReward(_blockReward).bridgesAllowedLength() != 0));
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
+    }
+
+    function _initialize (
+        address _validatorContract,
+        uint256 _dailyLimit,
+        uint256 _maxPerTx,
+        uint256 _minPerTx,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations,
+        address _blockReward,
+        uint256 _foreignDailyLimit,
+        uint256 _foreignMaxPerTx,
+        address _owner
+    ) internal
+    {
+        require(!isInitialized());
+        require(_validatorContract != address(0) && isContract(_validatorContract));
+        require(_requiredBlockConfirmations > 0);
+        require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
+        require(_blockReward == address(0) || isContract(_blockReward));
+        require(_foreignMaxPerTx < _foreignDailyLimit);
+        require(_owner != address(0));
+        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
+        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
+        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
+        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
+        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
+        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
+        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
+        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
+        setOwner(_owner);
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {

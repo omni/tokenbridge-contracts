@@ -140,6 +140,13 @@ function privateKeyToAddress(privateKey) {
   return new Web3().eth.accounts.privateKeyToAccount(add0xPrefix(privateKey)).address
 }
 
+function logValidatorsAndRewardAccounts(validators, rewards) {
+  console.log(`VALIDATORS\n==========`)
+  validators.forEach((validator, index) => {
+    console.log(`${index + 1}: ${validator}, reward address ${rewards[index]}`)
+  })
+}
+
 module.exports = {
   deployContract,
   sendNodeRequest,
@@ -147,5 +154,6 @@ module.exports = {
   sendRawTx,
   sendRawTxHome,
   sendRawTxForeign,
-  privateKeyToAddress
+  privateKeyToAddress,
+  logValidatorsAndRewardAccounts
 }

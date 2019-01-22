@@ -21,8 +21,23 @@ const addressesValidator = envalid.makeValidator(addresses => {
   addresses.split(' ').forEach(validateAddress)
   return addresses
 })
+const validateRewardableAddresses = (validators, rewards) => {
+  const validatorsLength = validators ? validators.split(' ').length : 0
+  const validatorsRewardLength = rewards ? rewards.split(' ').length : 0
+  if (validatorsLength !== validatorsRewardLength) {
+    throw new Error(
+      `List of rewards accounts (${validatorsRewardLength} accounts) should be the same length as list of validators (${validatorsLength} accounts)`
+    )
+  }
+}
 
-const { BRIDGE_MODE } = process.env
+const {
+  BRIDGE_MODE,
+  HOME_REWARDABLE,
+  FOREIGN_REWARDABLE,
+  VALIDATORS,
+  VALIDATORS_REWARD_ACCOUNTS
+} = process.env
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)
@@ -83,6 +98,30 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     BLOCK_REWARD_ADDRESS: addressValidator({
       default: ZERO_ADDRESS
     })
+  }
+
+  if (FOREIGN_REWARDABLE === 'true') {
+    throw new Error(
+      `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
+    )
+  }
+}
+
+if (HOME_REWARDABLE === 'true') {
+  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
+  validations = {
+    ...validations,
+    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
+    HOME_TRANSACTIONS_FEE: envalid.num()
+  }
+}
+
+if (FOREIGN_REWARDABLE === 'true') {
+  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
+  validations = {
+    ...validations,
+    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
+    FOREIGN_TRANSACTIONS_FEE: envalid.num()
   }
 }
 

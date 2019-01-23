@@ -2,16 +2,24 @@ const assert = require('assert')
 const Web3Utils = require('web3-utils')
 const env = require('../loadEnv')
 
-const { deployContract, privateKeyToAddress, sendRawTxForeign } = require('../deploymentUtils')
+const {
+  deployContract,
+  privateKeyToAddress,
+  sendRawTxForeign,
+  logValidatorsAndRewardAccounts
+} = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
 
 const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
 const ERC677BridgeTokenRewardable = require('../../../build/contracts/ERC677BridgeTokenRewardable.json')
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
+const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
+const FeeManagerNativeToErc = require('../../../build/contracts/FeeManagerNativeToErc.json')
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeNativeToErc.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
+const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -31,10 +39,14 @@ const {
   HOME_MAX_AMOUNT_PER_TX,
   DEPLOY_REWARDABLE_TOKEN,
   BLOCK_REWARD_ADDRESS,
-  DPOS_VALIDATOR_SET_ADDRESS
+  DPOS_VALIDATOR_SET_ADDRESS,
+  FOREIGN_REWARDABLE,
+  FOREIGN_TRANSACTIONS_FEE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
+
+const isRewardableBridge = FOREIGN_REWARDABLE === 'true'
 
 async function deployForeign() {
   let foreignNonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
@@ -61,7 +73,8 @@ async function deployForeign() {
   console.log('[Foreign] BridgeValidators Storage: ', storageValidatorsForeign.options.address)
 
   console.log('\ndeploying implementation for foreign validators')
-  const bridgeValidatorsForeign = await deployContract(BridgeValidators, [], {
+  const bridgeValidatorsContract = isRewardableBridge ? RewardableValidators : BridgeValidators
+  const bridgeValidatorsForeign = await deployContract(bridgeValidatorsContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce: foreignNonce
@@ -91,13 +104,32 @@ async function deployForeign() {
   foreignNonce++
 
   console.log('\ninitializing Foreign Bridge Validators with following parameters:\n')
-  console.log(
-    `REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`
-  )
   bridgeValidatorsForeign.options.address = storageValidatorsForeign.options.address
-  const initializeForeignData = await bridgeValidatorsForeign.methods
-    .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_VALIDATORS_OWNER)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+
+  let initializeForeignData
+
+  if (isRewardableBridge) {
+    console.log(
+      `REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, FOREIGN_VALIDATORS_OWNER: ${FOREIGN_VALIDATORS_OWNER}`
+    )
+    logValidatorsAndRewardAccounts(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
+    initializeForeignData = await bridgeValidatorsForeign.methods
+      .initialize(
+        REQUIRED_NUMBER_OF_VALIDATORS,
+        VALIDATORS,
+        VALIDATORS_REWARD_ACCOUNTS,
+        FOREIGN_VALIDATORS_OWNER
+      )
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  } else {
+    console.log(
+      `REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}, FOREIGN_VALIDATORS_OWNER: ${FOREIGN_VALIDATORS_OWNER}`
+    )
+    initializeForeignData = await bridgeValidatorsForeign.methods
+      .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_VALIDATORS_OWNER)
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  }
+
   const txInitializeForeign = await sendRawTxForeign({
     data: initializeForeignData,
     nonce: foreignNonce,
@@ -165,33 +197,93 @@ async function deployForeign() {
   )
   foreignNonce++
 
-  console.log('\ninitializing Foreign Bridge with following parameters:\n')
-  console.log(`Foreign Validators: ${storageValidatorsForeign.options.address},
-  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(
-    FOREIGN_DAILY_LIMIT
-  )} in eth,
-  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-    FOREIGN_MAX_AMOUNT_PER_TX
-  )} in eth,
-  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-    FOREIGN_MIN_AMOUNT_PER_TX
-  )} in eth
-  `)
+  let initializeFBridgeData
   foreignBridgeImplementation.options.address = foreignBridgeStorage.options.address
-  const initializeFBridgeData = await foreignBridgeImplementation.methods
-    .initialize(
-      storageValidatorsForeign.options.address,
-      erc677bridgeToken.options.address,
-      FOREIGN_DAILY_LIMIT,
-      FOREIGN_MAX_AMOUNT_PER_TX,
-      FOREIGN_MIN_AMOUNT_PER_TX,
-      FOREIGN_GAS_PRICE,
-      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-      HOME_DAILY_LIMIT,
-      HOME_MAX_AMOUNT_PER_TX,
-      FOREIGN_BRIDGE_OWNER
-    )
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+
+  if (isRewardableBridge) {
+    console.log('\ndeploying implementation for fee manager')
+    const feeManager = await deployContract(FeeManagerNativeToErc, [], {
+      from: DEPLOYMENT_ACCOUNT_ADDRESS,
+      network: 'foreign',
+      nonce: foreignNonce
+    })
+    console.log('[Foreign] feeManager Implementation: ', feeManager.options.address)
+    foreignNonce++
+
+    const feeInWei = Web3Utils.toWei(FOREIGN_TRANSACTIONS_FEE.toString(), 'ether')
+
+    console.log('\ninitializing Foreign Bridge with fee contract:\n')
+    console.log(`Foreign Validators: ${storageValidatorsForeign.options.address},
+  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(
+      FOREIGN_DAILY_LIMIT
+    )} in eth,
+  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MAX_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MIN_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
+    HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      HOME_MAX_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
+  Fee Manager: ${feeManager.options.address},
+  Fee: ${feeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%`)
+
+    initializeFBridgeData = await foreignBridgeImplementation.methods
+      .rewardableInitialize(
+        storageValidatorsForeign.options.address,
+        erc677bridgeToken.options.address,
+        FOREIGN_DAILY_LIMIT,
+        FOREIGN_MAX_AMOUNT_PER_TX,
+        FOREIGN_MIN_AMOUNT_PER_TX,
+        FOREIGN_GAS_PRICE,
+        FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+        HOME_DAILY_LIMIT,
+        HOME_MAX_AMOUNT_PER_TX,
+        FOREIGN_BRIDGE_OWNER,
+        feeManager.options.address,
+        feeInWei
+      )
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  } else {
+    console.log('\ninitializing Foreign Bridge with following parameters:\n')
+    console.log(`Foreign Validators: ${storageValidatorsForeign.options.address},
+  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(
+      FOREIGN_DAILY_LIMIT
+    )} in eth,
+  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MAX_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MIN_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
+    HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      HOME_MAX_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER}
+  `)
+
+    initializeFBridgeData = await foreignBridgeImplementation.methods
+      .initialize(
+        storageValidatorsForeign.options.address,
+        erc677bridgeToken.options.address,
+        FOREIGN_DAILY_LIMIT,
+        FOREIGN_MAX_AMOUNT_PER_TX,
+        FOREIGN_MIN_AMOUNT_PER_TX,
+        FOREIGN_GAS_PRICE,
+        FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+        HOME_DAILY_LIMIT,
+        HOME_MAX_AMOUNT_PER_TX,
+        FOREIGN_BRIDGE_OWNER
+      )
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  }
+
   const txInitializeBridge = await sendRawTxForeign({
     data: initializeFBridgeData,
     nonce: foreignNonce,
@@ -228,7 +320,11 @@ async function deployForeign() {
       privateKey: deploymentPrivateKey,
       url: FOREIGN_RPC_URL
     })
-    assert.equal(Web3Utils.hexToNumber(setBlockRewardContract.status), 1, 'Transaction Failed')
+    assert.strictEqual(
+      Web3Utils.hexToNumber(setBlockRewardContract.status),
+      1,
+      'Transaction Failed'
+    )
     foreignNonce++
 
     console.log('\nset ValidatorSet contract on ERC677BridgeTokenRewardable')
@@ -242,7 +338,11 @@ async function deployForeign() {
       privateKey: deploymentPrivateKey,
       url: FOREIGN_RPC_URL
     })
-    assert.equal(Web3Utils.hexToNumber(setValidatorSetContract.status), 1, 'Transaction Failed')
+    assert.strictEqual(
+      Web3Utils.hexToNumber(setValidatorSetContract.status),
+      1,
+      'Transaction Failed'
+    )
     foreignNonce++
   }
 

@@ -6,6 +6,7 @@ const { deployContract, privateKeyToAddress, sendRawTxForeign } = require('../de
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
 
 const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
+const ERC677BridgeTokenRewardable = require('../../../build/contracts/ERC677BridgeTokenRewardable.json')
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeNativeToErc.json')
@@ -27,7 +28,10 @@ const {
   BRIDGEABLE_TOKEN_SYMBOL,
   BRIDGEABLE_TOKEN_DECIMALS,
   HOME_DAILY_LIMIT,
-  HOME_MAX_AMOUNT_PER_TX
+  HOME_MAX_AMOUNT_PER_TX,
+  DEPLOY_REWARDABLE_TOKEN,
+  BLOCK_REWARD_ADDRESS,
+  DPOS_VALIDATOR_SET_ADDRESS
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -40,7 +44,7 @@ async function deployForeign() {
 
   console.log('\n[Foreign] deploying BRIDGEABLE_TOKEN_SYMBOL token')
   const erc677bridgeToken = await deployContract(
-    ERC677BridgeToken,
+    DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce }
   )
@@ -211,6 +215,36 @@ async function deployForeign() {
   })
   assert.strictEqual(Web3Utils.hexToNumber(setBridgeContract.status), 1, 'Transaction Failed')
   foreignNonce++
+
+  if (DEPLOY_REWARDABLE_TOKEN) {
+    console.log('\nset BlockReward contract on ERC677BridgeTokenRewardable')
+    const setBlockRewardContractData = await erc677bridgeToken.methods
+      .setBlockRewardContract(BLOCK_REWARD_ADDRESS)
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+    const setBlockRewardContract = await sendRawTxForeign({
+      data: setBlockRewardContractData,
+      nonce: foreignNonce,
+      to: erc677bridgeToken.options.address,
+      privateKey: deploymentPrivateKey,
+      url: FOREIGN_RPC_URL
+    })
+    assert.equal(Web3Utils.hexToNumber(setBlockRewardContract.status), 1, 'Transaction Failed')
+    foreignNonce++
+
+    console.log('\nset ValidatorSet contract on ERC677BridgeTokenRewardable')
+    const setValidatorSetContractData = await erc677bridgeToken.methods
+      .setValidatorSetContract(DPOS_VALIDATOR_SET_ADDRESS)
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+    const setValidatorSetContract = await sendRawTxForeign({
+      data: setValidatorSetContractData,
+      nonce: foreignNonce,
+      to: erc677bridgeToken.options.address,
+      privateKey: deploymentPrivateKey,
+      url: FOREIGN_RPC_URL
+    })
+    assert.equal(Web3Utils.hexToNumber(setValidatorSetContract.status), 1, 'Transaction Failed')
+    foreignNonce++
+  }
 
   console.log('transferring ownership of ERC677BridgeToken token to foreignBridge contract')
   const txOwnershipData = await erc677bridgeToken.methods

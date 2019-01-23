@@ -75,7 +75,7 @@ contract ERC677BridgeToken is
     }
 
     function isContract(address _addr)
-        private
+        internal
         view
         returns (bool)
     {

@@ -70,7 +70,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         );
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
-        require(_feeManager.delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
+        _setFee(_feeManager, _fee);
         setInitialize(true);
         return isInitialized();
     }

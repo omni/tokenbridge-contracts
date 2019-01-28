@@ -124,6 +124,23 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # correctly to the Foreign network.
 VALIDATORS=0x 0x 0x
 
+# The flag defining whether to use RewardableValidators contract and set a fee manager contract on Home network
+HOME_REWARDABLE=false
+# The flag defining whether to use RewardableValidators contract and set a fee manager contract on Foreign network
+FOREIGN_REWARDABLE=false
+# List validators accounts were rewards should be transferred separated by space without quotes
+# Makes sense only when HOME_REWARDABLE=true or FOREIGN_REWARDABLE=true
+VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x
+
+# Fee to be charged for each transfer on Home network
+# Makes sense only when HOME_REWARDABLE=true
+# e.g. 0.1% fee
+HOME_TRANSACTIONS_FEE=0.001
+# Fee to be charged for each transfer on Foreign network
+# Makes sense only when FOREIGN_REWARDABLE=true
+# e.g. 0.1% fee
+FOREIGN_TRANSACTIONS_FEE=0.001
+
 # The flag defining whether to use ERC677BridgeTokenRewardable contract instead of
 # ERC677BridgeToken.
 DEPLOY_REWARDABLE_TOKEN=false

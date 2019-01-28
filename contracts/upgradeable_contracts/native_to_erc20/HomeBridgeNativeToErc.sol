@@ -4,14 +4,19 @@ import "../../libraries/Message.sol";
 import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../BasicHomeBridge.sol";
+import "../RewardableBridge.sol";
+import "../Sacrifice.sol";
 
-contract Sacrifice {
-    constructor(address _recipient) public payable {
-        selfdestruct(_recipient);
+
+contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableBridge {
+
+    function () public payable {
+        require(msg.value > 0);
+        require(msg.data.length == 0);
+        require(withinLimit(msg.value));
+        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        emit UserRequestForSignature(msg.sender, msg.value);
     }
-}
-
-contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
 
     function initialize (
         address _validatorContract,
@@ -23,8 +28,70 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) public
-      returns(bool)
+    ) public returns(bool)
+    {
+        _initialize(
+            _validatorContract,
+            _dailyLimit,
+            _maxPerTx,
+            _minPerTx,
+            _homeGasPrice,
+            _requiredBlockConfirmations,
+            _foreignDailyLimit,
+            _foreignMaxPerTx,
+            _owner
+        );
+        setInitialize(true);
+        return isInitialized();
+    }
+
+    function rewardableInitialize (
+        address _validatorContract,
+        uint256 _dailyLimit,
+        uint256 _maxPerTx,
+        uint256 _minPerTx,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations,
+        uint256 _foreignDailyLimit,
+        uint256 _foreignMaxPerTx,
+        address _owner,
+        address _feeManager,
+        uint256 _fee
+    ) public returns(bool)
+    {
+        _initialize(
+            _validatorContract,
+            _dailyLimit,
+            _maxPerTx,
+            _minPerTx,
+            _homeGasPrice,
+            _requiredBlockConfirmations,
+            _foreignDailyLimit,
+            _foreignMaxPerTx,
+            _owner
+        );
+        require(isContract(_feeManager));
+        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+        _setFee(_feeManager, _fee);
+        setInitialize(true);
+        return isInitialized();
+    }
+
+    function getBridgeMode() public pure returns(bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
+    }
+
+    function _initialize (
+        address _validatorContract,
+        uint256 _dailyLimit,
+        uint256 _maxPerTx,
+        uint256 _minPerTx,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations,
+        uint256 _foreignDailyLimit,
+        uint256 _foreignMaxPerTx,
+        address _owner
+    ) internal
     {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
@@ -43,26 +110,21 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
         setOwner(_owner);
-        setInitialize(true);
-        return isInitialized();
-    }
-
-    function () public payable {
-        require(msg.value > 0);
-        require(msg.data.length == 0);
-        require(withinLimit(msg.value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
-        emit UserRequestForSignature(msg.sender, msg.value);
-    }
-
-    function getBridgeMode() public pure returns(bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-        if (!_recipient.send(_value)) {
-            (new Sacrifice).value(_value)(_recipient);
+        uint256 valueToTransfer = _value;
+
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            uint256 fee = calculateFee(valueToTransfer, false, feeManager);
+            distributeFeeFromAffirmation(fee, feeManager);
+            valueToTransfer = valueToTransfer.sub(fee);
+        }
+
+        if (!_recipient.send(valueToTransfer)) {
+            (new Sacrifice).value(valueToTransfer)(_recipient);
         }
         return true;
     }

@@ -1,6 +1,7 @@
 ## Gas Consumption by Bridge Mode
 
 - [NATIVE-TO-ERC](docs/NATIVE-TO-ERC.md)
+- [NATIVE-TO-ERC-WITH-REWARD](docs/NATIVE-TO-ERC-WITH-REWARD.md)
 - [ERC-TO-ERC](docs/ERC-TO-ERC.md)
 - [ERC-TO-NATIVE](docs/ERC-TO-NATIVE.md)
 - [ERC-TO-NATIVE-WITH-REWARD](docs/ERC-TO-NATIVE-WITH-REWARD.md)

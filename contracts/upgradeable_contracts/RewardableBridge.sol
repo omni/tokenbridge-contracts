@@ -23,6 +23,20 @@ contract RewardableBridge is Ownable {
         return fee;
     }
 
+    function getFeeManagerMode() public view returns(bytes4) {
+        bytes4 mode;
+        bytes memory callData = abi.encodeWithSignature("getFeeManagerMode()");
+        address feeManager = feeManagerContract();
+        assembly {
+            let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 4)
+            mode := mload(0)
+
+            switch result
+            case 0 { revert(0, 0) }
+        }
+        return mode;
+    }
+
     function feeManagerContract() public view returns(address) {
         return addressStorage[keccak256(abi.encodePacked("feeManagerContract"))];
     }

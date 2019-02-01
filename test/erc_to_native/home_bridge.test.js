@@ -917,6 +917,18 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const bridgeFee = await homeBridge.getFee()
       bridgeFee.should.be.bignumber.equal(fee)
     })
+    it('should be able to get fee manager mode', async () => {
+      // Given
+      const feeManager = await FeeManagerErcToNative.new()
+      const bothDirectionsModeHash = '0xd7de965f'
+
+      // When
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+
+      // Then
+      const feeManagerMode = await homeBridge.getFeeManagerMode()
+      feeManagerMode.should.be.equals(bothDirectionsModeHash)
+    })
   })
   describe('#feeManager_ExecuteAffirmation', async () => {
     it('should distribute fee to validator', async () => {

@@ -40,6 +40,8 @@ contract BaseFeeManager is EternalStorage {
         distributeFeeProportionally(_fee, REWARD_FOR_TRANSFERRING_FROM_HOME);
     }
 
+    function getFeeManagerMode() public pure returns(bytes4);
+
     function random(uint256 _count) public view returns(uint256) {
         return uint256(blockhash(block.number.sub(1))) % _count;
     }

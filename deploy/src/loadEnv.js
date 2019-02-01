@@ -114,20 +114,12 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (HOME_REWARDABLE === 'true') {
+if (HOME_REWARDABLE === 'true' || FOREIGN_REWARDABLE === 'true') {
   validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
   validations = {
     ...validations,
     VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
-    HOME_TRANSACTIONS_FEE: envalid.num()
-  }
-}
-
-if (FOREIGN_REWARDABLE === 'true') {
-  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
-  validations = {
-    ...validations,
-    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
+    HOME_TRANSACTIONS_FEE: envalid.num(),
     FOREIGN_TRANSACTIONS_FEE: envalid.num()
   }
 }

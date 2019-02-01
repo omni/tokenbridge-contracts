@@ -3,19 +3,21 @@ pragma solidity 0.4.24;
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
 import "../IRewardableValidators.sol";
+import "./FeeTypes.sol";
 
 
-contract BaseFeeManager is EternalStorage {
+contract BaseFeeManager is EternalStorage, FeeTypes {
     using SafeMath for uint256;
 
     bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = keccak256(abi.encodePacked("reward-transferring-from-home"));
 
     bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_FOREIGN = keccak256(abi.encodePacked("reward-transferring-from-foreign"));
 
-    event FeeUpdated(uint256 fee);
+    event HomeFeeUpdated(uint256 fee);
+    event ForeignFeeUpdated(uint256 fee);
 
-    function calculateFee(uint256 _value, bool _recover) external view returns(uint256) {
-        uint256 fee = getFee();
+    function calculateFee(uint256 _value, bool _recover, bytes32 _feeType) external view returns(uint256) {
+        uint256 fee = _feeType == HOME_FEE ? getHomeFee() : getForeignFee();
         uint256 eth = 1 ether;
         if (!_recover) {
             return _value.mul(fee).div(eth);
@@ -23,13 +25,22 @@ contract BaseFeeManager is EternalStorage {
         return _value.mul(fee).div(eth.sub(fee));
     }
 
-    function setFee(uint256 _fee) external {
-        uintStorage[keccak256(abi.encodePacked("fee"))] = _fee;
-        emit FeeUpdated(_fee);
+    function setHomeFee(uint256 _fee) external {
+        uintStorage[keccak256(abi.encodePacked("homeFee"))] = _fee;
+        emit HomeFeeUpdated(_fee);
     }
 
-    function getFee() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("fee"))];
+    function getHomeFee() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("homeFee"))];
+    }
+
+    function setForeignFee(uint256 _fee) external {
+        uintStorage[keccak256(abi.encodePacked("foreignFee"))] = _fee;
+        emit ForeignFeeUpdated(_fee);
+    }
+
+    function getForeignFee() public view returns(uint256) {
+        return uintStorage[keccak256(abi.encodePacked("foreignFee"))];
     }
 
     function distributeFeeFromAffirmation(uint256 _fee) external {

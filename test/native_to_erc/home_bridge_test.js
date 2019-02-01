@@ -631,6 +631,18 @@ contract('HomeBridge', async (accounts) => {
       const bridgeFee = await homeBridge.getFee()
       bridgeFee.should.be.bignumber.equal(newFee)
     })
+    it('should be able to get fee manager mode', async () => {
+      // Given
+      const feeManager = await FeeManagerNativeToErc.new()
+      const oneDirectionsModeHash = '0xf2aed8f7'
+
+      // When
+      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled;
+
+      // Then
+      const feeManagerMode = await homeBridge.getFeeManagerMode()
+      feeManagerMode.should.be.equals(oneDirectionsModeHash)
+    })
   })
 
   describe('#feeManager_ExecuteAffirmation', async () => {

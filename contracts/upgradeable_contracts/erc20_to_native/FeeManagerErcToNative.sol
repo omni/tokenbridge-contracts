@@ -7,6 +7,10 @@ import "../Sacrifice.sol";
 
 contract FeeManagerErcToNative is BaseFeeManager {
 
+    function getFeeManagerMode() public pure returns(bytes4) {
+        return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
+    }
+
     function blockRewardContract() internal view returns(IBlockReward) {
         return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
     }

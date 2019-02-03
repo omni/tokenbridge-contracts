@@ -48,6 +48,14 @@ contract BridgeMapper is EternalStorage, EternalOwnable {
     uintStorage[keccak256(abi.encodePacked("foreignStartBlockByForeignToken", _foreignToken))] = _foreignStartBlock;
   }
 
+  function setInitialize(bool _status) internal { 
+    boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status; 
+  }
+
+  function isInitialized() public view returns(bool) { 
+    return boolStorage[keccak256(abi.encodePacked("isInitialized"))]; 
+  }
+
   function addBridgeMapping(address _foreignToken, address _homeToken, address _foreignBridge, address _homeBridge, uint256 _foreignStartBlock, uint256 _homeStartBlock) public onlyOwner {
     require(_foreignToken != address(0));
     require(_homeToken != address(0));
@@ -77,8 +85,11 @@ contract BridgeMapper is EternalStorage, EternalOwnable {
     return (2, 2, 0);
   }
 
-  function initialize(address _owner) public {
+  function initialize(address _owner) public returns(bool) {
+    require(!isInitialized());
     setOwner(_owner);
+    setInitialize(true);
+    return isInitialized();
   }
 
 }

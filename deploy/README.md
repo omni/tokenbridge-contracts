@@ -58,7 +58,7 @@ BRIDGEABLE_TOKEN_DECIMALS=18
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
-HOME_RPC_URL=https://poa.infura.io
+HOME_RPC_URL=https://core.poa.network
 # Address on Home network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 HOME_BRIDGE_OWNER=0x
@@ -170,7 +170,7 @@ BRIDGEABLE_TOKEN_DECIMALS=18
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
-HOME_RPC_URL=https://poa.infura.io
+HOME_RPC_URL=https://core.poa.network
 # Address on Home network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 HOME_BRIDGE_OWNER=0x
@@ -261,7 +261,7 @@ GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
-HOME_RPC_URL=https://poa.infura.io
+HOME_RPC_URL=https://core.poa.network
 # Address on Home network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 HOME_BRIDGE_OWNER=0x

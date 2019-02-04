@@ -132,12 +132,12 @@ FOREIGN_REWARDABLE=false
 # Makes sense only when HOME_REWARDABLE=true or FOREIGN_REWARDABLE=true
 VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x
 
-# Fee to be charged for each transfer on Home network
-# Makes sense only when HOME_REWARDABLE=true
+# Fee to be taken for every transaction directed from the Home network to the Foreign network
+# Makes sense only when FOREIGN_REWARDABLE=true
 # e.g. 0.1% fee
 HOME_TRANSACTIONS_FEE=0.001
-# Fee to be charged for each transfer on Foreign network
-# Makes sense only when FOREIGN_REWARDABLE=true
+# Fee to be taken for every transaction directed from the Foreign network to the Home network
+# Makes sense only when HOME_REWARDABLE=true
 # e.g. 0.1% fee
 FOREIGN_TRANSACTIONS_FEE=0.001
 
@@ -355,12 +355,12 @@ FOREIGN_REWARDABLE=false
 # Makes sense only when HOME_REWARDABLE=true or FOREIGN_REWARDABLE=true
 VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x
 
-# Fee to be charged for each transfer on Home network
+# Fee to be taken for every transaction directed from the Home network to the Foreign network
 # Makes sense only when HOME_REWARDABLE=true
 # e.g. 0.1% fee
 HOME_TRANSACTIONS_FEE=0.001
-# Fee to be charged for each transfer on Foreign network
-# Makes sense only when FOREIGN_REWARDABLE=true
+# Fee to be taken for every transaction directed from the Foreign network to the Home network
+# Makes sense only when HOME_REWARDABLE=true
 # e.g. 0.1% fee
 FOREIGN_TRANSACTIONS_FEE=0.001
 ```

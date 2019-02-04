@@ -41,8 +41,7 @@ const {
   BLOCK_REWARD_ADDRESS,
   DPOS_VALIDATOR_SET_ADDRESS,
   FOREIGN_REWARDABLE,
-  HOME_TRANSACTIONS_FEE,
-  FOREIGN_TRANSACTIONS_FEE
+  HOME_TRANSACTIONS_FEE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -212,7 +211,6 @@ async function deployForeign() {
     foreignNonce++
 
     const homeFeeInWei = Web3Utils.toWei(HOME_TRANSACTIONS_FEE.toString(), 'ether')
-    const foreignFeeInWei = Web3Utils.toWei(FOREIGN_TRANSACTIONS_FEE.toString(), 'ether')
 
     console.log('\ninitializing Foreign Bridge with fee contract:\n')
     console.log(`Foreign Validators: ${storageValidatorsForeign.options.address},
@@ -232,8 +230,7 @@ async function deployForeign() {
     )} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
-  Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%
-  Foreign Fee: ${homeFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%`)
+  Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%`)
 
     initializeFBridgeData = await foreignBridgeImplementation.methods
       .rewardableInitialize(
@@ -248,8 +245,7 @@ async function deployForeign() {
         HOME_MAX_AMOUNT_PER_TX,
         FOREIGN_BRIDGE_OWNER,
         feeManager.options.address,
-        homeFeeInWei,
-        foreignFeeInWei
+        homeFeeInWei
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   } else {

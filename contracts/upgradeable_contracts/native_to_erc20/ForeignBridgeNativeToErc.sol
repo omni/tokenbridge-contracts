@@ -54,8 +54,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         uint256 _homeMaxPerTx,
         address _owner,
         address _feeManager,
-        uint256 _homeFee,
-        uint256 _foreignFee
+        uint256 _homeFee
     ) public returns(bool) {
         _initialize(
             _validatorContract,
@@ -72,7 +71,6 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
-        _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
         setInitialize(true);
         return isInitialized();
     }

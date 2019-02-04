@@ -190,7 +190,7 @@ async function deployHome() {
   HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
   Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%
-  Foreign Fee: ${homeFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%`)
+  Foreign Fee: ${foreignFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%`)
     initializeHomeBridgeData = await homeBridgeImplementation.methods
       .rewardableInitialize(
         storageValidatorsHome.options.address,

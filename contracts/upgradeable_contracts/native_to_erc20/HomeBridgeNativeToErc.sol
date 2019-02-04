@@ -56,7 +56,6 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _foreignMaxPerTx,
         address _owner,
         address _feeManager,
-        uint256 _homeFee,
         uint256 _foreignFee
     ) public returns(bool)
     {
@@ -73,7 +72,6 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         );
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
-        _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
         setInitialize(true);
         return isInitialized();

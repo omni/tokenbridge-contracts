@@ -599,8 +599,6 @@ contract('HomeBridge', async (accounts) => {
 
       const feeManagerContract = await homeBridge.feeManagerContract()
       feeManagerContract.should.be.equals(feeManager.address)
-      const bridgeHomeFee = await homeBridge.getHomeFee()
-      bridgeHomeFee.should.be.bignumber.equal(homeFee)
       const bridgeForeignFee = await homeBridge.getForeignFee()
       bridgeForeignFee.should.be.bignumber.equal(foreignFee)
     })
@@ -625,16 +623,12 @@ contract('HomeBridge', async (accounts) => {
       await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, homeFee, foreignFee).should.be.fulfilled;
 
       // Given
-      const newHomeFee = web3.toBigNumber(web3.toWei(0.1, "ether"))
       const newForeignFee = web3.toBigNumber(web3.toWei(0.2, "ether"))
 
       // When
-      await homeBridge.setHomeFee(newHomeFee, { from: owner }).should.be.fulfilled
       await homeBridge.setForeignFee(newForeignFee, { from: owner }).should.be.fulfilled
 
       // Then
-      const bridgeHomeFee = await homeBridge.getHomeFee()
-      bridgeHomeFee.should.be.bignumber.equal(newHomeFee)
       const bridgeForeignFee = await homeBridge.getForeignFee()
       bridgeForeignFee.should.be.bignumber.equal(newForeignFee)
     })

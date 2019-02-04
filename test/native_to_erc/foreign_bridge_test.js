@@ -560,8 +560,6 @@ contract('ForeignBridge', async (accounts) => {
       feeManagerContract.should.be.equals(feeManager.address)
       const bridgeHomeFee = await foreignBridge.getHomeFee()
       bridgeHomeFee.should.be.bignumber.equal(homeFee)
-      const bridgeForeignFee = await foreignBridge.getForeignFee()
-      bridgeForeignFee.should.be.bignumber.equal(foreignFee)
     })
 
     it('can update fee contract', async () => {
@@ -585,17 +583,13 @@ contract('ForeignBridge', async (accounts) => {
 
       // Given
       const newHomeFee = web3.toBigNumber(web3.toWei(0.1, "ether"))
-      const newForeignFee = web3.toBigNumber(web3.toWei(0.2, "ether"))
 
       // When
       await foreignBridge.setHomeFee(newHomeFee, { from: owner }).should.be.fulfilled
-      await foreignBridge.setForeignFee(newForeignFee, { from: owner }).should.be.fulfilled
 
       // Then
       const bridgeHomeFee = await foreignBridge.getHomeFee()
       bridgeHomeFee.should.be.bignumber.equal(newHomeFee)
-      const bridgeForeignFee = await foreignBridge.getForeignFee()
-      bridgeForeignFee.should.be.bignumber.equal(newForeignFee)
     })
 
     it('should be able to get fee manager mode', async () => {

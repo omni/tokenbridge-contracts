@@ -8,10 +8,10 @@ import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
-import "../RewardableBridge.sol";
+import "./RewardableHomeBridgeErcToNative.sol";
 
 
-contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement, RewardableBridge {
+contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 

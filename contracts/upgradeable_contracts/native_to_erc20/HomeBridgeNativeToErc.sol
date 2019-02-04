@@ -4,11 +4,11 @@ import "../../libraries/Message.sol";
 import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../BasicHomeBridge.sol";
-import "../RewardableBridge.sol";
+import "./RewardableHomeBridgeNativeToErc.sol";
 import "../Sacrifice.sol";
 
 
-contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableBridge {
+contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
 
     function () public payable {
         require(msg.value > 0);

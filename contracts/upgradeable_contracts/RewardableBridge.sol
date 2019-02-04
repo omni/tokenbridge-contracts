@@ -6,23 +6,7 @@ import "./FeeTypes.sol";
 
 contract RewardableBridge is Ownable, FeeTypes {
 
-    function setHomeFee(uint256 _fee) external onlyOwner {
-        _setFee(feeManagerContract(), _fee, HOME_FEE);
-    }
-
-    function setForeignFee(uint256 _fee) external onlyOwner {
-        _setFee(feeManagerContract(), _fee, FOREIGN_FEE);
-    }
-
-    function getHomeFee() public view returns(uint256) {
-        return _getFee(HOME_FEE);
-    }
-
-    function getForeignFee() public view returns(uint256) {
-        return _getFee(FOREIGN_FEE);
-    }
-
-    function _getFee(bytes32 _feeType) public view returns(uint256) {
+    function _getFee(bytes32 _feeType) internal view returns(uint256) {
         uint256 fee;
         address feeManager = feeManagerContract();
         string memory method = _feeType == HOME_FEE ? "getHomeFee()" : "getForeignFee()";

@@ -10,12 +10,12 @@ EternalStorageProxy|upgradeTo|35871|30924|30913
 RewardableValidators|initialize|202711|423292|318008
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
 EternalStorageProxy|deployment|378510|378510|378510
-HomeBridgeNativeToErc|deployment|4709570|4709570|4709570
+HomeBridgeNativeToErc|deployment|4594464|4594464|4594464
 EternalStorageProxy|upgradeTo|35871|30924|30913
 FeeManagerNativeToErc|deployment|1079956|1079956|1079956
-HomeBridgeNativeToErc|rewardableInitialize|330597|330725|330679
+HomeBridgeNativeToErc|rewardableInitialize|306629|306693|306647
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
-Total| |8828692|9039507|8934155
+Total| |8689618|8900369|8795017
 
 ##### Foreign
  Contract | Method | Min | Max | Avg
@@ -27,14 +27,14 @@ EternalStorageProxy|upgradeTo|35871|30924|30913
 RewardableValidators|initialize|202711|423292|318008
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
 EternalStorageProxy|deployment|378510|378510|378510
-ForeignBridgeNativeToErc|deployment|4056029|4056029|4056029
+ForeignBridgeNativeToErc|deployment|3930131|3930131|3930131
 EternalStorageProxy|upgradeTo|35871|30924|30913
 FeeManagerNativeToErc|deployment|1079956|1079956|1079956
-ForeignBridgeNativeToErc|rewardableInitialize|354062|354126|354080
+ForeignBridgeNativeToErc|rewardableInitialize|329022|329086|329077
 ERC677BridgeToken|setBridgeContract|29432|44432|39432
 ERC677BridgeToken|transferOwnership|30860|30924|30913
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
-Total| |9722444|9949283|9838530
+Total| |9571506|9798345|9687629
 
 #### Usage
 

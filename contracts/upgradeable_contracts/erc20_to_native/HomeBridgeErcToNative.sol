@@ -8,10 +8,10 @@ import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
-import "../RewardableBridge.sol";
+import "./RewardableHomeBridgeErcToNative.sol";
 
 
-contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement, RewardableBridge {
+contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
@@ -26,7 +26,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToTransfer, false, feeManager);
+            uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
         }
         setTotalBurntCoins(totalBurntCoins().add(valueToTransfer));
@@ -76,7 +76,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _foreignMaxPerTx,
         address _owner,
         address _feeManager,
-        uint256 _fee
+        uint256 _homeFee,
+        uint256 _foreignFee
     ) public returns(bool)
     {
         _initialize(
@@ -93,7 +94,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         );
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
-        _setFee(_feeManager, _fee);
+        _setFee(_feeManager, _homeFee, HOME_FEE);
+        _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
         setInitialize(true);
 
         return isInitialized();
@@ -157,7 +159,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToMint, false, feeManager);
+            uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
             distributeFeeFromAffirmation(fee, feeManager);
             valueToMint = valueToMint.sub(fee);
         }
@@ -173,7 +175,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
             bytes32 txHash;
             address contractAddress;
             (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
-            uint256 fee = calculateFee(amount, true, feeManager);
+            uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
             distributeFeeFromSignatures(fee, feeManager);
         }
     }

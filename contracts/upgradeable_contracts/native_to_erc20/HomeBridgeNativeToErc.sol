@@ -4,11 +4,11 @@ import "../../libraries/Message.sol";
 import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../BasicHomeBridge.sol";
-import "../RewardableBridge.sol";
+import "./RewardableHomeBridgeNativeToErc.sol";
 import "../Sacrifice.sol";
 
 
-contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableBridge {
+contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
 
     function () public payable {
         require(msg.value > 0);
@@ -56,7 +56,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _foreignMaxPerTx,
         address _owner,
         address _feeManager,
-        uint256 _fee
+        uint256 _foreignFee
     ) public returns(bool)
     {
         _initialize(
@@ -72,7 +72,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         );
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
-        _setFee(_feeManager, _fee);
+        _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
         setInitialize(true);
         return isInitialized();
     }
@@ -118,7 +118,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToTransfer, false, feeManager);
+            uint256 fee = calculateFee(valueToTransfer, false, feeManager, FOREIGN_FEE);
             distributeFeeFromAffirmation(fee, feeManager);
             valueToTransfer = valueToTransfer.sub(fee);
         }

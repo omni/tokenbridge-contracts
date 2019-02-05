@@ -1,18 +1,17 @@
 pragma solidity 0.4.24;
 
 import "./Ownable.sol";
+import "./FeeTypes.sol";
 
 
-contract RewardableBridge is Ownable {
+contract RewardableBridge is Ownable, FeeTypes {
 
-    function setFee(uint256 _fee) external onlyOwner {
-        _setFee(feeManagerContract(), _fee);
-    }
-
-    function getFee() public view returns(uint256) {
+    function _getFee(bytes32 _feeType) internal view returns(uint256) {
         uint256 fee;
-        bytes memory callData = abi.encodeWithSignature("getFee()");
         address feeManager = feeManagerContract();
+        string memory method = _feeType == HOME_FEE ? "getHomeFee()" : "getForeignFee()";
+        bytes memory callData = abi.encodeWithSignature(method);
+
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
             fee := mload(0)
@@ -46,8 +45,9 @@ contract RewardableBridge is Ownable {
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
     }
 
-    function _setFee(address _feeManager, uint256 _fee) internal {
-        require(_feeManager.delegatecall(abi.encodeWithSignature("setFee(uint256)", _fee)));
+    function _setFee(address _feeManager, uint256 _fee, bytes32 _feeType) internal {
+        string memory method = _feeType == HOME_FEE ? "setHomeFee(uint256)" : "setForeignFee(uint256)";
+        require(_feeManager.delegatecall(abi.encodeWithSignature(method, _fee)));
     }
 
     function isContract(address _addr) internal view returns (bool)
@@ -57,9 +57,9 @@ contract RewardableBridge is Ownable {
         return length > 0;
     }
 
-    function calculateFee(uint256 _value, bool _recover, address _impl) internal view returns(uint256) {
+    function calculateFee(uint256 _value, bool _recover, address _impl, bytes32 _feeType) internal view returns(uint256) {
         uint256 fee;
-        bytes memory callData = abi.encodeWithSignature("calculateFee(uint256,bool)", _value, _recover);
+        bytes memory callData = abi.encodeWithSignature("calculateFee(uint256,bool,bytes32)", _value, _recover, _feeType);
         assembly {
             let result := callcode(gas, _impl, 0x0, add(callData, 0x20), mload(callData), 0, 32)
             fee := mload(0)

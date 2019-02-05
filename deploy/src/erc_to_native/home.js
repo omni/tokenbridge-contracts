@@ -34,7 +34,8 @@ const {
   FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
   HOME_REWARDABLE,
-  HOME_TRANSACTIONS_FEE
+  HOME_TRANSACTIONS_FEE,
+  FOREIGN_TRANSACTIONS_FEE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -167,7 +168,8 @@ async function deployHome() {
     console.log('[Home] feeManager Implementation: ', feeManager.options.address)
     homeNonce++
 
-    const feeInWei = Web3Utils.toWei(HOME_TRANSACTIONS_FEE.toString(), 'ether')
+    const homeFeeInWei = Web3Utils.toWei(HOME_TRANSACTIONS_FEE.toString(), 'ether')
+    const foreignFeeInWei = Web3Utils.toWei(FOREIGN_TRANSACTIONS_FEE.toString(), 'ether')
     console.log('\ninitializing Home Bridge with fee contract:\n')
     console.log(`Home Validators: ${storageValidatorsHome.options.address},
   HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
@@ -187,7 +189,8 @@ async function deployHome() {
     )} in eth,
   HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
-  Fee: ${feeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%`)
+  Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%
+  Foreign Fee: ${foreignFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%`)
     initializeHomeBridgeData = await homeBridgeImplementation.methods
       .rewardableInitialize(
         storageValidatorsHome.options.address,
@@ -201,7 +204,8 @@ async function deployHome() {
         FOREIGN_MAX_AMOUNT_PER_TX,
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
-        feeInWei
+        homeFeeInWei,
+        foreignFeeInWei
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   } else {

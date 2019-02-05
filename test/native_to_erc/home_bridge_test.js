@@ -558,7 +558,7 @@ contract('HomeBridge', async (accounts) => {
   })
 
   describe('#rewardableInitialize', async() => {
-    let fee, homeBridge, rewardableValidators
+    let foreignFee, homeBridge, rewardableValidators
     let validators = [accounts[1]]
     let rewards = [accounts[2]]
     let requiredSignatures = 1
@@ -566,7 +566,7 @@ contract('HomeBridge', async (accounts) => {
       rewardableValidators = await RewardableValidators.new()
       await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
       homeBridge =  await HomeBridge.new()
-      fee = web3.toBigNumber(web3.toWei(0.001, "ether"))
+      foreignFee = web3.toBigNumber(web3.toWei(0.002, "ether"))
     })
     it('sets variables', async () => {
       const feeManager = await FeeManagerNativeToErc.new()
@@ -576,11 +576,11 @@ contract('HomeBridge', async (accounts) => {
       '0'.should.be.bignumber.equal(await homeBridge.maxPerTx())
       false.should.be.equal(await homeBridge.isInitialized())
 
-      await homeBridge.rewardableInitialize(ZERO_ADDRESS, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.rejectedWith(ERROR_MSG);
-      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, 0, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.rejectedWith(ERROR_MSG);
-      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, 0, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.rejectedWith(ERROR_MSG);
-      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, ZERO_ADDRESS, fee).should.be.rejectedWith(ERROR_MSG);
-      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled;
+      await homeBridge.rewardableInitialize(ZERO_ADDRESS, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, foreignFee).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, 0, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, foreignFee).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, 0, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, foreignFee).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, ZERO_ADDRESS, foreignFee).should.be.rejectedWith(ERROR_MSG);
+      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, foreignFee).should.be.fulfilled;
 
       true.should.be.equal(await homeBridge.isInitialized())
       rewardableValidators.address.should.be.equal(await homeBridge.validatorContract());
@@ -598,13 +598,13 @@ contract('HomeBridge', async (accounts) => {
 
       const feeManagerContract = await homeBridge.feeManagerContract()
       feeManagerContract.should.be.equals(feeManager.address)
-      const bridgeFee = await homeBridge.getFee()
-      bridgeFee.should.be.bignumber.equal(fee)
+      const bridgeForeignFee = await homeBridge.getForeignFee()
+      bridgeForeignFee.should.be.bignumber.equal(foreignFee)
     })
 
     it('can update fee contract', async () => {
       const feeManager = await FeeManagerNativeToErc.new()
-      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled;
+      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, foreignFee).should.be.fulfilled;
 
       // Given
       const newFeeManager = await FeeManagerNativeToErc.new()
@@ -619,17 +619,17 @@ contract('HomeBridge', async (accounts) => {
 
     it('can update fee', async () => {
       const feeManager = await FeeManagerNativeToErc.new()
-      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled;
+      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, foreignFee).should.be.fulfilled;
 
       // Given
-      const newFee = web3.toBigNumber(web3.toWei(0.1, "ether"))
+      const newForeignFee = web3.toBigNumber(web3.toWei(0.2, "ether"))
 
       // When
-      await homeBridge.setFee(newFee, { from: owner }).should.be.fulfilled
+      await homeBridge.setForeignFee(newForeignFee, { from: owner }).should.be.fulfilled
 
       // Then
-      const bridgeFee = await homeBridge.getFee()
-      bridgeFee.should.be.bignumber.equal(newFee)
+      const bridgeForeignFee = await homeBridge.getForeignFee()
+      bridgeForeignFee.should.be.bignumber.equal(newForeignFee)
     })
     it('should be able to get fee manager mode', async () => {
       // Given
@@ -637,7 +637,7 @@ contract('HomeBridge', async (accounts) => {
       const oneDirectionsModeHash = '0xf2aed8f7'
 
       // When
-      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, fee).should.be.fulfilled;
+      await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, foreignFee).should.be.fulfilled;
 
       // Then
       const feeManagerMode = await homeBridge.getFeeManagerMode()

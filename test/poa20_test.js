@@ -330,7 +330,35 @@ async function testERC677BridgeToken(accounts, rewardable) {
       await token.setBridgeContract(foreignNativeToErcBridge.address).should.be.fulfilled;
       await token.transfer(foreignNativeToErcBridge.address, lessThanMin, {from: user}).should.be.rejectedWith(ERROR_MSG);
     })
+
+    if (rewardable) {
+      it('fail to send tokens to ValidatorSet contract directly', async () => {
+        const amount = web3.toWei(1, "ether");
+        const validatorSetContractAddress = accounts[2];
+        const arbitraryAccountAddress = accounts[3];
+        await token.setValidatorSetContractMock(validatorSetContractAddress, {from: owner}).should.be.fulfilled;
+        await token.mint(user, amount, {from: owner}).should.be.fulfilled;
+        await token.transfer(validatorSetContractAddress, amount, {from: user}).should.be.rejectedWith(ERROR_MSG);
+        await token.transfer(arbitraryAccountAddress, amount, {from: user}).should.be.fulfilled;
+      });
+    }
   })
+
+  if (rewardable) {
+    describe('#transferFrom', async() => {
+      it('fail to send tokens to ValidatorSet contract directly', async () => {
+        const amount = web3.toWei(1, "ether");
+        const user2 = accounts[2];
+        const validatorSetContractAddress = accounts[3];
+        const arbitraryAccountAddress = accounts[4];
+        await token.setValidatorSetContractMock(validatorSetContractAddress, {from: owner}).should.be.fulfilled;
+        await token.mint(user, amount, {from: owner}).should.be.fulfilled;
+        await token.approve(user2, amount, {from: user}).should.be.fulfilled;
+        await token.transferFrom(user, validatorSetContractAddress, amount, {from: user2}).should.be.rejectedWith(ERROR_MSG);
+        await token.transferFrom(user, arbitraryAccountAddress, amount, {from: user2}).should.be.fulfilled;
+      });
+    });
+  }
 
   describe("#burn", async () => {
     it('can burn', async() => {

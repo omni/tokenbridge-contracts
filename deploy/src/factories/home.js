@@ -27,7 +27,8 @@ const {
   HOME_REQUIRED_BLOCK_CONFIRMATIONS,
   HOME_GAS_PRICE,
   FOREIGN_DAILY_LIMIT,
-  FOREIGN_MAX_AMOUNT_PER_TX
+  FOREIGN_MAX_AMOUNT_PER_TX,
+  DOUBLE_PROXY_IMPLEMENTATIONS
 } = env
 
 let {
@@ -49,6 +50,45 @@ async function deployHome() {
     })
     homeNonce++
     HOME_BRIDGE_VALIDATORS_IMPLEMENTATION_ADDRESS = bridgeValidatorsImplementationHome.options.address
+
+    if (DOUBLE_PROXY_IMPLEMENTATIONS) {
+      console.log('deploying bridge validators proxy')
+      const implProxy = await deployContract(EternalStorageProxy, [], {
+        from: DEPLOYMENT_ACCOUNT_ADDRESS,
+        network: 'home',
+        nonce: homeNonce
+      })
+      homeNonce++
+      
+      console.log('\nhooking up eternal storage to implementation')
+      const upgradeToImpl = await implProxy.methods
+        .upgradeTo('1', HOME_BRIDGE_VALIDATORS_IMPLEMENTATION_ADDRESS)
+        .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+      const txUpgradeToImpl = await sendRawTxHome({
+        data: upgradeToImpl,
+        nonce: homeNonce,
+        to: implProxy.options.address,
+        privateKey: deploymentPrivateKey,
+        url: HOME_RPC_URL
+      })
+      assert.equal(Web3Utils.hexToNumber(txUpgradeToImpl.status), 1, 'Transaction Failed')
+      homeNonce++
+      HOME_BRIDGE_VALIDATORS_IMPLEMENTATION_ADDRESS = implProxy.options.address
+
+      console.log('\nTransferring ownership of Proxy\n')
+      const ownershipData = await implProxy.methods
+        .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN)
+        .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+      const txOwnershipData = await sendRawTxHome({
+        data: ownershipData,
+        nonce: homeNonce,
+        to: implProxy.options.address,
+        privateKey: deploymentPrivateKey,
+        url: HOME_RPC_URL
+      })
+      assert.equal(Web3Utils.hexToNumber(txOwnershipData.status), 1, 'Transaction Failed')
+      homeNonce++
+    }
   }
   console.log('[Home] bridge validators implementation address: ', HOME_BRIDGE_VALIDATORS_IMPLEMENTATION_ADDRESS)
 
@@ -61,6 +101,45 @@ async function deployHome() {
     })
     homeNonce++
     HOME_BRIDGE_IMPLEMENTATION_ADDRESS = homeBridgeImplementationHome.options.address
+
+    if (DOUBLE_PROXY_IMPLEMENTATIONS) {
+      console.log('deploying home bridge proxy')
+      const implProxy = await deployContract(EternalStorageProxy, [], {
+        from: DEPLOYMENT_ACCOUNT_ADDRESS,
+        network: 'home',
+        nonce: homeNonce
+      })
+      homeNonce++
+      
+      console.log('\nhooking up eternal storage to implementation')
+      const upgradeToImpl = await implProxy.methods
+        .upgradeTo('1', HOME_BRIDGE_IMPLEMENTATION_ADDRESS)
+        .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+      const txUpgradeToImpl = await sendRawTxHome({
+        data: upgradeToImpl,
+        nonce: homeNonce,
+        to: implProxy.options.address,
+        privateKey: deploymentPrivateKey,
+        url: HOME_RPC_URL
+      })
+      assert.equal(Web3Utils.hexToNumber(txUpgradeToImpl.status), 1, 'Transaction Failed')
+      homeNonce++
+      HOME_BRIDGE_IMPLEMENTATION_ADDRESS = implProxy.options.address
+
+      console.log('\nTransferring ownership of Proxy\n')
+      const ownershipData = await implProxy.methods
+        .transferProxyOwnership(HOME_UPGRADEABLE_ADMIN)
+        .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+      const txOwnershipData = await sendRawTxHome({
+        data: ownershipData,
+        nonce: homeNonce,
+        to: implProxy.options.address,
+        privateKey: deploymentPrivateKey,
+        url: HOME_RPC_URL
+      })
+      assert.equal(Web3Utils.hexToNumber(txOwnershipData.status), 1, 'Transaction Failed')
+      homeNonce++
+    }
   }
   console.log('[Home] home bridge implementation address: ', HOME_BRIDGE_IMPLEMENTATION_ADDRESS)
 

@@ -5,8 +5,7 @@ import "../upgradeability/EternalStorage.sol";
 
 contract BridgeMapper is EternalStorage, EternalOwnable {
 
-  event BridgeMappingAdded(address indexed foreignToken, address homeToken, address foreignBridge, address homeBridge, uint256 foreignStartBlock, uint256 homeStartBlock);
-  event BridgeMappingRemoved(address indexed foreignToken);
+  event BridgeMappingUpdated(address indexed foreignToken, address homeToken, address foreignBridge, address homeBridge, uint256 foreignStartBlock, uint256 homeStartBlock);
 
   function homeBridgeByForeignToken(address _foreignToken) public view returns(address) {
     return addressStorage[keccak256(abi.encodePacked("homeBridgeByForeignToken", _foreignToken))];
@@ -68,7 +67,7 @@ contract BridgeMapper is EternalStorage, EternalOwnable {
     setHomeBridgeByForeignToken(_foreignToken, _homeBridge);
     setForeignStartBlockByForeignToken(_foreignToken, _foreignStartBlock);
     setHomeStartBlockByForeignToken(_foreignToken, _homeStartBlock);
-    emit BridgeMappingAdded(_foreignToken, _homeToken, _foreignBridge, _homeBridge, _foreignStartBlock, _homeStartBlock);
+    emit BridgeMappingUpdated(_foreignToken, _homeToken, _foreignBridge, _homeBridge, _foreignStartBlock, _homeStartBlock);
   }
 
   function removeBridgeMapping(address _foreignToken) public onlyOwner {
@@ -78,7 +77,7 @@ contract BridgeMapper is EternalStorage, EternalOwnable {
     setHomeBridgeByForeignToken(_foreignToken, address(0));
     setForeignStartBlockByForeignToken(_foreignToken, 0);
     setHomeStartBlockByForeignToken(_foreignToken, 0);
-    emit BridgeMappingRemoved(_foreignToken);
+    emit BridgeMappingUpdated(_foreignToken, address(0), address(0), address(0), 0, 0);
   }
 
   function getBridgeMapperVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {

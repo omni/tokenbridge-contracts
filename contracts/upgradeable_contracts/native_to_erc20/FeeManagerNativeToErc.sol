@@ -7,6 +7,13 @@ import "../Sacrifice.sol";
 
 contract FeeManagerNativeToErc is BaseFeeManager {
 
+    function onRequestForSignature(uint256 _value) external view returns(uint256) {
+        return _value;
+    }
+
+    function onSignaturesCollected(uint256) external {
+    }
+
     function getFeeManagerMode() public pure returns(bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-one-direction")));
     }

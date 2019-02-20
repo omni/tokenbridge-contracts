@@ -46,7 +46,7 @@ const {
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const isRewardableBridge = FOREIGN_REWARDABLE === 'true'
+const isRewardableBridge = FOREIGN_REWARDABLE === 'ONE_DIRECTION'
 
 async function deployForeign() {
   let foreignNonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)

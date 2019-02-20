@@ -14,6 +14,7 @@ const EternalStorageProxy = require('../../../build/contracts/EternalStorageProx
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
 const FeeManagerNativeToErc = require('../../../build/contracts/FeeManagerNativeToErc.json')
+const FeeManagerNativeToErcBothDirections = require('../../../build/contracts/FeeManagerNativeToErcBothDirections.json')
 const HomeBridge = require('../../../build/contracts/HomeBridgeNativeToErc.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
@@ -38,7 +39,8 @@ const {
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const isRewardableBridge = HOME_REWARDABLE === 'true'
+const isBothDirectionsFeeManager = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
+const isRewardableBridge = HOME_REWARDABLE === 'ONE_DIRECTION' || isBothDirectionsFeeManager
 
 async function deployHome() {
   let homeNonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
@@ -159,7 +161,10 @@ async function deployHome() {
 
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
-    const feeManager = await deployContract(FeeManagerNativeToErc, [], {
+    const feeManagerContract = isBothDirectionsFeeManager
+      ? FeeManagerNativeToErcBothDirections
+      : FeeManagerNativeToErc
+    const feeManager = await deployContract(feeManagerContract, [], {
       from: DEPLOYMENT_ACCOUNT_ADDRESS,
       nonce: homeNonce
     })

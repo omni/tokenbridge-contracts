@@ -172,3 +172,66 @@ To request transfer from the Home to the Foreign|
 HomeBridgeErcToNative|fallback|80174|80174|80174
 To request transfer from the Foreign to the Home|
 ERC677BridgeToken|transfer|37691|86589|55000
+
+### Bridge Factories
+
+#### Deployment
+##### Home
+ Contract | Method | Min | Max | Avg
+----  | ---- | ---- | ---- | ----
+BridgeValidators|deployment|1144207|1144207|1144207
+EternalStorageProxy|deployment|378510|378510|378510
+EternalStorageProxy|upgradeTo|35871|30924|30913
+EternalStorageProxy|transferProxyOwnership|30653|30653|30653
+HomeBridgeErcToErc|initialize|212299|213195|213003
+EternalStorageProxy|deployment|378510|378510|378510
+HomeBridgeFactory|deployment|||4337543
+EternalStorageProxy|upgradeTo|35871|30924|30913
+HomeBridgeFactory|initialize|||433239
+EternalStorageProxy|transferProxyOwnership|30653|30653|30653
+Total| |||7008144
+
+##### Foreign
+ Contract | Method | Min | Max | Avg
+----  | ---- | ---- | ---- | ----
+BridgeValidators|deployment|1144207|1144207|1144207
+ForeignBridgeErcToErc|deployment|2449436|2449436|2449436
+EternalStorageProxy|deployment|378510|378510|378510
+ForeignBridgeFactory|deployment|||2515108
+EternalStorageProxy|upgradeTo|35871|30924|30913
+ForeignBridgeFactory|initialize|||390192
+EternalStorageProxy|transferProxyOwnership|30653|30653|30653
+Total| |||6939019
+
+#### Usage
+##### Users
+
+ Contract | Method | Min | Max | Avg
+----  | ---- | ---- | ---- | ----
+To deploy Home bridge|
+HomeBridgeFactory|deployHomeBridge|2238032|2238672|2238213
+To deploy Foreign bridge|
+ForeignBridgeFactory|deployForeignBridge|1056602|1056666|1056655 
+
+### Mapper
+
+#### Deployment
+##### Home
+ Contract | Method | Min | Max | Avg
+----  | ---- | ---- | ---- | ----
+EternalStorageProxy|deployment|378510|378510|378510
+BridgeMapper|deployment|||1107983
+EternalStorageProxy|upgradeTo|35871|30924|30913
+BridgeMapper|initialize|||68122
+EternalStorageProxy|transferProxyOwnership|30653|30653|30653
+Total| |||1616181
+
+#### Usage
+##### Users
+
+ Contract | Method | Min | Max | Avg
+----  | ---- | ---- | ---- | ----
+To add bridge mapping|
+BridgeMapper|addBridgeMapping|||136441
+To remove bridge mapping|
+BridgeMapper|removeBridgeMapping|||28283

@@ -65,7 +65,7 @@ contract ForeignBridgeFactory is BasicBridgeFactory {
         IBridgeValidators bridgeValidators = IBridgeValidators(proxy);
         // initialize bridgeValidators
         bridgeValidators.initialize(requiredSignatures(), initialValidators(), bridgeValidatorsOwner());
-        // transger proxy upgradeability admin
+        // transfer proxy upgradeability admin
         proxy.transferProxyOwnership(bridgeValidatorsProxyOwner());
         // deploy new EternalStorageProxy
         proxy = new EternalStorageProxy();
@@ -75,7 +75,7 @@ contract ForeignBridgeFactory is BasicBridgeFactory {
         IForeignBridge foreignBridge = IForeignBridge(proxy);
         // initialize foreignBridge
         foreignBridge.initialize(bridgeValidators, _erc20Token, requiredBlockConfirmations(), gasPrice(), foreignMaxPerTx(), homeDailyLimit(), homeMaxPerTx(), foreignBridgeOwner());
-        // transger proxy upgradeability admin
+        // transfer proxy upgradeability admin
         proxy.transferProxyOwnership(foreignBridgeProxyOwner());
         // emit event
         emit ForeignBridgeDeployed(foreignBridge, bridgeValidators, block.number);

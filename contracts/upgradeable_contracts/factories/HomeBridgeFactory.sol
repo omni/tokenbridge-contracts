@@ -70,7 +70,7 @@ contract HomeBridgeFactory is BasicBridgeFactory {
         IBridgeValidators bridgeValidators = IBridgeValidators(proxy);
         // initialize bridgeValidators
         bridgeValidators.initialize(requiredSignatures(), initialValidators(), bridgeValidatorsOwner());
-        // transger proxy upgradeability admin
+        // transfer proxy upgradeability admin
         proxy.transferProxyOwnership(bridgeValidatorsProxyOwner());
         // deploy new EternalStorageProxy
         proxy = new EternalStorageProxy();
@@ -80,13 +80,13 @@ contract HomeBridgeFactory is BasicBridgeFactory {
         ERC677BridgeToken token = new ERC677BridgeToken(_tokenName, _tokenSymbol, _tokenDecimals);
         // set token bridge contract
         token.setBridgeContract(proxy);
-        // transger token ownership to the bridge
+        // transfer token ownership to the bridge
         token.transferOwnership(proxy);
         // cast proxy as IHomeBridge
         IHomeBridge homeBridge = IHomeBridge(proxy);
         // initialize homeBridge
         homeBridge.initialize(bridgeValidators, homeDailyLimit(), homeMaxPerTx(), minPerTx(), gasPrice(), requiredBlockConfirmations(), token, foreignDailyLimit(), foreignMaxPerTx(), homeBridgeOwner());
-        // transger proxy upgradeability admin
+        // transfer proxy upgradeability admin
         proxy.transferProxyOwnership(homeBridgeProxyOwner());
         // emit event
         emit HomeBridgeDeployed(homeBridge, bridgeValidators, token, block.number);

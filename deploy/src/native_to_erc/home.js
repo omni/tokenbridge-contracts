@@ -172,7 +172,8 @@ async function deployHome() {
     console.log('[Home] feeManager Implementation: ', feeManager.options.address)
     homeNonce++
 
-    const homeFeeInWei = Web3Utils.toWei(HOME_TRANSACTIONS_FEE.toString(), 'ether')
+    const homeFee = isBothDirectionsFeeManager ? HOME_TRANSACTIONS_FEE.toString() : '0'
+    const homeFeeInWei = Web3Utils.toWei(homeFee, 'ether')
     const foreignFeeInWei = Web3Utils.toWei(FOREIGN_TRANSACTIONS_FEE.toString(), 'ether')
 
     console.log('\ninitializing Home Bridge with fee contract:\n')
@@ -193,7 +194,7 @@ async function deployHome() {
     )} in eth,
   HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
-  Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%
+  Home Fee: ${homeFeeInWei} which is ${homeFee * 100}%
   Foreign Fee: ${foreignFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%`)
 
     homeBridgeImplementation.options.address = homeBridgeStorage.options.address

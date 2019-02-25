@@ -664,7 +664,7 @@ contract('HomeBridge', async (accounts) => {
       // 0.1% fee
       const fee = 0.001
       const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
-      const notUsedFee = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const notUsedFee = web3.toBigNumber(web3.toWei(0, "ether"))
       const value = halfEther;
 
       await homeBridge.rewardableInitialize(rewardableValidators.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, foreignDailyLimit, foreignMaxPerTx, owner, feeManager.address, notUsedFee, feeInWei).should.be.fulfilled;
@@ -701,7 +701,7 @@ contract('HomeBridge', async (accounts) => {
       // 0.1% fee
       const fee = 0.001
       const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
-      const notUsedFee = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const notUsedFee = web3.toBigNumber(web3.toWei(0, "ether"))
       const value = halfEther;
 
       const rewardAddressBalanceBefore = await web3.eth.getBalance(rewards[0])
@@ -747,7 +747,7 @@ contract('HomeBridge', async (accounts) => {
       // 0.1% fee
       const fee = 0.001
       const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
-      const notUsedFee = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const notUsedFee = web3.toBigNumber(web3.toWei(0, "ether"))
       const value = halfEther;
       const finalUserValue = value.mul(web3.toBigNumber(1-fee));
       const feeAmount = value.mul(web3.toBigNumber(fee))
@@ -797,7 +797,7 @@ contract('HomeBridge', async (accounts) => {
       // 0.1% fee
       const fee = 0.001
       const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
-      const notUsedFee = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const notUsedFee = web3.toBigNumber(web3.toWei(0, "ether"))
       const feePerValidator = web3.toBigNumber(166666666666666)
       const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
       const finalUserValue = value.mul(web3.toBigNumber(1-fee));
@@ -869,7 +869,7 @@ contract('HomeBridge', async (accounts) => {
       // 0.1% fee
       const fee = 0.001
       const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
-      const notUsedFee = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const notUsedFee = web3.toBigNumber(web3.toWei(0, "ether"))
       const feeAmount = value.mul(web3.toBigNumber(fee))
       const feePerValidator = feeAmount.div(web3.toBigNumber(5))
 

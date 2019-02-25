@@ -120,8 +120,10 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, HOME_FEE);
-            distributeFeeFromSignatures(fee, feeManager);
-            valueToMint = valueToMint.sub(fee);
+            if (fee != 0) {
+                distributeFeeFromSignatures(fee, feeManager);
+                valueToMint = valueToMint.sub(fee);
+            }
         }
         return erc677token().mint(_recipient, valueToMint);
     }

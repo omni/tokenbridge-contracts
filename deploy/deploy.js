@@ -118,7 +118,7 @@ async function deployFactory() {
   const { foreignFactory } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')
   console.log(`[   Home  ] HomeFactory: ${homeFactory.address} at block ${homeFactory.deployedBlockNumber}`)
-  console.log(`[   Home  ] mapper: ${mapper.address} at block ${mapper.deployedBlockNumber}`)
+  console.log(`[   Home  ] BridgeMapper: ${mapper.address} at block ${mapper.deployedBlockNumber}`)
   console.log(
     `[ Foreign ] ForeignFactory: ${foreignFactory.address} at block ${
       foreignFactory.deployedBlockNumber

@@ -46,7 +46,7 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     url,
     gasPrice
   })
-  if (Web3Utils.hexToNumber(tx.status) !== 1) {
+  if (Web3Utils.hexToNumber(tx.status) !== 1 && !tx.contractAddress) {
     throw new Error('Tx failed')
   }
   instance.options.address = tx.contractAddress
@@ -88,8 +88,7 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) 
       `0x${serializedTx.toString('hex')}`
     )
     console.log('pending txHash', txHash)
-    const receipt = await getReceipt(txHash, url)
-    return receipt
+    return await getReceipt(txHash, url)
   } catch (e) {
     console.error(e)
   }
@@ -147,6 +146,80 @@ function logValidatorsAndRewardAccounts(validators, rewards) {
   })
 }
 
+async function upgradeProxy({ proxy, implementationAddress, version, nonce, url }) {
+  const data = await proxy.methods.upgradeTo(version, implementationAddress).encodeABI()
+  const result = await sendRawTxHome({
+    data,
+    nonce,
+    to: proxy.options.address,
+    privateKey: deploymentPrivateKey,
+    url
+  })
+  if (result.status) {
+    assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
+  } else {
+    const implementation = await proxy.methods.implementation().call()
+    assert.strictEqual(implementation, implementationAddress, 'Transaction Failed')
+  }
+}
+
+async function transferProxyOwnership({ proxy, newOwner, nonce, url }) {
+  const data = await proxy.methods.transferProxyOwnership(newOwner).encodeABI()
+  const result = await sendRawTxHome({
+    data,
+    nonce,
+    to: proxy.options.address,
+    privateKey: deploymentPrivateKey,
+    url
+  })
+  if (result.status) {
+    assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
+  } else {
+    const proxyOwner = await proxy.methods.proxyOwner().call()
+    assert.strictEqual(proxyOwner, newOwner, 'Transaction Failed')
+  }
+}
+
+async function initializeValidators({
+  contract,
+  isRewardableBridge,
+  requiredNumber,
+  validators,
+  rewardAccounts,
+  owner,
+  nonce,
+  url
+}) {
+  let data
+
+  if (isRewardableBridge) {
+    console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${requiredNumber}, HOME_VALIDATORS_OWNER: ${owner}`)
+    logValidatorsAndRewardAccounts(validators, rewardAccounts)
+    data = await contract.methods
+      .initialize(requiredNumber, validators, rewardAccounts, owner)
+      .encodeABI()
+  } else {
+    console.log(
+      `REQUIRED_NUMBER_OF_VALIDATORS: ${requiredNumber}, VALIDATORS: ${validators}, HOME_VALIDATORS_OWNER: ${owner}`
+    )
+    data = await contract.methods.initialize(requiredNumber, validators, owner).encodeABI()
+  }
+
+  const result = await sendRawTxHome({
+    data,
+    nonce,
+    to: contract.options.address,
+    privateKey: deploymentPrivateKey,
+    url
+  })
+  if (result.status) {
+    assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
+  } else {
+    const isInitialized = await contract.methods.isInitialized().call()
+    assert.strictEqual(isInitialized, true, 'Transaction Failed')
+  }
+}
+
 module.exports = {
   deployContract,
   sendNodeRequest,
@@ -155,5 +228,8 @@ module.exports = {
   sendRawTxHome,
   sendRawTxForeign,
   privateKeyToAddress,
-  logValidatorsAndRewardAccounts
+  logValidatorsAndRewardAccounts,
+  upgradeProxy,
+  initializeValidators,
+  transferProxyOwnership
 }

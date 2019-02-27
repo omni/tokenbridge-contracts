@@ -197,14 +197,14 @@ async function transferOwnership({ contract, newOwner, nonce, url }) {
   }
 }
 
-async function setBridgeContract({ contract, bridgeAddress, nonce }) {
+async function setBridgeContract({ contract, bridgeAddress, nonce, url }) {
   const data = await contract.methods.setBridgeContract(bridgeAddress).encodeABI()
   const result = await sendRawTxForeign({
     data,
     nonce,
     to: contract.options.address,
     privateKey: deploymentPrivateKey,
-    url: FOREIGN_RPC_URL
+    url
   })
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')

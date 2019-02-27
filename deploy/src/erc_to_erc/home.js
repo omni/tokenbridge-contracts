@@ -75,7 +75,16 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     privateKey: deploymentPrivateKey,
     url: HOME_RPC_URL
   })
-  assert.strictEqual(Web3Utils.hexToNumber(txInitializeHomeBridge.status), 1, 'Transaction Failed')
+  if (txInitializeHomeBridge.status) {
+    assert.strictEqual(
+      Web3Utils.hexToNumber(txInitializeHomeBridge.status),
+      1,
+      'Transaction Failed'
+    )
+  } else {
+    const isInitialized = await bridge.methods.isInitialized().call()
+    assert.strictEqual(isInitialized, true, 'Transaction Failed')
+  }
   nonce++
 
   return nonce

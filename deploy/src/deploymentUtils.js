@@ -180,6 +180,40 @@ async function transferProxyOwnership({ proxy, newOwner, nonce, url }) {
   }
 }
 
+async function transferOwnership({ contract, newOwner, nonce, url }) {
+  const data = await contract.methods.transferOwnership(newOwner).encodeABI()
+  const result = await sendRawTxForeign({
+    data,
+    nonce,
+    to: contract.options.address,
+    privateKey: deploymentPrivateKey,
+    url
+  })
+  if (result.status) {
+    assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
+  } else {
+    const owner = await contract.methods.owner().call()
+    assert.strictEqual(owner, newOwner, 'Transaction Failed')
+  }
+}
+
+async function setBridgeContract({ contract, bridgeAddress, nonce }) {
+  const data = await contract.methods.setBridgeContract(bridgeAddress).encodeABI()
+  const result = await sendRawTxForeign({
+    data,
+    nonce,
+    to: contract.options.address,
+    privateKey: deploymentPrivateKey,
+    url: FOREIGN_RPC_URL
+  })
+  if (result.status) {
+    assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
+  } else {
+    const bridgeContract = await contract.methods.bridgeContract().call()
+    assert.strictEqual(bridgeContract, bridgeAddress, 'Transaction Failed')
+  }
+}
+
 async function initializeValidators({
   contract,
   isRewardableBridge,
@@ -222,14 +256,13 @@ async function initializeValidators({
 
 module.exports = {
   deployContract,
-  sendNodeRequest,
-  getReceipt,
-  sendRawTx,
   sendRawTxHome,
   sendRawTxForeign,
   privateKeyToAddress,
   logValidatorsAndRewardAccounts,
   upgradeProxy,
   initializeValidators,
-  transferProxyOwnership
+  transferProxyOwnership,
+  transferOwnership,
+  setBridgeContract
 }

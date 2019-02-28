@@ -10,7 +10,8 @@ const {
   initializeValidators,
   transferProxyOwnership,
   transferOwnership,
-  setBridgeContract
+  setBridgeContract,
+  assertStateWithRetry
 } = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
 
@@ -150,8 +151,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   if (txInitializeBridge.status) {
     assert.strictEqual(Web3Utils.hexToNumber(txInitializeBridge.status), 1, 'Transaction Failed')
   } else {
-    const isInitialized = await bridge.methods.isInitialized().call()
-    assert.strictEqual(isInitialized, true, 'Transaction Failed')
+    await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }
   nonce++
 
@@ -271,7 +271,8 @@ async function deployForeign() {
   await setBridgeContract({
     contract: erc677bridgeToken,
     bridgeAddress: foreignBridgeStorage.options.address,
-    nonce
+    nonce,
+    url: FOREIGN_RPC_URL
   })
   nonce++
 
@@ -294,8 +295,10 @@ async function deployForeign() {
         'Transaction Failed'
       )
     } else {
-      const blockRewardContract = await erc677bridgeToken.methods.blockRewardContract().call()
-      assert.strictEqual(blockRewardContract, BLOCK_REWARD_ADDRESS, 'Transaction Failed')
+      await assertStateWithRetry(
+        erc677bridgeToken.methods.blockRewardContract().call,
+        BLOCK_REWARD_ADDRESS
+      )
     }
     nonce++
 
@@ -317,14 +320,11 @@ async function deployForeign() {
         'Transaction Failed'
       )
     } else {
-      const validatorSetContract = await erc677bridgeToken.methods.validatorSetContract().call()
-      assert.strictEqual(validatorSetContract, DPOS_VALIDATOR_SET_ADDRESS, 'Transaction Failed')
+      await assertStateWithRetry(
+        erc677bridgeToken.methods.validatorSetContract().call,
+        DPOS_VALIDATOR_SET_ADDRESS
+      )
     }
-    assert.strictEqual(
-      Web3Utils.hexToNumber(setValidatorSetContract.status),
-      1,
-      'Transaction Failed'
-    )
     nonce++
   }
 

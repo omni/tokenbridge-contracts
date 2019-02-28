@@ -10,7 +10,8 @@ const {
   initializeValidators,
   transferProxyOwnership,
   setBridgeContract,
-  transferOwnership
+  transferOwnership,
+  assertStateWithRetry
 } = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
@@ -67,7 +68,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
       FOREIGN_MAX_AMOUNT_PER_TX,
       HOME_BRIDGE_OWNER
     )
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+    .encodeABI()
   const txInitializeHomeBridge = await sendRawTxHome({
     data: initializeHomeBridgeData,
     nonce,
@@ -82,8 +83,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
       'Transaction Failed'
     )
   } else {
-    const isInitialized = await bridge.methods.isInitialized().call()
-    assert.strictEqual(isInitialized, true, 'Transaction Failed')
+    await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }
   nonce++
 

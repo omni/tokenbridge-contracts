@@ -3,6 +3,7 @@ const Tx = require('ethereumjs-tx')
 const Web3Utils = require('web3-utils')
 const fetch = require('node-fetch')
 const assert = require('assert')
+const promiseRetry = require('promise-retry')
 const {
   web3Home,
   web3Foreign,
@@ -158,8 +159,7 @@ async function upgradeProxy({ proxy, implementationAddress, version, nonce, url 
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
   } else {
-    const implementation = await proxy.methods.implementation().call()
-    assert.strictEqual(implementation, implementationAddress, 'Transaction Failed')
+    await assertStateWithRetry(proxy.methods.implementation().call, implementationAddress)
   }
 }
 
@@ -175,8 +175,7 @@ async function transferProxyOwnership({ proxy, newOwner, nonce, url }) {
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
   } else {
-    const proxyOwner = await proxy.methods.proxyOwner().call()
-    assert.strictEqual(proxyOwner, newOwner, 'Transaction Failed')
+    await assertStateWithRetry(proxy.methods.proxyOwner().call, newOwner)
   }
 }
 
@@ -192,8 +191,7 @@ async function transferOwnership({ contract, newOwner, nonce, url }) {
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
   } else {
-    const owner = await contract.methods.owner().call()
-    assert.strictEqual(owner, newOwner, 'Transaction Failed')
+    await assertStateWithRetry(contract.methods.owner().call, newOwner)
   }
 }
 
@@ -209,8 +207,7 @@ async function setBridgeContract({ contract, bridgeAddress, nonce, url }) {
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
   } else {
-    const bridgeContract = await contract.methods.bridgeContract().call()
-    assert.strictEqual(bridgeContract, bridgeAddress, 'Transaction Failed')
+    await assertStateWithRetry(contract.methods.bridgeContract().call, bridgeAddress)
   }
 }
 
@@ -249,9 +246,17 @@ async function initializeValidators({
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
   } else {
-    const isInitialized = await contract.methods.isInitialized().call()
-    assert.strictEqual(isInitialized, true, 'Transaction Failed')
+    await assertStateWithRetry(contract.methods.isInitialized().call, true)
   }
+}
+
+async function assertStateWithRetry(fn, expected) {
+  return promiseRetry(async retry => {
+    const value = await fn()
+    if (value !== expected) {
+      retry(`Transaction Failed. Expected: ${expected} Actual: ${value}`)
+    }
+  })
 }
 
 module.exports = {
@@ -264,5 +269,6 @@ module.exports = {
   initializeValidators,
   transferProxyOwnership,
   transferOwnership,
-  setBridgeContract
+  setBridgeContract,
+  assertStateWithRetry
 }

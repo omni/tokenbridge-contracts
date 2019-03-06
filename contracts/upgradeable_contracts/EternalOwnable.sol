@@ -4,16 +4,16 @@ import "../upgradeability/EternalStorage.sol";
 
 
 /**
- * @title Ownable
+ * @title EternalOwnable
  * @dev This contract has an owner address providing basic authorization control
  */
-contract Ownable is EternalStorage {
+contract EternalOwnable is EternalStorage {
     /**
     * @dev Event to show ownership has been transferred
     * @param previousOwner representing the address of the previous owner
     * @param newOwner representing the address of the new owner
     */
-    event OwnershipTransferred(address previousOwner, address newOwner);
+    event EternalOwnershipTransferred(address previousOwner, address newOwner);
 
     /**
     * @dev Throws if called by any account other than the owner.
@@ -44,7 +44,7 @@ contract Ownable is EternalStorage {
     * @dev Sets a new owner address
     */
     function setOwner(address newOwner) internal {
-        emit OwnershipTransferred(owner(), newOwner);
+        emit EternalOwnershipTransferred(owner(), newOwner);
         addressStorage[keccak256(abi.encodePacked("owner"))] = newOwner;
     }
 }

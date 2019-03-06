@@ -7,6 +7,7 @@ fi
 mkdir -p flats/native_to_erc20
 mkdir -p flats/erc20_to_erc20
 mkdir -p flats/erc20_to_native
+mkdir -p flats/factories
 
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/native_to_erc20/ForeignBridgeNativeToErc.sol > flats/native_to_erc20/ForeignBridgeNativeToErc_flat.sol
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/native_to_erc20/HomeBridgeNativeToErc.sol > flats/native_to_erc20/HomeBridgeNativeToErc_flat.sol
@@ -19,4 +20,8 @@ mkdir -p flats/erc20_to_native
 
 ./node_modules/.bin/truffle-flattener contracts/upgradeability/EternalStorageProxy.sol > flats/EternalStorageProxy_flat.sol
 ./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/BridgeValidators.sol > flats/BridgeValidators_flat.sol
+./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/BridgeMapper.sol > flats/BridgeMapper_flat.sol
 ./node_modules/.bin/truffle-flattener contracts/ERC677BridgeToken.sol > flats/ERC677BridgeToken_flat.sol
+
+./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/factories/ForeignBridgeFactory.sol > flats/factories/ForeignBridgeFactory_flat.sol
+./node_modules/.bin/truffle-flattener contracts/upgradeable_contracts/factories/HomeBridgeFactory.sol > flats/factories/HomeBridgeFactory_flat.sol

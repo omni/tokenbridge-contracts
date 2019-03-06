@@ -111,3 +111,8 @@ module.exports.range = range;
 function ignoreExpectedError() {
 }
 module.exports.ignoreExpectedError = ignoreExpectedError;
+
+function getEventFromLogs(logs, eventName) {
+  return logs.filter(log => log.event === eventName)[0]
+}
+module.exports.getEventFromLogs = getEventFromLogs;

@@ -2,3 +2,4 @@ node_modules
 build
 flats
 .node*
+deploy/bridgeDeploymentOutput.txt

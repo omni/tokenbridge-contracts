@@ -13,6 +13,8 @@ contract Proxy {
   */
     function implementation() public view returns (address);
 
+    function setImplementation(address _newImplementation) external;
+
   /**
   * @dev Fallback function allowing to perform a delegatecall to the given implementation.
   * This function will return whatever the implementation call returns
@@ -20,6 +22,16 @@ contract Proxy {
     function () payable public {
         address _impl = implementation();
         require(_impl != address(0));
+
+        address _innerImpl;
+        bytes4 sig;
+        address thisAddress = address(this);
+        if (_impl.call(0x5c60da1b)) { // bytes(keccak256("implementation()"))
+            _innerImpl = Proxy(_impl).implementation();
+            this.setImplementation(_innerImpl);
+            sig = 0xd784d426; // bytes4(keccak256("setImplementation(address)"))
+        }
+
         assembly {
             /*
                 0x40 is the "free memory slot", meaning a pointer to next slot of empty memory. mload(0x40)
@@ -79,14 +91,25 @@ contract Proxy {
             */
             returndatacopy(ptr, 0, returndatasize)
 
+            let retdatasize := returndatasize
+
+            switch sig
+            case 0 {}
+            default {
+                let x := mload(0x40)
+                mstore(x, sig)
+                mstore(add(x, 0x04), _impl)
+                let success := call(gas, thisAddress, 0, x, 0x24, x, 0x0)
+            }
+
             /*
                 if `result` is 0, revert.
                 if `result` is 1, return `size` amount of data from `ptr`. This is the data that was
                 copied to `ptr` from the delegatecall return data
             */
             switch result
-            case 0 { revert(ptr, returndatasize) }
-            default { return(ptr, returndatasize) }
+            case 0 { revert(ptr, retdatasize) }
+            default { return(ptr, retdatasize) }
         }
     }
 }

@@ -10,6 +10,7 @@
     /* "arrow-body-style": "off", */
     /* "func-names": "off", */
     /* "no-await-in-loop": "off", */
+    "linebreak-style": 0,
     "consistent-return": "off",
     "global-require": "off",
     "no-console": "off",

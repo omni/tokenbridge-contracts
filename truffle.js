@@ -2,7 +2,7 @@ module.exports = {
   networks: {
     development: {
       host: "localhost",
-      port: 7545,
+      port: 8545,
       network_id: "*",
       gasPrice: 1000000000
     },
@@ -53,9 +53,14 @@ module.exports = {
       runs: 200
     }
   },
+  compilers: {
+    solc: {
+      version: "0.4.24"  // ex:  "0.4.20". (Default: Truffle's installed solc)
+    }
+  },
   mocha: {
     reporter: 'eth-gas-reporter',
-    reporterOptions : {
+    reporterOptions: {
       currency: 'USD',
       gasPrice: 1
     }

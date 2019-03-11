@@ -13,18 +13,17 @@ import "../OverdrawManagement.sol";
 contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
+    event BridgeFunded(address funder, uint256 value);
 
+    /// @notice Fund the bridge. The funds are used for paying out conversions from the ERC20 token
     function () public payable {
         require(msg.value > 0);
         require(msg.data.length == 0);
         require(withinLimit(msg.value));
-        IBlockReward blockReward = blockRewardContract();
-        uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
-        require(msg.value <= totalMinted.sub(totalBurntCoins()));
+        
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
-        setTotalBurntCoins(totalBurntCoins().add(msg.value));
-        address(0).transfer(msg.value);
-        emit UserRequestForSignature(msg.sender, msg.value);
+
+        emit BridgeFunded(msg.sender, msg.value);
     }
 
     function initialize (
@@ -82,18 +81,17 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+        // replace block reward with transfer
+        // make sure we have enough funds
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
         blockReward.addExtraReceiver(_value, _recipient);
+
         return true;
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
         emit UserRequestForSignature(_from, _value);
-    }
-
-    function setTotalBurntCoins(uint256 _amount) internal {
-        uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
     }
 
     function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {

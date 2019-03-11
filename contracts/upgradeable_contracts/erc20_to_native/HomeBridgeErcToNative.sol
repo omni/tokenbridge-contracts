@@ -33,7 +33,6 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _minPerTx,
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        address _blockReward,
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
@@ -43,7 +42,6 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
-        require(_blockReward == address(0) || isContract(_blockReward));
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
@@ -53,7 +51,6 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
         setOwner(_owner);
@@ -66,26 +63,16 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
     }
 
-    function blockRewardContract() public view returns(IBlockReward) {
-        return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
-    }
-
     function totalBurntCoins() public view returns(uint256) {
         return uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))];
     }
 
-    function setBlockRewardContract(address _blockReward) public onlyOwner {
-        require(_blockReward != address(0) && isContract(_blockReward) && (IBlockReward(_blockReward).bridgesAllowedLength() != 0));
-        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
-    }
-
+    /// @notice Transfer coins.
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
+        require(_value <= address(this).balance);
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-        // replace block reward with transfer
-        // make sure we have enough funds
-        IBlockReward blockReward = blockRewardContract();
-        require(blockReward != address(0));
-        blockReward.addExtraReceiver(_value, _recipient);
+
+        _recipient.transfer(_value);
 
         return true;
     }

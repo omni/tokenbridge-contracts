@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "./BaseBridgeValidators.sol";
 
@@ -43,13 +43,13 @@ contract RewardableValidators is BaseBridgeValidators {
 
             setValidatorCount(validatorCount().add(1));
             setValidatorRewardAddress(_initialValidators[i], _initialRewards[i]);
-            emit ValidatorAdded(_initialValidators[i], _initialRewards[i]);
+            ValidatorAdded(_initialValidators[i], _initialRewards[i]);
         }
 
-        uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
+        uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         setInitialize(true);
-        emit RequiredSignaturesChanged(_requiredSignatures);
+        RequiredSignaturesChanged(_requiredSignatures);
 
         return isInitialized();
     }
@@ -58,13 +58,13 @@ contract RewardableValidators is BaseBridgeValidators {
         require(_reward != address(0));
         _addValidator(_validator);
         setValidatorRewardAddress(_validator, _reward);
-        emit ValidatorAdded(_validator, _reward);
+        ValidatorAdded(_validator, _reward);
     }
 
     function removeValidator(address _validator) external onlyOwner {
         _removeValidator(_validator);
         deleteItemFromAddressStorage("validatorsRewards", _validator);
-        emit ValidatorRemoved(_validator);
+        ValidatorRemoved(_validator);
     }
 
     function validatorList() public view returns (address[]) {
@@ -87,10 +87,10 @@ contract RewardableValidators is BaseBridgeValidators {
     }
 
     function getValidatorRewardAddress(address _validator) public view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("validatorsRewards", _validator))];
+        return addressStorage[keccak256("validatorsRewards", _validator)];
     }
 
     function setValidatorRewardAddress(address _validator, address _reward) internal {
-        addressStorage[keccak256(abi.encodePacked("validatorsRewards", _validator))] = _reward;
+        addressStorage[keccak256("validatorsRewards", _validator)] = _reward;
     }
 }

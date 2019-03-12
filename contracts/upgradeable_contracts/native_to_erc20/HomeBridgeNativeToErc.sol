@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
 import "../BasicBridge.sol";
@@ -21,7 +21,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
             uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
         }
-        emit UserRequestForSignature(msg.sender, valueToTransfer);
+        UserRequestForSignature(msg.sender, valueToTransfer);
     }
 
     function initialize (
@@ -78,7 +78,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
             _owner
         );
         require(isContract(_feeManager));
-        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+        addressStorage[keccak256("feeManagerContract")] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
         setInitialize(true);
@@ -86,7 +86,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
     }
 
     function getBridgeMode() public pure returns(bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
+        return bytes4(keccak256("native-to-erc-core"));
     }
 
     function _initialize (
@@ -108,15 +108,15 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
+        addressStorage[keccak256("validatorContract")] = _validatorContract;
+        uintStorage[keccak256("deployedAtBlock")] = block.number;
+        uintStorage[keccak256("dailyLimit")] = _dailyLimit;
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+        uintStorage[keccak256("minPerTx")] = _minPerTx;
+        uintStorage[keccak256("gasPrice")] = _homeGasPrice;
+        uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
+        uintStorage[keccak256("executionDailyLimit")] = _foreignDailyLimit;
+        uintStorage[keccak256("executionMaxPerTx")] = _foreignMaxPerTx;
         setOwner(_owner);
     }
 

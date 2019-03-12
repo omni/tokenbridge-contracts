@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
@@ -22,7 +22,7 @@ contract BasicForeignBridge is EternalStorage, Validatable {
             require(!relayedMessages(txHash));
             setRelayedMessages(txHash, true);
             require(onExecuteMessage(recipient, amount));
-            emit RelayedMessage(recipient, amount, txHash);
+            RelayedMessage(recipient, amount, txHash);
         } else {
             onFailedMessage(recipient, amount, txHash);
         }
@@ -31,11 +31,11 @@ contract BasicForeignBridge is EternalStorage, Validatable {
     function onExecuteMessage(address, uint256) internal returns(bool);
 
     function setRelayedMessages(bytes32 _txHash, bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))] = _status;
+        boolStorage[keccak256("relayedMessages", _txHash)] = _status;
     }
 
     function relayedMessages(bytes32 _txHash) public view returns(bool) {
-        return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
+        return boolStorage[keccak256("relayedMessages", _txHash)];
     }
 
     function messageWithinLimits(uint256) internal view returns(bool);

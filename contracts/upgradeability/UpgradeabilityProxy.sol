@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "./Proxy.sol";
 import "./UpgradeabilityStorage.sol";
@@ -26,6 +26,6 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
         require(version > _version);
         _version = version;
         _implementation = implementation;
-        emit Upgraded(version, implementation);
+        Upgraded(version, implementation);
     }
 }

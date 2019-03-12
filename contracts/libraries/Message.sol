@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 import "../IBridgeValidators.sol";
 
 
@@ -88,7 +88,7 @@ library Message {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
         // message is always 84 length
         string memory msgLength = "104";
-        return keccak256(abi.encodePacked(prefix, msgLength, message));
+        return keccak256(prefix, msgLength, message);
     }
 
     function hasEnoughValidSignatures(

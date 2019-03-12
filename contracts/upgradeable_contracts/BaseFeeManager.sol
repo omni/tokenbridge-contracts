@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
@@ -9,9 +9,9 @@ import "./FeeTypes.sol";
 contract BaseFeeManager is EternalStorage, FeeTypes {
     using SafeMath for uint256;
 
-    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = keccak256(abi.encodePacked("reward-transferring-from-home"));
+    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = keccak256("reward-transferring-from-home");
 
-    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_FOREIGN = keccak256(abi.encodePacked("reward-transferring-from-foreign"));
+    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_FOREIGN = keccak256("reward-transferring-from-foreign");
 
     event HomeFeeUpdated(uint256 fee);
     event ForeignFeeUpdated(uint256 fee);
@@ -26,21 +26,21 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     }
 
     function setHomeFee(uint256 _fee) external {
-        uintStorage[keccak256(abi.encodePacked("homeFee"))] = _fee;
-        emit HomeFeeUpdated(_fee);
+        uintStorage[keccak256("homeFee")] = _fee;
+        HomeFeeUpdated(_fee);
     }
 
     function getHomeFee() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("homeFee"))];
+        return uintStorage[keccak256("homeFee")];
     }
 
     function setForeignFee(uint256 _fee) external {
-        uintStorage[keccak256(abi.encodePacked("foreignFee"))] = _fee;
-        emit ForeignFeeUpdated(_fee);
+        uintStorage[keccak256("foreignFee")] = _fee;
+        ForeignFeeUpdated(_fee);
     }
 
     function getForeignFee() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("foreignFee"))];
+        return uintStorage[keccak256("foreignFee")];
     }
 
     function distributeFeeFromAffirmation(uint256 _fee) external {
@@ -54,7 +54,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     function getFeeManagerMode() public pure returns(bytes4);
 
     function random(uint256 _count) public view returns(uint256) {
-        return uint256(blockhash(block.number.sub(1))) % _count;
+        return uint256(block.blockhash(block.number.sub(1))) % _count;
     }
 
     function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {
@@ -91,6 +91,6 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     function onSignatureFeeDistribution(address _rewardAddress, uint256 _fee) internal;
 
     function rewardableValidatorContract() public view returns(IRewardableValidators) {
-        return IRewardableValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
+        return IRewardableValidators(addressStorage[keccak256("validatorContract")]);
     }
 }

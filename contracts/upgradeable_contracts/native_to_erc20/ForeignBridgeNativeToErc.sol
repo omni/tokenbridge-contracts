@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 import "../../libraries/SafeMath.sol";
 import "../BasicBridge.sol";
 import "../../IBurnableMintableERC677Token.sol";
@@ -69,14 +69,14 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
             _owner
         );
         require(isContract(_feeManager));
-        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+        addressStorage[keccak256("feeManagerContract")] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         setInitialize(true);
         return isInitialized();
     }
 
     function getBridgeMode() public pure returns(bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
+        return bytes4(keccak256("native-to-erc-core"));
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfOwnerOfProxy {
@@ -101,16 +101,16 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         require(_foreignGasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+        addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc677token(_erc677token);
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _foreignGasPrice;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
+        uintStorage[keccak256("dailyLimit")] = _dailyLimit;
+        uintStorage[keccak256("deployedAtBlock")] = block.number;
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+        uintStorage[keccak256("minPerTx")] = _minPerTx;
+        uintStorage[keccak256("gasPrice")] = _foreignGasPrice;
+        uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
+        uintStorage[keccak256("executionDailyLimit")] = _homeDailyLimit;
+        uintStorage[keccak256("executionMaxPerTx")] = _homeMaxPerTx;
         setOwner(_owner);
     }
 
@@ -129,7 +129,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
-        emit UserRequestForAffirmation(_from, _value);
+        UserRequestForAffirmation(_from, _value);
     }
 
     function messageWithinLimits(uint256 _amount) internal view returns(bool) {

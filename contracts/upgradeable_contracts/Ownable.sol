@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../upgradeability/EternalStorage.sol";
 
@@ -28,7 +28,7 @@ contract Ownable is EternalStorage {
     * @return the address of the owner
     */
     function owner() public view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("owner"))];
+        return addressStorage[keccak256("owner")];
     }
 
     /**
@@ -44,7 +44,7 @@ contract Ownable is EternalStorage {
     * @dev Sets a new owner address
     */
     function setOwner(address newOwner) internal {
-        emit OwnershipTransferred(owner(), newOwner);
-        addressStorage[keccak256(abi.encodePacked("owner"))] = newOwner;
+        OwnershipTransferred(owner(), newOwner);
+        addressStorage[keccak256("owner")] = newOwner;
     }
 }

@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 
 import "./BasicBridge.sol";
@@ -6,12 +6,12 @@ import "../IBurnableMintableERC677Token.sol";
 
 contract ERC677Bridge is BasicBridge {
     function erc677token() public view returns(IBurnableMintableERC677Token) {
-        return IBurnableMintableERC677Token(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
+        return IBurnableMintableERC677Token(addressStorage[keccak256("erc677token")]);
     }
 
     function setErc677token(address _token) internal {
         require(_token != address(0) && isContract(_token));
-        addressStorage[keccak256(abi.encodePacked("erc677token"))] = _token;
+        addressStorage[keccak256("erc677token")] = _token;
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes /*_data*/) external returns(bool) {

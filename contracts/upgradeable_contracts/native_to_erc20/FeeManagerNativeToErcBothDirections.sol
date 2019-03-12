@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../BaseFeeManager.sol";
 import "../../IBurnableMintableERC677Token.sol";
@@ -8,7 +8,7 @@ import "../Sacrifice.sol";
 contract FeeManagerNativeToErcBothDirections is BaseFeeManager {
 
     function getFeeManagerMode() public pure returns(bytes4) {
-        return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
+        return bytes4(keccak256("manages-both-directions"));
     }
 
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal {

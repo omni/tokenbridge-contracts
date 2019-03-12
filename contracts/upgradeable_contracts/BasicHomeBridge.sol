@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
@@ -18,8 +18,8 @@ contract BasicHomeBridge is EternalStorage, Validatable {
 
     function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
         if (affirmationWithinLimits(value)) {
-            bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
-            bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
+            bytes32 hashMsg = keccak256(recipient, value, transactionHash);
+            bytes32 hashSender = keccak256(msg.sender, hashMsg);
             // Duplicated affirmations
             require(!affirmationsSigned(hashSender));
             setAffirmationsSigned(hashSender, true);
@@ -31,14 +31,14 @@ contract BasicHomeBridge is EternalStorage, Validatable {
 
             setNumAffirmationsSigned(hashMsg, signed);
 
-            emit SignedForAffirmation(msg.sender, transactionHash);
+            SignedForAffirmation(msg.sender, transactionHash);
 
             if (signed >= requiredSignatures()) {
                 // If the bridge contract does not own enough tokens to transfer
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
                 require(onExecuteAffirmation(recipient, value));
-                emit AffirmationCompleted(recipient, value, transactionHash);
+                AffirmationCompleted(recipient, value, transactionHash);
             }
         } else {
             onFailedAffirmation(recipient, value, transactionHash);
@@ -49,8 +49,8 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         // ensure that `signature` is really `message` signed by `msg.sender`
         require(Message.isMessageValid(message));
         require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message));
-        bytes32 hashMsg = keccak256(abi.encodePacked(message));
-        bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
+        bytes32 hashMsg = keccak256(message);
+        bytes32 hashSender = keccak256(msg.sender, hashMsg);
 
         uint256 signed = numMessagesSigned(hashMsg);
         require(!isAlreadyProcessed(signed));
@@ -64,24 +64,24 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         }
         setMessagesSigned(hashSender, true);
 
-        bytes32 signIdx = keccak256(abi.encodePacked(hashMsg, (signed-1)));
+        bytes32 signIdx = keccak256(hashMsg, (signed-1));
         setSignatures(signIdx, signature);
 
         setNumMessagesSigned(hashMsg, signed);
 
-        emit SignedForUserRequest(msg.sender, hashMsg);
+        SignedForUserRequest(msg.sender, hashMsg);
 
         uint256 reqSigs = requiredSignatures();
         if (signed >= reqSigs) {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
-            emit CollectedSignatures(msg.sender, hashMsg, reqSigs);
+            CollectedSignatures(msg.sender, hashMsg, reqSigs);
 
             onSignaturesCollected(message);
         }
     }
 
     function setMessagesSigned(bytes32 _hash, bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("messagesSigned", _hash))] = _status;
+        boolStorage[keccak256("messagesSigned", _hash)] = _status;
     }
 
     function onExecuteAffirmation(address, uint256) internal returns(bool) {
@@ -91,44 +91,44 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     }
 
     function numAffirmationsSigned(bytes32 _withdrawal) public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _withdrawal))];
+        return uintStorage[keccak256("numAffirmationsSigned", _withdrawal)];
     }
 
     function setAffirmationsSigned(bytes32 _withdrawal, bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("affirmationsSigned", _withdrawal))] = _status;
+        boolStorage[keccak256("affirmationsSigned", _withdrawal)] = _status;
     }
 
     function setNumAffirmationsSigned(bytes32 _withdrawal, uint256 _number) internal {
-        uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _withdrawal))] = _number;
+        uintStorage[keccak256("numAffirmationsSigned", _withdrawal)] = _number;
     }
 
     function affirmationsSigned(bytes32 _withdrawal) public view returns(bool) {
-        return boolStorage[keccak256(abi.encodePacked("affirmationsSigned", _withdrawal))];
+        return boolStorage[keccak256("affirmationsSigned", _withdrawal)];
     }
 
     function signature(bytes32 _hash, uint256 _index) public view returns (bytes) {
-        bytes32 signIdx = keccak256(abi.encodePacked(_hash, _index));
+        bytes32 signIdx = keccak256(_hash, _index);
         return signatures(signIdx);
     }
 
     function messagesSigned(bytes32 _message) public view returns(bool) {
-        return boolStorage[keccak256(abi.encodePacked("messagesSigned", _message))];
+        return boolStorage[keccak256("messagesSigned", _message)];
     }
 
     function messages(bytes32 _hash) internal view returns(bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("messages", _hash))];
+        return bytesStorage[keccak256("messages", _hash)];
     }
 
     function signatures(bytes32 _hash) internal view returns(bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("signatures", _hash))];
+        return bytesStorage[keccak256("signatures", _hash)];
     }
 
     function setSignatures(bytes32 _hash, bytes _signature) internal {
-        bytesStorage[keccak256(abi.encodePacked("signatures", _hash))] = _signature;
+        bytesStorage[keccak256("signatures", _hash)] = _signature;
     }
 
     function setMessages(bytes32 _hash, bytes _message) internal {
-        bytesStorage[keccak256(abi.encodePacked("messages", _hash))] = _message;
+        bytesStorage[keccak256("messages", _hash)] = _message;
     }
 
     function message(bytes32 _hash) public view returns (bytes) {
@@ -136,7 +136,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     }
 
     function setNumMessagesSigned(bytes32 _message, uint256 _number) internal {
-        uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))] = _number;
+        uintStorage[keccak256("numMessagesSigned", _message)] = _number;
     }
 
     function markAsProcessed(uint256 _v) internal pure returns(uint256) {
@@ -148,7 +148,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     }
 
     function numMessagesSigned(bytes32 _message) public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))];
+        return uintStorage[keccak256("numMessagesSigned", _message)];
     }
 
     function requiredMessageLength() public pure returns(uint256) {

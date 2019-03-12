@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../BaseFeeManager.sol";
 import "../../IBlockReward.sol";
@@ -8,11 +8,11 @@ import "../Sacrifice.sol";
 contract FeeManagerErcToNative is BaseFeeManager {
 
     function getFeeManagerMode() public pure returns(bytes4) {
-        return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
+        return bytes4(keccak256("manages-both-directions"));
     }
 
     function blockRewardContract() internal view returns(IBlockReward) {
-        return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
+        return IBlockReward(addressStorage[keccak256("blockRewardContract")]);
     }
 
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal {

@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../BaseFeeManager.sol";
 import "../../IBurnableMintableERC677Token.sol";
@@ -8,11 +8,11 @@ import "../Sacrifice.sol";
 contract FeeManagerNativeToErc is BaseFeeManager {
 
     function getFeeManagerMode() public pure returns(bytes4) {
-        return bytes4(keccak256(abi.encodePacked("manages-one-direction")));
+        return bytes4(keccak256("manages-one-direction"));
     }
 
     function erc677token() public view returns(IBurnableMintableERC677Token) {
-        return IBurnableMintableERC677Token(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
+        return IBurnableMintableERC677Token(addressStorage[keccak256("erc677token")]);
     }
 
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal {

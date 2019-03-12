@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "./Ownable.sol";
 import "../libraries/SafeMath.sol";
@@ -18,8 +18,8 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     {
         require(validatorCount() >= _requiredSignatures);
         require(_requiredSignatures != 0);
-        uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
-        emit RequiredSignaturesChanged(_requiredSignatures);
+        uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
+        RequiredSignaturesChanged(_requiredSignatures);
     }
 
     function getBridgeValidatorsInterfacesVersion()
@@ -64,11 +64,11 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     }
 
     function requiredSignatures() public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("requiredSignatures"))];
+        return uintStorage[keccak256("requiredSignatures")];
     }
 
     function validatorCount() public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("validatorCount"))];
+        return uintStorage[keccak256("validatorCount")];
     }
 
     function isValidator(address _validator) public view returns (bool) {
@@ -76,7 +76,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     }
 
     function isInitialized() public view returns (bool) {
-        return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
+        return boolStorage[keccak256("isInitialized")];
     }
 
     function deployedAtBlock() public view returns (uint256) {
@@ -84,22 +84,22 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     }
 
     function getNextValidator(address _address) public view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("validatorsList", _address))];
+        return addressStorage[keccak256("validatorsList", _address)];
     }
 
     function deleteItemFromAddressStorage(string _mapName, address _address) internal {
-        delete addressStorage[keccak256(abi.encodePacked(_mapName, _address))];
+        delete addressStorage[keccak256(_mapName, _address)];
     }
 
     function setValidatorCount(uint256 _validatorCount) internal {
-        uintStorage[keccak256(abi.encodePacked("validatorCount"))] = _validatorCount;
+        uintStorage[keccak256("validatorCount")] = _validatorCount;
     }
 
     function setNextValidator(address _prevValidator, address _validator) internal {
-        addressStorage[keccak256(abi.encodePacked("validatorsList", _prevValidator))] = _validator;
+        addressStorage[keccak256("validatorsList", _prevValidator)] = _validator;
     }
 
     function setInitialize(bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
+        boolStorage[keccak256("isInitialized")] = _status;
     }
 }

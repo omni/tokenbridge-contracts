@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
 import "../BasicBridge.sol";
@@ -35,15 +35,15 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
+        addressStorage[keccak256("validatorContract")] = _validatorContract;
+        uintStorage[keccak256("deployedAtBlock")] = block.number;
+        uintStorage[keccak256("dailyLimit")] = _dailyLimit;
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+        uintStorage[keccak256("minPerTx")] = _minPerTx;
+        uintStorage[keccak256("gasPrice")] = _homeGasPrice;
+        uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
+        uintStorage[keccak256("executionDailyLimit")] = _foreignDailyLimit;
+        uintStorage[keccak256("executionMaxPerTx")] = _foreignMaxPerTx;
         setOwner(_owner);
         setInitialize(true);
         setErc677token(_erc677token);
@@ -52,7 +52,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
     }
 
     function getBridgeMode() public pure returns(bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
+        return bytes4(keccak256("erc-to-erc-core"));
     }
 
     function () payable public {
@@ -65,7 +65,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
-        emit UserRequestForSignature(_from, _value);
+        UserRequestForSignature(_from, _value);
     }
 
     function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {
@@ -79,6 +79,6 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _txHash);
-        emit AmountLimitExceeded(_recipient, _value, _txHash);
+        AmountLimitExceeded(_recipient, _value, _txHash);
     }
 }

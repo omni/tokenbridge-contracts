@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "./BaseBridgeValidators.sol";
 
@@ -39,24 +39,24 @@ contract BridgeValidators is BaseBridgeValidators {
             }
 
             setValidatorCount(validatorCount().add(1));
-            emit ValidatorAdded(_initialValidators[i]);
+            ValidatorAdded(_initialValidators[i]);
         }
 
-        uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
+        uintStorage[keccak256("requiredSignatures")] = _requiredSignatures;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         setInitialize(true);
-        emit RequiredSignaturesChanged(_requiredSignatures);
+        RequiredSignaturesChanged(_requiredSignatures);
 
         return isInitialized();
     }
 
     function addValidator(address _validator) external onlyOwner {
         _addValidator(_validator);
-        emit ValidatorAdded(_validator);
+        ValidatorAdded(_validator);
     }
 
     function removeValidator(address _validator) external onlyOwner {
         _removeValidator(_validator);
-        emit ValidatorRemoved(_validator);
+        ValidatorRemoved(_validator);
     }
 }

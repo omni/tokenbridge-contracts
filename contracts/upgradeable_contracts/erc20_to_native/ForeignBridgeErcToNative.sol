@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
 import "../BasicBridge.sol";
@@ -27,21 +27,21 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         require(_gasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+        addressStorage[keccak256("validatorContract")] = _validatorContract;
         setErc20token(_erc20token);
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
+        uintStorage[keccak256("deployedAtBlock")] = block.number;
+        uintStorage[keccak256("requiredBlockConfirmations")] = _requiredBlockConfirmations;
+        uintStorage[keccak256("gasPrice")] = _gasPrice;
+        uintStorage[keccak256("maxPerTx")] = _maxPerTx;
+        uintStorage[keccak256("executionDailyLimit")] = _homeDailyLimit;
+        uintStorage[keccak256("executionMaxPerTx")] = _homeMaxPerTx;
         setOwner(_owner);
         setInitialize(true);
         return isInitialized();
     }
 
     function getBridgeMode() public pure returns(bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
+        return bytes4(keccak256("erc-to-native-core"));
     }
 
     function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy {
@@ -50,7 +50,7 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
     }
 
     function erc20token() public view returns(ERC20Basic) {
-        return ERC20Basic(addressStorage[keccak256(abi.encodePacked("erc20token"))]);
+        return ERC20Basic(addressStorage[keccak256("erc20token")]);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool) {
@@ -60,7 +60,7 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
 
     function setErc20token(address _token) private {
         require(_token != address(0) && isContract(_token));
-        addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
+        addressStorage[keccak256("erc20token")] = _token;
     }
 
     function messageWithinLimits(uint256 _amount) internal view returns(bool) {

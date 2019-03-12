@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
@@ -17,7 +17,7 @@ contract ERC677BridgeToken is
 
     event ContractFallbackCallFailed(address from, address to, uint value);
 
-    constructor(
+    function ERC677BridgeToken(
         string _name,
         string _symbol,
         uint8 _decimals)
@@ -37,7 +37,7 @@ contract ERC677BridgeToken is
         external validRecipient(_to) returns (bool)
     {
         require(superTransfer(_to, _value));
-        emit Transfer(msg.sender, _to, _value, _data);
+        Transfer(msg.sender, _to, _value, _data);
 
         if (isContract(_to)) {
             require(contractFallback(_to, _value, _data));
@@ -61,7 +61,7 @@ contract ERC677BridgeToken is
             if (_to == bridgeContract) {
                 revert();
             } else {
-                emit ContractFallbackCallFailed(msg.sender, _to, _value);
+                ContractFallbackCallFailed(msg.sender, _to, _value);
             }
         }
         return true;
@@ -71,7 +71,7 @@ contract ERC677BridgeToken is
         private
         returns(bool)
     {
-        return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)",  msg.sender, _value, _data));
+        return _to.call(bytes4(keccak256("onTokenTransfer(address,uint256,bytes)")),  msg.sender, _value, _data);
     }
 
     function isContract(address _addr)

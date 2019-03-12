@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "./ERC677BridgeToken.sol";
 
@@ -8,7 +8,7 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
     address public blockRewardContract;
     address public validatorSetContract;
 
-    constructor(
+    function ERC677BridgeTokenRewardable(
         string _name,
         string _symbol,
         uint8 _decimals
@@ -42,8 +42,8 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
             // Mint `amount` for `to`
             totalSupply_ = totalSupply_.add(amount);
             balances[to] = balances[to].add(amount);
-            emit Mint(to, amount);
-            emit Transfer(address(0), to, amount);
+            Mint(to, amount);
+            Transfer(address(0), to, amount);
         }
     }
 
@@ -52,7 +52,7 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
         require(_amount <= balances[_staker]);
         balances[_staker] = balances[_staker].sub(_amount);
         balances[validatorSetContract] = balances[validatorSetContract].add(_amount);
-        emit Transfer(_staker, validatorSetContract, _amount);
+        Transfer(_staker, validatorSetContract, _amount);
     }
 
     function withdraw(address _staker, uint256 _amount) external onlyValidatorSetContract {
@@ -60,7 +60,7 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
         require(_amount <= balances[validatorSetContract]);
         balances[validatorSetContract] = balances[validatorSetContract].sub(_amount);
         balances[_staker] = balances[_staker].add(_amount);
-        emit Transfer(validatorSetContract, _staker, _amount);
+        Transfer(validatorSetContract, _staker, _amount);
     }
 
 }

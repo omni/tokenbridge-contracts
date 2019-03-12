@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "./UpgradeabilityProxy.sol";
 import "./UpgradeabilityOwnerStorage.sol";
@@ -19,7 +19,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     /**
     * @dev the constructor sets the original owner of the contract to the sender account.
     */
-    constructor() public {
+    function OwnedUpgradeabilityProxy() public {
         setUpgradeabilityOwner(msg.sender);
     }
 
@@ -45,7 +45,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     */
     function transferProxyOwnership(address newOwner) public onlyProxyOwner {
         require(newOwner != address(0));
-        emit ProxyOwnershipTransferred(proxyOwner(), newOwner);
+        ProxyOwnershipTransferred(proxyOwner(), newOwner);
         setUpgradeabilityOwner(newOwner);
     }
 

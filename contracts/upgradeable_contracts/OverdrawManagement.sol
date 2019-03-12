@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
@@ -18,34 +18,34 @@ contract OverdrawManagement is EternalStorage, OwnedUpgradeability {
         require(recipient != address(0) && value > 0);
         setOutOfLimitAmount(outOfLimitAmount().sub(value));
         if (unlockOnForeign) {
-            emit UserRequestForSignature(recipient, value);
+            UserRequestForSignature(recipient, value);
         }
         setFixedAssets(txHash, true);
     }
 
     function outOfLimitAmount() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))];
+        return uintStorage[keccak256("outOfLimitAmount")];
     }
 
     function fixedAssets(bytes32 _txHash) public view returns(bool) {
-        return boolStorage[keccak256(abi.encodePacked("fixedAssets", _txHash))];
+        return boolStorage[keccak256("fixedAssets", _txHash)];
     }
 
     function setOutOfLimitAmount(uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))] = _value;
+        uintStorage[keccak256("outOfLimitAmount")] = _value;
     }
 
     function txAboveLimits(bytes32 _txHash) internal view returns(address recipient, uint256 value) {
-        recipient = addressStorage[keccak256(abi.encodePacked("txOutOfLimitRecipient", _txHash))];
-        value = uintStorage[keccak256(abi.encodePacked("txOutOfLimitValue", _txHash))];
+        recipient = addressStorage[keccak256("txOutOfLimitRecipient", _txHash)];
+        value = uintStorage[keccak256("txOutOfLimitValue", _txHash)];
     }
 
     function setTxAboveLimits(address _recipient, uint256 _value, bytes32 _txHash) internal {
-        addressStorage[keccak256(abi.encodePacked("txOutOfLimitRecipient", _txHash))] = _recipient;
-        uintStorage[keccak256(abi.encodePacked("txOutOfLimitValue", _txHash))] = _value;
+        addressStorage[keccak256("txOutOfLimitRecipient", _txHash)] = _recipient;
+        uintStorage[keccak256("txOutOfLimitValue", _txHash)] = _value;
     }
 
     function setFixedAssets(bytes32 _txHash, bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("fixedAssets", _txHash))] = _status;
+        boolStorage[keccak256("fixedAssets", _txHash)] = _status;
     }
 }

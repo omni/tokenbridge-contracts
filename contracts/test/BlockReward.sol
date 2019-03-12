@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 import "../IBlockReward.sol";
 import "../libraries/SafeMath.sol";
@@ -32,12 +32,12 @@ contract BlockReward is IBlockReward {
 
     function mintedTotallyByBridge(address _bridge) public view returns(uint256) {
         return uintStorage[
-        keccak256(abi.encode(MINTED_TOTALLY_BY_BRIDGE, _bridge))
+        keccak256(MINTED_TOTALLY_BY_BRIDGE, _bridge)
         ];
     }
 
     function addMintedTotallyByBridge(uint256 _amount, address _bridge) external {
-        bytes32 hash = keccak256(abi.encode(MINTED_TOTALLY_BY_BRIDGE, _bridge));
+        bytes32 hash = keccak256(MINTED_TOTALLY_BY_BRIDGE, _bridge);
         uintStorage[hash] = uintStorage[hash].add(_amount);
     }
 }

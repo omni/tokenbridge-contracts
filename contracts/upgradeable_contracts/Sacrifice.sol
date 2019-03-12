@@ -1,8 +1,8 @@
-pragma solidity 0.4.24;
+pragma solidity 0.4.19;
 
 
 contract Sacrifice {
-    constructor(address _recipient) public payable {
+    function Sacrifice(address _recipient) public payable {
         selfdestruct(_recipient);
     }
 }

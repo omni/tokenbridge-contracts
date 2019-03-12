@@ -27,9 +27,4 @@ contract UpgradeabilityStorage {
     function implementation() public view returns (address) {
         return _implementation;
     }
-
-    function setImplementation(address _newImplementation) external {
-        require(msg.sender == address(this));
-        _implementation = _newImplementation;
-    }
 }

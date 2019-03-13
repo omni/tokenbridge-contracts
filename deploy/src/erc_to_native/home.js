@@ -12,7 +12,6 @@ const HomeBridge = require('../../../build/contracts/HomeBridgeErcToNative.json'
 const VALIDATORS = env.VALIDATORS.split(' ')
 
 const {
-  BLOCK_REWARD_ADDRESS,
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   HOME_GAS_PRICE,
@@ -142,7 +141,6 @@ async function deployHome() {
       HOME_MIN_AMOUNT_PER_TX,
       HOME_GAS_PRICE,
       HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-      BLOCK_REWARD_ADDRESS,
       FOREIGN_DAILY_LIMIT,
       FOREIGN_MAX_AMOUNT_PER_TX,
       HOME_BRIDGE_OWNER

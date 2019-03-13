@@ -15,6 +15,11 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
     event BridgeFunded(address funder, uint256 value);
 
+    modifier onlyManager() {
+        require(msg.sender == addressStorage[keccak256(abi.encodePacked("managerAddress"))], "Only manager can call this function");
+        _;
+    }
+
     /// @notice Fund the bridge. The funds are used for paying out conversions from the ERC20 token
     function () public payable {
         require(msg.value > 0);
@@ -35,6 +40,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _requiredBlockConfirmations,
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
+        address _managerAddress,
         address _owner
     ) public returns(bool)
     {
@@ -45,6 +51,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+        addressStorage[keccak256(abi.encodePacked("managerAddress"))] = _managerAddress;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
@@ -57,6 +64,32 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         setInitialize(true);
 
         return isInitialized();
+    }
+
+    // function addManager(address m) public onlyOwner {
+    //     _managers.add(m);
+
+    //     emit ManagerAdded(m);
+    // }
+
+    // /// @notice Owner can remove managers.
+    // function managerValidator(address m) public onlyOwner {
+    //     _managers.remove(m);
+
+    //     emit ManagerRemoved(m);
+    // }
+
+    // function isManager(address m) public view returns (bool) {
+    //     return _managers.has(m);
+    // }
+
+    function withdrawAll() public onlyManager{
+        uint256 balance = address(this).balance;
+        msg.sender.transfer(balance);
+    }
+
+    function fundRecipient(address _recipient, uint amount) public onlyManager{
+        _recipient.transfer(amount);
     }
 
     function getBridgeMode() public pure returns(bytes4 _data) {

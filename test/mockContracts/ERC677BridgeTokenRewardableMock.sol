@@ -5,7 +5,7 @@ import '../../contracts/ERC677BridgeTokenRewardable.sol';
 
 contract ERC677BridgeTokenRewardableMock is ERC677BridgeTokenRewardable {
 
-    constructor(
+    function ERC677BridgeTokenRewardableMock(
         string _name,
         string _symbol,
         uint8 _decimals

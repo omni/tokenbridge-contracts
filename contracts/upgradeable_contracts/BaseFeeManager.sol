@@ -59,7 +59,11 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
 
     function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {
         IRewardableValidators validators = rewardableValidatorContract();
-        address[] memory validatorList = validators.validatorList();
+        address[] memory validatorList;
+        validators.validatorList();
+        assembly {
+            returndatacopy(validatorList, 0, returndatasize)
+        }
         uint256 feePerValidator = _fee.div(validatorList.length);
 
         uint256 randomValidatorIndex;

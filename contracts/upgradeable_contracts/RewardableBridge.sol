@@ -72,7 +72,7 @@ contract RewardableBridge is Ownable, FeeTypes {
             mstore(add(callData,68),_feeType)
             let result := callcode(gas, _impl, 0x0, callData, 100, 0, 32)
             fee := mload(0)
-            mstore(0x40,add(callData,0x45))
+
             switch result
             case 0 { revert(0, 0) }
         }

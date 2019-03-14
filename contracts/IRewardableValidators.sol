@@ -7,4 +7,6 @@ interface IRewardableValidators {
     function owner() public view returns(address);
     function validatorList() public view returns (address[]);
     function getValidatorRewardAddress(address _validator) public view returns(address);
+    function validatorCount() public view returns (uint256);
+    function getNextValidator(address _address) public view returns (address);
 }

@@ -1,3 +1,4 @@
+require('chai/register-expect');
 const Web3Utils = require('web3-utils');
 const HomeBridge = artifacts.require("HomeBridgeNativeToErc.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");

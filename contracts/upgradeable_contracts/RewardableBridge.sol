@@ -10,10 +10,12 @@ contract RewardableBridge is Ownable, FeeTypes {
         uint256 fee;
         address feeManager = feeManagerContract();
         string memory method = _feeType == HOME_FEE ? "getHomeFee()" : "getForeignFee()";
-        bytes4 callData = bytes4(keccak256(method));
+        bytes4 sig = bytes4(keccak256(method));
 
         assembly {
-            let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
+            let x := mload(0x40)
+            mstore(x, sig)
+            let result := callcode(gas, feeManager, 0x0, x, 4, 0, 32)
             fee := mload(0)
 
             switch result
@@ -24,10 +26,12 @@ contract RewardableBridge is Ownable, FeeTypes {
 
     function getFeeManagerMode() public view returns(bytes4) {
         bytes4 mode;
-        bytes4 callData = bytes4(keccak256("getFeeManagerMode()"));
+        bytes4 sig = bytes4(keccak256("getFeeManagerMode()"));
         address feeManager = feeManagerContract();
         assembly {
-            let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 4)
+            let x := mload(0x40)
+            mstore(x, sig)
+            let result := callcode(gas, feeManager, 0x0, x, 4, 0, 4)
             mode := mload(0)
 
             switch result
@@ -63,10 +67,10 @@ contract RewardableBridge is Ownable, FeeTypes {
         assembly {
             let callData := mload(0x40)
             mstore(callData,sig)
-            mstore(add(callData,0x04),_value)
-            mstore(add(callData,0x24),_recover)
-            mstore(add(callData,0x25),_feeType)
-            let result := callcode(gas, _impl, 0x0, callData, 0x45, 0, 32)
+            mstore(add(callData,4),_value)
+            mstore(add(callData,36),_recover)
+            mstore(add(callData,68),_feeType)
+            let result := callcode(gas, _impl, 0x0, callData, 100, 0, 32)
             fee := mload(0)
             mstore(0x40,add(callData,0x45))
             switch result

@@ -372,8 +372,6 @@ async function testERC677BridgeToken(accounts, rewardable) {
       (await token.balanceOf(user)).should.be.bignumber.equal(0);
       (await receiver.from()).should.be.equal(user);
       (await receiver.value()).should.be.bignumber.equal(1);
-      (await receiver.data()).should.be.equal(callDoSomething123);
-      (await receiver.someVar()).should.be.bignumber.equal('123');
     })
 
     it('sends tokens to bridge contract', async () => {
@@ -446,9 +444,6 @@ async function testERC677BridgeToken(accounts, rewardable) {
 
       (await token.balanceOf(receiver.address)).should.be.bignumber.equal(1);
       (await token.balanceOf(user)).should.be.bignumber.equal(0);
-      (await receiver.from()).should.be.equal(user);
-      (await receiver.value()).should.be.bignumber.equal(1);
-      (await receiver.data()).should.be.equal('0x');
       logs[0].event.should.be.equal("Transfer")
     })
     it('if transfer called on contract, still works even if onTokenTransfer doesnot exist', async () => {

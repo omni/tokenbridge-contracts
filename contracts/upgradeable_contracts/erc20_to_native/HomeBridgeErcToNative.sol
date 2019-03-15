@@ -12,13 +12,21 @@ import "../OverdrawManagement.sol";
 
 contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement {
 
+    uint public limit = 1000000000000000000;
+    mapping(address => uint256) internal dailyUserLimit;
+
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
     event BridgeFunded(address funder, uint256 value);
 
-    modifier onlyManager() {
-        require(msg.sender == addressStorage[keccak256(abi.encodePacked("managerAddress"))], "Only manager can call this function");
+    modifier onlyWithinDailyUserLimit() {
+        require(dailyUserLimit(msg.sender) <= limit, "Daily limit crossed");
         _;
     }
+
+    // modifier onlyManager() {
+    //     require(msg.sender == addressStorage[keccak256(abi.encodePacked("managerAddress"))], "Only manager can call this function");
+    //     _;
+    // }
 
     /// @notice Fund the bridge. The funds are used for paying out conversions from the ERC20 token
     function () public payable {
@@ -40,7 +48,6 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _requiredBlockConfirmations,
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
-        address _managerAddress,
         address _owner
     ) public returns(bool)
     {
@@ -51,7 +58,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
-        addressStorage[keccak256(abi.encodePacked("managerAddress"))] = _managerAddress;
+        // addressStorage[keccak256(abi.encodePacked("managerAddress"))] = _managerAddress;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
@@ -60,6 +67,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
+
         setOwner(_owner);
         setInitialize(true);
 
@@ -83,12 +91,12 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
     //     return _managers.has(m);
     // }
 
-    function withdrawAll() public onlyManager{
+    function withdrawAll() public onlyOwner{
         uint256 balance = address(this).balance;
         msg.sender.transfer(balance);
     }
 
-    function fundRecipient(address _recipient, uint amount) public onlyManager{
+    function fundRecipient(address _recipient, uint amount) public onlyOwner {
         _recipient.transfer(amount);
     }
 
@@ -101,10 +109,12 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
     }
 
     /// @notice Transfer coins.
-    function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value) internal onlyWithinDailyUserLimit returns(bool) {
         require(_value <= address(this).balance);
+        require(_value <= (limit.sub(dailyUserLimit[_recipient])));
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
 
+        dailyUserLimit[_recipient].add(_value);
         _recipient.transfer(_value);
 
         return true;
@@ -126,5 +136,9 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _txHash);
         emit AmountLimitExceeded(_recipient, _value, _txHash);
+    }
+
+    function changeLimit(uint _newLimit) public onlyOwner {
+        limit = _newLimit;
     }
 }

@@ -14,8 +14,8 @@
   "license": "GPLv3",
   "dependencies": {
     "ganache-cli": "^6.1.0",
-    "openzeppelin-solidity": "^1.8.0",
-    "truffle": "^4.0.6",
+    "openzeppelin-solidity": "1.8.0",
+    "truffle": "4.0.6",
     "web3-utils": "^1.0.0-beta.34"
   },
   "devDependencies": {

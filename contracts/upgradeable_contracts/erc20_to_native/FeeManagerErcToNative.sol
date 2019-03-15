@@ -25,4 +25,8 @@ contract FeeManagerErcToNative is BaseFeeManager {
             (new Sacrifice).value(_fee)(_rewardAddress);
         }
     }
+
+    function isPOSDAOFeeManager() public pure returns(bool) {
+        return false;
+    }
 }

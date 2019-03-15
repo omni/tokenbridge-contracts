@@ -7,7 +7,9 @@ import "../libraries/SafeMath.sol";
 contract BlockReward is IBlockReward {
     using SafeMath for uint256;
 
+    address[] validatorList;
     uint256 public mintedCoins = 0;
+    uint256 public feeAmount = 0;
     mapping(bytes32 => uint256) internal uintStorage;
     bytes32 internal constant MINTED_TOTALLY_BY_BRIDGE = "mintedTotallyByBridge";
 
@@ -39,5 +41,32 @@ contract BlockReward is IBlockReward {
     function addMintedTotallyByBridge(uint256 _amount, address _bridge) external {
         bytes32 hash = keccak256(abi.encode(MINTED_TOTALLY_BY_BRIDGE, _bridge));
         uintStorage[hash] = uintStorage[hash].add(_amount);
+    }
+
+    function setValidatorsRewards(address[] _initialValidators) external {
+        validatorList = _initialValidators;
+    }
+
+    function addBridgeNativeFeeReceivers(uint256 _amount) external {
+        feeAmount = _amount;
+        uint256 feePerValidator = _amount.div(validatorList.length);
+
+        uint256 randomValidatorIndex;
+        uint256 diff = _amount.sub(feePerValidator.mul(validatorList.length));
+        if (diff > 0) {
+            randomValidatorIndex = random(validatorList.length);
+        }
+
+        for (uint256 i = 0; i < validatorList.length; i++) {
+            uint256 feeToDistribute = feePerValidator;
+            if (diff > 0 && randomValidatorIndex == i) {
+                feeToDistribute = feeToDistribute.add(diff);
+            }
+            this.addExtraReceiver(feeToDistribute, validatorList[i]);
+        }
+    }
+
+    function random(uint256 _count) public view returns(uint256) {
+        return uint256(blockhash(block.number.sub(1))) % _count;
     }
 }

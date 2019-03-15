@@ -29,8 +29,12 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
             uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
         }
-        setTotalBurntCoins(totalBurntCoins().add(valueToTransfer));
-        address(0).transfer(valueToTransfer);
+        uint256 valueToBurn = valueToTransfer;
+        if(isPOSDAOFeeManager()) {
+            valueToBurn = msg.value;
+        }
+        setTotalBurntCoins(totalBurntCoins().add(valueToBurn));
+        address(0).transfer(valueToBurn);
         emit UserRequestForSignature(msg.sender, valueToTransfer);
     }
 

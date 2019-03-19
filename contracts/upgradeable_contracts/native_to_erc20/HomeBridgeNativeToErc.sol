@@ -108,6 +108,8 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
+        uintStorage[keccak256("dataSizes", bytes4(sha3("signature(bytes32,uint256)")))] = 132;
+        uintStorage[keccak256("dataSizes", bytes4(sha3("message(bytes32)")))] = 210;
         addressStorage[keccak256("validatorContract")] = _validatorContract;
         uintStorage[keccak256("deployedAtBlock")] = block.number;
         uintStorage[keccak256("dailyLimit")] = _dailyLimit;

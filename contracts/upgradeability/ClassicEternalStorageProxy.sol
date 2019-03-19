@@ -4,17 +4,16 @@ import "./EternalStorage.sol";
 import "./OwnedUpgradeabilityProxy.sol";
 
 
-contract ClassicEternalStorageProxy is OwnedUpgradeabilityProxy, EternalStorage {
+contract ClassicEternalStorageProxy is EternalStorage, OwnedUpgradeabilityProxy {
 
     function () payable public {
         address _impl = implementation();
         require(_impl != address(0));
-        bytes4 sig;
-        assembly { sig := calldataload(0) }
-        uint256 len = getSize(sig);
+        uint256 len = getSize(msg.sig);
         assembly {
-            calldatacopy(0x0, 0x0, calldatasize)
-            let result := delegatecall(gas, _impl, 0x0, calldatasize, 0, len)
+            let ptr := mload(0x40)
+            calldatacopy(ptr, 0, calldatasize)
+            let result := delegatecall(gas, _impl, ptr, calldatasize, 0, len)
 
             switch result
             case 0 { revert(0, len) }
@@ -22,14 +21,11 @@ contract ClassicEternalStorageProxy is OwnedUpgradeabilityProxy, EternalStorage 
         }
     }
 
-    function getSize(bytes4 sig) public pure returns(uint256) {
-        if (bytes4(sha3("signature(bytes32,uint256)")) == sig) {
-            return 132;
+    function getSize(bytes4 sig) public view returns(uint256) {
+        uint256 ret = uintStorage[keccak256("dataSizes", sig)];
+        if (ret == 0) {
+            ret = 32;
         }
-        if (bytes4(sha3("message(bytes32)")) == sig) {
-            return 210;
-        }
-
-        return 32;
+        return ret;
     }
 }

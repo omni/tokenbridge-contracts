@@ -15,7 +15,7 @@ const {
 } = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
-const EternalStorageProxy = require('../../../build/contracts/ClassicEternalStorageProxy.json')
+const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const HomeBridge = require('../../../build/contracts/HomeBridgeErcToErc.json')
 const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')

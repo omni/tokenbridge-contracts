@@ -13,7 +13,7 @@ const {
 } = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
-const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
+const EternalStorageProxy = require('../../../build/contracts/ClassicEternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
 const FeeManagerNativeToErc = require('../../../build/contracts/FeeManagerNativeToErc.json')

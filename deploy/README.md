@@ -351,6 +351,8 @@ VALIDATORS=0x 0x 0x
 HOME_REWARDABLE=false
 # The flag defining whether to use RewardableValidators contract and set a fee manager contract on Foreign network
 FOREIGN_REWARDABLE=false
+# Flag to define if Home network is a POSDAO and rewards are distributed by blockReward contract
+HOME_POSDAO=false
 # List validators accounts were rewards should be transferred separated by space without quotes
 # Makes sense only when HOME_REWARDABLE=true or FOREIGN_REWARDABLE=true
 VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x

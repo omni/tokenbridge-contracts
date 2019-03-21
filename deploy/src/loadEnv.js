@@ -112,6 +112,13 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
       `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
     )
   }
+
+  if (HOME_REWARDABLE === 'true') {
+    validations = {
+      ...validations,
+      HOME_POSDAO: envalid.bool()
+    }
+  }
 }
 
 if (HOME_REWARDABLE === 'true' || FOREIGN_REWARDABLE === 'true') {

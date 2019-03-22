@@ -85,7 +85,7 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
     validations = {
       ...validations,
-      DPOS_VALIDATOR_SET_ADDRESS: addressValidator()
+      DPOS_STAKING_ADDRESS: addressValidator()
     }
   }
 }
@@ -95,7 +95,10 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     ERC20_TOKEN_ADDRESS: addressValidator(),
     BRIDGEABLE_TOKEN_NAME: envalid.str(),
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
-    BRIDGEABLE_TOKEN_DECIMALS: envalid.num()
+    BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
+    DPOS_STAKING_ADDRESS: addressValidator(),
+    BLOCK_REWARD_ADDRESS: addressValidator()
   }
 }
 if (BRIDGE_MODE === 'ERC_TO_NATIVE') {

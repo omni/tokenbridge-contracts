@@ -7,7 +7,7 @@ const RewardableValidators = artifacts.require("RewardableValidators.sol");
 
 const POA20 = artifacts.require("ERC677BridgeToken.sol");
 const {ERROR_MSG, ZERO_ADDRESS, ERROR_MSG_OPCODE} = require('../setup');
-const {createMessage, sign, signatureToVRS, strip0x} = require('../helpers/helpers');
+const {createMessage, sign, signatureToVRS, strip0x, getEvents} = require('../helpers/helpers');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
@@ -17,20 +17,6 @@ const gasPrice = Web3Utils.toWei('1', 'gwei');
 const homeDailyLimit = oneEther
 const homeMaxPerTx = halfEther
 
-const getEvents = function(contract, filter) {
-  return new Promise((resolve, reject) => {
-      var event = contract[filter.event]();
-      event.watch();
-      event.get((error, logs) => {
-        if(logs.length > 0){
-          resolve(logs);
-        } else {
-          throw Error("Failed to find filtered event for " + filter.event);
-        }
-      });
-      event.stopWatching();
-  });
-}
 contract('ForeignBridge', async (accounts) => {
   let validatorContract, authorities, rewards, owner, token;
   before(async () => {

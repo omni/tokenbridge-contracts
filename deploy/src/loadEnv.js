@@ -97,6 +97,12 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num()
   }
+
+  if (FOREIGN_REWARDABLE === 'true') {
+    throw new Error(
+      `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
+    )
+  }
 }
 if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   validations = {

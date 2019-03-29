@@ -718,8 +718,6 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       feeManagerMode.should.be.equals(bothDirectionsModeHash)
     })
   })
-
-  // transferAndCall and check that is was burned and event fired
   describe('#onTokenTransfer', async () => {
     let homeBridge
     beforeEach(async () => {
@@ -775,8 +773,6 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       })
     })
   })
-
-  // submit signatures
   describe('#rewardable_submitSignatures', () => {
     let fee, homeFee, foreignFee, homeBridge, rewardableValidators, blockRewardContract, feeManager
     beforeEach(async () => {
@@ -925,7 +921,6 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       balanceRewardAddress5.should.be.bignumber.equal(feePerValidator)
     })
   })
-  // executeAffirmation
   describe('#rewardable_executeAffirmation', () => {
     let fee, homeFee, foreignFee, homeBridge, rewardableValidators, blockRewardContract, feeManager
     beforeEach(async () => {
@@ -979,6 +974,108 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
 
       const recipientBalance = await token.balanceOf(recipient)
       recipientBalance.should.be.bignumber.equal(value)
+    })
+    it('should distribute fee to 3 validators', async () => {
+      // Given
+      const recipient = accounts[8]
+      const owner = accounts[9]
+      const validators = [accounts[1], accounts[2], accounts[3]]
+      const rewards = [accounts[4], accounts[5], accounts[6]]
+      const requiredSignatures = 2
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
+      await blockRewardContract.setValidatorsRewards(rewards)
+      await blockRewardContract.setToken(token.address)
+      await token.setBlockRewardContract(blockRewardContract.address)
+      await token.transferOwnership(homeBridge.address)
+
+      const initialValue = halfEther
+      const value = initialValue.mul(web3.toBigNumber(1 - fee))
+      const feeAmount = initialValue.mul(web3.toBigNumber(fee))
+      const feePerValidator = web3.toBigNumber(166666666666666)
+      const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
+      const transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80"
+
+      const rewardAddressBalanceBefore = await token.balanceOf(rewards[0])
+      rewardAddressBalanceBefore.should.be.bignumber.equal('0')
+
+      // When
+      await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {from: validators[0]}).should.be.fulfilled
+      const { logs } = await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {from: validators[1]}).should.be.fulfilled
+
+      // Then
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient,
+        value: initialValue,
+        transactionHash
+      })
+
+      const feeDistributed = await blockRewardContract.feeAmount()
+      feeDistributed.should.be.bignumber.equal(feeAmount)
+
+      const recipientBalance = await token.balanceOf(recipient)
+      recipientBalance.should.be.bignumber.equal(value)
+
+      const balanceRewardAddress1 = await token.balanceOf(rewards[0])
+      const balanceRewardAddress2 = await token.balanceOf(rewards[1])
+      const balanceRewardAddress3 = await token.balanceOf(rewards[2])
+
+      expect(balanceRewardAddress1.eq(feePerValidator) || balanceRewardAddress1.eq(feePerValidatorPlusDiff)).to.equal(true)
+      expect(balanceRewardAddress2.eq(feePerValidator) || balanceRewardAddress2.eq(feePerValidatorPlusDiff)).to.equal(true)
+      expect(balanceRewardAddress3.eq(feePerValidator) || balanceRewardAddress3.eq(feePerValidatorPlusDiff)).to.equal(true)
+    })
+    it('should distribute fee to 5 validators', async () => {
+      // Given
+      const recipient = accounts[0]
+      const owner = accounts[0]
+      const validators = [accounts[0], accounts[1], accounts[2], accounts[3], accounts[4]]
+      const rewards = [accounts[5], accounts[6], accounts[7], accounts[8], accounts[9]]
+      const requiredSignatures = 3
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
+      await blockRewardContract.setValidatorsRewards(rewards)
+      await blockRewardContract.setToken(token.address)
+      await token.setBlockRewardContract(blockRewardContract.address)
+      await token.transferOwnership(homeBridge.address)
+
+      const initialValue = halfEther
+      const value = initialValue.mul(web3.toBigNumber(1 - fee))
+      const feeAmount = initialValue.mul(web3.toBigNumber(fee))
+      const feePerValidator = feeAmount.div(web3.toBigNumber(5))
+      const transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80"
+
+      const rewardAddressBalanceBefore = await token.balanceOf(rewards[0])
+      rewardAddressBalanceBefore.should.be.bignumber.equal('0')
+
+      // When
+      await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {from: validators[0]}).should.be.fulfilled
+      await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {from: validators[1]}).should.be.fulfilled
+      const { logs } = await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {from: validators[2]}).should.be.fulfilled
+
+      // Then
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient,
+        value: initialValue,
+        transactionHash
+      })
+
+      const feeDistributed = await blockRewardContract.feeAmount()
+      feeDistributed.should.be.bignumber.equal(feeAmount)
+
+      const recipientBalance = await token.balanceOf(recipient)
+      recipientBalance.should.be.bignumber.equal(value)
+
+      const balanceRewardAddress1 = await token.balanceOf(rewards[0])
+      const balanceRewardAddress2 = await token.balanceOf(rewards[1])
+      const balanceRewardAddress3 = await token.balanceOf(rewards[2])
+      const balanceRewardAddress4 = await token.balanceOf(rewards[3])
+      const balanceRewardAddress5 = await token.balanceOf(rewards[4])
+
+      balanceRewardAddress1.should.be.bignumber.equal(feePerValidator)
+      balanceRewardAddress2.should.be.bignumber.equal(feePerValidator)
+      balanceRewardAddress3.should.be.bignumber.equal(feePerValidator)
+      balanceRewardAddress4.should.be.bignumber.equal(feePerValidator)
+      balanceRewardAddress5.should.be.bignumber.equal(feePerValidator)
     })
   })
 })

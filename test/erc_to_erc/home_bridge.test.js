@@ -155,6 +155,36 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG)
     })
 
+    it('should allow validator to withdraw with zero value', async () => {
+      const recipient = accounts[5];
+      const value = web3.toBigNumber(web3.toWei(0, "ether"));
+      const balanceBefore = await token.balanceOf(recipient)
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs} = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]})
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        transactionHash
+      });
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+      const totalSupply = await token.totalSupply()
+      const balanceAfter = await token.balanceOf(recipient)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      totalSupply.should.be.bignumber.equal(value)
+
+      const msgHash = Web3Utils.soliditySha3(recipient, value, transactionHash);
+      const senderHash = Web3Utils.soliditySha3(authorities[0], msgHash)
+      true.should.be.equal(await homeBridge.affirmationsSigned(senderHash))
+      const markedAsProcessed = new web3.BigNumber(2).pow(255).add(1);
+      markedAsProcessed.should.be.bignumber.equal(await homeBridge.numAffirmationsSigned(msgHash));
+      await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG)
+    })
+
     it('test with 2 signatures required', async () => {
       let token2sig = await ERC677BridgeToken.new("Some ERC20", "RSZT", 18);
       let validatorContractWith2Signatures = await BridgeValidators.new()

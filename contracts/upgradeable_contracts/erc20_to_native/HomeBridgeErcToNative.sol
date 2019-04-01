@@ -81,12 +81,10 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
-        if (_value > 0) {
-            setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-            IBlockReward blockReward = blockRewardContract();
-            require(blockReward != address(0));
-            blockReward.addExtraReceiver(_value, _recipient);
-        }
+        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+        IBlockReward blockReward = blockRewardContract();
+        require(blockReward != address(0));
+        blockReward.addExtraReceiver(_value, _recipient);
         return true;
     }
 

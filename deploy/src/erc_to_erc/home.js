@@ -8,6 +8,7 @@ const {
   sendRawTxHome,
   logValidatorsAndRewardAccounts
 } = require('../deploymentUtils')
+const { ZERO_ADDRESS } = require('../constants')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
@@ -16,6 +17,7 @@ const RewardableValidators = require('../../../build/contracts/RewardableValidat
 const FeeManagerErcToErcPOSDAO = require('../../../build/contracts/FeeManagerErcToErcPOSDAO')
 const HomeBridge = require('../../../build/contracts/HomeBridgeErcToErc.json')
 const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
+const ERC677BridgeTokenRewardable = require('../../../build/contracts/ERC677BridgeTokenRewardable.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
@@ -160,8 +162,9 @@ async function deployHome() {
   homeNonce++
 
   console.log('\n[Home] deploying Bridgeble token')
+  const erc677Contract = isRewardableBridge ? ERC677BridgeTokenRewardable : ERC677BridgeToken
   const erc677token = await deployContract(
-    ERC677BridgeToken,
+    erc677Contract,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce: homeNonce }
   )
@@ -181,6 +184,26 @@ async function deployHome() {
   })
   assert.strictEqual(Web3Utils.hexToNumber(setBridgeContract.status), 1, 'Transaction Failed')
   homeNonce++
+
+  if (isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS) {
+    console.log('\nset block reward contract on ERC677BridgeToken')
+    const setBlockRewardContractData = await erc677token.methods
+      .setBlockRewardContract(BLOCK_REWARD_ADDRESS)
+      .encodeABI()
+    const setBlockRewardContract = await sendRawTxHome({
+      data: setBlockRewardContractData,
+      nonce: homeNonce,
+      to: erc677token.options.address,
+      privateKey: deploymentPrivateKey,
+      url: HOME_RPC_URL
+    })
+    assert.strictEqual(
+      Web3Utils.hexToNumber(setBlockRewardContract.status),
+      1,
+      'Transaction Failed'
+    )
+    homeNonce++
+  }
 
   console.log('transferring ownership of Bridgeble token to homeBridge contract')
   const txOwnershipData = await erc677token.methods

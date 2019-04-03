@@ -8,7 +8,6 @@ const {
   sendRawTxHome,
   logValidatorsAndRewardAccounts
 } = require('../deploymentUtils')
-const { ZERO_ADDRESS } = require('../constants')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
@@ -164,10 +163,10 @@ async function deployHome() {
   homeNonce++
 
   console.log('\n[Home] deploying Bridgeble token')
-  const erc677Contract = isRewardableBridge || DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken
+  const erc677Contract =
+    isRewardableBridge || DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken
   const erc677token = await deployContract(
     erc677Contract,
-    DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce: homeNonce }
   )
@@ -200,9 +199,15 @@ async function deployHome() {
       privateKey: deploymentPrivateKey,
       url: HOME_RPC_URL
     })
-    assert.strictEqual(Web3Utils.hexToNumber(setBlockRewardContract.status), 1, 'Transaction Failed')
+    assert.strictEqual(
+      Web3Utils.hexToNumber(setBlockRewardContract.status),
+      1,
+      'Transaction Failed'
+    )
     homeNonce++
+  }
 
+  if (DEPLOY_REWARDABLE_TOKEN) {
     console.log('\nset Staking contract on ERC677BridgeTokenRewardable')
     const setStakingContractData = await erc677token.methods
       .setStakingContract(DPOS_STAKING_ADDRESS)

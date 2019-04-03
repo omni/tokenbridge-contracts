@@ -38,10 +38,12 @@ const {
   BRIDGEABLE_TOKEN_DECIMALS,
   FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
+  DEPLOY_REWARDABLE_TOKEN,
+  BLOCK_REWARD_ADDRESS,
+  DPOS_STAKING_ADDRESS,
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
-  FOREIGN_TRANSACTIONS_FEE,
-  BLOCK_REWARD_ADDRESS
+  FOREIGN_TRANSACTIONS_FEE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -162,9 +164,10 @@ async function deployHome() {
   homeNonce++
 
   console.log('\n[Home] deploying Bridgeble token')
-  const erc677Contract = isRewardableBridge ? ERC677BridgeTokenRewardable : ERC677BridgeToken
+  const erc677Contract = isRewardableBridge || DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken
   const erc677token = await deployContract(
     erc677Contract,
+    DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce: homeNonce }
   )
@@ -185,11 +188,11 @@ async function deployHome() {
   assert.strictEqual(Web3Utils.hexToNumber(setBridgeContract.status), 1, 'Transaction Failed')
   homeNonce++
 
-  if (isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS) {
-    console.log('\nset block reward contract on ERC677BridgeToken')
+  if (isRewardableBridge || DEPLOY_REWARDABLE_TOKEN) {
+    console.log('\nset BlockReward contract on ERC677BridgeTokenRewardable')
     const setBlockRewardContractData = await erc677token.methods
       .setBlockRewardContract(BLOCK_REWARD_ADDRESS)
-      .encodeABI()
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
     const setBlockRewardContract = await sendRawTxHome({
       data: setBlockRewardContractData,
       nonce: homeNonce,
@@ -197,11 +200,21 @@ async function deployHome() {
       privateKey: deploymentPrivateKey,
       url: HOME_RPC_URL
     })
-    assert.strictEqual(
-      Web3Utils.hexToNumber(setBlockRewardContract.status),
-      1,
-      'Transaction Failed'
-    )
+    assert.strictEqual(Web3Utils.hexToNumber(setBlockRewardContract.status), 1, 'Transaction Failed')
+    homeNonce++
+
+    console.log('\nset Staking contract on ERC677BridgeTokenRewardable')
+    const setStakingContractData = await erc677token.methods
+      .setStakingContract(DPOS_STAKING_ADDRESS)
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+    const setStakingContract = await sendRawTxHome({
+      data: setStakingContractData,
+      nonce: homeNonce,
+      to: erc677token.options.address,
+      privateKey: deploymentPrivateKey,
+      url: HOME_RPC_URL
+    })
+    assert.strictEqual(Web3Utils.hexToNumber(setStakingContract.status), 1, 'Transaction Failed')
     homeNonce++
   }
 

@@ -71,7 +71,8 @@ HOME_UPGRADEABLE_ADMIN=0x
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail.
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
@@ -101,7 +102,8 @@ FOREIGN_UPGRADEABLE_ADMIN=0x
 # requesting to relay assets will fail.
 FOREIGN_DAILY_LIMIT=15000000000000000000000000
 # The maximum limit per one transaction in Wei. If a transaction tries to relay
-# funds exceeding this limit it will fail.
+# funds exceeding this limit it will fail. FOREIGN_MAX_AMOUNT_PER_TX must be less
+# than FOREIGN_DAILY_LIMIT.
 FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
@@ -175,11 +177,12 @@ HOME_UPGRADEABLE_ADMIN=0x
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail.
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
-# validator accounts.
+# validator accounts. 
 HOME_MIN_AMOUNT_PER_TX=500000000000000000
 # The finalization threshold. The number of blocks issued after the block with
 # the corresponding deposit transaction to guarantee the transaction will not be
@@ -201,10 +204,10 @@ FOREIGN_VALIDATORS_OWNER=0x
 # Address on Foreign network with permissions to upgrade the bridge contract and the 
 # bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
-# The daily transaction limit in Wei. This is used on the Home side to check the bridge validator’s actions.
+# The daily transaction limit in Wei. Used on the Home side to check the bridge validator’s actions.
 FOREIGN_DAILY_LIMIT=15000000000000000000000000
 # The maximum limit for one transaction in Wei. FOREIGN_MAX_AMOUNT_PER_TX must be less
-# than FOREIGN_DAILY_LIMIT
+# than FOREIGN_DAILY_LIMIT. Used on the Home side to check the bridge validator’s actions.
 FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
 # Not used in this mode, comment out or delete this variable.
 # FOREIGN_MIN_AMOUNT_PER_TX=
@@ -270,7 +273,8 @@ HOME_UPGRADEABLE_ADMIN=0x
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail.
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
@@ -300,11 +304,11 @@ FOREIGN_VALIDATORS_OWNER=0x
 # Address on the Foreign network with permissions to upgrade the bridge contract 
 # and the bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
-# The daily transaction limit in Wei. This is used on the Home side to check 
-# the bridge validator’s actions.
+# The daily transaction limit in Wei. Used on the Home side to check 
+# the bridge validator’s actions. 
 FOREIGN_DAILY_LIMIT=15000000000000000000000000
 # The maximum limit for one transaction in Wei. FOREIGN_MAX_AMOUNT_PER_TX must be 
-# less than FOREIGN_DAILY_LIMIT
+# less than FOREIGN_DAILY_LIMIT. Used on the Home side to check the bridge validator’s actions.
 FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
 # Not used in this mode, comment out or delete this variable.
 # FOREIGN_MIN_AMOUNT_PER_TX=

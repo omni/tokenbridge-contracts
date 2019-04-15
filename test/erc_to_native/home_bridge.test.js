@@ -983,8 +983,13 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
         signer: validators[0],
         transactionHash
       });
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount: value.mul(web3.toBigNumber(fee)),
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value,
         transactionHash
@@ -1051,8 +1056,13 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
         signer: validators[1],
         transactionHash
       });
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount: value.mul(web3.toBigNumber(fee)),
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value,
         transactionHash
@@ -1133,8 +1143,13 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
         signer: validators[4],
         transactionHash
       });
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount: value.mul(web3.toBigNumber(fee)),
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value,
         transactionHash
@@ -1244,8 +1259,9 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const { logs } = await homeBridge.submitSignature(signature, message, {from: validators[0]}).should.be.fulfilled;
 
       // Then
-      logs.length.should.be.equal(2)
+      logs.length.should.be.equal(3)
       logs[1].event.should.be.equal('CollectedSignatures')
+      logs[2].event.should.be.equal('FeeDistributedFromSignatures')
 
       const finalBridgeBalance = await web3.eth.getBalance(homeBridge.address)
       finalBridgeBalance.should.be.bignumber.equal('0')
@@ -1308,8 +1324,9 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const { logs } = await homeBridge.submitSignature(signature3, message, {from: validators[2]}).should.be.fulfilled;
 
       // Then
-      logs.length.should.be.equal(2)
+      logs.length.should.be.equal(3)
       logs[1].event.should.be.equal('CollectedSignatures')
+      logs[2].event.should.be.equal('FeeDistributedFromSignatures')
 
       const updatedBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
       const updatedBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])
@@ -1388,8 +1405,9 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       const { logs } = await homeBridge.submitSignature(signature5, message, {from: validators[4]}).should.be.fulfilled;
 
       // Then
-      logs.length.should.be.equal(2)
+      logs.length.should.be.equal(3)
       logs[1].event.should.be.equal('CollectedSignatures')
+      logs[2].event.should.be.equal('FeeDistributedFromSignatures')
 
       const updatedBalanceRewardAddress1 = await web3.eth.getBalance(rewards[0])
       const updatedBalanceRewardAddress2 = await web3.eth.getBalance(rewards[1])

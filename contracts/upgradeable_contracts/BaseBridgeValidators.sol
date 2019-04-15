@@ -27,7 +27,26 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     pure
     returns (uint64 major, uint64 minor, uint64 patch)
     {
-        return (2, 1, 0);
+        return (2, 2, 0);
+    }
+
+    function validatorList() public view returns (address[]) {
+        address [] memory list = new address[](validatorCount());
+        uint256 counter = 0;
+        address nextValidator = getNextValidator(F_ADDR);
+        require(nextValidator != address(0));
+
+        while (nextValidator != F_ADDR) {
+            list[counter] = nextValidator;
+            nextValidator = getNextValidator(nextValidator);
+            counter++;
+
+            if (nextValidator == address(0) ) {
+                revert();
+            }
+        }
+
+        return list;
     }
 
     function _addValidator(address _validator) internal {

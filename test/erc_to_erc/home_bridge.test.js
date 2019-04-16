@@ -813,8 +813,13 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const { logs } = await homeBridge.submitSignature(signature, message, {from: validators[0]}).should.be.fulfilled;
 
       // Then
-      logs.length.should.be.equal(2)
+      logs.length.should.be.equal(3)
       logs[1].event.should.be.equal('CollectedSignatures')
+      logs[2].event.should.be.equal("FeeDistributedFromSignatures");
+      logs[2].args.should.be.deep.equal({
+        feeAmount,
+        transactionHash
+      })
 
       const finalBridgeBalance = await token.balanceOf(homeBridge.address)
       finalBridgeBalance.should.be.bignumber.equal('0')
@@ -853,8 +858,13 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const { logs } = await homeBridge.submitSignature(signature2, message, {from: validators[1]}).should.be.fulfilled;
 
       // Then
-      logs.length.should.be.equal(2)
+      logs.length.should.be.equal(3)
       logs[1].event.should.be.equal('CollectedSignatures')
+      logs[2].event.should.be.equal("FeeDistributedFromSignatures");
+      logs[2].args.should.be.deep.equal({
+        feeAmount,
+        transactionHash
+      })
 
       const finalBridgeBalance = await token.balanceOf(homeBridge.address)
       finalBridgeBalance.should.be.bignumber.equal('0')
@@ -899,8 +909,13 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const { logs } = await homeBridge.submitSignature(signature3, message, {from: validators[2]}).should.be.fulfilled;
 
       // Then
-      logs.length.should.be.equal(2)
+      logs.length.should.be.equal(3)
       logs[1].event.should.be.equal('CollectedSignatures')
+      logs[2].event.should.be.equal("FeeDistributedFromSignatures");
+      logs[2].args.should.be.deep.equal({
+        feeAmount,
+        transactionHash
+      })
 
       const finalBridgeBalance = await token.balanceOf(homeBridge.address)
       finalBridgeBalance.should.be.bignumber.equal('0')
@@ -959,8 +974,13 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const { logs } = await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {from: validators[0]}).should.be.fulfilled;
 
       // Then
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount,
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value: initialValue,
         transactionHash
@@ -1003,8 +1023,13 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const { logs } = await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {from: validators[1]}).should.be.fulfilled
 
       // Then
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount,
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value: initialValue,
         transactionHash
@@ -1052,8 +1077,13 @@ contract('HomeBridge_ERC20_to_ERC20', async (accounts) => {
       const { logs } = await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {from: validators[2]}).should.be.fulfilled
 
       // Then
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount,
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value: initialValue,
         transactionHash

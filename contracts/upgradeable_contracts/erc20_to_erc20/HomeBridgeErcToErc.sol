@@ -15,6 +15,8 @@ import "../../IBlockReward.sol";
 contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677Bridge, OverdrawManagement, RewardableHomeBridgeErcToErc {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
+    event FeeDistributedFromAffirmation(uint256 feeAmount, bytes32 indexed transactionHash);
+    event FeeDistributedFromSignatures(uint256 feeAmount, bytes32 indexed transactionHash);
 
     function initialize (
         address _validatorContract,
@@ -146,6 +148,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
             distributeFeeFromAffirmation(fee, feeManager);
+            emit FeeDistributedFromAffirmation(fee, txHash);
             valueToMint = valueToMint.sub(fee);
         }
         return erc677token().mint(_recipient, valueToMint);
@@ -171,6 +174,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
             (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
             distributeFeeFromSignatures(fee, feeManager);
+            emit FeeDistributedFromSignatures(fee, txHash);
         }
     }
 

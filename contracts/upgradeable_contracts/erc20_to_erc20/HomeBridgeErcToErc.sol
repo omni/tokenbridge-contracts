@@ -101,7 +101,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) public
+    ) internal
     returns(bool)
     {
         require(!isInitialized());

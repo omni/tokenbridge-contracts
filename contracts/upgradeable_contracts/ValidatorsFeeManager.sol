@@ -5,6 +5,10 @@ import "../IRewardableValidators.sol";
 
 contract ValidatorsFeeManager is BaseFeeManager {
 
+    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = keccak256(abi.encodePacked("reward-transferring-from-home"));
+
+    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_FOREIGN = keccak256(abi.encodePacked("reward-transferring-from-foreign"));
+
     function distributeFeeFromAffirmation(uint256 _fee) external {
         distributeFeeProportionally(_fee, REWARD_FOR_TRANSFERRING_FROM_FOREIGN);
     }

@@ -9,10 +9,6 @@ import "./FeeTypes.sol";
 contract BaseFeeManager is EternalStorage, FeeTypes {
     using SafeMath for uint256;
 
-    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = keccak256(abi.encodePacked("reward-transferring-from-home"));
-
-    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_FOREIGN = keccak256(abi.encodePacked("reward-transferring-from-foreign"));
-
     event HomeFeeUpdated(uint256 fee);
     event ForeignFeeUpdated(uint256 fee);
 

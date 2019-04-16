@@ -67,25 +67,6 @@ contract RewardableValidators is BaseBridgeValidators {
         emit ValidatorRemoved(_validator);
     }
 
-    function validatorList() public view returns (address[]) {
-        address [] memory list = new address[](validatorCount());
-        uint256 counter = 0;
-        address nextValidator = getNextValidator(F_ADDR);
-        require(nextValidator != address(0));
-
-        while (nextValidator != F_ADDR) {
-            list[counter] = nextValidator;
-            nextValidator = getNextValidator(nextValidator);
-            counter++;
-
-            if (nextValidator == address(0) ) {
-                revert();
-            }
-        }
-
-        return list;
-    }
-
     function getValidatorRewardAddress(address _validator) public view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("validatorsRewards", _validator))];
     }

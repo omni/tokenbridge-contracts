@@ -139,7 +139,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns(bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         uint256 valueToMint = _value;
         address feeManager = feeManagerContract();

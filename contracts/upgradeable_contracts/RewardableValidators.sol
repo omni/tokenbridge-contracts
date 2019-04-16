@@ -5,9 +5,6 @@ import "./BaseBridgeValidators.sol";
 
 contract RewardableValidators is BaseBridgeValidators {
 
-    event ValidatorAdded (address indexed validator);
-    event ValidatorRemoved (address indexed validator);
-
     function initialize(
         uint256 _requiredSignatures,
         address[] _initialValidators,

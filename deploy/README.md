@@ -18,7 +18,7 @@ cp .env.example .env
 
 4. Adjust the parameters in the `.env` file depending on the desired bridge mode. See below for comments related to each parameter.
 
-5. Add funds to the deployment accounts in both theHome and Foreign networks. 
+5. Add funds to the deployment accounts in both the Home and Foreign networks. 
 
 6. Run `node deploy.js`. 
 
@@ -64,13 +64,15 @@ HOME_RPC_URL=https://core.poa.network
 HOME_BRIDGE_OWNER=0x
 # Address on Home network with permissions to change parameters of bridge validator contract.
 HOME_VALIDATORS_OWNER=0x
-# Address on Home network with permissions to upgrade the bridge contract and the bridge validator contract.
+# Address on Home network with permissions to upgrade the bridge contract and the 
+# bridge validator contract.
 HOME_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail.
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
@@ -93,13 +95,15 @@ FOREIGN_RPC_URL=https://mainnet.infura.io
 FOREIGN_BRIDGE_OWNER=0x
 # Address on Foreign network with permissions to change parameters of bridge validator contract.
 FOREIGN_VALIDATORS_OWNER=0x
-# Address on Foreign network with permissions to upgrade the bridge contract and the bridge validator contract.
+# Address on Foreign network with permissions to upgrade the bridge contract and the 
+# bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
 # The daily limit in Wei. As soon as this limit is exceeded, any transaction
 # requesting to relay assets will fail.
 FOREIGN_DAILY_LIMIT=15000000000000000000000000
 # The maximum limit per one transaction in Wei. If a transaction tries to relay
-# funds exceeding this limit it will fail.
+# funds exceeding this limit it will fail. FOREIGN_MAX_AMOUNT_PER_TX must be less
+# than FOREIGN_DAILY_LIMIT.
 FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
@@ -176,17 +180,19 @@ HOME_RPC_URL=https://core.poa.network
 HOME_BRIDGE_OWNER=0x
 # Address on Home network with permissions to change parameters of bridge validator contract.
 HOME_VALIDATORS_OWNER=0x
-# Address on Home network with permissions to upgrade the bridge contract and the bridge validator contract.
+# Address on Home network with permissions to upgrade the bridge contract and
+# the bridge validator contract.
 HOME_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail.
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
-# validator accounts.
+# validator accounts. 
 HOME_MIN_AMOUNT_PER_TX=500000000000000000
 # The finalization threshold. The number of blocks issued after the block with
 # the corresponding deposit transaction to guarantee the transaction will not be
@@ -205,13 +211,16 @@ FOREIGN_RPC_URL=https://mainnet.infura.io
 FOREIGN_BRIDGE_OWNER=0x
 # Address on Foreign network with permissions to change parameters of bridge validator contract.
 FOREIGN_VALIDATORS_OWNER=0x
-# Address on Foreign network with permissions to upgrade the bridge contract and the bridge validator contract.
+# Address on Foreign network with permissions to upgrade the bridge contract and the 
+# bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
-# These three parameters are not used in this mode, but the deployment script
-# requires it to be set to some value.
-FOREIGN_DAILY_LIMIT=0
-FOREIGN_MAX_AMOUNT_PER_TX=0
-FOREIGN_MIN_AMOUNT_PER_TX=0
+# The daily transaction limit in Wei. Used on the Home side to check the bridge validator’s actions.
+FOREIGN_DAILY_LIMIT=15000000000000000000000000
+# The maximum limit for one transaction in Wei. FOREIGN_MAX_AMOUNT_PER_TX must be less
+# than FOREIGN_DAILY_LIMIT. Used on the Home side to check the bridge validator’s actions.
+FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
+# Not used in this mode, comment out or delete this variable.
+# FOREIGN_MIN_AMOUNT_PER_TX=
 # The finalization threshold. The number of blocks issued after the block with
 # the corresponding deposit transaction to guarantee the transaction will not be
 # rolled back.
@@ -277,13 +286,15 @@ HOME_RPC_URL=https://core.poa.network
 HOME_BRIDGE_OWNER=0x
 # Address on Home network with permissions to change parameters of bridge validator contract.
 HOME_VALIDATORS_OWNER=0x
-# Address on Home network with permissions to upgrade the bridge contract and the bridge validator contract.
+# Address on Home network with permissions to upgrade the bridge contract and the 
+# bridge validator contract.
 HOME_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail.
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
@@ -307,15 +318,20 @@ FOREIGN_RPC_URL=https://mainnet.infura.io
 # Address on Foreign network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 FOREIGN_BRIDGE_OWNER=0x
-# Address on Foreign network with permissions to change parameters of bridge validator contract.
+# Address on the Foreign network with permissions to change parameters of 
+# the bridge validator contract.
 FOREIGN_VALIDATORS_OWNER=0x
-# Address on Foreign network with permissions to upgrade the bridge contract and the bridge validator contract.
+# Address on the Foreign network with permissions to upgrade the bridge contract 
+# and the bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
-# These three parameters are not used in this mode, but the deployment script
-# requires it to be set to some value.
-FOREIGN_DAILY_LIMIT=0
-FOREIGN_MAX_AMOUNT_PER_TX=0
-FOREIGN_MIN_AMOUNT_PER_TX=0
+# The daily transaction limit in Wei. Used on the Home side to check 
+# the bridge validator’s actions. 
+FOREIGN_DAILY_LIMIT=15000000000000000000000000
+# The maximum limit for one transaction in Wei. FOREIGN_MAX_AMOUNT_PER_TX must be 
+# less than FOREIGN_DAILY_LIMIT. Used on the Home side to check the bridge validator’s actions.
+FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
+# Not used in this mode, comment out or delete this variable.
+# FOREIGN_MIN_AMOUNT_PER_TX=
 # The finalization threshold. The number of blocks issued after the block with
 # the corresponding deposit transaction to guarantee the transaction will not be
 # rolled back.

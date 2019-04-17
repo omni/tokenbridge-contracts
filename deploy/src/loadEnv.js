@@ -135,4 +135,14 @@ if (HOME_REWARDABLE === 'true' || FOREIGN_REWARDABLE === 'true') {
 
 const env = envalid.cleanEnv(process.env, validations)
 
+if (
+  env.BRIDGE_MODE === 'ERC_TO_ERC' &&
+  env.HOME_REWARDABLE === 'true' &&
+  env.BLOCK_REWARD_ADDRESS === ZERO_ADDRESS
+) {
+  throw new Error(
+    'Collecting fees on Home Network on ERC_TO_ERC mode without Block Reward contract is not supported.'
+  )
+}
+
 module.exports = env

@@ -1,6 +1,7 @@
 const assert = require('assert')
 const Web3Utils = require('web3-utils')
 const env = require('../loadEnv')
+const { ZERO_ADDRESS } = require('../constants')
 
 const {
   deployContract,
@@ -13,8 +14,9 @@ const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
-const FeeManagerErcToErcPOSDAO = require('../../../build/contracts/FeeManagerErcToErcPOSDAO')
+const FeeManagerErcToErcPOSDAO = require('../../../build/contracts/FeeManagerErcToErcPOSDAO.json')
 const HomeBridge = require('../../../build/contracts/HomeBridgeErcToErc.json')
+const POSDAOHomeBridge = require('../../../build/contracts/POSDAOHomeBridgeErcToErc.json')
 const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
 const ERC677BridgeTokenRewardable = require('../../../build/contracts/ERC677BridgeTokenRewardable.json')
 
@@ -60,7 +62,10 @@ async function deployHome() {
   homeNonce++
 
   console.log('\ndeploying implementation for home validators')
-  const bridgeValidatorsContract = isRewardableBridge ? RewardableValidators : BridgeValidators
+  const bridgeValidatorsContract =
+    isRewardableBridge && BLOCK_REWARD_ADDRESS === ZERO_ADDRESS
+      ? RewardableValidators
+      : BridgeValidators
   const bridgeValidatorsHome = await deployContract(bridgeValidatorsContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce: homeNonce
@@ -87,7 +92,7 @@ async function deployHome() {
 
   let initializeData
 
-  if (isRewardableBridge) {
+  if (isRewardableBridge && BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
     console.log(
       `REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, HOME_VALIDATORS_OWNER: ${HOME_VALIDATORS_OWNER}`
     )
@@ -141,7 +146,9 @@ async function deployHome() {
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
   console.log('\ndeploying homeBridge implementation\n')
-  const homeBridgeImplementation = await deployContract(HomeBridge, [], {
+  const bridgeContract =
+    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? POSDAOHomeBridge : HomeBridge
+  const homeBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce: homeNonce
   })
@@ -164,7 +171,9 @@ async function deployHome() {
 
   console.log('\n[Home] deploying Bridgeble token')
   const erc677Contract =
-    isRewardableBridge || DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken
+    (isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS) || DEPLOY_REWARDABLE_TOKEN
+      ? ERC677BridgeTokenRewardable
+      : ERC677BridgeToken
   const erc677token = await deployContract(
     erc677Contract,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
@@ -187,7 +196,7 @@ async function deployHome() {
   assert.strictEqual(Web3Utils.hexToNumber(setBridgeContract.status), 1, 'Transaction Failed')
   homeNonce++
 
-  if (isRewardableBridge || DEPLOY_REWARDABLE_TOKEN) {
+  if ((isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS) || DEPLOY_REWARDABLE_TOKEN) {
     console.log('\nset BlockReward contract on ERC677BridgeTokenRewardable')
     const setBlockRewardContractData = await erc677token.methods
       .setBlockRewardContract(BLOCK_REWARD_ADDRESS)
@@ -240,7 +249,7 @@ async function deployHome() {
   let initializeHomeBridgeData
   homeBridgeImplementation.options.address = homeBridgeStorage.options.address
 
-  if (isRewardableBridge) {
+  if (isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS) {
     console.log('\ndeploying implementation for fee manager')
     const feeManager = await deployContract(FeeManagerErcToErcPOSDAO, [], {
       from: DEPLOYMENT_ACCOUNT_ADDRESS,
@@ -277,10 +286,10 @@ async function deployHome() {
         FOREIGN_DAILY_LIMIT,
         FOREIGN_MAX_AMOUNT_PER_TX,
         HOME_BRIDGE_OWNER,
-        BLOCK_REWARD_ADDRESS,
         feeManager.options.address,
         homeFeeInWei,
-        foreignFeeInWei
+        foreignFeeInWei,
+        BLOCK_REWARD_ADDRESS
       )
       .encodeABI()
   } else {

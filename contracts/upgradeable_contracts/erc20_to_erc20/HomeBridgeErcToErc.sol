@@ -60,11 +60,47 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner,
-        address _blockReward,
         address _feeManager,
         uint256 _homeFee,
         uint256 _foreignFee
     ) public
+    returns(bool)
+    {
+        _rewardableInitialize (
+            _validatorContract,
+            _dailyLimit,
+            _maxPerTx,
+            _minPerTx,
+            _homeGasPrice,
+            _requiredBlockConfirmations,
+            _erc677token,
+            _foreignDailyLimit,
+            _foreignMaxPerTx,
+            _owner,
+            _feeManager,
+            _homeFee,
+            _foreignFee
+        );
+        setInitialize(true);
+
+        return isInitialized();
+    }
+
+    function _rewardableInitialize (
+        address _validatorContract,
+        uint256 _dailyLimit,
+        uint256 _maxPerTx,
+        uint256 _minPerTx,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations,
+        address _erc677token,
+        uint256 _foreignDailyLimit,
+        uint256 _foreignMaxPerTx,
+        address _owner,
+        address _feeManager,
+        uint256 _homeFee,
+        uint256 _foreignFee
+    ) internal
     returns(bool)
     {
         _initialize (
@@ -80,14 +116,9 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
             _owner
         );
         require(isContract(_feeManager));
-        require(_blockReward == address(0) || isContract(_blockReward));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
-        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
-        setInitialize(true);
-
-        return isInitialized();
     }
 
     function _initialize (
@@ -130,15 +161,6 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
 
     function () payable public {
         revert();
-    }
-
-    function blockRewardContract() public view returns(IBlockReward) {
-        return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
-    }
-
-    function setBlockRewardContract(address _blockReward) public onlyOwner {
-        require(_blockReward != address(0) && isContract(_blockReward) && (IBlockReward(_blockReward).bridgesAllowedLength() != 0));
-        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns(bool) {

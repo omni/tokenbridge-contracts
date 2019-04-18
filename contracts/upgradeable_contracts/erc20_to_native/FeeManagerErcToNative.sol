@@ -26,7 +26,7 @@ contract FeeManagerErcToNative is BaseFeeManager {
         }
     }
 
-    function isPOSDAOFeeManager() public pure returns(bool) {
-        return false;
+    function getAmountToBurn(uint256 _value, uint256 _fee) public pure returns(uint256) {
+        return _value.sub(_fee);
     }
 }

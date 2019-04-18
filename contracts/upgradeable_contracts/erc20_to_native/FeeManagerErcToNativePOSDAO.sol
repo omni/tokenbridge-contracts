@@ -26,8 +26,8 @@ contract FeeManagerErcToNativePOSDAO is BaseFeeManager {
         blockReward.addBridgeNativeFeeReceivers(_fee);
     }
 
-    function isPOSDAOFeeManager() public pure returns(bool) {
-        return true;
+    function getAmountToBurn(uint256 _value, uint256 _fee) public pure returns(uint256) {
+        return _value;
     }
 
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal {}

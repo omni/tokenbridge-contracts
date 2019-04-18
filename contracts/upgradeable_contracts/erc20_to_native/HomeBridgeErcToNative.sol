@@ -14,8 +14,6 @@ import "./RewardableHomeBridgeErcToNative.sol";
 contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
-    event FeeDistributedFromAffirmation(uint256 feeAmount, bytes32 indexed transactionHash);
-    event FeeDistributedFromSignatures(uint256 feeAmount, bytes32 indexed transactionHash);
 
     function () public payable {
         require(msg.value > 0);
@@ -162,9 +160,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager);
+            distributeFeeFromAffirmation(fee, feeManager, txHash);
             valueToMint = valueToMint.sub(fee);
-            emit FeeDistributedFromAffirmation(fee, txHash);
         }
         blockReward.addExtraReceiver(valueToMint, _recipient);
         return true;
@@ -179,8 +176,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
             address contractAddress;
             (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
-            distributeFeeFromSignatures(fee, feeManager);
-            emit FeeDistributedFromSignatures(fee, txHash);
+            distributeFeeFromSignatures(fee, feeManager, txHash);
         }
     }
 

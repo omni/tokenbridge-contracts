@@ -637,10 +637,14 @@ contract('ForeignBridge', async (accounts) => {
       const vrs = signatureToVRS(signature);
 
       const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-      logs[0].event.should.be.equal("RelayedMessage")
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(value)
-      logs[0].args.transactionHash.should.be.equal(transactionHash);
+
+      logs[0].event.should.be.equal("FeeDistributedFromSignatures")
+      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+
+      logs[1].event.should.be.equal("RelayedMessage")
+      logs[1].args.recipient.should.be.equal(recipientAccount)
+      logs[1].args.value.should.be.bignumber.equal(value)
+      logs[1].args.transactionHash.should.be.equal(transactionHash);
 
       const balanceAfter = await token.balanceOf(recipientAccount);
       const totalSupplyAfter = await token.totalSupply();
@@ -657,6 +661,7 @@ contract('ForeignBridge', async (accounts) => {
       const feePerValidator = web3.toBigNumber(166666666666666)
       const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
       const value = halfEther
+      const feeAmount = value.mul(web3.toBigNumber(fee));
       const finalUserValue = value.mul(web3.toBigNumber(1-fee));
 
       const validators = [accounts[1], accounts[2], accounts[3]]
@@ -687,10 +692,13 @@ contract('ForeignBridge', async (accounts) => {
       const { logs } = await foreignBridge.executeSignatures([vrs.v, vrs2.v, vrs3.v], [vrs.r, vrs2.r, vrs3.r], [vrs.s, vrs2.s, vrs3.s], message).should.be.fulfilled
 
       // Then
-      logs[0].event.should.be.equal("RelayedMessage")
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(value)
-      logs[0].args.transactionHash.should.be.equal(transactionHash);
+      logs[0].event.should.be.equal("FeeDistributedFromSignatures")
+      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+
+      logs[1].event.should.be.equal("RelayedMessage")
+      logs[1].args.recipient.should.be.equal(recipientAccount)
+      logs[1].args.value.should.be.bignumber.equal(value)
+      logs[1].args.transactionHash.should.be.equal(transactionHash);
 
       const balanceAfter = await token.balanceOf(recipientAccount);
       const totalSupplyAfter = await token.totalSupply();
@@ -750,10 +758,13 @@ contract('ForeignBridge', async (accounts) => {
       const { logs } = await foreignBridge.executeSignatures([vrs.v, vrs2.v, vrs3.v], [vrs.r, vrs2.r, vrs3.r], [vrs.s, vrs2.s, vrs3.s], message).should.be.fulfilled
 
       // Then
-      logs[0].event.should.be.equal("RelayedMessage")
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(value)
-      logs[0].args.transactionHash.should.be.equal(transactionHash);
+      logs[0].event.should.be.equal("FeeDistributedFromSignatures")
+      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+
+      logs[1].event.should.be.equal("RelayedMessage")
+      logs[1].args.recipient.should.be.equal(recipientAccount)
+      logs[1].args.value.should.be.bignumber.equal(value)
+      logs[1].args.transactionHash.should.be.equal(transactionHash);
 
       const balanceAfter = await token.balanceOf(recipientAccount);
       const totalSupplyAfter = await token.totalSupply();

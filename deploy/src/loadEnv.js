@@ -8,6 +8,7 @@ const { ZERO_ADDRESS } = require('./constants')
 
 // Validations and constants
 const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
+const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
 const validateAddress = address => {
   if (isAddress(address)) {
@@ -37,7 +38,8 @@ const {
   FOREIGN_REWARDABLE,
   VALIDATORS,
   VALIDATORS_REWARD_ACCOUNTS,
-  DEPLOY_REWARDABLE_TOKEN
+  DEPLOY_REWARDABLE_TOKEN,
+  HOME_FEE_MANAGER_TYPE
 } = process.env
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
@@ -123,9 +125,10 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 
   if (HOME_REWARDABLE === 'true') {
-    validations = {
-      ...validations,
-      HOME_POSDAO: envalid.bool()
+    if (!validFeeManagerTypes.includes(HOME_FEE_MANAGER_TYPE)) {
+      throw new Error(
+        `Invalid fee manager type: HOME_FEE_MANAGER_TYPE = ${HOME_FEE_MANAGER_TYPE}. Supported values are ${validFeeManagerTypes}`
+      )
     }
   }
 }

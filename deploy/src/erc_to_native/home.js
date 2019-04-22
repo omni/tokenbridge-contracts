@@ -37,13 +37,13 @@ const {
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
   FOREIGN_TRANSACTIONS_FEE,
-  HOME_POSDAO
+  HOME_FEE_MANAGER_TYPE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 const isRewardableBridge = HOME_REWARDABLE === 'true'
-const isHomePOSDAO = HOME_POSDAO === 'true'
+const isFeeManagerPOSDAO = HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD'
 
 async function deployHome() {
   let homeNonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
@@ -164,7 +164,9 @@ async function deployHome() {
 
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
-    const feeManagerContract = isHomePOSDAO ? FeeManagerErcToNativePOSDAO : FeeManagerErcToNative
+    const feeManagerContract = isFeeManagerPOSDAO
+      ? FeeManagerErcToNativePOSDAO
+      : FeeManagerErcToNative
     const feeManager = await deployContract(feeManagerContract, [], {
       from: DEPLOYMENT_ACCOUNT_ADDRESS,
       nonce: homeNonce

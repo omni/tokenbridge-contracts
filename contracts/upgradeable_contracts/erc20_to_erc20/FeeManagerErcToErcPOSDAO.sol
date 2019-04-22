@@ -17,6 +17,11 @@ contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
     }
 
+    function distributeFeeFromBlockReward(uint256 _fee) internal {
+        IBlockReward blockReward = _blockRewardContract();
+        blockReward.addBridgeTokenFeeReceivers(_fee);
+    }
+
     function isContract(address _addr) internal view returns (bool)
     {
         uint length;

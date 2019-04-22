@@ -1,11 +1,11 @@
 pragma solidity 0.4.24;
 
-import "../BaseFeeManager.sol";
 import "../../IBlockReward.sol";
 import "../Sacrifice.sol";
+import "../ValidatorsFeeManager.sol";
 
 
-contract FeeManagerErcToNative is BaseFeeManager {
+contract FeeManagerErcToNative is ValidatorsFeeManager {
 
     function getFeeManagerMode() public pure returns(bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-both-directions")));

@@ -15,8 +15,8 @@ contract ERC677BridgeTokenRewardableMock is ERC677BridgeTokenRewardable {
         blockRewardContract = _blockRewardContract;
     }
 
-    function setValidatorSetContractMock(address _validatorSetContract) public {
-        validatorSetContract = _validatorSetContract;
+    function setStakingContractMock(address _stakingContract) public {
+        stakingContract = _stakingContract;
     }
 
 }

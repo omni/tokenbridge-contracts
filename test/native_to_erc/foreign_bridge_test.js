@@ -7,7 +7,7 @@ const RewardableValidators = artifacts.require("RewardableValidators.sol");
 
 const POA20 = artifacts.require("ERC677BridgeToken.sol");
 const {ERROR_MSG, ZERO_ADDRESS, ERROR_MSG_OPCODE} = require('../setup');
-const {createMessage, sign, signatureToVRS, strip0x} = require('../helpers/helpers');
+const {createMessage, sign, signatureToVRS, strip0x, getEvents} = require('../helpers/helpers');
 const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
 const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
 const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
@@ -17,20 +17,6 @@ const gasPrice = Web3Utils.toWei('1', 'gwei');
 const homeDailyLimit = oneEther
 const homeMaxPerTx = halfEther
 
-const getEvents = function(contract, filter) {
-  return new Promise((resolve, reject) => {
-      var event = contract[filter.event]();
-      event.watch();
-      event.get((error, logs) => {
-        if(logs.length > 0){
-          resolve(logs);
-        } else {
-          throw Error("Failed to find filtered event for " + filter.event);
-        }
-      });
-      event.stopWatching();
-  });
-}
 contract('ForeignBridge', async (accounts) => {
   let validatorContract, authorities, rewards, owner, token;
   before(async () => {
@@ -637,10 +623,14 @@ contract('ForeignBridge', async (accounts) => {
       const vrs = signatureToVRS(signature);
 
       const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-      logs[0].event.should.be.equal("RelayedMessage")
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(value)
-      logs[0].args.transactionHash.should.be.equal(transactionHash);
+
+      logs[0].event.should.be.equal("FeeDistributedFromSignatures")
+      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+
+      logs[1].event.should.be.equal("RelayedMessage")
+      logs[1].args.recipient.should.be.equal(recipientAccount)
+      logs[1].args.value.should.be.bignumber.equal(value)
+      logs[1].args.transactionHash.should.be.equal(transactionHash);
 
       const balanceAfter = await token.balanceOf(recipientAccount);
       const totalSupplyAfter = await token.totalSupply();
@@ -657,6 +647,7 @@ contract('ForeignBridge', async (accounts) => {
       const feePerValidator = web3.toBigNumber(166666666666666)
       const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
       const value = halfEther
+      const feeAmount = value.mul(web3.toBigNumber(fee));
       const finalUserValue = value.mul(web3.toBigNumber(1-fee));
 
       const validators = [accounts[1], accounts[2], accounts[3]]
@@ -687,10 +678,13 @@ contract('ForeignBridge', async (accounts) => {
       const { logs } = await foreignBridge.executeSignatures([vrs.v, vrs2.v, vrs3.v], [vrs.r, vrs2.r, vrs3.r], [vrs.s, vrs2.s, vrs3.s], message).should.be.fulfilled
 
       // Then
-      logs[0].event.should.be.equal("RelayedMessage")
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(value)
-      logs[0].args.transactionHash.should.be.equal(transactionHash);
+      logs[0].event.should.be.equal("FeeDistributedFromSignatures")
+      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+
+      logs[1].event.should.be.equal("RelayedMessage")
+      logs[1].args.recipient.should.be.equal(recipientAccount)
+      logs[1].args.value.should.be.bignumber.equal(value)
+      logs[1].args.transactionHash.should.be.equal(transactionHash);
 
       const balanceAfter = await token.balanceOf(recipientAccount);
       const totalSupplyAfter = await token.totalSupply();
@@ -750,10 +744,13 @@ contract('ForeignBridge', async (accounts) => {
       const { logs } = await foreignBridge.executeSignatures([vrs.v, vrs2.v, vrs3.v], [vrs.r, vrs2.r, vrs3.r], [vrs.s, vrs2.s, vrs3.s], message).should.be.fulfilled
 
       // Then
-      logs[0].event.should.be.equal("RelayedMessage")
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(value)
-      logs[0].args.transactionHash.should.be.equal(transactionHash);
+      logs[0].event.should.be.equal("FeeDistributedFromSignatures")
+      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+
+      logs[1].event.should.be.equal("RelayedMessage")
+      logs[1].args.recipient.should.be.equal(recipientAccount)
+      logs[1].args.value.should.be.bignumber.equal(value)
+      logs[1].args.transactionHash.should.be.equal(transactionHash);
 
       const balanceAfter = await token.balanceOf(recipientAccount);
       const totalSupplyAfter = await token.totalSupply();

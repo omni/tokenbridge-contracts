@@ -41,3 +41,13 @@ Fees are calculated and distributed on Home network. Validators will receive nat
 ### Home to Foreign transfer
 Fees are calculated and distributed on Home network. Validators will receive native coins.
 ![erc-native-hometoforeign](https://user-images.githubusercontent.com/4614574/51607508-96f47480-1ef3-11e9-93a1-0f1111793f2a.png)
+
+## ERC-TO-ERC
+
+### Foreign to Home transfer
+Fees are calculated and distributed on Home network. Validators will receive ERC20 tokens.
+![ERC-ERC-ForeignToHome (1)](https://user-images.githubusercontent.com/4614574/56502412-98c8d680-64e8-11e9-8eea-5bcd545d74d9.png)
+
+### Home to Foreign transfer
+Fees are calculated and distributed on Home network. Validators will receive ERC20 tokens.
+![ERC-ERC-HomeToForeign (1)](https://user-images.githubusercontent.com/4614574/56502454-b8f89580-64e8-11e9-84ae-d9a1c229e0c4.png)

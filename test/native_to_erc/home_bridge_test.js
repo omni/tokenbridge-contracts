@@ -773,8 +773,13 @@ contract('HomeBridge', async (accounts) => {
         signer: validators[0],
         transactionHash
       });
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount: value.mul(web3.toBigNumber(fee)),
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value,
         transactionHash
@@ -832,8 +837,13 @@ contract('HomeBridge', async (accounts) => {
         signer: validators[1],
         transactionHash
       });
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount: value.mul(web3.toBigNumber(fee)),
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value,
         transactionHash
@@ -1320,8 +1330,13 @@ contract('HomeBridge', async (accounts) => {
         signer: validators[4],
         transactionHash
       });
-      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].event.should.be.equal("FeeDistributedFromAffirmation");
       logs[1].args.should.be.deep.equal({
+        feeAmount: value.mul(web3.toBigNumber(fee)),
+        transactionHash
+      })
+      logs[2].event.should.be.equal("AffirmationCompleted");
+      logs[2].args.should.be.deep.equal({
         recipient,
         value,
         transactionHash

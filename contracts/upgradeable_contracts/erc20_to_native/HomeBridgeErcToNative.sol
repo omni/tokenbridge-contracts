@@ -151,7 +151,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         setOwner(_owner);
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns(bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
@@ -160,7 +160,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager);
+            distributeFeeFromAffirmation(fee, feeManager, txHash);
             valueToMint = valueToMint.sub(fee);
         }
         blockReward.addExtraReceiver(valueToMint, _recipient);
@@ -176,7 +176,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
             address contractAddress;
             (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
-            distributeFeeFromSignatures(fee, feeManager);
+            distributeFeeFromSignatures(fee, feeManager, txHash);
         }
     }
 

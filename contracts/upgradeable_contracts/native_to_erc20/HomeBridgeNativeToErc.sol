@@ -130,7 +130,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
             (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
             if (fee != 0) {
-                distributeFeeFromSignatures(fee, feeManager);
+                distributeFeeFromSignatures(fee, feeManager, txHash);
             }
         }
     }

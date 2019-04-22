@@ -10,8 +10,6 @@ import "../Sacrifice.sol";
 
 contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
 
-    event FeeDistributedFromAffirmation(uint256 feeAmount, bytes32 indexed transactionHash);
-
     function () public payable {
         require(msg.value > 0);
         require(msg.data.length == 0);
@@ -121,9 +119,8 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToTransfer, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager);
+            distributeFeeFromAffirmation(fee, feeManager, txHash);
             valueToTransfer = valueToTransfer.sub(fee);
-            emit FeeDistributedFromAffirmation(fee, txHash);
         }
 
         if (!_recipient.send(valueToTransfer)) {

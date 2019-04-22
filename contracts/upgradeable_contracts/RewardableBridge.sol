@@ -6,6 +6,9 @@ import "./FeeTypes.sol";
 
 contract RewardableBridge is Ownable, FeeTypes {
 
+    event FeeDistributedFromAffirmation(uint256 feeAmount, bytes32 indexed transactionHash);
+    event FeeDistributedFromSignatures(uint256 feeAmount, bytes32 indexed transactionHash);
+
     function _getFee(bytes32 _feeType) internal view returns(uint256) {
         uint256 fee;
         address feeManager = feeManagerContract();
@@ -70,11 +73,13 @@ contract RewardableBridge is Ownable, FeeTypes {
         return fee;
     }
 
-    function distributeFeeFromSignatures(uint256 _fee, address _feeManager) internal {
+    function distributeFeeFromSignatures(uint256 _fee, address _feeManager, bytes32 _txHash) internal {
         require(_feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromSignatures(uint256)", _fee)));
+        emit FeeDistributedFromSignatures(_fee, _txHash);
     }
 
-    function distributeFeeFromAffirmation(uint256 _fee, address _feeManager) internal {
+    function distributeFeeFromAffirmation(uint256 _fee, address _feeManager, bytes32 _txHash) internal {
         require(_feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromAffirmation(uint256)", _fee)));
+        emit FeeDistributedFromAffirmation(_fee, _txHash);
     }
 }

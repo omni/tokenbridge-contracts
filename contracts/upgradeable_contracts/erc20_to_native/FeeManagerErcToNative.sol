@@ -26,7 +26,8 @@ contract FeeManagerErcToNative is BaseFeeManager {
         }
     }
 
-    function getAmountToBurn(uint256 _value, uint256 _fee) public pure returns(uint256) {
-        return _value.sub(_fee);
+    function getAmountToBurn(uint256 _value) public view returns(uint256) {
+        uint256 fee = calculateFee(_value, false, HOME_FEE);
+        return _value.sub(fee);
     }
 }

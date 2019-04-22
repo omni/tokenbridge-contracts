@@ -16,7 +16,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     event HomeFeeUpdated(uint256 fee);
     event ForeignFeeUpdated(uint256 fee);
 
-    function calculateFee(uint256 _value, bool _recover, bytes32 _feeType) external view returns(uint256) {
+    function calculateFee(uint256 _value, bool _recover, bytes32 _feeType) public view returns(uint256) {
         uint256 fee = _feeType == HOME_FEE ? getHomeFee() : getForeignFee();
         uint256 eth = 1 ether;
         if (!_recover) {

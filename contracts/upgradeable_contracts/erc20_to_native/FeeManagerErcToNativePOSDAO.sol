@@ -26,7 +26,7 @@ contract FeeManagerErcToNativePOSDAO is BaseFeeManager {
         blockReward.addBridgeNativeFeeReceivers(_fee);
     }
 
-    function getAmountToBurn(uint256 _value, uint256 _fee) public pure returns(uint256) {
+    function getAmountToBurn(uint256 _value) public view returns(uint256) {
         return _value;
     }
 

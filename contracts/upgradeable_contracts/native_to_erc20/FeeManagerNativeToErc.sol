@@ -1,11 +1,11 @@
 pragma solidity 0.4.24;
 
-import "../BaseFeeManager.sol";
 import "../../IBurnableMintableERC677Token.sol";
 import "../Sacrifice.sol";
+import "../ValidatorsFeeManager.sol";
 
 
-contract FeeManagerNativeToErc is BaseFeeManager {
+contract FeeManagerNativeToErc is ValidatorsFeeManager {
 
     function getFeeManagerMode() public pure returns(bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-one-direction")));

@@ -53,31 +53,34 @@ contract('RewardableValidators', async (accounts) => {
       let newReward = accounts[5];
 
       false.should.be.equal(await bridgeValidators.isValidator(newValidator))
-      await bridgeValidators.addValidator(newValidator, newReward, {from: validators[0]}).should.be.rejectedWith(ERROR_MSG)
-      const {logs} = await bridgeValidators.addValidator(newValidator, newReward, {from: owner}).should.be.fulfilled
+      await bridgeValidators.addRewardableValidator(newValidator, newReward, {from: validators[0]}).should.be.rejectedWith(ERROR_MSG)
+      const {logs} = await bridgeValidators.addRewardableValidator(newValidator, newReward, {from: owner}).should.be.fulfilled
       true.should.be.equal(await bridgeValidators.isValidator(newValidator))
       '3'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
       logs[0].event.should.be.equal('ValidatorAdded')
-      logs[0].args.should.be.deep.equal({ validator: newValidator, reward: newReward })
+      logs[0].args.should.be.deep.equal({ validator: newValidator })
+
+      const rewardAddress = await bridgeValidators.getValidatorRewardAddress(newValidator)
+      rewardAddress.should.be.equal(newReward)
     })
 
     it('cannot add already existing validator', async () => {
       true.should.be.equal(await bridgeValidators.isValidator(validators[0]))
-      await bridgeValidators.addValidator(validators[0], rewards[0], {from: owner}).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.addRewardableValidator(validators[0], rewards[0], {from: owner}).should.be.rejectedWith(ERROR_MSG)
       '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
     })
 
     it(`cannot add 0xf as validator address`, async () => {
       // Given
-      await bridgeValidators.addValidator(F_ADDRESS, rewards[0], { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.addRewardableValidator(F_ADDRESS, rewards[0], { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
 
     it(`cannot add 0x0 as validator address`, async () => {
-      await bridgeValidators.addValidator(ZERO_ADDRESS, rewards[0], {from: owner}).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.addRewardableValidator(ZERO_ADDRESS, rewards[0], {from: owner}).should.be.rejectedWith(ERROR_MSG)
     })
 
     it(`cannot add 0x0 as reward address`, async () => {
-      await bridgeValidators.addValidator(accounts[4], ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.addRewardableValidator(accounts[4], ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
   })
 

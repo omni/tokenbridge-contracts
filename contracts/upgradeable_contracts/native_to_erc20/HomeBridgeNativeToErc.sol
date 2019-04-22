@@ -112,14 +112,14 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         setOwner(_owner);
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns(bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         uint256 valueToTransfer = _value;
 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToTransfer, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager);
+            distributeFeeFromAffirmation(fee, feeManager, txHash);
             valueToTransfer = valueToTransfer.sub(fee);
         }
 

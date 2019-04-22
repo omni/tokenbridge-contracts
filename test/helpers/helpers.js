@@ -111,3 +111,20 @@ module.exports.range = range;
 function ignoreExpectedError() {
 }
 module.exports.ignoreExpectedError = ignoreExpectedError;
+
+const getEvents = function(contract, filter) {
+  return new Promise((resolve, reject) => {
+    var event = contract[filter.event]();
+    event.watch();
+    event.get((error, logs) => {
+      if(logs.length > 0){
+        resolve(logs);
+      } else {
+        throw Error("Failed to find filtered event for " + filter.event);
+      }
+    });
+    event.stopWatching();
+  });
+}
+
+module.exports.getEvents = getEvents;

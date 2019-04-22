@@ -5,9 +5,6 @@ import "./BaseBridgeValidators.sol";
 
 contract RewardableValidators is BaseBridgeValidators {
 
-    event ValidatorAdded (address indexed validator, address reward);
-    event ValidatorRemoved (address indexed validator);
-
     function initialize(
         uint256 _requiredSignatures,
         address[] _initialValidators,
@@ -43,7 +40,7 @@ contract RewardableValidators is BaseBridgeValidators {
 
             setValidatorCount(validatorCount().add(1));
             setValidatorRewardAddress(_initialValidators[i], _initialRewards[i]);
-            emit ValidatorAdded(_initialValidators[i], _initialRewards[i]);
+            emit ValidatorAdded(_initialValidators[i]);
         }
 
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
@@ -54,36 +51,17 @@ contract RewardableValidators is BaseBridgeValidators {
         return isInitialized();
     }
 
-    function addValidator(address _validator, address _reward) external onlyOwner {
+    function addRewardableValidator(address _validator, address _reward) external onlyOwner {
         require(_reward != address(0));
         _addValidator(_validator);
         setValidatorRewardAddress(_validator, _reward);
-        emit ValidatorAdded(_validator, _reward);
+        emit ValidatorAdded(_validator);
     }
 
     function removeValidator(address _validator) external onlyOwner {
         _removeValidator(_validator);
         deleteItemFromAddressStorage("validatorsRewards", _validator);
         emit ValidatorRemoved(_validator);
-    }
-
-    function validatorList() public view returns (address[]) {
-        address [] memory list = new address[](validatorCount());
-        uint256 counter = 0;
-        address nextValidator = getNextValidator(F_ADDR);
-        require(nextValidator != address(0));
-
-        while (nextValidator != F_ADDR) {
-            list[counter] = nextValidator;
-            nextValidator = getNextValidator(nextValidator);
-            counter++;
-
-            if (nextValidator == address(0) ) {
-                revert();
-            }
-        }
-
-        return list;
     }
 
     function getValidatorRewardAddress(address _validator) public view returns (address) {

@@ -10,6 +10,8 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
 
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
+    event ValidatorAdded (address indexed validator);
+    event ValidatorRemoved (address indexed validator);
     event RequiredSignaturesChanged (uint256 requiredSignatures);
 
     function setRequiredSignatures(uint256 _requiredSignatures)

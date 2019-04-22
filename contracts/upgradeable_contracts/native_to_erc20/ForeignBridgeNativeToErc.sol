@@ -114,13 +114,13 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         setOwner(_owner);
     }
 
-    function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool) {
+    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns(bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         uint256 valueToMint = _amount;
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, HOME_FEE);
-            distributeFeeFromSignatures(fee, feeManager);
+            distributeFeeFromSignatures(fee, feeManager, _txHash);
             valueToMint = valueToMint.sub(fee);
         }
         return erc677token().mint(_recipient, valueToMint);

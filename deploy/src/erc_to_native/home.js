@@ -40,7 +40,7 @@ const {
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const isRewardableBridge = HOME_REWARDABLE === 'true'
+const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
 
 async function deployHome() {
   let homeNonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)

@@ -15,7 +15,13 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         require(msg.data.length == 0);
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
-        emit UserRequestForSignature(msg.sender, msg.value);
+        uint256 valueToTransfer = msg.value;
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
+            valueToTransfer = valueToTransfer.sub(fee);
+        }
+        emit UserRequestForSignature(msg.sender, valueToTransfer);
     }
 
     function initialize (
@@ -56,6 +62,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _foreignMaxPerTx,
         address _owner,
         address _feeManager,
+        uint256 _homeFee,
         uint256 _foreignFee
     ) public returns(bool)
     {
@@ -72,6 +79,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         );
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+        _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
         setInitialize(true);
         return isInitialized();
@@ -110,6 +118,21 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
         setOwner(_owner);
+    }
+
+    function onSignaturesCollected(bytes _message) internal {
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            address recipient;
+            uint256 amount;
+            bytes32 txHash;
+            address contractAddress;
+            (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
+            uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
+            if (fee != 0) {
+                distributeFeeFromSignatures(fee, feeManager, txHash);
+            }
+        }
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns(bool) {

@@ -10,11 +10,11 @@ EternalStorageProxy|upgradeTo|35871|30924|30913
 BridgeValidators|initialize|210762|306607|270900
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
 EternalStorageProxy|deployment|378510|378510|378510
-HomeBridgeNativeToErc|deployment|4594464|4594464|4594464
+HomeBridgeNativeToErc|deployment|4841729|4841729|4841729
 EternalStorageProxy|upgradeTo|35871|30924|30913
 HomeBridgeNativeToErc|initialize|257416|258312|258003
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
-Total| |7304201|7391048|7355010
+Total| |7551466|7638313|7602275
 
 ##### Foreign
  Contract | Method | Min | Max | Avg
@@ -26,13 +26,13 @@ EternalStorageProxy|upgradeTo|35871|30924|30913
 BridgeValidators|initialize|210762|306607|270900
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
 EternalStorageProxy|deployment|378510|378510|378510
-ForeignBridgeNativeToErc|deployment|3930131|3930131|3930131
+ForeignBridgeNativeToErc|deployment|3931739|3931739|3931739
 EternalStorageProxy|upgradeTo|35871|30924|30913
 ForeignBridgeNativeToErc|initialize|281275|281339|281328
 ERC677BridgeToken|setBridgeContract|29432|44432|39432
 ERC677BridgeToken|transferOwnership|30860|30924|30913
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
-Total| |8187555|8289658|8248517
+Total| |8189163|8291266|8250125
 
 #### Usage
 
@@ -41,17 +41,17 @@ Total| |8187555|8289658|8248517
  Contract | Method | Min | Max | Avg
 ----  | ---- | ---- | ---- | ----
 To sign at the Home (each validator)|
-HomeBridgeNativeToErc|submitSignature|159814|275587|220654
+HomeBridgeNativeToErc|submitSignature|159816|275743|221116
 To relay signatures from the Home to the Foreign (one validator)|
 ForeignBridgeNativeToErc|executeSignatures|99365|172087|138314
 To sign and relay from the Foreign to the Home (each validator)|
-HomeBridgeNativeToErc|executeAffirmation|67247|132985|101980
+HomeBridgeNativeToErc|executeAffirmation|67313|133052|102046
 
 ##### Users
 
  Contract | Method | Min | Max | Avg
 ----  | ---- | ---- | ---- | ----
 To request transfer from the Home to the Foreign|
-HomeBridgeNativeToErc|fallback|46982|46982|46982
+HomeBridgeNativeToErc|fallback|47848|47848|47848
 To request transfer from the Foreign to the Home|
-ERC677BridgeToken|transferAndCall|58654|166206|92597  
+ERC677BridgeToken|transferAndCall|58676|166206|92613  

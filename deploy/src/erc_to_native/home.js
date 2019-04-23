@@ -14,7 +14,7 @@ const EternalStorageProxy = require('../../../build/contracts/EternalStorageProx
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
 const FeeManagerErcToNative = require('../../../build/contracts/FeeManagerErcToNative.json')
-const FeeManagerErcToNativePOSDAO = require('../../../build/contracts/FeeManagerErcToNativePOSDAO')
+const FeeManagerErcToNativePOSDAO = require('../../../build/contracts/FeeManagerErcToNativePOSDAO.json')
 const HomeBridge = require('../../../build/contracts/HomeBridgeErcToNative.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
@@ -42,7 +42,7 @@ const {
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const isRewardableBridge = HOME_REWARDABLE === 'true'
+const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
 const isFeeManagerPOSDAO = HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD'
 
 async function deployHome() {

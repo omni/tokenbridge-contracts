@@ -9,7 +9,15 @@ contract RewardableHomeBridgeNativeToErc is RewardableBridge {
         _setFee(feeManagerContract(), _fee, FOREIGN_FEE);
     }
 
+    function setHomeFee(uint256 _fee) external onlyOwner {
+        _setFee(feeManagerContract(), _fee, HOME_FEE);
+    }
+
     function getForeignFee() public view returns(uint256) {
         return _getFee(FOREIGN_FEE);
+    }
+
+    function getHomeFee() public view returns(uint256) {
+        return _getFee(HOME_FEE);
     }
 }

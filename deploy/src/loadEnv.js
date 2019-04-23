@@ -8,6 +8,7 @@ const { ZERO_ADDRESS } = require('./constants')
 
 // Validations and constants
 const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
+const validRewardModes = ['false', 'ONE_DIRECTION', 'BOTH_DIRECTIONS']
 const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
 const validateAddress = address => {
@@ -44,6 +45,18 @@ const {
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)
+}
+
+if (!validRewardModes.includes(HOME_REWARDABLE)) {
+  throw new Error(
+    `Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`
+  )
+}
+
+if (!validRewardModes.includes(FOREIGN_REWARDABLE)) {
+  throw new Error(
+    `Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`
+  )
 }
 
 let validations = {
@@ -90,6 +103,18 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
       DPOS_STAKING_ADDRESS: addressValidator()
     }
   }
+
+  if (FOREIGN_REWARDABLE === 'BOTH_DIRECTIONS') {
+    throw new Error(
+      `FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE} is not supported on ${BRIDGE_MODE} bridge mode`
+    )
+  }
+
+  if (HOME_REWARDABLE === 'BOTH_DIRECTIONS' && FOREIGN_REWARDABLE === 'ONE_DIRECTION') {
+    throw new Error(
+      `Combination of HOME_REWARDABLE: ${HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE} should be avoided on ${BRIDGE_MODE} bridge mode.`
+    )
+  }
 }
 if (BRIDGE_MODE === 'ERC_TO_ERC') {
   validations = {
@@ -103,7 +128,7 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BLOCK_REWARD_ADDRESS: addressValidator()
   }
 
-  if (FOREIGN_REWARDABLE === 'true') {
+  if (FOREIGN_REWARDABLE !== 'false') {
     throw new Error(
       `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
     )
@@ -118,13 +143,19 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     })
   }
 
-  if (FOREIGN_REWARDABLE === 'true') {
+  if (HOME_REWARDABLE === 'ONE_DIRECTION') {
+    throw new Error(
+      `Only BOTH_DIRECTIONS is supported for collecting fees on Home Network on ${BRIDGE_MODE} bridge mode.`
+    )
+  }
+
+  if (FOREIGN_REWARDABLE !== 'false') {
     throw new Error(
       `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
     )
   }
 
-  if (HOME_REWARDABLE === 'true') {
+  if (HOME_REWARDABLE === 'BOTH_DIRECTIONS') {
     if (!validFeeManagerTypes.includes(HOME_FEE_MANAGER_TYPE)) {
       throw new Error(
         `Invalid fee manager type: HOME_FEE_MANAGER_TYPE = ${HOME_FEE_MANAGER_TYPE}. Supported values are ${validFeeManagerTypes}`
@@ -133,7 +164,7 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (HOME_REWARDABLE === 'true' || FOREIGN_REWARDABLE === 'true') {
+if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
   validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
   validations = {
     ...validations,

@@ -124,20 +124,22 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # correctly to the Foreign network.
 VALIDATORS=0x 0x 0x
 
-# The flag defining whether to use RewardableValidators contract and set a fee manager contract on Home network
+# Variable to define whether to use RewardableValidators contract and set a fee manager contract on Home network
+# On this bridge mode ONE_DIRECTION and BOTH_DIRECTIONS are supported on Home network
 HOME_REWARDABLE=false
-# The flag defining whether to use RewardableValidators contract and set a fee manager contract on Foreign network
+# Variable to define whether to use RewardableValidators contract and set a fee manager contract on Foreign network
+# On this bridge mode ONE_DIRECTION is supported on Foreign network
 FOREIGN_REWARDABLE=false
 # List validators accounts were rewards should be transferred separated by space without quotes
-# Makes sense only when HOME_REWARDABLE=true or FOREIGN_REWARDABLE=true
+# Makes sense only when HOME_REWARDABLE!=false or FOREIGN_REWARDABLE!=false
 VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x
 
 # Fee to be taken for every transaction directed from the Home network to the Foreign network
-# Makes sense only when FOREIGN_REWARDABLE=true
+# Makes sense only when FOREIGN_REWARDABLE=ONE_DIRECTION or HOME_REWARDABLE=BOTH_DIRECTIONS
 # e.g. 0.1% fee
 HOME_TRANSACTIONS_FEE=0.001
 # Fee to be taken for every transaction directed from the Foreign network to the Home network
-# Makes sense only when HOME_REWARDABLE=true
+# Makes sense only when HOME_REWARDABLE!=false
 # e.g. 0.1% fee
 FOREIGN_TRANSACTIONS_FEE=0.001
 
@@ -357,23 +359,25 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 VALIDATORS=0x 0x 0x
 
 
-# The flag defining whether to use RewardableValidators contract and set a fee manager contract on Home network
+# Variable to define whether to use RewardableValidators contract and set a fee manager contract on Home network
+# On this bridge mode only BOTH_DIRECTIONS is supported on Home network
 HOME_REWARDABLE=false
-# The flag defining whether to use RewardableValidators contract and set a fee manager contract on Foreign network
+# Variable to define whether to use RewardableValidators contract and set a fee manager contract on Foreign network
+# Collecting fees on Foreign network is not supported on this bridge mode.
 FOREIGN_REWARDABLE=false
 # Variable to define if Home network is a POSDAO and rewards are distributed by blockReward contract to network validators or transferred directly to bridge validators.
 # Supported values are BRIDGE_VALIDATORS_REWARD and POSDAO_REWARD
 HOME_FEE_MANAGER_TYPE=BRIDGE_VALIDATORS_REWARD
 # List validators accounts were rewards should be transferred separated by space without quotes
-# Makes sense only when HOME_REWARDABLE=true or FOREIGN_REWARDABLE=true
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
 VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x
 
 # Fee to be taken for every transaction directed from the Home network to the Foreign network
-# Makes sense only when HOME_REWARDABLE=true
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
 # e.g. 0.1% fee
 HOME_TRANSACTIONS_FEE=0.001
 # Fee to be taken for every transaction directed from the Foreign network to the Home network
-# Makes sense only when HOME_REWARDABLE=true
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
 # e.g. 0.1% fee
 FOREIGN_TRANSACTIONS_FEE=0.001
 ```

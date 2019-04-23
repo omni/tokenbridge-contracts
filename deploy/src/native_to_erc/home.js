@@ -14,6 +14,7 @@ const EternalStorageProxy = require('../../../build/contracts/EternalStorageProx
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
 const FeeManagerNativeToErc = require('../../../build/contracts/FeeManagerNativeToErc.json')
+const FeeManagerNativeToErcBothDirections = require('../../../build/contracts/FeeManagerNativeToErcBothDirections.json')
 const HomeBridge = require('../../../build/contracts/HomeBridgeNativeToErc.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
@@ -33,12 +34,14 @@ const {
   FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
   HOME_REWARDABLE,
+  HOME_TRANSACTIONS_FEE,
   FOREIGN_TRANSACTIONS_FEE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const isRewardableBridge = HOME_REWARDABLE === 'true'
+const isBothDirectionsFeeManager = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
+const isRewardableBridge = HOME_REWARDABLE === 'ONE_DIRECTION' || isBothDirectionsFeeManager
 
 async function deployHome() {
   let homeNonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
@@ -159,13 +162,18 @@ async function deployHome() {
 
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
-    const feeManager = await deployContract(FeeManagerNativeToErc, [], {
+    const feeManagerContract = isBothDirectionsFeeManager
+      ? FeeManagerNativeToErcBothDirections
+      : FeeManagerNativeToErc
+    const feeManager = await deployContract(feeManagerContract, [], {
       from: DEPLOYMENT_ACCOUNT_ADDRESS,
       nonce: homeNonce
     })
     console.log('[Home] feeManager Implementation: ', feeManager.options.address)
     homeNonce++
 
+    const homeFee = isBothDirectionsFeeManager ? HOME_TRANSACTIONS_FEE.toString() : '0'
+    const homeFeeInWei = Web3Utils.toWei(homeFee, 'ether')
     const foreignFeeInWei = Web3Utils.toWei(FOREIGN_TRANSACTIONS_FEE.toString(), 'ether')
 
     console.log('\ninitializing Home Bridge with fee contract:\n')
@@ -186,6 +194,7 @@ async function deployHome() {
     )} in eth,
   HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
+  Home Fee: ${homeFeeInWei} which is ${homeFee * 100}%
   Foreign Fee: ${foreignFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%`)
 
     homeBridgeImplementation.options.address = homeBridgeStorage.options.address
@@ -201,6 +210,7 @@ async function deployHome() {
         FOREIGN_MAX_AMOUNT_PER_TX,
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
+        homeFeeInWei,
         foreignFeeInWei
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })

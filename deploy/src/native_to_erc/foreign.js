@@ -313,16 +313,12 @@ async function deployForeign() {
       privateKey: deploymentPrivateKey,
       url: FOREIGN_RPC_URL
     })
-    if (setValidatorSetContract.status) {
-      assert.strictEqual(
-        Web3Utils.hexToNumber(setStakingContract.status),
-        1,
-        'Transaction Failed'
-      )
+    if (setStakingContract.status) {
+      assert.strictEqual(Web3Utils.hexToNumber(setStakingContract.status), 1, 'Transaction Failed')
     } else {
       await assertStateWithRetry(
         erc677bridgeToken.methods.validatorSetContract().call,
-        DPOS_VALIDATOR_SET_ADDRESS
+        DPOS_STAKING_ADDRESS
       )
     }
     nonce++

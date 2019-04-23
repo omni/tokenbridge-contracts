@@ -37,7 +37,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
                 // If the bridge contract does not own enough tokens to transfer
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-                require(onExecuteAffirmation(recipient, value));
+                require(onExecuteAffirmation(recipient, value, transactionHash));
                 emit AffirmationCompleted(recipient, value, transactionHash);
             }
         } else {
@@ -84,7 +84,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         boolStorage[keccak256(abi.encodePacked("messagesSigned", _hash))] = _status;
     }
 
-    function onExecuteAffirmation(address, uint256) internal returns(bool) {
+    function onExecuteAffirmation(address, uint256, bytes32) internal returns(bool) {
     }
 
     function onSignaturesCollected(bytes) internal {

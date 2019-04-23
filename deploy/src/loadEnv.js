@@ -9,6 +9,7 @@ const { ZERO_ADDRESS } = require('./constants')
 // Validations and constants
 const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
 const validRewardModes = ['false', 'ONE_DIRECTION', 'BOTH_DIRECTIONS']
+const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
 const validateAddress = address => {
   if (isAddress(address)) {
@@ -38,7 +39,8 @@ const {
   FOREIGN_REWARDABLE,
   VALIDATORS,
   VALIDATORS_REWARD_ACCOUNTS,
-  DEPLOY_REWARDABLE_TOKEN
+  DEPLOY_REWARDABLE_TOKEN,
+  HOME_FEE_MANAGER_TYPE
 } = process.env
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
@@ -98,7 +100,7 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
     validations = {
       ...validations,
-      DPOS_VALIDATOR_SET_ADDRESS: addressValidator()
+      DPOS_STAKING_ADDRESS: addressValidator()
     }
   }
 
@@ -120,7 +122,16 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     ERC20_TOKEN_ADDRESS: addressValidator(),
     BRIDGEABLE_TOKEN_NAME: envalid.str(),
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
-    BRIDGEABLE_TOKEN_DECIMALS: envalid.num()
+    BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
+    DPOS_STAKING_ADDRESS: addressValidator(),
+    BLOCK_REWARD_ADDRESS: addressValidator()
+  }
+
+  if (FOREIGN_REWARDABLE !== 'false') {
+    throw new Error(
+      `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
+    )
   }
 }
 if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
@@ -143,6 +154,14 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
       `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
     )
   }
+
+  if (HOME_REWARDABLE === 'BOTH_DIRECTIONS') {
+    if (!validFeeManagerTypes.includes(HOME_FEE_MANAGER_TYPE)) {
+      throw new Error(
+        `Invalid fee manager type: HOME_FEE_MANAGER_TYPE = ${HOME_FEE_MANAGER_TYPE}. Supported values are ${validFeeManagerTypes}`
+      )
+    }
+  }
 }
 
 if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
@@ -156,5 +175,15 @@ if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
 }
 
 const env = envalid.cleanEnv(process.env, validations)
+
+if (
+  env.BRIDGE_MODE === 'ERC_TO_ERC' &&
+  env.HOME_REWARDABLE === 'true' &&
+  env.BLOCK_REWARD_ADDRESS === ZERO_ADDRESS
+) {
+  throw new Error(
+    'Collecting fees on Home Network on ERC_TO_ERC mode without Block Reward contract is not supported.'
+  )
+}
 
 module.exports = env

@@ -44,7 +44,7 @@ const {
   HOME_MAX_AMOUNT_PER_TX,
   DEPLOY_REWARDABLE_TOKEN,
   BLOCK_REWARD_ADDRESS,
-  DPOS_VALIDATOR_SET_ADDRESS,
+  DPOS_STAKING_ADDRESS,
   FOREIGN_REWARDABLE,
   HOME_TRANSACTIONS_FEE
 } = env
@@ -302,12 +302,12 @@ async function deployForeign() {
     }
     nonce++
 
-    console.log('\nset ValidatorSet contract on ERC677BridgeTokenRewardable')
-    const setValidatorSetContractData = await erc677bridgeToken.methods
-      .setValidatorSetContract(DPOS_VALIDATOR_SET_ADDRESS)
+    console.log('\nset Staking contract on ERC677BridgeTokenRewardable')
+    const setStakingContractData = await erc677bridgeToken.methods
+      .setStakingContract(DPOS_STAKING_ADDRESS)
       .encodeABI()
-    const setValidatorSetContract = await sendRawTxForeign({
-      data: setValidatorSetContractData,
+    const setStakingContract = await sendRawTxForeign({
+      data: setStakingContractData,
       nonce,
       to: erc677bridgeToken.options.address,
       privateKey: deploymentPrivateKey,
@@ -315,7 +315,7 @@ async function deployForeign() {
     })
     if (setValidatorSetContract.status) {
       assert.strictEqual(
-        Web3Utils.hexToNumber(setValidatorSetContract.status),
+        Web3Utils.hexToNumber(setStakingContract.status),
         1,
         'Transaction Failed'
       )

@@ -6,7 +6,7 @@ import "./ERC677BridgeToken.sol";
 contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
 
     address public blockRewardContract;
-    address public validatorSetContract;
+    address public stakingContract;
 
     constructor(
         string _name,
@@ -19,9 +19,9 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
         blockRewardContract = _blockRewardContract;
     }
 
-    function setValidatorSetContract(address _validatorSetContract) onlyOwner public {
-        require(_validatorSetContract != address(0) && isContract(_validatorSetContract));
-        validatorSetContract = _validatorSetContract;
+    function setStakingContract(address _stakingContract) onlyOwner public {
+        require(_stakingContract != address(0) && isContract(_stakingContract));
+        stakingContract = _stakingContract;
     }
 
     modifier onlyBlockRewardContract() {
@@ -29,8 +29,8 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
         _;
     }
 
-    modifier onlyValidatorSetContract() {
-        require(msg.sender == validatorSetContract);
+    modifier onlyStakingContract() {
+        require(msg.sender == stakingContract);
         _;
     }
 
@@ -47,20 +47,30 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
         }
     }
 
-    function stake(address _staker, uint256 _amount) external onlyValidatorSetContract {
-        // Transfer `_amount` from `_staker` to `validatorSetContract`
+    function stake(address _staker, uint256 _amount) external onlyStakingContract {
+        // Transfer `_amount` from `_staker` to `stakingContract`
         require(_amount <= balances[_staker]);
         balances[_staker] = balances[_staker].sub(_amount);
-        balances[validatorSetContract] = balances[validatorSetContract].add(_amount);
-        emit Transfer(_staker, validatorSetContract, _amount);
+        balances[stakingContract] = balances[stakingContract].add(_amount);
+        emit Transfer(_staker, stakingContract, _amount);
     }
 
-    function withdraw(address _staker, uint256 _amount) external onlyValidatorSetContract {
-        // Transfer `_amount` from `validatorSetContract` to `_staker`
-        require(_amount <= balances[validatorSetContract]);
-        balances[validatorSetContract] = balances[validatorSetContract].sub(_amount);
+    function withdraw(address _staker, uint256 _amount) external onlyStakingContract {
+        // Transfer `_amount` from `stakingContract` to `_staker`
+        require(_amount <= balances[stakingContract]);
+        balances[stakingContract] = balances[stakingContract].sub(_amount);
         balances[_staker] = balances[_staker].add(_amount);
-        emit Transfer(validatorSetContract, _staker, _amount);
+        emit Transfer(stakingContract, _staker, _amount);
+    }
+
+    function transfer(address _to, uint256 _value) public returns(bool) {
+        require(_to != stakingContract);
+        return super.transfer(_to, _value);
+    }
+
+    function transferFrom(address _from, address _to, uint256 _value) public returns(bool) {
+        require(_to != stakingContract);
+        return super.transferFrom(_from, _to, _value);
     }
 
 }

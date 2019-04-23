@@ -219,4 +219,19 @@ contract('BridgeValidators', async (accounts) => {
       })
     })
   })
+
+  describe('#Validators list', () => {
+    it('should return validators list', async () => {
+      // Given
+      const validators = accounts.slice(0, 5)
+      const { initialize, validatorList } = bridgeValidators
+      await initialize(1, validators, owner, { from: owner }).should.be.fulfilled
+
+      // When
+      const returnedList = await validatorList()
+
+      // Then
+      returnedList.should.be.eql(validators)
+    })
+  })
 })

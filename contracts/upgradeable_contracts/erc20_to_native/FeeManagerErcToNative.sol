@@ -1,11 +1,11 @@
 pragma solidity 0.4.24;
 
-import "../BaseFeeManager.sol";
 import "../../IBlockReward.sol";
 import "../Sacrifice.sol";
+import "../ValidatorsFeeManager.sol";
 
 
-contract FeeManagerErcToNative is BaseFeeManager {
+contract FeeManagerErcToNative is ValidatorsFeeManager {
 
     function getFeeManagerMode() public pure returns(bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
@@ -24,5 +24,10 @@ contract FeeManagerErcToNative is BaseFeeManager {
         if (!_rewardAddress.send(_fee)) {
             (new Sacrifice).value(_fee)(_rewardAddress);
         }
+    }
+
+    function getAmountToBurn(uint256 _value) public view returns(uint256) {
+        uint256 fee = calculateFee(_value, false, HOME_FEE);
+        return _value.sub(fee);
     }
 }

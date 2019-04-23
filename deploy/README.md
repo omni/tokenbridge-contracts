@@ -58,7 +58,7 @@ BRIDGEABLE_TOKEN_DECIMALS=18
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
-HOME_RPC_URL=https://poa.infura.io
+HOME_RPC_URL=https://core.poa.network
 # Address on Home network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 HOME_BRIDGE_OWNER=0x
@@ -146,9 +146,9 @@ FOREIGN_TRANSACTIONS_FEE=0.001
 # The flag defining whether to use ERC677BridgeTokenRewardable contract instead of
 # ERC677BridgeToken.
 DEPLOY_REWARDABLE_TOKEN=false
-# The address of ValidatorSet contract used by ERC677BridgeTokenRewardable contract.
+# The address of Staking contract used by ERC677BridgeTokenRewardable contract.
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
-DPOS_VALIDATOR_SET_ADDRESS=0x
+DPOS_STAKING_ADDRESS=0x
 # The address of BlockReward contract used by ERC677BridgeTokenRewardable contract.
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
 BLOCK_REWARD_ADDRESS=0x
@@ -189,7 +189,7 @@ BRIDGEABLE_TOKEN_DECIMALS=18
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
-HOME_RPC_URL=https://poa.infura.io
+HOME_RPC_URL=https://core.poa.network
 # Address on Home network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 HOME_BRIDGE_OWNER=0x
@@ -252,6 +252,16 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
 VALIDATORS=0x 0x 0x
+
+# The flag defining whether to use ERC677BridgeTokenRewardable contract instead of
+# ERC677BridgeToken.
+DEPLOY_REWARDABLE_TOKEN=false
+# The address of Staking contract used by ERC677BridgeTokenRewardable contract.
+# Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
+DPOS_STAKING_ADDRESS=0x
+# The address of BlockReward contract used by ERC677BridgeTokenRewardable contract.
+# Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
+BLOCK_REWARD_ADDRESS=0x
 ```
 
 ## `ERC-TO-NATIVE` Bridge Mode Configuration Example. 
@@ -280,7 +290,7 @@ GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
-HOME_RPC_URL=https://poa.infura.io
+HOME_RPC_URL=https://core.poa.network
 # Address on Home network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 HOME_BRIDGE_OWNER=0x
@@ -355,6 +365,9 @@ HOME_REWARDABLE=false
 # Variable to define whether to use RewardableValidators contract and set a fee manager contract on Foreign network
 # Collecting fees on Foreign network is not supported on this bridge mode.
 FOREIGN_REWARDABLE=false
+# Variable to define if Home network is a POSDAO and rewards are distributed by blockReward contract to network validators or transferred directly to bridge validators.
+# Supported values are BRIDGE_VALIDATORS_REWARD and POSDAO_REWARD
+HOME_FEE_MANAGER_TYPE=BRIDGE_VALIDATORS_REWARD
 # List validators accounts were rewards should be transferred separated by space without quotes
 # Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
 VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x

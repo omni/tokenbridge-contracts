@@ -17,6 +17,7 @@ const EternalStorageProxy = require('../../../build/contracts/EternalStorageProx
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
 const FeeManagerErcToNative = require('../../../build/contracts/FeeManagerErcToNative.json')
+const FeeManagerErcToNativePOSDAO = require('../../../build/contracts/FeeManagerErcToNativePOSDAO.json')
 const HomeBridge = require('../../../build/contracts/HomeBridgeErcToNative.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
@@ -38,12 +39,14 @@ const {
   FOREIGN_MAX_AMOUNT_PER_TX,
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
-  FOREIGN_TRANSACTIONS_FEE
+  FOREIGN_TRANSACTIONS_FEE,
+  HOME_FEE_MANAGER_TYPE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
+const isFeeManagerPOSDAO = HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD'
 
 async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
@@ -51,7 +54,10 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
 
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
-    const feeManager = await deployContract(FeeManagerErcToNative, [], {
+    const feeManagerContract = isFeeManagerPOSDAO
+      ? FeeManagerErcToNativePOSDAO
+      : FeeManagerErcToNative
+    const feeManager = await deployContract(feeManagerContract, [], {
       from: DEPLOYMENT_ACCOUNT_ADDRESS,
       nonce
     })

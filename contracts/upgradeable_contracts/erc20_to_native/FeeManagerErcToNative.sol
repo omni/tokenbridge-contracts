@@ -25,4 +25,9 @@ contract FeeManagerErcToNative is ValidatorsFeeManager {
             (new Sacrifice).value(_fee)(_rewardAddress);
         }
     }
+
+    function getAmountToBurn(uint256 _value) public view returns(uint256) {
+        uint256 fee = calculateFee(_value, false, HOME_FEE);
+        return _value.sub(fee);
+    }
 }

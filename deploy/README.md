@@ -365,6 +365,9 @@ HOME_REWARDABLE=false
 # Variable to define whether to use RewardableValidators contract and set a fee manager contract on Foreign network
 # Collecting fees on Foreign network is not supported on this bridge mode.
 FOREIGN_REWARDABLE=false
+# Variable to define if Home network is a POSDAO and rewards are distributed by blockReward contract to network validators or transferred directly to bridge validators.
+# Supported values are BRIDGE_VALIDATORS_REWARD and POSDAO_REWARD
+HOME_FEE_MANAGER_TYPE=BRIDGE_VALIDATORS_REWARD
 # List validators accounts were rewards should be transferred separated by space without quotes
 # Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
 VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x

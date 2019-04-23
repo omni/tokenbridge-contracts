@@ -13,12 +13,9 @@ contract BlockRewardFeeManager is BaseFeeManager {
         distributeFeeFromBlockReward(_fee);
     }
 
-    function distributeFeeFromBlockReward(uint256 _fee) internal {
-        IBlockReward blockReward = _blockRewardContract();
-        blockReward.addBridgeTokenFeeReceivers(_fee);
-    }
-
     function _blockRewardContract() internal view returns(IBlockReward) {
         return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
     }
+
+    function distributeFeeFromBlockReward(uint256 _fee) internal;
 }

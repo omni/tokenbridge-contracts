@@ -52,6 +52,25 @@ contract BlockReward is IBlockReward {
         token = _token;
     }
 
+    function addBridgeNativeFeeReceivers(uint256 _amount) external {
+        feeAmount = _amount;
+        uint256 feePerValidator = _amount.div(validatorList.length);
+
+        uint256 randomValidatorIndex;
+        uint256 diff = _amount.sub(feePerValidator.mul(validatorList.length));
+        if (diff > 0) {
+            randomValidatorIndex = random(validatorList.length);
+        }
+
+        for (uint256 i = 0; i < validatorList.length; i++) {
+            uint256 feeToDistribute = feePerValidator;
+            if (diff > 0 && randomValidatorIndex == i) {
+                feeToDistribute = feeToDistribute.add(diff);
+            }
+            this.addExtraReceiver(feeToDistribute, validatorList[i]);
+        }
+    }
+
     function addBridgeTokenFeeReceivers(uint256 _amount) external {
         address[] memory receivers = new address[](validatorList.length);
         uint256[] memory rewards = new uint256[](validatorList.length);

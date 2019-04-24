@@ -109,10 +109,14 @@ async function sendNodeRequest(url, method, signedData) {
     })
   })
   const json = await request.json()
+  if (typeof json.error === 'undefined' || json.error === null) {
   if (method === 'eth_sendRawTransaction') {
     assert.strictEqual(json.result.length, 66, `Tx wasn't sent ${json}`)
   }
   return json.result
+  } else {
+    throw new Error(`web3 RPC failed: ${JSON.stringify(json.error)}`)
+  }
 }
 
 function timeout(ms) {

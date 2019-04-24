@@ -70,10 +70,18 @@ async function sendRawTxForeign(options) {
 
 async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) {
   try {
+    const  txToEstimateGas = {
+        from: privateKeyToAddress(Web3Utils.bytesToHex(privateKey)),
+        value: value,
+        to,
+        data
+    }
+    const estimatedGas = await sendNodeRequest(url, 'eth_estimateGas', txToEstimateGas)
+
     const rawTx = {
       nonce,
       gasPrice: Web3Utils.toHex(gasPrice),
-      gasLimit: Web3Utils.toHex(GAS_LIMIT),
+      gasLimit: estimatedGas,
       to,
       data,
       value

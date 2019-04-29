@@ -22,7 +22,7 @@ const addressesValidator = envalid.makeValidator(addresses => {
   return addresses
 })
 
-const { BRIDGE_MODE } = process.env
+const { BRIDGE_MODE, ERC20_EXTENDED_BY_ERC677 } = process.env
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)
@@ -76,7 +76,17 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
     DPOS_STAKING_ADDRESS: addressValidator(),
-    BLOCK_REWARD_ADDRESS: addressValidator()
+    BLOCK_REWARD_ADDRESS: addressValidator(),
+    ERC20_EXTENDED_BY_ERC677: envalid.bool()
+  }
+
+  if (ERC20_EXTENDED_BY_ERC677 === 'true') {
+    validations = {
+      ...validations,
+      FOREIGN_DAILY_LIMIT: bigNumValidator(),
+      FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
+      FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
+    }
   }
 }
 if (BRIDGE_MODE === 'ERC_TO_NATIVE') {

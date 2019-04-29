@@ -9,9 +9,6 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
 contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
-
-    event RelayedMessage(address recipient, uint value, bytes32 transactionHash);
-
     function initialize(
         address _validatorContract,
         address _erc20token,
@@ -22,6 +19,29 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         uint256 _homeMaxPerTx,
         address _owner
     ) public returns(bool) {
+        _initialize(
+            _validatorContract,
+            _erc20token,
+            _requiredBlockConfirmations,
+            _gasPrice,
+            _maxPerTx,
+            _homeDailyLimit,
+            _homeMaxPerTx,
+            _owner
+        );
+        return isInitialized();
+    }
+
+    function _initialize(
+        address _validatorContract,
+        address _erc20token,
+        uint256 _requiredBlockConfirmations,
+        uint256 _gasPrice,
+        uint256 _maxPerTx,
+        uint256 _homeDailyLimit,
+        uint256 _homeMaxPerTx,
+        address _owner
+    ) internal {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
@@ -38,7 +58,6 @@ contract ForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
         setOwner(_owner);
         setInitialize(true);
-        return isInitialized();
     }
 
     function getBridgeMode() public pure returns(bytes4 _data) {

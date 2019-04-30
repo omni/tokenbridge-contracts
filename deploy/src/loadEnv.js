@@ -49,6 +49,7 @@ let validations = {
   FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   FOREIGN_GAS_PRICE: bigNumValidator(),
+  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
   REQUIRED_NUMBER_OF_VALIDATORS: envalid.num(),
   VALIDATORS: addressesValidator()
 }
@@ -60,7 +61,6 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
-    FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
     DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
     DPOS_STAKING_ADDRESS: addressValidator(),
@@ -84,7 +84,6 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     validations = {
       ...validations,
       FOREIGN_DAILY_LIMIT: bigNumValidator(),
-      FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
       FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
     }
   }

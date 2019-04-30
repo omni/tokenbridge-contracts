@@ -1,15 +1,15 @@
 pragma solidity 0.4.24;
 
 
-import "./ForeignBridgeErcToErc.sol";
-import "../ERC20ExtendedBridge.sol";
+import "./BasicForeignBridgeErcToErc.sol";
+import "../ERC677Bridge.sol";
 
 
-contract ForeignBridgeExtendedErcToErc is ERC20ExtendedBridge, ForeignBridgeErcToErc {
+contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc {
 
     event UserRequestForAffirmation(address recipient, uint256 value);
 
-    function extendedInitialize(
+    function initialize(
         address _validatorContract,
         address _erc20token,
         uint256 _requiredBlockConfirmations,
@@ -22,8 +22,6 @@ contract ForeignBridgeExtendedErcToErc is ERC20ExtendedBridge, ForeignBridgeErcT
         address _owner
     ) public returns(bool) {
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
 
         _initialize(
             _validatorContract,
@@ -35,20 +33,19 @@ contract ForeignBridgeExtendedErcToErc is ERC20ExtendedBridge, ForeignBridgeErcT
             _homeMaxPerTx,
             _owner
         );
+
+        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
+        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
+
         return isInitialized();
     }
 
-    function initialize(
-        address /* _validatorContract */,
-        address /* _erc20token */,
-        uint256 /* _requiredBlockConfirmations */,
-        uint256 /* _gasPrice */,
-        uint256 /* _maxPerTx */,
-        uint256 /* _homeDailyLimit */,
-        uint256 /* _homeMaxPerTx */,
-        address /* _owner */
-    ) public returns(bool) {
-        revert();
+    function erc20token() public view returns(ERC20Basic) {
+        return erc677token();
+    }
+
+    function setErc20token(address _token) internal {
+        setErc677token(_token);
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {

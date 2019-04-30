@@ -6,11 +6,11 @@ import "../../upgradeability/EternalStorage.sol";
 import "../../IBurnableMintableERC677Token.sol";
 import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
-import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
+import "../ERC677BridgeForBurnableMintableToken.sol";
 
 
-contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677Bridge, OverdrawManagement {
+contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677BridgeForBurnableMintableToken, OverdrawManagement {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 

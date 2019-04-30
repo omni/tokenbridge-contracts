@@ -8,7 +8,7 @@ const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3'
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToErc.json')
-const ForeignBridgeExtendedErcToErc = require('../../../build/contracts/ForeignBridgeExtendedErcToErc.json')
+const ForeignBridgeErc677ToErc677 = require('../../../build/contracts/ForeignBridgeErc677ToErc677.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 
@@ -125,7 +125,7 @@ async function deployForeign() {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
-  const bridgeContract = ERC20_EXTENDED_BY_ERC677 ? ForeignBridgeExtendedErcToErc : ForeignBridge
+  const bridgeContract = ERC20_EXTENDED_BY_ERC677 ? ForeignBridgeErc677ToErc677 : ForeignBridge
   const foreignBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
@@ -163,7 +163,7 @@ async function deployForeign() {
 
   if (ERC20_EXTENDED_BY_ERC677) {
     initializeFBridgeData = await foreignBridgeImplementation.methods
-      .extendedInitialize(
+      .initialize(
         storageValidatorsForeign.options.address,
         ERC20_TOKEN_ADDRESS,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,

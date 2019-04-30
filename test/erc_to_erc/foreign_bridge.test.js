@@ -1,5 +1,5 @@
 const ForeignBridge = artifacts.require("ForeignBridgeErcToErc.sol");
-const ForeignBridgeExtended = artifacts.require("ForeignBridgeExtendedErcToErc.sol");
+const ForeignBridgeErc677ToErc677 = artifacts.require("ForeignBridgeErc677ToErc677.sol");
 const ForeignBridgeV2 = artifacts.require("ForeignBridgeV2.sol");
 const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
@@ -351,13 +351,13 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
 
     })
   })
-  describe('#ForeignBridgeExtendedErcToErc_onTokenTransfer', async () => {
+  describe('#ForeignBridgeErc677ToErc677_onTokenTransfer', async () => {
     it('can only be called from token contract', async ()=> {
       const owner = accounts[3]
       const user = accounts[4]
       token = await ERC677BridgeToken.new("TEST", "TST", 18, {from: owner});
-      const foreignBridge = await ForeignBridgeExtended.new();
-      await foreignBridge.extendedInitialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, dailyLimit, maxPerTx, minPerTx, homeDailyLimit, homeMaxPerTx, owner);
+      const foreignBridge = await ForeignBridgeErc677ToErc677.new();
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, dailyLimit, maxPerTx, minPerTx, homeDailyLimit, homeMaxPerTx, owner);
 
       await token.mint(user, halfEther, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
@@ -378,8 +378,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       const user = accounts[4]
       const valueMoreThanLimit = halfEther.add(1);
       token = await ERC677BridgeToken.new("TEST", "TST", 18, {from: owner});
-      const foreignBridge = await ForeignBridgeExtended.new();
-      await foreignBridge.extendedInitialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, dailyLimit, maxPerTx, minPerTx, homeDailyLimit, homeMaxPerTx, owner);
+      const foreignBridge = await ForeignBridgeErc677ToErc677.new();
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, dailyLimit, maxPerTx, minPerTx, homeDailyLimit, homeMaxPerTx, owner);
 
       await token.mint(user, valueMoreThanLimit, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
@@ -403,8 +403,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       const user = accounts[4]
       const valueMoreThanLimit = halfEther.add(1);
       token = await ERC677BridgeToken.new("TEST", "TST", 18, {from: owner});
-      const foreignBridge = await ForeignBridgeExtended.new();
-      await foreignBridge.extendedInitialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, dailyLimit, maxPerTx, minPerTx, homeDailyLimit, homeMaxPerTx, owner);
+      const foreignBridge = await ForeignBridgeErc677ToErc677.new();
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, dailyLimit, maxPerTx, minPerTx, homeDailyLimit, homeMaxPerTx, owner);
 
       await token.mint(user, oneEther.add(1), {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
@@ -435,8 +435,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async (accounts) => {
       const user = accounts[4]
       const valueLessThanMinPerTx = minPerTx.sub(1);
       token = await ERC677BridgeToken.new("TEST", "TST", 18, {from: owner});
-      const foreignBridge = await ForeignBridgeExtended.new();
-      await foreignBridge.extendedInitialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, dailyLimit, maxPerTx, minPerTx, homeDailyLimit, homeMaxPerTx, owner);
+      const foreignBridge = await ForeignBridgeErc677ToErc677.new();
+      await foreignBridge.initialize(validatorContract.address, token.address, requireBlockConfirmations, gasPrice, dailyLimit, maxPerTx, minPerTx, homeDailyLimit, homeMaxPerTx, owner);
 
       await token.mint(user, oneEther, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});

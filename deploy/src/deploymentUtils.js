@@ -149,7 +149,8 @@ function logValidatorsAndRewardAccounts(validators, rewards) {
 
 async function upgradeProxy({ proxy, implementationAddress, version, nonce, url }) {
   const data = await proxy.methods.upgradeTo(version, implementationAddress).encodeABI()
-  const result = await sendRawTxHome({
+  const sendTx = getSendTxMethod(url)
+  const result = await sendTx({
     data,
     nonce,
     to: proxy.options.address,
@@ -165,7 +166,8 @@ async function upgradeProxy({ proxy, implementationAddress, version, nonce, url 
 
 async function transferProxyOwnership({ proxy, newOwner, nonce, url }) {
   const data = await proxy.methods.transferProxyOwnership(newOwner).encodeABI()
-  const result = await sendRawTxHome({
+  const sendTx = getSendTxMethod(url)
+  const result = await sendTx({
     data,
     nonce,
     to: proxy.options.address,
@@ -181,7 +183,8 @@ async function transferProxyOwnership({ proxy, newOwner, nonce, url }) {
 
 async function transferOwnership({ contract, newOwner, nonce, url }) {
   const data = await contract.methods.transferOwnership(newOwner).encodeABI()
-  const result = await sendRawTxForeign({
+  const sendTx = getSendTxMethod(url)
+  const result = await sendTx({
     data,
     nonce,
     to: contract.options.address,
@@ -197,7 +200,8 @@ async function transferOwnership({ contract, newOwner, nonce, url }) {
 
 async function setBridgeContract({ contract, bridgeAddress, nonce, url }) {
   const data = await contract.methods.setBridgeContract(bridgeAddress).encodeABI()
-  const result = await sendRawTxForeign({
+  const sendTx = getSendTxMethod(url)
+  const result = await sendTx({
     data,
     nonce,
     to: contract.options.address,
@@ -235,8 +239,8 @@ async function initializeValidators({
     )
     data = await contract.methods.initialize(requiredNumber, validators, owner).encodeABI()
   }
-
-  const result = await sendRawTxHome({
+  const sendTx = getSendTxMethod(url)
+  const result = await sendTx({
     data,
     nonce,
     to: contract.options.address,
@@ -257,6 +261,10 @@ async function assertStateWithRetry(fn, expected) {
       retry(`Transaction Failed. Expected: ${expected} Actual: ${value}`)
     }
   })
+}
+
+function getSendTxMethod(url) {
+  return url === HOME_RPC_URL ? sendRawTxHome : sendRawTxForeign
 }
 
 module.exports = {

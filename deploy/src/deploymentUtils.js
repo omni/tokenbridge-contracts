@@ -224,14 +224,14 @@ async function initializeValidators({
   let data
 
   if (isRewardableBridge) {
-    console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${requiredNumber}, HOME_VALIDATORS_OWNER: ${owner}`)
+    console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${requiredNumber}, VALIDATORS_OWNER: ${owner}`)
     logValidatorsAndRewardAccounts(validators, rewardAccounts)
     data = await contract.methods
       .initialize(requiredNumber, validators, rewardAccounts, owner)
       .encodeABI()
   } else {
     console.log(
-      `REQUIRED_NUMBER_OF_VALIDATORS: ${requiredNumber}, VALIDATORS: ${validators}, HOME_VALIDATORS_OWNER: ${owner}`
+      `REQUIRED_NUMBER_OF_VALIDATORS: ${requiredNumber}, VALIDATORS: ${validators}, VALIDATORS_OWNER: ${owner}`
     )
     data = await contract.methods.initialize(requiredNumber, validators, owner).encodeABI()
   }

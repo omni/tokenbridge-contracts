@@ -232,6 +232,8 @@ FOREIGN_GAS_PRICE=10000000000
 # The address of the existing ERC20 compatible token in the Foreign network to
 # be exchanged to the ERC20/ERC677 token deployed on Home.
 ERC20_TOKEN_ADDRESS=0x
+# Flag to specify that the existing ERC20 is also ERC677 compatible and want the Foreign bridge to use it as ERC677 to increase security.
+ERC20_EXTENDED_BY_ERC677=false
 
 # The minimum number of validators required to send their signatures confirming
 # the relay of assets. The same number of validators is expected on both sides

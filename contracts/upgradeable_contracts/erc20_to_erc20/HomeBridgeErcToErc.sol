@@ -61,7 +61,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
 
     function onExecuteAffirmation(address _recipient, uint256 _value) internal returns(bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-        return erc677token().mint(_recipient, _value);
+        return IBurnableMintableERC677Token(erc677token()).mint(_recipient, _value);
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {

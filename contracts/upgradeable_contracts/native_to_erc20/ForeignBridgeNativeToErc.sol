@@ -51,12 +51,12 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfOwnerOfProxy {
-        erc677token().claimTokens(_token, _to);
+        IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool){
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
-        return erc677token().mint(_recipient, _amount);
+        return IBurnableMintableERC677Token(erc677token()).mint(_recipient, _amount);
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {

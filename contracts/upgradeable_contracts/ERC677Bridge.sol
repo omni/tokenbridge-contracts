@@ -3,11 +3,10 @@ pragma solidity 0.4.24;
 
 import "./BasicBridge.sol";
 import "../ERC677.sol";
-import "../IBurnableMintableERC677Token.sol";
 
 contract ERC677Bridge is BasicBridge {
-    function erc677token() public view returns(IBurnableMintableERC677Token) {
-        return IBurnableMintableERC677Token(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
+    function erc677token() public view returns(ERC677) {
+        return ERC677(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
     }
 
     function setErc677token(address _token) internal {
@@ -16,7 +15,7 @@ contract ERC677Bridge is BasicBridge {
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes /*_data*/) external returns(bool) {
-        IBurnableMintableERC677Token token = erc677token();
+        ERC677 token = erc677token();
         require(msg.sender == address(token));
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
@@ -24,7 +23,7 @@ contract ERC677Bridge is BasicBridge {
         return true;
     }
 
-    function bridgeSpecificActionsOnTokenTransfer(IBurnableMintableERC677Token _token, address _from, uint256 _value) internal {
+    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value) internal {
         fireEventOnTokenTransfer(_from, _value);
     }
 

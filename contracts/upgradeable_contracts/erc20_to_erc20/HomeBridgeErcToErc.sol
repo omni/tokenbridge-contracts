@@ -6,13 +6,12 @@ import "../../upgradeability/EternalStorage.sol";
 import "../../IBurnableMintableERC677Token.sol";
 import "../../ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
-import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToErc.sol";
-import "../../IBlockReward.sol";
+import "../ERC677BridgeForBurnableMintableToken.sol";
 
 
-contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677Bridge, OverdrawManagement, RewardableHomeBridgeErcToErc {
+contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677BridgeForBurnableMintableToken, OverdrawManagement, RewardableHomeBridgeErcToErc {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
@@ -170,7 +169,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
             distributeFeeFromAffirmation(fee, feeManager, txHash);
             valueToMint = valueToMint.sub(fee);
         }
-        return erc677token().mint(_recipient, valueToMint);
+        return IBurnableMintableERC677Token(erc677token()).mint(_recipient, valueToMint);
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {

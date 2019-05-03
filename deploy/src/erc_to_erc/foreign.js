@@ -16,6 +16,7 @@ const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3'
 const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
 const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
 const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToErc.json')
+const ForeignBridgeErc677ToErc677 = require('../../../build/contracts/ForeignBridgeErc677ToErc677.json')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 
@@ -30,7 +31,10 @@ const {
   FOREIGN_GAS_PRICE,
   FOREIGN_MAX_AMOUNT_PER_TX,
   HOME_DAILY_LIMIT,
-  HOME_MAX_AMOUNT_PER_TX
+  HOME_MAX_AMOUNT_PER_TX,
+  FOREIGN_MIN_AMOUNT_PER_TX,
+  FOREIGN_DAILY_LIMIT,
+  ERC20_EXTENDED_BY_ERC677
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -48,18 +52,37 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   )} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER}
   `)
-  const initializeFBridgeData = await bridge.methods
-    .initialize(
-      validatorsBridge.options.address,
-      ERC20_TOKEN_ADDRESS,
-      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-      FOREIGN_GAS_PRICE,
-      FOREIGN_MAX_AMOUNT_PER_TX,
-      HOME_DAILY_LIMIT,
-      HOME_MAX_AMOUNT_PER_TX,
-      FOREIGN_BRIDGE_OWNER
-    )
-    .encodeABI()
+  let initializeFBridgeData
+
+  if (ERC20_EXTENDED_BY_ERC677) {
+    initializeFBridgeData = await foreignBridgeImplementation.methods
+      .initialize(
+        storageValidatorsForeign.options.address,
+        ERC20_TOKEN_ADDRESS,
+        FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+        FOREIGN_GAS_PRICE,
+        FOREIGN_DAILY_LIMIT,
+        FOREIGN_MAX_AMOUNT_PER_TX,
+        FOREIGN_MIN_AMOUNT_PER_TX,
+        HOME_DAILY_LIMIT,
+        HOME_MAX_AMOUNT_PER_TX,
+        FOREIGN_BRIDGE_OWNER
+      )
+      .encodeABI()
+  } else {
+    initializeFBridgeData = await foreignBridgeImplementation.methods
+      .initialize(
+        storageValidatorsForeign.options.address,
+        ERC20_TOKEN_ADDRESS,
+        FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+        FOREIGN_GAS_PRICE,
+        FOREIGN_MAX_AMOUNT_PER_TX,
+        HOME_DAILY_LIMIT,
+        HOME_MAX_AMOUNT_PER_TX,
+        FOREIGN_BRIDGE_OWNER
+      )
+      .encodeABI()
+  }
   const txInitializeBridge = await sendRawTxForeign({
     data: initializeFBridgeData,
     nonce,
@@ -146,7 +169,8 @@ async function deployForeign() {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
-  const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
+  const bridgeContract = ERC20_EXTENDED_BY_ERC677 ? ForeignBridgeErc677ToErc677 : ForeignBridge
+  const foreignBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce

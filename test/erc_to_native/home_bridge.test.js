@@ -456,6 +456,32 @@ contract('HomeBridge_ERC20_to_Native', async (accounts) => {
       true.should.be.equal(await homeBridge.affirmationsSigned(senderHash))
     })
 
+    it('should allow validator to executeAffirmation with zero value', async () => {
+      const recipient = accounts[5];
+      const value = web3.toBigNumber(web3.toWei(0, "ether"));
+      const balanceBefore = await web3.eth.getBalance(recipient)
+      const transactionHash = "0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415";
+      const {logs} = await homeBridge.executeAffirmation(recipient, value, transactionHash, {from: authorities[0]})
+
+      logs[0].event.should.be.equal("SignedForAffirmation");
+      logs[0].args.should.be.deep.equal({
+        signer: authorities[0],
+        transactionHash
+      });
+      logs[1].event.should.be.equal("AffirmationCompleted");
+      logs[1].args.should.be.deep.equal({
+        recipient,
+        value,
+        transactionHash
+      })
+      const balanceAfter = await web3.eth.getBalance(recipient)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+
+      const msgHash = Web3Utils.soliditySha3(recipient, value, transactionHash);
+      const senderHash = Web3Utils.soliditySha3(authorities[0], msgHash)
+      true.should.be.equal(await homeBridge.affirmationsSigned(senderHash))
+    })
+
     it('test with 2 signatures required', async () => {
       const validatorContractWith2Signatures = await BridgeValidators.new()
       const authoritiesThreeAccs = [accounts[1], accounts[2], accounts[3]];

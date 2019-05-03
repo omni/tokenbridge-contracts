@@ -5,11 +5,11 @@ import "../../IBurnableMintableERC677Token.sol";
 import "../../ERC677Receiver.sol";
 import "../BasicForeignBridge.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
-import "../ERC677Bridge.sol";
+import "../ERC677BridgeForBurnableMintableToken.sol";
 import "./RewardableForeignBridgeNativeToErc.sol";
 
 
-contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBridge, ERC677Bridge, RewardableForeignBridgeNativeToErc {
+contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBridge, ERC677BridgeForBurnableMintableToken, RewardableForeignBridgeNativeToErc {
 
     /// Event created on money withdraw.
     event UserRequestForAffirmation(address recipient, uint256 value);
@@ -80,7 +80,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfOwnerOfProxy {
-        erc677token().claimTokens(_token, _to);
+        IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
 
     function _initialize(
@@ -125,7 +125,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
                 valueToMint = valueToMint.sub(fee);
             }
         }
-        return erc677token().mint(_recipient, valueToMint);
+        return IBurnableMintableERC677Token(erc677token()).mint(_recipient, valueToMint);
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {

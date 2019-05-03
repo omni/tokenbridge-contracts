@@ -40,7 +40,8 @@ const {
   VALIDATORS,
   VALIDATORS_REWARD_ACCOUNTS,
   DEPLOY_REWARDABLE_TOKEN,
-  HOME_FEE_MANAGER_TYPE
+  HOME_FEE_MANAGER_TYPE,
+  ERC20_EXTENDED_BY_ERC677
 } = process.env
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
@@ -61,7 +62,7 @@ if (!validRewardModes.includes(FOREIGN_REWARDABLE)) {
 
 let validations = {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY: envalid.str(),
-  DEPLOYMENT_GAS_LIMIT: bigNumValidator(),
+  DEPLOYMENT_GAS_LIMIT_EXTRA: envalid.num(),
   HOME_DEPLOYMENT_GAS_PRICE: bigNumValidator(),
   FOREIGN_DEPLOYMENT_GAS_PRICE: bigNumValidator(),
   GET_RECEIPT_INTERVAL_IN_MILLISECONDS: bigNumValidator(),
@@ -80,6 +81,7 @@ let validations = {
   FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   FOREIGN_GAS_PRICE: bigNumValidator(),
+  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
   REQUIRED_NUMBER_OF_VALIDATORS: envalid.num(),
   VALIDATORS: addressesValidator()
 }
@@ -91,7 +93,6 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
-    FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
     DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
     BLOCK_REWARD_ADDRESS: addressValidator()
@@ -125,7 +126,16 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
     DPOS_STAKING_ADDRESS: addressValidator(),
-    BLOCK_REWARD_ADDRESS: addressValidator()
+    BLOCK_REWARD_ADDRESS: addressValidator(),
+    ERC20_EXTENDED_BY_ERC677: envalid.bool()
+  }
+
+  if (ERC20_EXTENDED_BY_ERC677 === 'true') {
+    validations = {
+      ...validations,
+      FOREIGN_DAILY_LIMIT: bigNumValidator(),
+      FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
+    }
   }
 
   if (FOREIGN_REWARDABLE !== 'false') {

@@ -72,18 +72,20 @@ async function sendRawTxForeign(options) {
 
 async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) {
   try {
-    const  txToEstimateGas = {
-        from: privateKeyToAddress(Web3Utils.bytesToHex(privateKey)),
-        value: value,
-        to,
-        data
+    const txToEstimateGas = {
+      from: privateKeyToAddress(Web3Utils.bytesToHex(privateKey)),
+      value,
+      to,
+      data
     }
     const estimatedGas = BigNumber(await sendNodeRequest(url, 'eth_estimateGas', txToEstimateGas))
-    
-    const blockData = await sendNodeRequest(url, 'eth_getBlockByNumber', ["latest", false])
+
+    const blockData = await sendNodeRequest(url, 'eth_getBlockByNumber', ['latest', false])
     const blockGasLimit = BigNumber(blockData.gasLimit)
     if (estimatedGas.isGreaterThan(blockGasLimit)) {
-      throw new Error(`estimated gas greater (${estimatedGas.toString()}) than the block gas limit (${blockGasLimit.toString()})`)
+      throw new Error(
+        `estimated gas greater (${estimatedGas.toString()}) than the block gas limit (${blockGasLimit.toString()})`
+      )
     }
     let gas = estimatedGas.multipliedBy(BigNumber(1 + GAS_LIMIT_EXTRA))
     if (gas.isGreaterThan(blockGasLimit)) {
@@ -117,7 +119,7 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) 
 }
 
 async function sendNodeRequest(url, method, signedData) {
-  if (! Array.isArray(signedData)) {
+  if (!Array.isArray(signedData)) {
     signedData = [signedData]
   }
   const request = await fetch(url, {
@@ -134,13 +136,12 @@ async function sendNodeRequest(url, method, signedData) {
   })
   const json = await request.json()
   if (typeof json.error === 'undefined' || json.error === null) {
-  if (method === 'eth_sendRawTransaction') {
-    assert.strictEqual(json.result.length, 66, `Tx wasn't sent ${json}`)
+    if (method === 'eth_sendRawTransaction') {
+      assert.strictEqual(json.result.length, 66, `Tx wasn't sent ${json}`)
+    }
+    return json.result
   }
-  return json.result
-  } else {
-    throw new Error(`web3 RPC failed: ${JSON.stringify(json.error)}`)
-  }
+  throw new Error(`web3 RPC failed: ${JSON.stringify(json.error)}`)
 }
 
 function timeout(ms) {

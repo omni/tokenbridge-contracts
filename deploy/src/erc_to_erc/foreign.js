@@ -55,9 +55,9 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   let initializeFBridgeData
 
   if (ERC20_EXTENDED_BY_ERC677) {
-    initializeFBridgeData = await foreignBridgeImplementation.methods
+    initializeFBridgeData = await bridge.methods
       .initialize(
-        storageValidatorsForeign.options.address,
+        validatorsBridge.options.address,
         ERC20_TOKEN_ADDRESS,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
         FOREIGN_GAS_PRICE,
@@ -70,9 +70,9 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
       )
       .encodeABI()
   } else {
-    initializeFBridgeData = await foreignBridgeImplementation.methods
+    initializeFBridgeData = await bridge.methods
       .initialize(
-        storageValidatorsForeign.options.address,
+        validatorsBridge.options.address,
         ERC20_TOKEN_ADDRESS,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
         FOREIGN_GAS_PRICE,

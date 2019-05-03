@@ -1,3 +1,4 @@
+const BigNumber = require('bignumber.js')
 const Web3 = require('web3')
 const Tx = require('ethereumjs-tx')
 const Web3Utils = require('web3-utils')
@@ -9,7 +10,7 @@ const {
   deploymentPrivateKey,
   FOREIGN_RPC_URL,
   HOME_RPC_URL,
-  GAS_LIMIT,
+  GAS_LIMIT_EXTRA,
   HOME_DEPLOYMENT_GAS_PRICE,
   FOREIGN_DEPLOYMENT_GAS_PRICE,
   GET_RECEIPT_INTERVAL_IN_MILLISECONDS
@@ -76,12 +77,24 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) 
         to,
         data
     }
-    const estimatedGas = await sendNodeRequest(url, 'eth_estimateGas', txToEstimateGas)
+    const estimatedGas = BigNumber(await sendNodeRequest(url, 'eth_estimateGas', txToEstimateGas))
+    
+    const blockData = await sendNodeRequest(url, 'eth_getBlockByNumber', ["latest", false])
+    const blockGasLimit = BigNumber(blockData.gasLimit)
+    if (estimatedGas.isGreaterThan(blockGasLimit)) {
+      throw new Error(`estimated gas greater (${estimatedGas.toString()}) than the block gas limit (${blockGasLimit.toString()})`)
+    }
+    let gas = estimatedGas.multipliedBy(BigNumber(1 + GAS_LIMIT_EXTRA))
+    if (gas.isGreaterThan(blockGasLimit)) {
+      gas = blockGasLimit
+    } else {
+      gas = gas.toFixed(0)
+    }
 
     const rawTx = {
       nonce,
       gasPrice: Web3Utils.toHex(gasPrice),
-      gasLimit: estimatedGas,
+      gasLimit: Web3Utils.toHex(gas),
       to,
       data,
       value
@@ -104,6 +117,9 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) 
 }
 
 async function sendNodeRequest(url, method, signedData) {
+  if (! Array.isArray(signedData)) {
+    signedData = [signedData]
+  }
   const request = await fetch(url, {
     headers: {
       'Content-type': 'application/json'
@@ -112,7 +128,7 @@ async function sendNodeRequest(url, method, signedData) {
     body: JSON.stringify({
       jsonrpc: '2.0',
       method,
-      params: [signedData],
+      params: signedData,
       id: 1
     })
   })

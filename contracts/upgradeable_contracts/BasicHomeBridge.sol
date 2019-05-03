@@ -37,7 +37,9 @@ contract BasicHomeBridge is EternalStorage, Validatable {
                 // If the bridge contract does not own enough tokens to transfer
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-                require(onExecuteAffirmation(recipient, value, transactionHash));
+                if (value > 0) {
+                    require(onExecuteAffirmation(recipient, value, transactionHash));
+                }
                 emit AffirmationCompleted(recipient, value, transactionHash);
             }
         } else {

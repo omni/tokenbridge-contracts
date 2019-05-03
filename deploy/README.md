@@ -36,8 +36,10 @@ BRIDGE_MODE=NATIVE_TO_ERC
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
-# The "gas" parameter set in every deployment/configuration transaction.
-DEPLOYMENT_GAS_LIMIT=4000000
+# Extra gas added to the estimated gas of a particular deployment/configuration transaction
+# E.g. if estimated gas returns 100000 and the parameter is 0.2, 
+# the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
+DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on
 # Home network (in Wei).
 HOME_DEPLOYMENT_GAS_PRICE=10000000000
@@ -152,8 +154,10 @@ BRIDGE_MODE=ERC_TO_ERC
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
-# The "gas" parameter set in every deployment/configuration transaction.
-DEPLOYMENT_GAS_LIMIT=4000000
+# Extra gas added to the estimated gas of a particular deployment/configuration transaction
+# E.g. if estimated gas returns 100000 and the parameter is 0.2, 
+# the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
+DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on
 # Home network (in Wei).
 HOME_DEPLOYMENT_GAS_PRICE=10000000000
@@ -268,8 +272,10 @@ BRIDGE_MODE=ERC_TO_NATIVE
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
-# The "gas" parameter set in every deployment/configuration transaction.
-DEPLOYMENT_GAS_LIMIT=4000000
+# Extra gas added to the estimated gas of a particular deployment/configuration transaction
+# E.g. if estimated gas returns 100000 and the parameter is 0.2, 
+# the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
+DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on
 # Home network (in Wei).
 HOME_DEPLOYMENT_GAS_PRICE=10000000000

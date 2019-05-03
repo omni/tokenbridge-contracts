@@ -30,7 +30,7 @@ if (!validBridgeModes.includes(BRIDGE_MODE)) {
 
 let validations = {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY: envalid.str(),
-  DEPLOYMENT_GAS_LIMIT: bigNumValidator(),
+  DEPLOYMENT_GAS_LIMIT_EXTRA: envalid.num(),
   HOME_DEPLOYMENT_GAS_PRICE: bigNumValidator(),
   FOREIGN_DEPLOYMENT_GAS_PRICE: bigNumValidator(),
   GET_RECEIPT_INTERVAL_IN_MILLISECONDS: bigNumValidator(),

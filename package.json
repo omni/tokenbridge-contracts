@@ -6,7 +6,7 @@
   "scripts": {
     "test": "scripts/test.sh",
     "deploy": "truffle migrate --reset --network $NETWORK",
-    "compile": "truffle compile",
+    "compile": "truffle compile && truffle compile spuriousDragon",
     "flatten": "bash flatten.sh",
     "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test"
   },

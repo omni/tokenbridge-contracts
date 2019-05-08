@@ -1,4 +1,9 @@
+const spuriousDragonVersion = process.argv[3] === 'spuriousDragon'
+const contractsBuildDirectory = spuriousDragonVersion ? './build/spuriousDragon' : './build/contracts'
+const evmVersion = spuriousDragonVersion ? 'spuriousDragon' : 'byzantium'
+
 module.exports = {
+  contracts_build_directory: contractsBuildDirectory,
   networks: {
     coverage: {
       host: 'localhost',
@@ -22,7 +27,7 @@ module.exports = {
           enabled: true,
           runs: 200
         },
-        evmVersion: "byzantium"
+        evmVersion: evmVersion
       }
     }
   },

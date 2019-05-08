@@ -12,11 +12,14 @@ const {
   assertStateWithRetry
 } = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
-
-const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
-const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
-const ForeignBridge = require('../../../build/contracts/ForeignBridgeErcToErc.json')
-const ForeignBridgeErc677ToErc677 = require('../../../build/contracts/ForeignBridgeErc677ToErc677.json')
+const {
+  foreignContracts: {
+    EternalStorageProxy,
+    BridgeValidators,
+    ForeignBridgeErcToErc: ForeignBridge,
+    ForeignBridgeErc677ToErc677
+  }
+} = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 

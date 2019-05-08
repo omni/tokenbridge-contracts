@@ -12,13 +12,16 @@ const {
   assertStateWithRetry
 } = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
-
-const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
-const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
-const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
-const FeeManagerNativeToErc = require('../../../build/contracts/FeeManagerNativeToErc.json')
-const FeeManagerNativeToErcBothDirections = require('../../../build/contracts/FeeManagerNativeToErcBothDirections.json')
-const HomeBridge = require('../../../build/contracts/HomeBridgeNativeToErc.json')
+const {
+  homeContracts: {
+    EternalStorageProxy,
+    BridgeValidators,
+    RewardableValidators,
+    FeeManagerNativeToErc,
+    HomeBridgeNativeToErc: HomeBridge,
+    FeeManagerNativeToErcBothDirections
+  }
+} = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')

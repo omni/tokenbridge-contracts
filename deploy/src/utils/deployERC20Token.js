@@ -5,7 +5,9 @@ const env = require('../loadEnv')
 const { deployContract, privateKeyToAddress, sendRawTxForeign } = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
 
-const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
+const {
+  foreignContracts: { ERC677BridgeToken }
+} = require('../loadContracts')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,

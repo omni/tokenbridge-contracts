@@ -1,7 +1,9 @@
 const Web3Utils = require('web3-utils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 const { deployContract, privateKeyToAddress, sendRawTxHome } = require('../deploymentUtils')
-const BlockReward = require('../../../build/contracts/BlockReward.json')
+const {
+  homeContracts: { BlockReward }
+} = require('../loadContracts')
 const env = require('../loadEnv')
 
 const { DEPLOYMENT_ACCOUNT_PRIVATE_KEY } = env

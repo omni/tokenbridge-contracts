@@ -14,14 +14,17 @@ const {
   assertStateWithRetry
 } = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
-
-const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
-const ERC677BridgeTokenRewardable = require('../../../build/contracts/ERC677BridgeTokenRewardable.json')
-const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
-const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
-const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
-const FeeManagerNativeToErc = require('../../../build/contracts/FeeManagerNativeToErc.json')
-const ForeignBridge = require('../../../build/contracts/ForeignBridgeNativeToErc.json')
+const {
+  foreignContracts: {
+    EternalStorageProxy,
+    BridgeValidators,
+    RewardableValidators,
+    ForeignBridgeNativeToErc: ForeignBridge,
+    ERC677BridgeToken,
+    ERC677BridgeTokenRewardable,
+    FeeManagerNativeToErc
+  }
+} = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')

@@ -1,10 +1,12 @@
-var BigNumber = web3.BigNumber;
+const BN = web3.utils.BN;
 
 require('chai')
   .use(require('chai-as-promised'))
-  .use(require('chai-bignumber')(BigNumber))
-  .should();
+  .use(require('chai-bn')(BN))
 
+require('chai/register-should');
+
+exports.BN = BN
 exports.ERROR_MSG = 'VM Exception while processing transaction: revert';
 exports.ERROR_MSG_OPCODE = 'VM Exception while processing transaction: invalid opcode';
 exports.ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'

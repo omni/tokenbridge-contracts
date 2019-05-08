@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "scripts/test.sh",
+    "test:gasreport": "GASREPORT=true npm run test",
     "compile": "truffle compile && truffle compile spuriousDragon",
     "flatten": "bash flatten.sh",
     "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test"

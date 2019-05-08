@@ -1,6 +1,15 @@
 const spuriousDragonVersion = process.argv[3] === 'spuriousDragon'
 const contractsBuildDirectory = spuriousDragonVersion ? './build/spuriousDragon' : './build/contracts'
 const evmVersion = spuriousDragonVersion ? 'spuriousDragon' : 'byzantium'
+const mochaOptions = process.env.GASREPORT === 'true'
+  ? {
+    reporter: 'eth-gas-reporter',
+    reporterOptions : {
+      currency: 'USD',
+      gasPrice: 1
+    }
+  }
+  : {}
 
 module.exports = {
   contracts_build_directory: contractsBuildDirectory,
@@ -31,11 +40,5 @@ module.exports = {
       }
     }
   },
-  mocha: {
-    reporter: 'eth-gas-reporter',
-     reporterOptions : {
-       currency: 'USD',
-       gasPrice: 1
-     }
-  }
+  mocha: mochaOptions
 };

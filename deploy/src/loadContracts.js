@@ -28,7 +28,9 @@ function getContracts(evmVersion) {
     FeeManagerNativeToErc: require(`../../build/${buildPath}/FeeManagerNativeToErc.json`),
     ForeignBridgeNativeToErc: require(`../../build/${buildPath}/ForeignBridgeNativeToErc.json`),
     FeeManagerNativeToErcBothDirections: require(`../../build/${buildPath}/FeeManagerNativeToErcBothDirections.json`),
-    HomeBridgeNativeToErc: require(`../../build/${buildPath}/HomeBridgeNativeToErc.json`),
+    HomeBridgeNativeToErc: useClassicProxy
+      ? require(`../../build/${buildPath}/ClassicHomeBridgeNativeToErc.json`)
+      : require(`../../build/${buildPath}/HomeBridgeNativeToErc.json`),
     BlockReward: require(`../../build/${buildPath}/BlockReward.json`)
   }
 }

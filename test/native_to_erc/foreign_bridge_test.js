@@ -4,21 +4,23 @@ const BridgeValidators = artifacts.require("BridgeValidators.sol");
 const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
 const FeeManagerNativeToErc = artifacts.require("FeeManagerNativeToErc.sol");
 const RewardableValidators = artifacts.require("RewardableValidators.sol");
-
 const POA20 = artifacts.require("ERC677BridgeToken.sol");
-const {ERROR_MSG, ZERO_ADDRESS, ERROR_MSG_OPCODE} = require('../setup');
-const {createMessage, sign, signatureToVRS, strip0x, getEvents} = require('../helpers/helpers');
-const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
-const minPerTx = web3.toBigNumber(web3.toWei(0.01, "ether"));
-const Web3Utils = require('web3-utils');
+
+const { expect } = require('chai');
+const {ERROR_MSG, ZERO_ADDRESS, toBN} = require('../setup');
+const {createMessage, sign, signatureToVRS, getEvents, ether} = require('../helpers/helpers');
+
+const oneEther = ether('1');
+const halfEther = ether('0.5');
+const minPerTx = ether('0.01');
 const requireBlockConfirmations = 8;
-const gasPrice = Web3Utils.toWei('1', 'gwei');
+const gasPrice = web3.utils.toWei('1', 'gwei');
 const homeDailyLimit = oneEther
 const homeMaxPerTx = halfEther
+const ZERO = toBN(0)
 
 contract('ForeignBridge', async (accounts) => {
-  let validatorContract, authorities, rewards, owner, token;
+  let validatorContract, authorities, owner, token;
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]];
@@ -31,11 +33,12 @@ contract('ForeignBridge', async (accounts) => {
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       let foreignBridge =  await ForeignBridge.new();
 
-      ZERO_ADDRESS.should.be.equal(await foreignBridge.validatorContract())
-      '0'.should.be.bignumber.equal(await foreignBridge.deployedAtBlock())
-      '0'.should.be.bignumber.equal(await foreignBridge.dailyLimit())
-      '0'.should.be.bignumber.equal(await foreignBridge.maxPerTx())
-      false.should.be.equal(await foreignBridge.isInitialized())
+      expect(await foreignBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
+      expect(await foreignBridge.deployedAtBlock()).to.be.bignumber.equal(ZERO)
+      expect(await foreignBridge.isInitialized()).to.be.equal(false)
+      expect(await foreignBridge.requiredBlockConfirmations()).to.be.bignumber.equal(ZERO)
+      expect(await foreignBridge.dailyLimit()).to.be.bignumber.equal(ZERO)
+      expect(await foreignBridge.maxPerTx()).to.be.bignumber.equal(ZERO)
 
       await foreignBridge.initialize(ZERO_ADDRESS, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.initialize(validatorContract.address, ZERO_ADDRESS, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
@@ -44,41 +47,40 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridge.initialize(validatorContract.address, owner, oneEther, halfEther, minPerTx, requireBlockConfirmations, gasPrice, homeDailyLimit, homeMaxPerTx, owner).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner);
 
-      true.should.be.equal(await foreignBridge.isInitialized())
-      validatorContract.address.should.be.equal(await foreignBridge.validatorContract());
-      (await foreignBridge.deployedAtBlock()).should.be.bignumber.above(0);
-      oneEther.should.be.bignumber.equal(await foreignBridge.dailyLimit())
-      halfEther.should.be.bignumber.equal(await foreignBridge.maxPerTx())
-      minPerTx.should.be.bignumber.equal(await foreignBridge.minPerTx())
+      expect(await foreignBridge.isInitialized()).to.be.equal(true)
+      expect(await foreignBridge.validatorContract()).to.be.equal(validatorContract.address)
+      expect(await foreignBridge.deployedAtBlock()).to.be.bignumber.above(ZERO)
+      expect(await foreignBridge.requiredBlockConfirmations()).to.be.bignumber.equal(requireBlockConfirmations.toString())
+      expect(await foreignBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
+      expect(await foreignBridge.dailyLimit()).to.be.bignumber.equal(oneEther)
+      expect(await foreignBridge.maxPerTx()).to.be.bignumber.equal(halfEther)
+      expect(await foreignBridge.minPerTx()).to.be.bignumber.equal(minPerTx)
       const bridgeMode = '0x92a8d7fe' // 4 bytes of keccak256('native-to-erc-core')
-      const mode = await foreignBridge.getBridgeMode();
-      mode.should.be.equal(bridgeMode)
-      const [major, minor, patch] = await foreignBridge.getBridgeInterfacesVersion()
-      major.should.be.bignumber.gte(0)
-      minor.should.be.bignumber.gte(0)
-      patch.should.be.bignumber.gte(0)
+      expect(await foreignBridge.getBridgeMode()).to.be.equal(bridgeMode)
+      const { major, minor, patch } = await foreignBridge.getBridgeInterfacesVersion()
+      expect(major).to.be.bignumber.gte(ZERO)
+      expect(minor).to.be.bignumber.gte(ZERO)
+      expect(patch).to.be.bignumber.gte(ZERO)
     })
   })
 
   describe('#executeSignatures', async () => {
+    let foreignBridge
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
-      const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
-      const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner);
-      oneEther.should.be.bignumber.equal(await foreignBridge.dailyLimit());
       await token.transferOwnership(foreignBridge.address);
     })
     it('should allow to deposit', async () => {
-      var recipientAccount = accounts[3];
+      const recipientAccount = accounts[3];
       const balanceBefore = await token.balanceOf(recipientAccount)
       const totalSupplyBefore = await token.totalSupply()
-      var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
-      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
-      var message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
-      var signature = await sign(authorities[0], message)
-      var vrs = signatureToVRS(signature);
+      const value = ether('0.25');
+      const transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
       const {logs} = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       logs[0].event.should.be.equal("RelayedMessage")
@@ -93,35 +95,32 @@ contract('ForeignBridge', async (accounts) => {
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
     })
     it('should reject if address is not foreign address', async () => {
-      var recipientAccount = accounts[3];
-      const balanceBefore = await token.balanceOf(recipientAccount)
-      const totalSupplyBefore = await token.totalSupply()
-      var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
-      var transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
-      var message = createMessage(recipientAccount, value, transactionHash, accounts[0]);
-      var signature = await sign(authorities[0], message)
-      var vrs = signatureToVRS(signature);
+      const recipientAccount = accounts[3];
+      const value = ether('0.25',);
+      const transactionHash = "0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80";
+      const message = createMessage(recipientAccount, value, transactionHash, accounts[0]);
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
       await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
 
     })
     it('should allow second deposit with different transactionHash but same recipient and value', async ()=> {
-      var recipientAccount = accounts[3];
+      const recipientAccount = accounts[3];
       const balanceBefore = await token.balanceOf(recipientAccount)
       // tx 1
-      var value = web3.toBigNumber(web3.toWei(0.25, "ether"));
-      var homeGasPrice = web3.toBigNumber(0);
-      var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-      var message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
-      var signature = await sign(authorities[0], message)
-      var vrs = signatureToVRS(signature);
+      const value = ether('0.25');
+      const transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
       await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
-      var transactionHash2 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
-      var message2 = createMessage(recipientAccount, value, transactionHash2, foreignBridge.address);
-      var signature2 = await sign(authorities[0], message2)
-      var vrs2 = signatureToVRS(signature2);
+      const transactionHash2 = "0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee";
+      const message2 = createMessage(recipientAccount, value, transactionHash2, foreignBridge.address);
+      const signature2 = await sign(authorities[0], message2)
+      const vrs2 = signatureToVRS(signature2);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
       const {logs} = await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
 
@@ -131,35 +130,33 @@ contract('ForeignBridge', async (accounts) => {
       logs[0].args.transactionHash.should.be.equal(transactionHash2);
       const totalSupply = await token.totalSupply()
       const balanceAfter = await token.balanceOf(recipientAccount)
-      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value.mul(2)))
-      totalSupply.should.be.bignumber.equal(value.mul(2))
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value.mul(toBN(2))))
+      totalSupply.should.be.bignumber.equal(value.mul(toBN(2)))
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
     })
 
     it('should not allow second deposit (replay attack) with same transactionHash but different recipient', async () => {
-      var recipientAccount = accounts[3];
-      const balanceBefore = await token.balanceOf(recipientAccount)
+      const recipientAccount = accounts[3];
       // tx 1
-      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
-      var homeGasPrice = web3.toBigNumber(0);
-      var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-      var message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
-      var signature = await sign(authorities[0], message)
-      var vrs = signatureToVRS(signature);
+      const value = halfEther
+      const transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address);
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
       await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
-      var message2 = createMessage(accounts[4], value, transactionHash, foreignBridge.address);
-      var signature2 = await sign(authorities[0], message2)
-      var vrs = signatureToVRS(signature2);
+      const message2 = createMessage(accounts[4], value, transactionHash, foreignBridge.address);
+      const signature2 = await sign(authorities[0], message2)
+      const vrs2 = signatureToVRS(signature2);
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
-      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message2).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.rejectedWith(ERROR_MSG)
     })
 
     it('should not allow withdraw over home max tx limit', async () => {
       const recipientAccount = accounts[3];
-      const invalidValue = web3.toBigNumber(web3.toWei(0.75, "ether"));
+      const invalidValue = ether('0.75');
 
       const transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
       const message = createMessage(recipientAccount, invalidValue, transactionHash, foreignBridge.address);
@@ -202,51 +199,42 @@ contract('ForeignBridge', async (accounts) => {
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       twoAuthorities = [accounts[0], accounts[1]];
       ownerOfValidatorContract = accounts[3]
-      const halfEther = web3.toBigNumber(web3.toWei(0.5, "ether"));
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {from: ownerOfValidatorContract})
       foreignBridgeWithMultiSignatures = await ForeignBridge.new()
-      const oneEther = web3.toBigNumber(web3.toWei(1, "ether"));
       await foreignBridgeWithMultiSignatures.initialize(multisigValidatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner, {from: ownerOfValidatorContract});
       await token.transferOwnership(foreignBridgeWithMultiSignatures.address);
     })
     it('deposit should fail if not enough signatures are provided', async () => {
 
-      var recipientAccount = accounts[4];
-      const balanceBefore = await web3.eth.getBalance(recipientAccount)
-      const homeBalanceBefore = await web3.eth.getBalance(foreignBridgeWithMultiSignatures.address)
+      const recipientAccount = accounts[4];
       // msg 1
-      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
-      var homeGasPrice = web3.toBigNumber(0);
-      var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-      var message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address);
-      var signature = await sign(twoAuthorities[0], message)
-      var vrs = signatureToVRS(signature);
+      const value = halfEther
+      const transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address);
+      const signature = await sign(twoAuthorities[0], message)
+      const vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
       await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
       // msg 2
-      var signature2 = await sign(twoAuthorities[1], message)
-      var vrs2 = signatureToVRS(signature2);
+      const signature2 = await sign(twoAuthorities[1], message)
+      const vrs2 = signatureToVRS(signature2);
       const {logs} = await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v, vrs2.v], [vrs.r, vrs2.r], [vrs.s, vrs2.s], message).should.be.fulfilled;
 
       logs[0].event.should.be.equal("RelayedMessage")
       logs[0].args.recipient.should.be.equal(recipientAccount)
       logs[0].args.value.should.be.bignumber.equal(value)
       logs[0].args.transactionHash.should.be.equal(transactionHash);
-      const balanceAfter = await token.balanceOf(recipientAccount)
       true.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
 
     })
     it('deposit should fail if duplicate signature is provided', async () => {
-      var recipientAccount = accounts[4];
-      const balanceBefore = await web3.eth.getBalance(recipientAccount)
-      const homeBalanceBefore = await web3.eth.getBalance(foreignBridgeWithMultiSignatures.address)
+      const recipientAccount = accounts[4];
       // msg 1
-      var value = web3.toBigNumber(web3.toWei(0.5, "ether"));
-      var homeGasPrice = web3.toBigNumber(0);
-      var transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
-      var message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address);
-      var signature = await sign(twoAuthorities[0], message)
-      var vrs = signatureToVRS(signature);
+      const value = halfEther
+      const transactionHash = "0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121";
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address);
+      const signature = await sign(twoAuthorities[0], message)
+      const vrs = signatureToVRS(signature);
       false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
       await foreignBridgeWithMultiSignatures.executeSignatures([vrs.v, vrs.v], [vrs.r, vrs.r], [vrs.s, vrs.s], message).should.be.rejectedWith(ERROR_MSG)
     })
@@ -257,7 +245,7 @@ contract('ForeignBridge', async (accounts) => {
       const validatorContractWith3Signatures = await BridgeValidators.new()
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const erc20Token = await POA20.new("Some ERC20", "RSZT", 18);
-      const value = web3.toBigNumber(web3.toWei(0.5, "ether"));
+      const value = halfEther
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
 
       await foreignBridgeWithThreeSigs.initialize(validatorContractWith3Signatures.address, erc20Token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner);
@@ -292,70 +280,85 @@ contract('ForeignBridge', async (accounts) => {
       const owner = accounts[3]
       const user = accounts[4]
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
-      foreignBridge = await ForeignBridge.new();
+      const foreignBridge = await ForeignBridge.new();
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner);
       await token.mint(user, halfEther, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
       await foreignBridge.onTokenTransfer(user, halfEther, '0x00', {from: owner}).should.be.rejectedWith(ERROR_MSG);
       await token.transferAndCall(foreignBridge.address, halfEther, '0x00', {from: user}).should.be.fulfilled;
-      '0'.should.be.bignumber.equal(await token.totalSupply());
-      '0'.should.be.bignumber.equal(await token.balanceOf(user));
+      expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
     })
     it('should not allow to burn more than the limit', async () => {
       const owner = accounts[3]
       const user = accounts[4]
-      const valueMoreThanLimit = halfEther.add(1);
+      const valueMoreThanLimit = halfEther.add(toBN(1));
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
-      foreignBridge = await ForeignBridge.new();
+      const foreignBridge = await ForeignBridge.new();
+
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner);
       await token.mint(user, valueMoreThanLimit, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
+
       await token.transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
+
       valueMoreThanLimit.should.be.bignumber.equal(await token.totalSupply());
       valueMoreThanLimit.should.be.bignumber.equal(await token.balanceOf(user));
-      const {logs} = await token.transferAndCall(foreignBridge.address, halfEther, '0x00', {from: user}).should.be.fulfilled;
-      '1'.should.be.bignumber.equal(await token.totalSupply());
-      '1'.should.be.bignumber.equal(await token.balanceOf(user));
+
+      await token.transferAndCall(foreignBridge.address, halfEther, '0x00', {from: user}).should.be.fulfilled;
+
+      expect(await token.totalSupply()).to.be.bignumber.equal('1')
+      expect(await token.balanceOf(user)).to.be.bignumber.equal('1')
+
       const events = await getEvents(foreignBridge, {event: 'UserRequestForAffirmation'});
-      events[0].args.should.be.deep.equal({
-        recipient: user,
-        value: halfEther
-      })
+      expect(events[0].returnValues.recipient).to.be.equal(user)
+      expect(toBN(events[0].returnValues.value)).to.be.bignumber.equal(halfEther)
     })
     it('should only let to send within maxPerTx limit', async () => {
       const owner = accounts[3]
       const user = accounts[4]
-      const valueMoreThanLimit = halfEther.add(1);
+      const valueMoreThanLimit = halfEther.add(toBN(1));
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
-      foreignBridge = await ForeignBridge.new();
+      const foreignBridge = await ForeignBridge.new();
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner);
-      await token.mint(user, oneEther.add(1), {from: owner }).should.be.fulfilled;
+      await token.mint(user, oneEther.add(toBN(1)), {from: owner }).should.be.fulfilled;
+
       await token.transferOwnership(foreignBridge.address, {from: owner});
+
       await token.transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
-      oneEther.add(1).should.be.bignumber.equal(await token.totalSupply());
-      oneEther.add(1).should.be.bignumber.equal(await token.balanceOf(user));
+
+      oneEther.add(toBN(1)).should.be.bignumber.equal(await token.totalSupply());
+      oneEther.add(toBN(1)).should.be.bignumber.equal(await token.balanceOf(user));
+
       await token.transferAndCall(foreignBridge.address, halfEther, '0x00', {from: user}).should.be.fulfilled;
+
       valueMoreThanLimit.should.be.bignumber.equal(await token.totalSupply());
       valueMoreThanLimit.should.be.bignumber.equal(await token.balanceOf(user));
+
       await token.transferAndCall(foreignBridge.address, halfEther, '0x00', {from: user}).should.be.fulfilled;
-      '1'.should.be.bignumber.equal(await token.totalSupply());
-      '1'.should.be.bignumber.equal(await token.balanceOf(user));
+
+      expect(await token.totalSupply()).to.be.bignumber.equal('1')
+      expect(await token.balanceOf(user)).to.be.bignumber.equal('1')
       await token.transferAndCall(foreignBridge.address, '1', '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
     })
 
     it('should not let to withdraw less than minPerTx', async () => {
       const owner = accounts[3]
       const user = accounts[4]
-      const valueLessThanMinPerTx = minPerTx.sub(1);
+      const valueLessThanMinPerTx = minPerTx.sub(toBN(1));
       token = await POA20.new("POA ERC20 Foundation", "POA20", 18, {from: owner});
-      foreignBridge = await ForeignBridge.new();
+      const foreignBridge = await ForeignBridge.new();
       await foreignBridge.initialize(validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner);
       await token.mint(user, oneEther, {from: owner }).should.be.fulfilled;
       await token.transferOwnership(foreignBridge.address, {from: owner});
+
       await token.transferAndCall(foreignBridge.address, valueLessThanMinPerTx, '0x00', {from: user}).should.be.rejectedWith(ERROR_MSG);
+
       oneEther.should.be.bignumber.equal(await token.totalSupply());
       oneEther.should.be.bignumber.equal(await token.balanceOf(user));
+
       await token.transferAndCall(foreignBridge.address, minPerTx, '0x00', {from: user}).should.be.fulfilled;
+
       oneEther.sub(minPerTx).should.be.bignumber.equal(await token.totalSupply());
       oneEther.sub(minPerTx).should.be.bignumber.equal(await token.balanceOf(user));
     })
@@ -424,28 +427,29 @@ contract('ForeignBridge', async (accounts) => {
     it('can be deployed via upgradeToAndCall', async () => {
       const tokenAddress = token.address
       const validatorsAddress = validatorContract.address
-      const FOREIGN_DAILY_LIMIT = oneEther;
-      const FOREIGN_MAX_AMOUNT_PER_TX = halfEther;
-      const FOREIGN_MIN_AMOUNT_PER_TX = minPerTx;
+      const FOREIGN_DAILY_LIMIT = '3';
+      const FOREIGN_MAX_AMOUNT_PER_TX = '2';
+      const FOREIGN_MIN_AMOUNT_PER_TX = '1';
 
       let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
       let foreignBridge =  await ForeignBridge.new();
-      let data = foreignBridge.initialize.request(
-        validatorsAddress, tokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner).params[0].data
+      let data = foreignBridge.contract.methods.initialize(
+        validatorsAddress, tokenAddress, FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX, gasPrice, requireBlockConfirmations, '3', '2', owner).encodeABI()
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
       let finalContract = await ForeignBridge.at(storageProxy.address);
       true.should.be.equal(await finalContract.isInitialized());
       validatorsAddress.should.be.equal(await finalContract.validatorContract())
-      FOREIGN_DAILY_LIMIT.should.be.bignumber.equal(await finalContract.dailyLimit())
-      FOREIGN_MAX_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.maxPerTx())
-      FOREIGN_MIN_AMOUNT_PER_TX.should.be.bignumber.equal(await finalContract.minPerTx())
+
+      expect(await finalContract.dailyLimit()).to.be.bignumber.equal(FOREIGN_DAILY_LIMIT)
+      expect(await finalContract.maxPerTx()).to.be.bignumber.equal(FOREIGN_MAX_AMOUNT_PER_TX)
+      expect(await finalContract.minPerTx()).to.be.bignumber.equal(FOREIGN_MIN_AMOUNT_PER_TX)
     })
     it('can transfer ownership', async () => {
       const token = await POA20.new("POA ERC20 Foundation", "POA20", 18);
       const foreignBridge =  await ForeignBridge.new();
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
-      const data = foreignBridge.initialize.request(
-        validatorContract.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner).params[0].data
+      const data = foreignBridge.contract.methods.initialize(
+        validatorContract.address, token.address, '3', '2', '1', gasPrice, requireBlockConfirmations, '3', '2', owner).encodeABI()
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled;
       await storageProxy.transferProxyOwnership(owner).should.be.fulfilled
     })
@@ -465,15 +469,15 @@ contract('ForeignBridge', async (accounts) => {
       let tokenSecond = await POA20.new("Roman Token", "RST", 18);
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled;
-      halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
       await tokenSecond.transfer(foreignBridge.address, halfEther);
-      '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
-      halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
 
       await foreignBridge.claimTokens(tokenSecond.address, accounts[3], {from: owner});
-      '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
-      halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
-
+      expect(await tokenSecond.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
     it('also calls claimTokens on tokenAddress', async () => {
       const owner = accounts[0];
@@ -488,14 +492,15 @@ contract('ForeignBridge', async (accounts) => {
       let tokenSecond = await POA20.new("Roman Token", "RST", 18);
 
       await tokenSecond.mint(accounts[0], 150).should.be.fulfilled;
-      '150'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal('150')
+
       await tokenSecond.transfer(token.address, '150');
-      '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
-      '150'.should.be.bignumber.equal(await tokenSecond.balanceOf(token.address))
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(token.address)).to.be.bignumber.equal('150')
 
       await foreignBridge.claimTokensFromErc677(tokenSecond.address, accounts[3], {from: owner});
-      '0'.should.be.bignumber.equal(await tokenSecond.balanceOf(foreignBridge.address))
-      '150'.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
+      expect(await tokenSecond.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal('150')
     })
   })
 
@@ -509,15 +514,16 @@ contract('ForeignBridge', async (accounts) => {
       rewardableValidators = await RewardableValidators.new()
       await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
       foreignBridge =  await ForeignBridge.new()
-      homeFee = web3.toBigNumber(web3.toWei(0.001, "ether"))
+      homeFee = ether('0.001')
     })
     it('sets variables', async () => {
       const feeManager = await FeeManagerNativeToErc.new()
-      ZERO_ADDRESS.should.be.equal(await foreignBridge.validatorContract())
-      '0'.should.be.bignumber.equal(await foreignBridge.deployedAtBlock())
-      '0'.should.be.bignumber.equal(await foreignBridge.dailyLimit())
-      '0'.should.be.bignumber.equal(await foreignBridge.maxPerTx())
-      false.should.be.equal(await foreignBridge.isInitialized())
+      expect(await foreignBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
+      expect(await foreignBridge.deployedAtBlock()).to.be.bignumber.equal(ZERO)
+      expect(await foreignBridge.isInitialized()).to.be.equal(false)
+      expect(await foreignBridge.requiredBlockConfirmations()).to.be.bignumber.equal(ZERO)
+      expect(await foreignBridge.dailyLimit()).to.be.bignumber.equal(ZERO)
+      expect(await foreignBridge.maxPerTx()).to.be.bignumber.equal(ZERO)
 
       await foreignBridge.rewardableInitialize(ZERO_ADDRESS, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner, feeManager.address, homeFee).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.rewardableInitialize(rewardableValidators.address, ZERO_ADDRESS, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner, feeManager.address, homeFee).should.be.rejectedWith(ERROR_MSG);
@@ -527,24 +533,23 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridge.rewardableInitialize(rewardableValidators.address, owner, oneEther, halfEther, minPerTx, requireBlockConfirmations, gasPrice, homeDailyLimit, homeMaxPerTx, owner, ZERO_ADDRESS, homeFee).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.rewardableInitialize(rewardableValidators.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner, feeManager.address, homeFee).should.be.fulfilled;
 
-      true.should.be.equal(await foreignBridge.isInitialized())
-      rewardableValidators.address.should.be.equal(await foreignBridge.validatorContract());
-      (await foreignBridge.deployedAtBlock()).should.be.bignumber.above(0);
-      oneEther.should.be.bignumber.equal(await foreignBridge.dailyLimit())
-      halfEther.should.be.bignumber.equal(await foreignBridge.maxPerTx())
-      minPerTx.should.be.bignumber.equal(await foreignBridge.minPerTx())
+      expect(await foreignBridge.isInitialized()).to.be.equal(true)
+      expect(await foreignBridge.validatorContract()).to.be.equal(rewardableValidators.address)
+      expect(await foreignBridge.deployedAtBlock()).to.be.bignumber.above(ZERO)
+      expect(await foreignBridge.requiredBlockConfirmations()).to.be.bignumber.equal(requireBlockConfirmations.toString())
+      expect(await foreignBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
+      expect(await foreignBridge.dailyLimit()).to.be.bignumber.equal(oneEther)
+      expect(await foreignBridge.maxPerTx()).to.be.bignumber.equal(halfEther)
+      expect(await foreignBridge.minPerTx()).to.be.bignumber.equal(minPerTx)
       const bridgeMode = '0x92a8d7fe' // 4 bytes of keccak256('native-to-erc-core')
-      const mode = await foreignBridge.getBridgeMode();
-      mode.should.be.equal(bridgeMode)
-      const [major, minor, patch] = await foreignBridge.getBridgeInterfacesVersion()
-      major.should.be.bignumber.gte(0)
-      minor.should.be.bignumber.gte(0)
-      patch.should.be.bignumber.gte(0)
+      expect(await foreignBridge.getBridgeMode()).to.be.equal(bridgeMode)
+      const { major, minor, patch } = await foreignBridge.getBridgeInterfacesVersion()
+      expect(major).to.be.bignumber.gte(ZERO)
+      expect(minor).to.be.bignumber.gte(ZERO)
+      expect(patch).to.be.bignumber.gte(ZERO)
 
-      const feeManagerContract = await foreignBridge.feeManagerContract()
-      feeManagerContract.should.be.equals(feeManager.address)
-      const bridgeHomeFee = await foreignBridge.getHomeFee()
-      bridgeHomeFee.should.be.bignumber.equal(homeFee)
+      expect(await foreignBridge.feeManagerContract()).to.be.equals(feeManager.address)
+      expect(await foreignBridge.getHomeFee()).to.be.bignumber.equals(homeFee)
     })
 
     it('can update fee contract', async () => {
@@ -558,8 +563,7 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridge.setFeeManagerContract(newFeeManager.address, { from: owner }).should.be.fulfilled
 
       // Then
-      const feeManagerContract = await foreignBridge.feeManagerContract()
-      feeManagerContract.should.be.equals(newFeeManager.address)
+      expect(await foreignBridge.feeManagerContract()).to.be.equals(newFeeManager.address)
     })
 
     it('can update fee', async () => {
@@ -567,14 +571,13 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridge.rewardableInitialize(rewardableValidators.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner, feeManager.address, homeFee).should.be.fulfilled;
 
       // Given
-      const newHomeFee = web3.toBigNumber(web3.toWei(0.1, "ether"))
+      const newHomeFee = ether('0.1')
 
       // When
       await foreignBridge.setHomeFee(newHomeFee, { from: owner }).should.be.fulfilled
 
       // Then
-      const bridgeHomeFee = await foreignBridge.getHomeFee()
-      bridgeHomeFee.should.be.bignumber.equal(newHomeFee)
+      expect(await foreignBridge.getHomeFee()).to.be.bignumber.equals(newHomeFee)
     })
 
     it('should be able to get fee manager mode', async () => {
@@ -586,8 +589,7 @@ contract('ForeignBridge', async (accounts) => {
       await foreignBridge.rewardableInitialize(rewardableValidators.address, token.address, oneEther, halfEther, minPerTx, gasPrice, requireBlockConfirmations, homeDailyLimit, homeMaxPerTx, owner, feeManager.address, homeFee).should.be.fulfilled;
 
       // Then
-      const feeManagerMode = await foreignBridge.getFeeManagerMode()
-      feeManagerMode.should.be.equals(oneDirectionsModeHash)
+      expect(await foreignBridge.getFeeManagerMode()).to.be.equals(oneDirectionsModeHash)
     })
   })
 
@@ -601,10 +603,12 @@ contract('ForeignBridge', async (accounts) => {
     })
     it('should distribute fee to validator', async () => {
       const fee = 0.001
-      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const feeInWei = ether(fee.toString())
       const value = halfEther
-      const finalUserValue = value.mul(web3.toBigNumber(1-fee));
-      const feeAmount = value.mul(web3.toBigNumber(fee))
+      const valueCalc = 0.5 * (1 - fee)
+      const feeAmountCalc = 0.5 * fee
+      const finalUserValue = ether(valueCalc.toString())
+      const feeAmount = ether(feeAmountCalc.toString())
 
       const validators = [accounts[1]]
       const rewards = [accounts[2]]
@@ -625,7 +629,8 @@ contract('ForeignBridge', async (accounts) => {
       const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
 
       logs[0].event.should.be.equal("FeeDistributedFromSignatures")
-      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+      logs[0].args.feeAmount.should.be.bignumber.equal(feeAmount)
+      logs[0].args.transactionHash.should.be.equal(transactionHash)
 
       logs[1].event.should.be.equal("RelayedMessage")
       logs[1].args.recipient.should.be.equal(recipientAccount)
@@ -643,12 +648,14 @@ contract('ForeignBridge', async (accounts) => {
     it('should distribute fee to 3 validators', async () => {
       // Given
       const fee = 0.001
-      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
-      const feePerValidator = web3.toBigNumber(166666666666666)
-      const feePerValidatorPlusDiff = web3.toBigNumber(166666666666668)
+      const feeInWei = ether(fee.toString())
+      const feePerValidator = toBN(166666666666666)
+      const feePerValidatorPlusDiff = toBN(166666666666668)
       const value = halfEther
-      const feeAmount = value.mul(web3.toBigNumber(fee));
-      const finalUserValue = value.mul(web3.toBigNumber(1-fee));
+      const valueCalc = 0.5 * (1 - fee)
+      const feeAmountCalc = 0.5 * fee
+      const finalUserValue = ether(valueCalc.toString())
+      const feeAmount = ether(feeAmountCalc.toString())
 
       const validators = [accounts[1], accounts[2], accounts[3]]
       const rewards = [accounts[4], accounts[5], accounts[6]]
@@ -679,7 +686,8 @@ contract('ForeignBridge', async (accounts) => {
 
       // Then
       logs[0].event.should.be.equal("FeeDistributedFromSignatures")
-      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+      logs[0].args.feeAmount.should.be.bignumber.equal(feeAmount)
+      logs[0].args.transactionHash.should.be.equal(transactionHash)
 
       logs[1].event.should.be.equal("RelayedMessage")
       logs[1].args.recipient.should.be.equal(recipientAccount)
@@ -708,11 +716,13 @@ contract('ForeignBridge', async (accounts) => {
     it('should distribute fee to 5 validators', async () => {
       // Given
       const fee = 0.001
-      const feeInWei = web3.toBigNumber(web3.toWei(fee, "ether"))
+      const feeInWei = ether(fee.toString())
       const value = halfEther
-      const feeAmount = value.mul(web3.toBigNumber(fee))
-      const feePerValidator = feeAmount.div(web3.toBigNumber(5))
-      const finalUserValue = value.mul(web3.toBigNumber(1-fee));
+      const valueCalc = 0.5 * (1 - fee)
+      const feeAmountCalc = 0.5 * fee
+      const finalUserValue = ether(valueCalc.toString())
+      const feeAmount = ether(feeAmountCalc.toString())
+      const feePerValidator = feeAmount.div(toBN(5))
 
       const validators = [accounts[0], accounts[1], accounts[2], accounts[3], accounts[4]]
       const rewards = [accounts[5], accounts[6], accounts[7], accounts[8], accounts[9]]
@@ -745,7 +755,8 @@ contract('ForeignBridge', async (accounts) => {
 
       // Then
       logs[0].event.should.be.equal("FeeDistributedFromSignatures")
-      logs[0].args.should.be.deep.equal({feeAmount, transactionHash})
+      logs[0].args.feeAmount.should.be.bignumber.equal(feeAmount)
+      logs[0].args.transactionHash.should.be.equal(transactionHash)
 
       logs[1].event.should.be.equal("RelayedMessage")
       logs[1].args.recipient.should.be.equal(recipientAccount)

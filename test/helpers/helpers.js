@@ -1,8 +1,11 @@
+const { BN } = require('../setup');
+const { expect } = require('chai');
+
 // returns a Promise that resolves with a hex string that is the signature of
 // `data` signed with the key of `address`
 function sign(address, data) {
   return new Promise(function(resolve, reject) {
-    web3.eth.sign(address, data, function(err, result) {
+    web3.eth.sign(data, address, function(err, result) {
       if (err !== null) {
         return reject(err);
       } else {
@@ -46,9 +49,6 @@ module.exports.signatureToVRS = signatureToVRS;
 // that is exactly 32 bytes long.
 // `num` must represent an unsigned integer
 function bigNumberToPaddedBytes32(num) {
-  assert(web3._extend.utils.isBigNumber(num));
-  assert(num.isInteger());
-  assert(!num.isNegative());
   var result = strip0x(num.toString(16));
   while (result.length < 64) {
     result = "0" + result;
@@ -77,7 +77,6 @@ module.exports.getBalances = getBalances;
 // composed from `recipient`, `value` and `transactionHash`
 // that is relayed from `foreign` to `home` on withdraw
 function createMessage(recipient, value, transactionHash, contractAddress) {
-  web3._extend.utils.isBigNumber(value);
   recipient = strip0x(recipient);
   assert.equal(recipient.length, 20 * 2);
 
@@ -112,19 +111,54 @@ function ignoreExpectedError() {
 }
 module.exports.ignoreExpectedError = ignoreExpectedError;
 
-const getEvents = function(contract, filter) {
-  return new Promise((resolve, reject) => {
-    var event = contract[filter.event]();
-    event.watch();
-    event.get((error, logs) => {
-      if(logs.length > 0){
-        resolve(logs);
-      } else {
-        throw Error("Failed to find filtered event for " + filter.event);
-      }
-    });
-    event.stopWatching();
-  });
-}
+const getEvents = (truffleInstance, filter, fromBlock = 0, toBlock = 'latest') => truffleInstance.contract.getPastEvents(filter.event, { fromBlock, toBlock })
 
 module.exports.getEvents = getEvents;
+
+function ether (n) {
+  return new BN(web3.utils.toWei(n, 'ether'));
+}
+
+module.exports.ether = ether;
+
+function expectEventInLogs (logs, eventName, eventArgs = {}) {
+  const events = logs.filter(e => e.event === eventName);
+  expect(events.length > 0).to.equal(true, `There is no '${eventName}'`);
+
+  const exception = [];
+  const event = events.find(function (e) {
+    for (const [k, v] of Object.entries(eventArgs)) {
+      try {
+        contains(e.args, k, v);
+      } catch (error) {
+        exception.push(error);
+        return false;
+      }
+    }
+    return true;
+  });
+
+  if (event === undefined) {
+    throw exception[0];
+  }
+
+  return event;
+}
+
+function contains (args, key, value) {
+  expect(key in args).to.equal(true, `Unknown event argument '${key}'`);
+
+  if (value === null) {
+    expect(args[key]).to.equal(null);
+  } else if (isBN(args[key])) {
+    expect(args[key]).to.be.bignumber.equal(value);
+  } else {
+    expect(args[key]).to.be.equal(value);
+  }
+}
+
+function isBN (object) {
+  return BN.isBN(object) || object instanceof BN;
+}
+
+module.exports.expectEventInLogs = expectEventInLogs;

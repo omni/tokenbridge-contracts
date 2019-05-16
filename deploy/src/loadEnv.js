@@ -7,7 +7,7 @@ const envalid = require('envalid')
 const { ZERO_ADDRESS } = require('./constants')
 
 // Validations and constants
-const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
+const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE', 'ARBITRARY_MESSAGE']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
 const validateAddress = address => {
   if (isAddress(address)) {

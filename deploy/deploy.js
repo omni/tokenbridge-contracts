@@ -32,7 +32,7 @@ async function deployNativeToErc() {
         foreignBridge: {
           ...foreignBridge,
           erc677
-        },
+        }
       },
       null,
       4
@@ -42,13 +42,16 @@ async function deployNativeToErc() {
 }
 
 async function deployErcToErc() {
+  const preDeploy = require('./src/erc_to_erc/preDeploy')
   const deployHome = require('./src/erc_to_erc/home')
   const deployForeign = require('./src/erc_to_erc/foreign')
-
+  await preDeploy()
   const { homeBridge, erc677 } = await deployHome()
   const { foreignBridge } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')
-  console.log(`[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
+  console.log(
+    `[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`
+  )
   console.log(`[   Home  ] ERC677 Bridgeable Token: ${erc677.address}`)
   console.log(
     `[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${
@@ -83,9 +86,7 @@ async function deployErcToNative() {
   const { foreignBridge } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')
   console.log(
-    `[ Home ] HomeBridge: ${homeBridge.address} at block ${
-      homeBridge.deployedBlockNumber
-    }`
+    `[ Home ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`
   )
   console.log(
     `[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${

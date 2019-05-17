@@ -15,7 +15,8 @@ contract BasicAMB is BasicBridge {
         address _validatorContract,
         uint256 _maxGasPerTx,
         uint256 _gasPrice,
-        uint256 _requiredBlockConfirmations
+        uint256 _requiredBlockConfirmations,
+        address _owner
     ) public returns(bool) {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
@@ -29,6 +30,7 @@ contract BasicAMB is BasicBridge {
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = DEFRAYAL_MODE;
         bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))] = DEFRAYAL_MODE;
+        setOwner(_owner);
         setInitialize(true);
         return isInitialized();
     }

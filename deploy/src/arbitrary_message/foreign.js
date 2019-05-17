@@ -15,9 +15,9 @@ const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   REQUIRED_NUMBER_OF_VALIDATORS,
   FOREIGN_GAS_PRICE,
-  FOREIGN_OWNER_MULTISIG,
-  FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS,
-  FOREIGN_UPGRADEABLE_ADMIN_BRIDGE,
+  FOREIGN_BRIDGE_OWNER,
+  FOREIGN_VALIDATORS_OWNER,
+  FOREIGN_UPGRADEABLE_ADMIN,
   FOREIGN_MAX_AMOUNT_PER_TX,
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
   HOME_AMB_SUBSIDIZED_MODE,
@@ -77,7 +77,7 @@ async function deployForeign() {
   )
   bridgeValidatorsForeign.options.address = storageValidatorsForeign.options.address
   const initializeForeignData = await bridgeValidatorsForeign.methods
-    .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_OWNER_MULTISIG)
+    .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_VALIDATORS_OWNER)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeForeign = await sendRawTxForeign({
     data: initializeForeignData,
@@ -91,7 +91,7 @@ async function deployForeign() {
 
   console.log('\nTransferring ownership of ValidatorsProxy\n')
   const validatorsForeignOwnershipData = await storageValidatorsForeign.methods
-    .transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS)
+    .transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txValidatorsForeignOwnershipData = await sendRawTxForeign({
     data: validatorsForeignOwnershipData,
@@ -159,7 +159,8 @@ async function deployForeign() {
       storageValidatorsForeign.options.address,
       FOREIGN_MAX_AMOUNT_PER_TX,
       FOREIGN_GAS_PRICE,
-      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
+      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+      FOREIGN_BRIDGE_OWNER
     )
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeBridge = await sendRawTxForeign({
@@ -174,7 +175,7 @@ async function deployForeign() {
 
   console.log('transferring proxy ownership to multisig for Foreign bridge Proxy contract')
   const bridgeOwnershipData = await foreignBridgeStorage.methods
-    .transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN_BRIDGE)
+    .transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN)
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txBridgeOwnershipData = await sendRawTxForeign({
     data: bridgeOwnershipData,

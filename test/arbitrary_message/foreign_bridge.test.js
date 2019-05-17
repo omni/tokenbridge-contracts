@@ -496,7 +496,7 @@ contract('ForeignAMB', async (accounts) => {
       await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]}).should.be.rejectedWith(ERROR_MSG);
       await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[1]}).should.be.rejectedWith(ERROR_MSG);
     })
-    it('should not allow non-authorities to execute signatures', async () => {
+    it('should allow non-authorities to execute signatures', async () => {
       const user = accounts[8]
 
       // Deposit for user
@@ -519,10 +519,8 @@ contract('ForeignAMB', async (accounts) => {
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature);
 
-      await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: user}).should.be.rejectedWith(ERROR_MSG);
-      await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: accounts[7]}).should.be.rejectedWith(ERROR_MSG);
+      const {logs} = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: user}).should.be.fulfilled;
 
-      const {logs} = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {from: authorities[0]}).should.be.fulfilled;
       logs[0].event.should.be.equal("RelayedMessage");
       logs[0].args.should.be.deep.equal({
         sender: user,

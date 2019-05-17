@@ -8,7 +8,7 @@ import "./MessageProcessor.sol";
 
 contract BasicForeignAMB is BasicAMB, MessageDelivery, MessageProcessor {
 
-    function executeSignatures(bytes _data, uint8[] vs, bytes32[] rs, bytes32[] ss) external onlyValidator {
+    function executeSignatures(bytes _data, uint8[] vs, bytes32[] rs, bytes32[] ss) external {
         ArbitraryMessage.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
 
         processMessage(_data, true);

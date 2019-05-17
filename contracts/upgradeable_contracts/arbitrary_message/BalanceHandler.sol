@@ -7,8 +7,6 @@ import "../../libraries/SafeMath.sol";
 contract BalanceHandler is EternalStorage {
     using SafeMath for uint256;
 
-    address internal accountForAction = address(0);
-
     function depositForContractSender(address _contract) public payable {
         require(_contract != address(0));
         setBalanceOf(_contract, balanceOf(_contract).add(msg.value));
@@ -16,12 +14,13 @@ contract BalanceHandler is EternalStorage {
 
     function withdrawFromDeposit(address _recipient) public {
         require(msg.sender == address(this));
-        require(accountForAction != address(0));
-        require(balanceOf(accountForAction) > 0);
-        uint256 withdrawValue = balanceOf(accountForAction);
-        setBalanceOf(accountForAction, 0);
+        address account = accountForAction();
+        require(account != address(0));
+        require(balanceOf(account) > 0);
+        uint256 withdrawValue = balanceOf(account);
+        setBalanceOf(account, 0);
         _recipient.transfer(withdrawValue);
-        accountForAction = address(0);
+        setAccountForAction(address(0));
     }
 
     function balanceOf(address _balanceHolder) public view returns(uint) {
@@ -30,6 +29,14 @@ contract BalanceHandler is EternalStorage {
 
     function setBalanceOf(address _balanceHolder, uint _amount) internal {
         uintStorage[keccak256(abi.encodePacked("balances", _balanceHolder))] = _amount;
+    }
+
+    function accountForAction() internal view returns(address) {
+        return addressStorage[keccak256(abi.encodePacked("accountForAction"))];
+    }
+
+    function setAccountForAction(address _account) internal {
+        addressStorage[keccak256(abi.encodePacked("accountForAction"))] = _account;
     }
 
     function isWithdrawFromDepositSelector(bytes _data) internal pure returns(bool _retval) {

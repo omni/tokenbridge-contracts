@@ -54,20 +54,16 @@ contract MessageProcessor is BalanceHandler {
         if (_contract == address(this)) {
             //Special check to handle invocation of withdrawFromDeposit
             if (isWithdrawFromDepositSelector(_data)) {
-                accountForAction = _sender;
+                setAccountForAction(_sender);
             }
         }
 
         require(_contract.call.gas(_gas)(_data));
     }
 
-    function isMessageProcessorSubsidizedMode() internal returns(bool) {
-        // should be overridden
-    }
+    function isMessageProcessorSubsidizedMode() internal returns(bool);
 
-    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash) internal {
-        // should be overridden
-    }
+    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash) internal;
 
     function messageProcessed(bytes32 _txHash) internal view returns(bool) {
         // should be overridden

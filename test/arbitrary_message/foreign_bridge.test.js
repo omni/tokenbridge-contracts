@@ -134,7 +134,7 @@ contract('ForeignAMB', async (accounts) => {
     it('sets variables', async () => {
       const foreignBridge = await ForeignBridge.new()
       '0'.should.be.bignumber.equal(await foreignBridge.deployedAtBlock())
-      '0'.should.be.bignumber.equal(await foreignBridge.maxPerTx())
+      '0'.should.be.bignumber.equal(await foreignBridge.maxGasPerTx())
       false.should.be.equal(await foreignBridge.isInitialized())
 
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner).should.be.fulfilled;

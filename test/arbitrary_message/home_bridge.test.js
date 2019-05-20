@@ -139,7 +139,7 @@ contract('HomeAMB', async (accounts) => {
     it('sets variables', async () => {
       const homeBridge = await HomeAMB.new()
       '0'.should.be.bignumber.equal(await homeBridge.deployedAtBlock())
-      '0'.should.be.bignumber.equal(await homeBridge.maxPerTx())
+      '0'.should.be.bignumber.equal(await homeBridge.maxGasPerTx())
       false.should.be.equal(await homeBridge.isInitialized())
 
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner).should.be.fulfilled;

@@ -1,5 +1,5 @@
 pragma solidity 0.4.24;
-import "../IBridgeValidators.sol";
+
 import "./OwnedUpgradeability.sol";
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
@@ -13,8 +13,6 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
 
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
-    event DailyLimitChanged(uint256 newLimit);
-    event ExecutionDailyLimitChanged(uint256 newLimit);
 
     function getBridgeInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
         return (2, 2, 0);
@@ -44,87 +42,12 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
         return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
-    function setTotalSpentPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))] = _value;
-    }
-
-    function totalSpentPerDay(uint256 _day) public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
-    }
-
-    function setTotalExecutedPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = _value;
-    }
-
-    function totalExecutedPerDay(uint256 _day) public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))];
-    }
-
-    function minPerTx() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("minPerTx"))];
-    }
-
-    function maxPerTx() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("maxPerTx"))];
-    }
-
-    function executionMaxPerTx() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))];
-    }
-
     function setInitialize(bool _status) internal {
         boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
     }
 
     function isInitialized() public view returns(bool) {
         return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
-    }
-
-    function getCurrentDay() public view returns(uint256) {
-        return now / 1 days;
-    }
-
-    function setDailyLimit(uint256 _dailyLimit) public onlyOwner {
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        emit DailyLimitChanged(_dailyLimit);
-    }
-
-    function dailyLimit() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("dailyLimit"))];
-    }
-
-    function setExecutionDailyLimit(uint256 _dailyLimit) public onlyOwner {
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _dailyLimit;
-        emit ExecutionDailyLimitChanged(_dailyLimit);
-    }
-
-    function executionDailyLimit() public view returns(uint256) {
-        return uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))];
-    }
-
-    function setExecutionMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < executionDailyLimit());
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _maxPerTx;
-    }
-
-    function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < dailyLimit());
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-    }
-
-    function setMinPerTx(uint256 _minPerTx) external onlyOwner {
-        require(_minPerTx < dailyLimit() && _minPerTx < maxPerTx());
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
-    }
-
-    function withinLimit(uint256 _amount) public view returns(bool) {
-        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
-        return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
-    }
-
-    function withinExecutionLimit(uint256 _amount) public view returns(bool) {
-        uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
-        return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
     }
 
     function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy {

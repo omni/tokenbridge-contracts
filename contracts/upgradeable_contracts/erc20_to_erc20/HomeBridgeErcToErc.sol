@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
-import "../BasicBridge.sol";
+import "../BasicTokenBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../IBurnableMintableERC677Token.sol";
 import "../../ERC677Receiver.sol";
@@ -10,7 +10,7 @@ import "../OverdrawManagement.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 
 
-contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677BridgeForBurnableMintableToken, OverdrawManagement {
+contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicTokenBridge, BasicHomeBridge, ERC677BridgeForBurnableMintableToken, OverdrawManagement {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 

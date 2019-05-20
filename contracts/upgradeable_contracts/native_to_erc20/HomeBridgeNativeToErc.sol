@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
-import "../BasicBridge.sol";
+import "../BasicTokenBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../BasicHomeBridge.sol";
 
@@ -11,7 +11,7 @@ contract Sacrifice {
     }
 }
 
-contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge {
+contract HomeBridgeNativeToErc is EternalStorage, BasicTokenBridge, BasicHomeBridge {
 
     function initialize (
         address _validatorContract,

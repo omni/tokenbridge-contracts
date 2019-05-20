@@ -1,12 +1,12 @@
 pragma solidity 0.4.24;
 
 
-import "../BasicBridge.sol";
+import "../BasicTokenBridge.sol";
 import "../BasicForeignBridge.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
-contract BasicForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
+contract BasicForeignBridgeErcToErc is BasicTokenBridge, BasicForeignBridge {
     function _initialize(
         address _validatorContract,
         address _erc20token,

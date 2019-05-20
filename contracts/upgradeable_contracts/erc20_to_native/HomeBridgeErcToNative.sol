@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
-import "../BasicBridge.sol";
+import "../BasicTokenBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../IBlockReward.sol";
 import "../../ERC677Receiver.sol";
@@ -10,7 +10,7 @@ import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
 
 
-contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement {
+contract HomeBridgeErcToNative is EternalStorage, BasicTokenBridge, BasicHomeBridge, OverdrawManagement {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 

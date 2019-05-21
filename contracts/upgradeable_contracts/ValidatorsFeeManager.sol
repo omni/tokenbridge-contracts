@@ -23,22 +23,33 @@ contract ValidatorsFeeManager is BaseFeeManager {
 
     function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {
         IRewardableValidators validators = rewardableValidatorContract();
-        address[] memory validatorList = validators.validatorList();
-        uint256 feePerValidator = _fee.div(validatorList.length);
+        address F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+        uint256 numOfValidators = validators.validatorCount();
+
+        uint256 feePerValidator = _fee.div(numOfValidators);
 
         uint256 randomValidatorIndex;
-        uint256 diff = _fee.sub(feePerValidator.mul(validatorList.length));
+        uint256 diff = _fee.sub(feePerValidator.mul(numOfValidators));
         if (diff > 0) {
-            randomValidatorIndex = random(validatorList.length);
+            randomValidatorIndex = random(numOfValidators);
         }
 
-        for (uint256 i = 0; i < validatorList.length; i++) {
+        address nextValidator = validators.getNextValidator(F_ADDR);
+        require((nextValidator != F_ADDR) && (nextValidator != address(0)));
+
+        uint256 i = 0;
+        while (nextValidator != F_ADDR) {
             uint256 feeToDistribute = feePerValidator;
             if (diff > 0 && randomValidatorIndex == i) {
                 feeToDistribute = feeToDistribute.add(diff);
             }
-            address rewardAddress = validators.getValidatorRewardAddress(validatorList[i]);
+
+            address rewardAddress = validators.getValidatorRewardAddress(nextValidator);
             onFeeDistribution(rewardAddress, feeToDistribute, _direction);
+
+            nextValidator = validators.getNextValidator(nextValidator);
+            require(nextValidator != address(0));
+            i = i + 1;
         }
     }
 

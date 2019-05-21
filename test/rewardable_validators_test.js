@@ -1,172 +1,213 @@
-const BridgeValidators = artifacts.require("RewardableValidators.sol");
-const EternalStorageProxy = artifacts.require("EternalStorageProxy.sol");
-const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS } = require('./setup');
+const BridgeValidators = artifacts.require('RewardableValidators.sol')
+const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
-contract('RewardableValidators', async (accounts) => {
+const { expect } = require('chai')
+const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS, BN } = require('./setup')
+const { expectEventInLogs } = require('./helpers/helpers')
+
+const ZERO = new BN(0)
+
+contract('RewardableValidators', async accounts => {
   let bridgeValidators
-  let owner = accounts[0]
+  const owner = accounts[0]
 
   beforeEach(async () => {
-    bridgeValidators = await BridgeValidators.new();
+    bridgeValidators = await BridgeValidators.new()
   })
 
   describe('#initialize', async () => {
     it('sets values', async () => {
-      '0x0000000000000000000000000000000000000000'.should.be.equal(await bridgeValidators.owner())
-      '0'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
-      false.should.be.equal(await bridgeValidators.isValidator(accounts[0]))
-      false.should.be.equal(await bridgeValidators.isValidator(accounts[1]))
-      false.should.be.equal(await bridgeValidators.isInitialized())
-      '0'.should.be.bignumber.equal(await bridgeValidators.requiredSignatures())
-      '0'.should.be.bignumber.equal(await bridgeValidators.deployedAtBlock())
-      await bridgeValidators.initialize(3, accounts.slice(0, 3), accounts.slice(3, 5), accounts[2], {from: accounts[2]}).should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators.initialize(2, accounts.slice(0, 2), accounts.slice(2, 4), accounts[2], {from: accounts[2]}).should.be.fulfilled;
-      await bridgeValidators.initialize(2, accounts.slice(0, 2), accounts.slice(2, 4), accounts[2], {from: accounts[2]}).should.be.rejectedWith(ERROR_MSG);
-      await bridgeValidators.initialize(1, [accounts[0]], [ZERO_ADDRESS], [accounts[1]], { from: accounts[1] }).should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators.initialize(1, [ZERO_ADDRESS], [accounts[0]], [accounts[1]], { from: accounts[1] }).should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators.initialize(1, [F_ADDRESS], [accounts[0]], [accounts[1]], { from: accounts[1] }).should.be.rejectedWith(ERROR_MSG)
-      true.should.be.equal(await bridgeValidators.isInitialized())
-      '2'.should.be.bignumber.equal(await bridgeValidators.requiredSignatures())
-      true.should.be.equal(await bridgeValidators.isValidator(accounts[0]))
-      true.should.be.equal(await bridgeValidators.isValidator(accounts[1]))
-      accounts[2].should.be.equal(await bridgeValidators.owner())
-      '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount());
-      (await bridgeValidators.deployedAtBlock()).should.be.bignumber.above(0)
-      const [major, minor, patch] = await bridgeValidators.getBridgeValidatorsInterfacesVersion()
-      major.should.be.bignumber.gte(0)
-      minor.should.be.bignumber.gte(0)
-      patch.should.be.bignumber.gte(0)
+      expect(await bridgeValidators.owner()).to.be.equal(ZERO_ADDRESS)
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal(ZERO)
+      expect(await bridgeValidators.isValidator(accounts[0])).to.be.equal(false)
+      expect(await bridgeValidators.isValidator(accounts[1])).to.be.equal(false)
+      expect(await bridgeValidators.isInitialized()).to.be.equal(false)
+      expect(await bridgeValidators.requiredSignatures()).to.be.bignumber.equal(ZERO)
+      expect(await bridgeValidators.deployedAtBlock()).to.be.bignumber.equal(ZERO)
+
+      await bridgeValidators
+        .initialize(3, accounts.slice(0, 3), accounts.slice(3, 5), accounts[2], {
+          from: accounts[2]
+        })
+        .should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators
+        .initialize(1, [accounts[0]], [ZERO_ADDRESS], accounts[1], { from: accounts[1] })
+        .should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators
+        .initialize(1, [ZERO_ADDRESS], [accounts[0]], accounts[1], { from: accounts[1] })
+        .should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators
+        .initialize(1, [F_ADDRESS], [accounts[0]], accounts[1], { from: accounts[1] })
+        .should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.initialize(2, accounts.slice(0, 2), accounts.slice(2, 4), accounts[2], {
+        from: accounts[2]
+      }).should.be.fulfilled
+      await bridgeValidators
+        .initialize(2, accounts.slice(0, 2), accounts.slice(2, 4), accounts[2], {
+          from: accounts[2]
+        })
+        .should.be.rejectedWith(ERROR_MSG)
+
+      expect(await bridgeValidators.isInitialized()).to.be.equal(true)
+      expect(await bridgeValidators.requiredSignatures()).to.be.bignumber.equal('2')
+      expect(await bridgeValidators.isValidator(accounts[0])).to.be.equal(true)
+      expect(await bridgeValidators.isValidator(accounts[1])).to.be.equal(true)
+      expect(await bridgeValidators.owner()).to.be.equal(accounts[2])
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('2')
+      expect(await bridgeValidators.deployedAtBlock()).to.be.bignumber.above(ZERO)
+      const { major, minor, patch } = await bridgeValidators.getBridgeValidatorsInterfacesVersion()
+      expect(major).to.be.bignumber.gte(ZERO)
+      expect(minor).to.be.bignumber.gte(ZERO)
+      expect(patch).to.be.bignumber.gte(ZERO)
     })
   })
 
   describe('#addValidator', async () => {
-    let owner = accounts[2];
-    let validators = [accounts[0], accounts[1]];
-    let rewards = accounts.slice(2, 4)
-    let requiredSignatures = 2;
+    const owner = accounts[2]
+    const validators = [accounts[0], accounts[1]]
+    const rewards = accounts.slice(2, 4)
+    const requiredSignatures = 2
     beforeEach(async () => {
-      await bridgeValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
-      '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
+      await bridgeValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('2')
     })
     it('adds validator', async () => {
-      let newValidator = accounts[4];
-      let newReward = accounts[5];
+      const newValidator = accounts[4]
+      const newReward = accounts[5]
 
       false.should.be.equal(await bridgeValidators.isValidator(newValidator))
-      await bridgeValidators.addRewardableValidator(newValidator, newReward, {from: validators[0]}).should.be.rejectedWith(ERROR_MSG)
-      const {logs} = await bridgeValidators.addRewardableValidator(newValidator, newReward, {from: owner}).should.be.fulfilled
-      true.should.be.equal(await bridgeValidators.isValidator(newValidator))
-      '3'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
-      logs[0].event.should.be.equal('ValidatorAdded')
-      logs[0].args.should.be.deep.equal({ validator: newValidator })
+      await bridgeValidators
+        .addRewardableValidator(newValidator, newReward, { from: validators[0] })
+        .should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await bridgeValidators.addRewardableValidator(newValidator, newReward, {
+        from: owner
+      }).should.be.fulfilled
+      expect(await bridgeValidators.isValidator(newValidator)).to.be.equal(true)
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('3')
+      expectEventInLogs(logs, 'ValidatorAdded', { validator: newValidator })
 
       const rewardAddress = await bridgeValidators.getValidatorRewardAddress(newValidator)
-      rewardAddress.should.be.equal(newReward)
+      expect(rewardAddress).to.be.equal(newReward)
     })
 
     it('cannot add already existing validator', async () => {
       true.should.be.equal(await bridgeValidators.isValidator(validators[0]))
-      await bridgeValidators.addRewardableValidator(validators[0], rewards[0], {from: owner}).should.be.rejectedWith(ERROR_MSG)
-      '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
+      await bridgeValidators
+        .addRewardableValidator(validators[0], rewards[0], { from: owner })
+        .should.be.rejectedWith(ERROR_MSG)
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('2')
     })
 
     it(`cannot add 0xf as validator address`, async () => {
       // Given
-      await bridgeValidators.addRewardableValidator(F_ADDRESS, rewards[0], { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators
+        .addRewardableValidator(F_ADDRESS, rewards[0], { from: owner })
+        .should.be.rejectedWith(ERROR_MSG)
     })
 
     it(`cannot add 0x0 as validator address`, async () => {
-      await bridgeValidators.addRewardableValidator(ZERO_ADDRESS, rewards[0], {from: owner}).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators
+        .addRewardableValidator(ZERO_ADDRESS, rewards[0], { from: owner })
+        .should.be.rejectedWith(ERROR_MSG)
     })
 
     it(`cannot add 0x0 as reward address`, async () => {
-      await bridgeValidators.addRewardableValidator(accounts[4], ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators
+        .addRewardableValidator(accounts[4], ZERO_ADDRESS, { from: owner })
+        .should.be.rejectedWith(ERROR_MSG)
     })
   })
 
   describe('#removeValidator', async () => {
-    let owner = accounts[2];
-    let validators = [accounts[0], accounts[1], accounts[3]];
-    let rewards = accounts.slice(4, 7);
-    let requiredSignatures = 2;
+    const owner = accounts[2]
+    const validators = [accounts[0], accounts[1], accounts[3]]
+    const rewards = accounts.slice(4, 7)
+    const requiredSignatures = 2
     beforeEach(async () => {
-      await bridgeValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
-      '3'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
+      await bridgeValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('3')
     })
 
     it('removes validator', async () => {
-      let toRemove = validators[0];
-      true.should.be.equal(await bridgeValidators.isValidator(toRemove))
-      await bridgeValidators.removeValidator(toRemove, {from: validators[0]}).should.be.rejectedWith(ERROR_MSG)
-      const {logs} = await bridgeValidators.removeValidator(toRemove, {from: owner}).should.be.fulfilled
-      false.should.be.equal(await bridgeValidators.isValidator(toRemove))
-      '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
-      logs[0].event.should.be.equal('ValidatorRemoved')
-      logs[0].args.should.be.deep.equal({validator: toRemove})
+      const toRemove = validators[0]
+      expect(await bridgeValidators.isValidator(toRemove)).to.be.equal(true)
+      await bridgeValidators.removeValidator(toRemove, { from: validators[0] }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await bridgeValidators.removeValidator(toRemove, { from: owner }).should.be.fulfilled
+      expect(await bridgeValidators.isValidator(toRemove)).to.be.equal(false)
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('2')
+      expectEventInLogs(logs, 'ValidatorRemoved', { validator: toRemove })
     })
 
     it('cannot remove if it will break requiredSignatures', async () => {
-      let toRemove = validators[0];
-      let toRemove2 = validators[1];
+      const toRemove = validators[0]
+      const toRemove2 = validators[1]
       true.should.be.equal(await bridgeValidators.isValidator(toRemove))
       true.should.be.equal(await bridgeValidators.isValidator(toRemove))
-      await bridgeValidators.removeValidator(toRemove, {from: owner}).should.be.fulfilled
-      await bridgeValidators.removeValidator(toRemove2, {from: owner}).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.removeValidator(toRemove, { from: owner }).should.be.fulfilled
+      await bridgeValidators.removeValidator(toRemove2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
       false.should.be.equal(await bridgeValidators.isValidator(toRemove))
       true.should.be.equal(await bridgeValidators.isValidator(toRemove2))
-      '2'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('2')
     })
 
     it('cannot remove non-existent validator', async () => {
       false.should.be.equal(await bridgeValidators.isValidator(accounts[4]))
-      await bridgeValidators.removeValidator(accounts[4], {from: owner}).should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators.removeValidator(ZERO_ADDRESS, {from: owner}).should.be.rejectedWith(ERROR_MSG)
-      '3'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
+      await bridgeValidators.removeValidator(accounts[4], { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.removeValidator(ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('3')
     })
   })
 
   describe('#setRequiredSignatures', async () => {
-    let owner = accounts[2];
-    let validators = [accounts[0], accounts[1], accounts[3]];
-    let rewards = accounts.slice(4, 7)
-    let requiredSignatures = 2;
+    const owner = accounts[2]
+    const validators = [accounts[0], accounts[1], accounts[3]]
+    const rewards = accounts.slice(4, 7)
+    const requiredSignatures = '2'
     beforeEach(async () => {
-      await bridgeValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
-      '3'.should.be.bignumber.equal(await bridgeValidators.validatorCount())
+      await bridgeValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('3')
     })
 
     it('sets req signatures', async () => {
-      let newReqSig = 3;
-      requiredSignatures.should.be.bignumber.equal(await bridgeValidators.requiredSignatures());
-      await bridgeValidators.setRequiredSignatures(newReqSig, {from: validators[0]}).should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators.setRequiredSignatures(newReqSig, {from: owner}).should.be.fulfilled
-      newReqSig.should.be.bignumber.equal(await bridgeValidators.requiredSignatures());
+      const newReqSig = '3'
+      expect(await bridgeValidators.requiredSignatures()).to.be.bignumber.equal(requiredSignatures)
+      await bridgeValidators.setRequiredSignatures(newReqSig, { from: validators[0] }).should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.setRequiredSignatures(newReqSig, { from: owner }).should.be.fulfilled
+      expect(await bridgeValidators.requiredSignatures()).to.be.bignumber.equal(newReqSig)
     })
     it('cannot set more than  validators count', async () => {
-      let newReqSig = 4;
-      requiredSignatures.should.be.bignumber.equal(await bridgeValidators.requiredSignatures());
-      await bridgeValidators.setRequiredSignatures(newReqSig, {from: owner}).should.be.rejectedWith(ERROR_MSG)
-      requiredSignatures.should.be.bignumber.equal(await bridgeValidators.requiredSignatures());
+      const newReqSig = '4'
+      expect(await bridgeValidators.requiredSignatures()).to.be.bignumber.equal(requiredSignatures)
+      await bridgeValidators.setRequiredSignatures(newReqSig, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      expect(await bridgeValidators.requiredSignatures()).to.be.bignumber.equal(requiredSignatures)
     })
   })
 
   describe('#upgradable', async () => {
     it('can be upgraded via upgradeToAndCall', async () => {
-      let storageProxy = await EternalStorageProxy.new().should.be.fulfilled;
-      let required_signatures = 2;
-      let validators = [accounts[0], accounts[1]];
-      let rewards = accounts.slice(3, 5);
-      let owner = accounts[2]
-      let data = bridgeValidators.initialize.request(required_signatures, validators, rewards, owner).params[0].data
-      await storageProxy.upgradeToAndCall('1', bridgeValidators.address, data).should.be.fulfilled;
-      let finalContract = await BridgeValidators.at(storageProxy.address);
-      true.should.be.equal(await finalContract.isInitialized());
-      required_signatures.should.be.bignumber.equal(await finalContract.requiredSignatures())
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
+      const requiredSignatures = '2'
+      const validators = [accounts[0], accounts[1]]
+      const rewards = accounts.slice(3, 5)
+      const owner = accounts[2]
+      const data = bridgeValidators.contract.methods
+        .initialize(requiredSignatures, validators, rewards, owner)
+        .encodeABI()
+      await storageProxy.upgradeToAndCall('1', bridgeValidators.address, data).should.be.fulfilled
+      const finalContract = await BridgeValidators.at(storageProxy.address)
+      true.should.be.equal(await finalContract.isInitialized())
+      expect(await finalContract.requiredSignatures()).to.be.bignumber.equal(requiredSignatures)
 
       true.should.be.equal(await finalContract.isValidator(validators[0]))
       true.should.be.equal(await finalContract.isValidator(validators[1]))
       owner.should.be.equal(await finalContract.owner())
-      validators.length.should.be.bignumber.equal(await finalContract.validatorCount())
+      expect(await finalContract.validatorCount()).to.be.bignumber.equal(validators.length.toString())
     })
   })
 
@@ -181,8 +222,7 @@ contract('RewardableValidators', async (accounts) => {
       const { logs } = await removeValidator(accounts[0], { from: owner }).should.be.fulfilled
 
       // Then
-      logs[0].event.should.be.equal('ValidatorRemoved')
-      logs[0].args.should.be.deep.equal({ validator: accounts[0] })
+      expectEventInLogs(logs, 'ValidatorRemoved', { validator: accounts[0] })
     })
 
     it(`Removed validator should return zero address on nextValidator`, async () => {
@@ -196,8 +236,7 @@ contract('RewardableValidators', async (accounts) => {
       const { logs } = await removeValidator(accounts[0], { from: owner }).should.be.fulfilled
 
       // Then
-      logs[0].event.should.be.equal('ValidatorRemoved')
-      logs[0].args.should.be.deep.equal({ validator: accounts[0] })
+      expectEventInLogs(logs, 'ValidatorRemoved', { validator: accounts[0] })
 
       const updatedNextValidator = await getNextValidator(accounts[0])
 
@@ -211,26 +250,16 @@ contract('RewardableValidators', async (accounts) => {
         const proxy = await EternalStorageProxy.new()
         const bridgeValidatorsImpl = await BridgeValidators.new()
         await proxy.upgradeTo('1', bridgeValidatorsImpl.address)
-        bridgeValidators = BridgeValidators.at(proxy.address)
+        bridgeValidators = await BridgeValidators.at(proxy.address)
         const { initialize, isInitialized, removeValidator } = bridgeValidators
-        await initialize(
-          1,
-          accounts.slice(0, 5),
-          accounts.slice(5),
-          owner,
-          { from: owner }
-        ).should.be.fulfilled
+        await initialize(1, accounts.slice(0, 5), accounts.slice(5), owner, { from: owner }).should.be.fulfilled
         true.should.be.equal(await isInitialized())
 
         // When
-        const { logs } = await removeValidator(
-          validator,
-          { from: owner }
-        ).should.be.fulfilled
+        const { logs } = await removeValidator(validator, { from: owner }).should.be.fulfilled
 
         // Then
-        logs[0].event.should.be.equal('ValidatorRemoved')
-        logs[0].args.should.be.deep.equal({ validator })
+        expectEventInLogs(logs, 'ValidatorRemoved', { validator })
       })
     })
   })
@@ -242,12 +271,12 @@ contract('RewardableValidators', async (accounts) => {
       await initialize(1, accounts.slice(0, 5), accounts.slice(5), owner, { from: owner }).should.be.fulfilled
 
       // When
-      true.should.be.equal(await isInitialized())
+      expect(await isInitialized()).to.be.equal(true)
 
       // Then
       for (let i = 0; i < accounts.slice(0, 5).length; i++) {
         const validator = accounts[i]
-        accounts[i + 5].should.be.equal(await getValidatorRewardAddress(validator))
+        expect(await getValidatorRewardAddress(validator)).to.be.equal(accounts[i + 5])
       }
     })
   })
@@ -256,13 +285,12 @@ contract('RewardableValidators', async (accounts) => {
       // Given
       const validators = accounts.slice(0, 5)
       const { initialize, validatorList } = bridgeValidators
-      await initialize(1, validators, accounts.slice(5), owner, { from: owner }).should.be.fulfilled
 
       // When
-      const returnedList = await validatorList()
+      await initialize(1, validators, accounts.slice(5), owner, { from: owner }).should.be.fulfilled
 
       // Then
-      returnedList.should.be.eql(validators)
+      expect(await validatorList()).to.be.eql(validators)
     })
   })
 })

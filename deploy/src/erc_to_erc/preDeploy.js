@@ -1,6 +1,10 @@
 const { web3Foreign } = require('../web3')
 const { ERC20_TOKEN_ADDRESS, ERC20_EXTENDED_BY_ERC677 } = require('../loadEnv')
-const { abi } = require('../../../build/contracts/ERC677BridgeToken.json')
+const {
+  foreignContracts: {
+    ERC677BridgeToken: { abi }
+  }
+} = require('../loadContracts')
 
 async function preDeploy() {
   if (ERC20_EXTENDED_BY_ERC677) {

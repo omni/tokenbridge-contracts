@@ -4,9 +4,10 @@ require('dotenv').config({
 })
 const { isAddress, toBN } = require('web3').utils
 const envalid = require('envalid')
-const { ZERO_ADDRESS } = require('./constants')
+const { ZERO_ADDRESS, EVM_TYPES } = require('./constants')
 
 // Validations and constants
+const evmVersions = [EVM_TYPES.BYZANTIUM, EVM_TYPES.SPURIOUSDRAGON]
 const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
 const validRewardModes = ['false', 'ONE_DIRECTION', 'BOTH_DIRECTIONS']
 const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
@@ -41,8 +42,26 @@ const {
   VALIDATORS_REWARD_ACCOUNTS,
   DEPLOY_REWARDABLE_TOKEN,
   HOME_FEE_MANAGER_TYPE,
-  ERC20_EXTENDED_BY_ERC677
+  ERC20_EXTENDED_BY_ERC677,
+  HOME_EVM_VERSION,
+  FOREIGN_EVM_VERSION
 } = process.env
+
+if (HOME_EVM_VERSION) {
+  if (!evmVersions.includes(HOME_EVM_VERSION)) {
+    throw new Error(
+      `Invalid Home EVM Version: ${HOME_EVM_VERSION}. Supported values are ${evmVersions}`
+    )
+  }
+}
+
+if (FOREIGN_EVM_VERSION) {
+  if (!evmVersions.includes(FOREIGN_EVM_VERSION)) {
+    throw new Error(
+      `Invalid Foreign EVM Version: ${FOREIGN_EVM_VERSION}. Supported values are ${evmVersions}`
+    )
+  }
+}
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)

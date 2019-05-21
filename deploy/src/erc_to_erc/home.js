@@ -16,14 +16,18 @@ const {
 } = require('../deploymentUtils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
-const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
-const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
-const RewardableValidators = require('../../../build/contracts/RewardableValidators.json')
-const FeeManagerErcToErcPOSDAO = require('../../../build/contracts/FeeManagerErcToErcPOSDAO.json')
-const HomeBridge = require('../../../build/contracts/HomeBridgeErcToErc.json')
-const POSDAOHomeBridge = require('../../../build/contracts/POSDAOHomeBridgeErcToErc.json')
-const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
-const ERC677BridgeTokenRewardable = require('../../../build/contracts/ERC677BridgeTokenRewardable.json')
+const {
+  homeContracts: {
+    EternalStorageProxy,
+    BridgeValidators,
+    RewardableValidators,
+    FeeManagerErcToErcPOSDAO,
+    HomeBridgeErcToErc: HomeBridge,
+    POSDAOHomeBridgeErcToErc,
+    ERC677BridgeToken,
+    ERC677BridgeTokenRewardable
+  }
+} = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
 const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
@@ -215,7 +219,9 @@ async function deployHome() {
 
   console.log('\ndeploying homeBridge implementation\n')
   const bridgeContract =
-    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? POSDAOHomeBridge : HomeBridge
+    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS
+      ? POSDAOHomeBridgeErcToErc
+      : HomeBridge
   const homeBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce

@@ -1,6 +1,8 @@
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 const { privateKeyToAddress, sendRawTxHome } = require('../deploymentUtils')
-const HomeBridge = require('../../../build/contracts/HomeBridgeErcToNative.json')
+const {
+  homeContracts: { HomeBridgeErcToNative: HomeBridge }
+} = require('../loadContracts')
 const env = require('../loadEnv')
 
 const { BLOCK_REWARD_ADDRESS, DEPLOYMENT_ACCOUNT_PRIVATE_KEY, HOME_BRIDGE_ADDRESS } = env

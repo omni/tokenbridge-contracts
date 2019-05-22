@@ -44,7 +44,7 @@ contract BasicForeignBridgeErcToErc is BasicTokenBridge, BasicForeignBridge {
         super.claimTokens(_token, _to);
     }
 
-    function onExecuteMessage(address _recipient, uint256 _amount) internal returns(bool){
+    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns(bool){
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         return erc20token().transfer(_recipient, _amount);
     }

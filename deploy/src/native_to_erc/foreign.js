@@ -2,15 +2,32 @@ const assert = require('assert')
 const Web3Utils = require('web3-utils')
 const env = require('../loadEnv')
 
-const { deployContract, privateKeyToAddress, sendRawTxForeign } = require('../deploymentUtils')
+const {
+  deployContract,
+  privateKeyToAddress,
+  sendRawTxForeign,
+  upgradeProxy,
+  initializeValidators,
+  transferProxyOwnership,
+  transferOwnership,
+  setBridgeContract,
+  assertStateWithRetry
+} = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
-
-const ERC677BridgeToken = require('../../../build/contracts/ERC677BridgeToken.json')
-const EternalStorageProxy = require('../../../build/contracts/EternalStorageProxy.json')
-const BridgeValidators = require('../../../build/contracts/BridgeValidators.json')
-const ForeignBridge = require('../../../build/contracts/ForeignBridgeNativeToErc.json')
+const {
+  foreignContracts: {
+    EternalStorageProxy,
+    BridgeValidators,
+    RewardableValidators,
+    ForeignBridgeNativeToErc: ForeignBridge,
+    ERC677BridgeToken,
+    ERC677BridgeTokenRewardable,
+    FeeManagerNativeToErc
+  }
+} = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
+const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -27,217 +44,305 @@ const {
   BRIDGEABLE_TOKEN_SYMBOL,
   BRIDGEABLE_TOKEN_DECIMALS,
   HOME_DAILY_LIMIT,
-  HOME_MAX_AMOUNT_PER_TX
+  HOME_MAX_AMOUNT_PER_TX,
+  DEPLOY_REWARDABLE_TOKEN,
+  BLOCK_REWARD_ADDRESS,
+  DPOS_STAKING_ADDRESS,
+  FOREIGN_REWARDABLE,
+  HOME_TRANSACTIONS_FEE
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
+const isRewardableBridge = FOREIGN_REWARDABLE === 'ONE_DIRECTION'
+
+async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, initialNonce }) {
+  let nonce = initialNonce
+  let initializeFBridgeData
+
+  if (isRewardableBridge) {
+    console.log('\ndeploying implementation for fee manager')
+    const feeManager = await deployContract(FeeManagerNativeToErc, [], {
+      from: DEPLOYMENT_ACCOUNT_ADDRESS,
+      network: 'foreign',
+      nonce
+    })
+    console.log('[Foreign] feeManager Implementation: ', feeManager.options.address)
+    nonce++
+
+    const homeFeeInWei = Web3Utils.toWei(HOME_TRANSACTIONS_FEE.toString(), 'ether')
+
+    console.log('\ninitializing Foreign Bridge with fee contract:\n')
+    console.log(`Foreign Validators: ${validatorsBridge.options.address},
+  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(
+      FOREIGN_DAILY_LIMIT
+    )} in eth,
+  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MAX_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MIN_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
+    HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      HOME_MAX_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
+  Fee Manager: ${feeManager.options.address},
+  Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%`)
+
+    initializeFBridgeData = await bridge.methods
+      .rewardableInitialize(
+        validatorsBridge.options.address,
+        erc677bridgeToken.options.address,
+        FOREIGN_DAILY_LIMIT,
+        FOREIGN_MAX_AMOUNT_PER_TX,
+        FOREIGN_MIN_AMOUNT_PER_TX,
+        FOREIGN_GAS_PRICE,
+        FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+        HOME_DAILY_LIMIT,
+        HOME_MAX_AMOUNT_PER_TX,
+        FOREIGN_BRIDGE_OWNER,
+        feeManager.options.address,
+        homeFeeInWei
+      )
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  } else {
+    console.log('\ninitializing Foreign Bridge with following parameters:\n')
+    console.log(`Foreign Validators: ${validatorsBridge.options.address},
+  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(
+      FOREIGN_DAILY_LIMIT
+    )} in eth,
+  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MAX_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MIN_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
+    HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      HOME_MAX_AMOUNT_PER_TX
+    )} in eth,
+  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER}
+  `)
+
+    initializeFBridgeData = await bridge.methods
+      .initialize(
+        validatorsBridge.options.address,
+        erc677bridgeToken.options.address,
+        FOREIGN_DAILY_LIMIT,
+        FOREIGN_MAX_AMOUNT_PER_TX,
+        FOREIGN_MIN_AMOUNT_PER_TX,
+        FOREIGN_GAS_PRICE,
+        FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+        HOME_DAILY_LIMIT,
+        HOME_MAX_AMOUNT_PER_TX,
+        FOREIGN_BRIDGE_OWNER
+      )
+      .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
+  }
+
+  const txInitializeBridge = await sendRawTxForeign({
+    data: initializeFBridgeData,
+    nonce,
+    to: bridge.options.address,
+    privateKey: deploymentPrivateKey,
+    url: FOREIGN_RPC_URL
+  })
+  if (txInitializeBridge.status) {
+    assert.strictEqual(Web3Utils.hexToNumber(txInitializeBridge.status), 1, 'Transaction Failed')
+  } else {
+    await assertStateWithRetry(bridge.methods.isInitialized().call, true)
+  }
+  nonce++
+
+  return nonce
+}
+
 async function deployForeign() {
-  let foreignNonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
+  let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
   console.log('========================================')
   console.log('deploying ForeignBridge')
   console.log('========================================\n')
 
   console.log('\n[Foreign] deploying BRIDGEABLE_TOKEN_SYMBOL token')
   const erc677bridgeToken = await deployContract(
-    ERC677BridgeToken,
+    DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
-    { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce }
+    { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce }
   )
-  foreignNonce++
+  nonce++
   console.log('[Foreign] BRIDGEABLE_TOKEN_SYMBOL: ', erc677bridgeToken.options.address)
 
-  console.log('deploying storage for foreign validators')
+  console.log('\ndeploying storage for foreign validators')
   const storageValidatorsForeign = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
-    nonce: foreignNonce
+    nonce
   })
-  foreignNonce++
+  nonce++
   console.log('[Foreign] BridgeValidators Storage: ', storageValidatorsForeign.options.address)
 
   console.log('\ndeploying implementation for foreign validators')
-  const bridgeValidatorsForeign = await deployContract(BridgeValidators, [], {
+  const bridgeValidatorsContract = isRewardableBridge ? RewardableValidators : BridgeValidators
+  const bridgeValidatorsForeign = await deployContract(bridgeValidatorsContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
-    nonce: foreignNonce
+    nonce
   })
-  foreignNonce++
+  nonce++
   console.log(
     '[Foreign] BridgeValidators Implementation: ',
     bridgeValidatorsForeign.options.address
   )
 
   console.log('\nhooking up eternal storage to BridgeValidators')
-  const upgradeToBridgeVForeignData = await storageValidatorsForeign.methods
-    .upgradeTo('1', bridgeValidatorsForeign.options.address)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txUpgradeToBridgeVForeign = await sendRawTxForeign({
-    data: upgradeToBridgeVForeignData,
-    nonce: foreignNonce,
-    to: storageValidatorsForeign.options.address,
-    privateKey: deploymentPrivateKey,
+  await upgradeProxy({
+    proxy: storageValidatorsForeign,
+    implementationAddress: bridgeValidatorsForeign.options.address,
+    version: '1',
+    nonce,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(
-    Web3Utils.hexToNumber(txUpgradeToBridgeVForeign.status),
-    1,
-    'Transaction Failed'
-  )
-  foreignNonce++
+  nonce++
 
   console.log('\ninitializing Foreign Bridge Validators with following parameters:\n')
-  console.log(
-    `REQUIRED_NUMBER_OF_VALIDATORS: ${REQUIRED_NUMBER_OF_VALIDATORS}, VALIDATORS: ${VALIDATORS}`
-  )
   bridgeValidatorsForeign.options.address = storageValidatorsForeign.options.address
-  const initializeForeignData = await bridgeValidatorsForeign.methods
-    .initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, FOREIGN_VALIDATORS_OWNER)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txInitializeForeign = await sendRawTxForeign({
-    data: initializeForeignData,
-    nonce: foreignNonce,
-    to: bridgeValidatorsForeign.options.address,
-    privateKey: deploymentPrivateKey,
+  await initializeValidators({
+    contract: bridgeValidatorsForeign,
+    isRewardableBridge,
+    requiredNumber: REQUIRED_NUMBER_OF_VALIDATORS,
+    validators: VALIDATORS,
+    rewardAccounts: VALIDATORS_REWARD_ACCOUNTS,
+    owner: FOREIGN_VALIDATORS_OWNER,
+    nonce,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(Web3Utils.hexToNumber(txInitializeForeign.status), 1, 'Transaction Failed')
-  foreignNonce++
+  nonce++
 
   console.log('\nTransferring ownership of ValidatorsProxy\n')
-  const validatorsForeignOwnershipData = await storageValidatorsForeign.methods
-    .transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txValidatorsForeignOwnershipData = await sendRawTxForeign({
-    data: validatorsForeignOwnershipData,
-    nonce: foreignNonce,
-    to: storageValidatorsForeign.options.address,
-    privateKey: deploymentPrivateKey,
+  await transferProxyOwnership({
+    proxy: storageValidatorsForeign,
+    newOwner: FOREIGN_UPGRADEABLE_ADMIN,
+    nonce,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(
-    Web3Utils.hexToNumber(txValidatorsForeignOwnershipData.status),
-    1,
-    'Transaction Failed'
-  )
-  foreignNonce++
+  nonce++
 
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
-    nonce: foreignNonce
+    nonce
   })
-  foreignNonce++
+  nonce++
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
   const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
-    nonce: foreignNonce
+    nonce
   })
-  foreignNonce++
+  nonce++
   console.log(
     '[Foreign] ForeignBridge Implementation: ',
     foreignBridgeImplementation.options.address
   )
 
   console.log('\nhooking up ForeignBridge storage to ForeignBridge implementation')
-  const upgradeToForeignBridgeData = await foreignBridgeStorage.methods
-    .upgradeTo('1', foreignBridgeImplementation.options.address)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txUpgradeToForeignBridge = await sendRawTxForeign({
-    data: upgradeToForeignBridgeData,
-    nonce: foreignNonce,
-    to: foreignBridgeStorage.options.address,
-    privateKey: deploymentPrivateKey,
+  await upgradeProxy({
+    proxy: foreignBridgeStorage,
+    implementationAddress: foreignBridgeImplementation.options.address,
+    version: '1',
+    nonce,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(
-    Web3Utils.hexToNumber(txUpgradeToForeignBridge.status),
-    1,
-    'Transaction Failed'
-  )
-  foreignNonce++
+  nonce++
 
-  console.log('\ninitializing Foreign Bridge with following parameters:\n')
-  console.log(`Foreign Validators: ${storageValidatorsForeign.options.address},
-  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(
-    FOREIGN_DAILY_LIMIT
-  )} in eth,
-  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-    FOREIGN_MAX_AMOUNT_PER_TX
-  )} in eth,
-  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-    FOREIGN_MIN_AMOUNT_PER_TX
-  )} in eth
-  `)
   foreignBridgeImplementation.options.address = foreignBridgeStorage.options.address
-  const initializeFBridgeData = await foreignBridgeImplementation.methods
-    .initialize(
-      storageValidatorsForeign.options.address,
-      erc677bridgeToken.options.address,
-      FOREIGN_DAILY_LIMIT,
-      FOREIGN_MAX_AMOUNT_PER_TX,
-      FOREIGN_MIN_AMOUNT_PER_TX,
-      FOREIGN_GAS_PRICE,
-      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-      HOME_DAILY_LIMIT,
-      HOME_MAX_AMOUNT_PER_TX,
-      FOREIGN_BRIDGE_OWNER
-    )
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txInitializeBridge = await sendRawTxForeign({
-    data: initializeFBridgeData,
-    nonce: foreignNonce,
-    to: foreignBridgeStorage.options.address,
-    privateKey: deploymentPrivateKey,
-    url: FOREIGN_RPC_URL
+  nonce = await initializeBridge({
+    validatorsBridge: storageValidatorsForeign,
+    bridge: foreignBridgeImplementation,
+    erc677bridgeToken,
+    initialNonce: nonce
   })
-  assert.strictEqual(Web3Utils.hexToNumber(txInitializeBridge.status), 1, 'Transaction Failed')
-  foreignNonce++
 
   console.log('\nset bridge contract on ERC677BridgeToken')
-  const setBridgeContractData = await erc677bridgeToken.methods
-    .setBridgeContract(foreignBridgeStorage.options.address)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const setBridgeContract = await sendRawTxForeign({
-    data: setBridgeContractData,
-    nonce: foreignNonce,
-    to: erc677bridgeToken.options.address,
-    privateKey: deploymentPrivateKey,
+  await setBridgeContract({
+    contract: erc677bridgeToken,
+    bridgeAddress: foreignBridgeStorage.options.address,
+    nonce,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(Web3Utils.hexToNumber(setBridgeContract.status), 1, 'Transaction Failed')
-  foreignNonce++
+  nonce++
+
+  if (DEPLOY_REWARDABLE_TOKEN) {
+    console.log('\nset BlockReward contract on ERC677BridgeTokenRewardable')
+    const setBlockRewardContractData = await erc677bridgeToken.methods
+      .setBlockRewardContract(BLOCK_REWARD_ADDRESS)
+      .encodeABI()
+    const setBlockRewardContract = await sendRawTxForeign({
+      data: setBlockRewardContractData,
+      nonce,
+      to: erc677bridgeToken.options.address,
+      privateKey: deploymentPrivateKey,
+      url: FOREIGN_RPC_URL
+    })
+    if (setBlockRewardContract.status) {
+      assert.strictEqual(
+        Web3Utils.hexToNumber(setBlockRewardContract.status),
+        1,
+        'Transaction Failed'
+      )
+    } else {
+      await assertStateWithRetry(
+        erc677bridgeToken.methods.blockRewardContract().call,
+        BLOCK_REWARD_ADDRESS
+      )
+    }
+    nonce++
+
+    console.log('\nset Staking contract on ERC677BridgeTokenRewardable')
+    const setStakingContractData = await erc677bridgeToken.methods
+      .setStakingContract(DPOS_STAKING_ADDRESS)
+      .encodeABI()
+    const setStakingContract = await sendRawTxForeign({
+      data: setStakingContractData,
+      nonce,
+      to: erc677bridgeToken.options.address,
+      privateKey: deploymentPrivateKey,
+      url: FOREIGN_RPC_URL
+    })
+    if (setStakingContract.status) {
+      assert.strictEqual(Web3Utils.hexToNumber(setStakingContract.status), 1, 'Transaction Failed')
+    } else {
+      await assertStateWithRetry(
+        erc677bridgeToken.methods.validatorSetContract().call,
+        DPOS_STAKING_ADDRESS
+      )
+    }
+    nonce++
+  }
 
   console.log('transferring ownership of ERC677BridgeToken token to foreignBridge contract')
-  const txOwnershipData = await erc677bridgeToken.methods
-    .transferOwnership(foreignBridgeStorage.options.address)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txOwnership = await sendRawTxForeign({
-    data: txOwnershipData,
-    nonce: foreignNonce,
-    to: erc677bridgeToken.options.address,
-    privateKey: deploymentPrivateKey,
+  await transferOwnership({
+    contract: erc677bridgeToken,
+    newOwner: foreignBridgeStorage.options.address,
+    nonce,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(Web3Utils.hexToNumber(txOwnership.status), 1, 'Transaction Failed')
-  foreignNonce++
+  nonce++
 
-  const bridgeOwnershipData = await foreignBridgeStorage.methods
-    .transferProxyOwnership(FOREIGN_UPGRADEABLE_ADMIN)
-    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
-  const txBridgeOwnershipData = await sendRawTxForeign({
-    data: bridgeOwnershipData,
-    nonce: foreignNonce,
-    to: foreignBridgeStorage.options.address,
-    privateKey: deploymentPrivateKey,
+  console.log('transferring proxy ownership to multisig for foreign bridge Proxy contract')
+  await transferProxyOwnership({
+    proxy: foreignBridgeStorage,
+    newOwner: FOREIGN_UPGRADEABLE_ADMIN,
+    nonce,
     url: FOREIGN_RPC_URL
   })
-  assert.strictEqual(Web3Utils.hexToNumber(txBridgeOwnershipData.status), 1, 'Transaction Failed')
-  foreignNonce++
 
   console.log('\nForeign Deployment Bridge completed\n')
   return {

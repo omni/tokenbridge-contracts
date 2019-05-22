@@ -42,9 +42,10 @@ async function deployNativeToErc() {
 }
 
 async function deployErcToErc() {
+  const preDeploy = require('./src/erc_to_erc/preDeploy')
   const deployHome = require('./src/erc_to_erc/home')
   const deployForeign = require('./src/erc_to_erc/foreign')
-
+  await preDeploy()
   const { homeBridge, erc677 } = await deployHome()
   const { foreignBridge } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')

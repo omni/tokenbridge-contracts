@@ -6,6 +6,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
 
+
 contract BasicHomeBridge is EternalStorage, Validatable {
     using SafeMath for uint256;
 
@@ -36,7 +37,9 @@ contract BasicHomeBridge is EternalStorage, Validatable {
                 // If the bridge contract does not own enough tokens to transfer
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-                require(onExecuteAffirmation(recipient, value));
+                if (value > 0) {
+                    require(onExecuteAffirmation(recipient, value, transactionHash));
+                }
                 emit AffirmationCompleted(recipient, value, transactionHash);
             }
         } else {
@@ -74,6 +77,8 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         if (signed >= reqSigs) {
             setNumMessagesSigned(hashMsg, markAsProcessed(signed));
             emit CollectedSignatures(msg.sender, hashMsg, reqSigs);
+
+            onSignaturesCollected(message);
         }
     }
 
@@ -81,7 +86,10 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         boolStorage[keccak256(abi.encodePacked("messagesSigned", _hash))] = _status;
     }
 
-    function onExecuteAffirmation(address, uint256) internal returns(bool) {
+    function onExecuteAffirmation(address, uint256, bytes32) internal returns(bool) {
+    }
+
+    function onSignaturesCollected(bytes) internal {
     }
 
     function numAffirmationsSigned(bytes32 _withdrawal) public view returns(uint256) {

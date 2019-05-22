@@ -129,6 +129,9 @@ docker-compose down
 ### Gas Consumption
 The [GAS_CONSUMPTION](GAS_CONSUMPTION.md) file includes Min, Max, and Avg gas consumption figures for contracts associated with each bridge mode.
 
+### Reward Management
+The [REWARD_MANAGEMENT](REWARD_MANAGEMENT.md) file includes information on how rewards are distributed among the validators on each bridge mode.
+
 ### Testing environment
 To test the bridge scripts in ERC20-to-ERC20 mode on a testnet like Sokol or Kovan, you must deploy an ERC20 token to the foreign network.
 This can be done by running the following command:

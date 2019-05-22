@@ -5,25 +5,33 @@
   "main": "index.js",
   "scripts": {
     "test": "scripts/test.sh",
-    "deploy": "truffle migrate --reset --network $NETWORK",
-    "compile": "truffle compile",
+    "test:gasreport": "GASREPORT=true npm run test",
+    "compile": "truffle compile && truffle compile spuriousDragon",
     "flatten": "bash flatten.sh",
+    "lint:js": "eslint .",
+    "lint:js:fix": "eslint . --fix",
     "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test"
   },
   "author": "POA network",
   "license": "GPLv3",
   "dependencies": {
-    "ganache-cli": "^6.1.0",
+    "ganache-cli": "^6.4.3",
     "openzeppelin-solidity": "^1.10.0",
-    "truffle": "4.1.11",
-    "web3-utils": "^1.0.0-beta.34"
+    "truffle": "^5.0.15"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
+    "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "chai-bignumber": "^2.0.2",
+    "chai-bn": "^0.1.1",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^4.2.0",
+    "eslint-plugin-import": "^2.17.2",
+    "eslint-plugin-node": "^9.0.1",
+    "eslint-plugin-prettier": "^3.0.1",
     "eth-gas-reporter": "^0.1.12",
     "nodemon": "^1.17.3",
+    "prettier": "^1.17.1",
     "solidity-coverage": "^0.5.11",
     "truffle-flattener": "^1.2.3"
   }

@@ -32,6 +32,14 @@ This example of an `.env` file for the `native-to-erc` bridge mode includes comm
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=NATIVE_TO_ERC
 
+# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
+# Default value is byzantium
+#HOME_EVM_VERSION=spuriousDragon
+
+# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
+# Default value is byzantium
+#FOREIGN_EVM_VERSION=spuriousDragon
+
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
@@ -130,6 +138,25 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # correctly to the Foreign network.
 VALIDATORS=0x 0x 0x
 
+# Variable to define whether to use RewardableValidators contract and set a fee manager contract on Home network
+# On this bridge mode ONE_DIRECTION and BOTH_DIRECTIONS are supported on Home network
+HOME_REWARDABLE=false
+# Variable to define whether to use RewardableValidators contract and set a fee manager contract on Foreign network
+# On this bridge mode ONE_DIRECTION is supported on Foreign network
+FOREIGN_REWARDABLE=false
+# List validators accounts were rewards should be transferred separated by space without quotes
+# Makes sense only when HOME_REWARDABLE!=false or FOREIGN_REWARDABLE!=false
+VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x
+
+# Fee to be taken for every transaction directed from the Home network to the Foreign network
+# Makes sense only when FOREIGN_REWARDABLE=ONE_DIRECTION or HOME_REWARDABLE=BOTH_DIRECTIONS
+# e.g. 0.1% fee
+HOME_TRANSACTIONS_FEE=0.001
+# Fee to be taken for every transaction directed from the Foreign network to the Home network
+# Makes sense only when HOME_REWARDABLE!=false
+# e.g. 0.1% fee
+FOREIGN_TRANSACTIONS_FEE=0.001
+
 # The flag defining whether to use ERC677BridgeTokenRewardable contract instead of
 # ERC677BridgeToken.
 DEPLOY_REWARDABLE_TOKEN=false
@@ -149,6 +176,14 @@ This example of an `.env` file for the `erc-to-erc` bridge mode includes comment
 ```bash
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=ERC_TO_ERC
+
+# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
+# Default value is byzantium
+#HOME_EVM_VERSION=spuriousDragon
+
+# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
+# Default value is byzantium
+#FOREIGN_EVM_VERSION=spuriousDragon
 
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
@@ -268,6 +303,14 @@ This example of an `.env` file for the `erc-to-native` bridge mode includes comm
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=ERC_TO_NATIVE
 
+# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
+# Default value is byzantium
+#HOME_EVM_VERSION=spuriousDragon
+
+# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
+# Default value is byzantium
+#FOREIGN_EVM_VERSION=spuriousDragon
+
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
@@ -362,4 +405,27 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
 VALIDATORS=0x 0x 0x
+
+
+# Variable to define whether to use RewardableValidators contract and set a fee manager contract on Home network
+# On this bridge mode only BOTH_DIRECTIONS is supported on Home network
+HOME_REWARDABLE=false
+# Variable to define whether to use RewardableValidators contract and set a fee manager contract on Foreign network
+# Collecting fees on Foreign network is not supported on this bridge mode.
+FOREIGN_REWARDABLE=false
+# Variable to define if Home network is a POSDAO and rewards are distributed by blockReward contract to network validators or transferred directly to bridge validators.
+# Supported values are BRIDGE_VALIDATORS_REWARD and POSDAO_REWARD
+HOME_FEE_MANAGER_TYPE=BRIDGE_VALIDATORS_REWARD
+# List validators accounts were rewards should be transferred separated by space without quotes
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
+VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x
+
+# Fee to be taken for every transaction directed from the Home network to the Foreign network
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
+# e.g. 0.1% fee
+HOME_TRANSACTIONS_FEE=0.001
+# Fee to be taken for every transaction directed from the Foreign network to the Home network
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
+# e.g. 0.1% fee
+FOREIGN_TRANSACTIONS_FEE=0.001
 ```

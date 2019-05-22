@@ -1,0 +1,27 @@
+{
+  "extends": [
+    "plugin:node/recommended",
+    "airbnb-base",
+    "plugin:prettier/recommended"
+  ],
+  "plugins": ["node"],
+  "env": {
+    "node"    : true,
+    "mocha"   : true
+  },
+  "globals" : {
+    "artifacts": false,
+    "contract": false,
+    "assert": false,
+    "web3": false
+  },
+  "rules": {
+    "no-plusplus": "off",
+    "no-await-in-loop": "off",
+    "no-shadow": "off",
+    "prefer-destructuring": "off",
+    "no-use-before-define": ["error", { "functions": false }],
+    "no-restricted-syntax": "off",
+    "node/no-unpublished-require": "off"
+  }
+}

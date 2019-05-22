@@ -1,5 +1,10 @@
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+const EVM_TYPES = {
+  BYZANTIUM: 'byzantium',
+  SPURIOUSDRAGON: 'spuriousDragon'
+}
 
 module.exports = {
-  ZERO_ADDRESS
+  ZERO_ADDRESS,
+  EVM_TYPES
 }

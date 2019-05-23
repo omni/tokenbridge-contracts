@@ -31,7 +31,9 @@ function getContracts(evmVersion) {
     HomeBridgeNativeToErc: useClassicProxy
       ? require(`../../build/${buildPath}/ClassicHomeBridgeNativeToErc.json`)
       : require(`../../build/${buildPath}/HomeBridgeNativeToErc.json`),
-    BlockReward: require(`../../build/${buildPath}/BlockReward.json`)
+    BlockReward: require(`../../build/${buildPath}/BlockReward.json`),
+    HomeAMB: require(`../../build/${buildPath}/HomeAMB.json`),
+    ForeignAMB: require(`../../build/${buildPath}/ForeignAMB`)
   }
 }
 

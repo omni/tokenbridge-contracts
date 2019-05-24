@@ -118,6 +118,7 @@ async function deployForeign() {
   nonce++
 
   console.log('\ninitializing Foreign Bridge Validators with following parameters:\n')
+  bridgeValidatorsForeign.options.address = storageValidatorsForeign.options.address
   await initializeValidators({
     contract: bridgeValidatorsForeign,
     isRewardableBridge: false,

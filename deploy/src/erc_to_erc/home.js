@@ -188,6 +188,7 @@ async function deployHome() {
   nonce++
 
   console.log('\ninitializing Home Bridge Validators with following parameters:\n')
+  bridgeValidatorsHome.options.address = storageValidatorsHome.options.address
   await initializeValidators({
     contract: bridgeValidatorsHome,
     isRewardableBridge: isRewardableBridge && BLOCK_REWARD_ADDRESS === ZERO_ADDRESS,

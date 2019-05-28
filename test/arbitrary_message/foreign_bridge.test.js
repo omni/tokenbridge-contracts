@@ -69,8 +69,7 @@ contract('ForeignAMB', async accounts => {
       const userBalanceAfterDeposit = toBN(await web3.eth.getBalance(user))
       expect(userBalanceOnBridgeAfterDeposit).to.be.bignumber.equal(oneEther)
 
-      const result = await boxContract.getWithdrawFromDepositData(user)
-      const withdrawFromDepositData = result.logs[0].args.selectorData
+      const withdrawFromDepositData = await boxContract.contract.methods.withdrawFromDeposit(user).encodeABI()
 
       // Use these calls to simulate home bridge on Foreign network
       const resultPassMessageTx = await foreignBridge.requireToPassMessage(
@@ -339,8 +338,7 @@ contract('ForeignAMB', async accounts => {
 
       box = await Box.new()
       // Generate data for method we want to call on Box contract
-      const result = await box.getSetValueData(3)
-      setValueData = result.logs[0].args.selectorData
+      setValueData = await box.contract.methods.setValue(3).encodeABI()
     })
     it('should succeed on Subsidized mode', async () => {
       // set foreign bridge on subsidized mode
@@ -370,7 +368,8 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx
+        transactionHash: resultPassMessageTx.tx,
+        status: true
       })
 
       // check Box value
@@ -415,7 +414,8 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx
+        transactionHash: resultPassMessageTx.tx,
+        status: true
       })
 
       // check Box value
@@ -462,7 +462,8 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: tx.tx
+        transactionHash: tx.tx,
+        status: true
       })
 
       // check Box value
@@ -539,7 +540,8 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx
+        transactionHash: resultPassMessageTx.tx,
+        status: true
       })
 
       // check Box value
@@ -580,7 +582,8 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx
+        transactionHash: resultPassMessageTx.tx,
+        status: true
       })
 
       await foreignBridge
@@ -625,8 +628,103 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx
+        transactionHash: resultPassMessageTx.tx,
+        status: true
       })
+    })
+    it('status of RelayedMessage should be false on contract failed call', async () => {
+      const user = accounts[8]
+
+      // Deposit for user
+      await foreignBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      const methodWillFailData = box.contract.methods.methodWillFail().encodeABI()
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(
+        box.address,
+        methodWillFailData,
+        821254,
+        gasPrice,
+        {
+          from: user
+        }
+      )
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+
+      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+        from: authorities[0],
+        gasPrice
+      }).should.be.fulfilled
+      expectEventInLogs(logs, 'RelayedMessage', {
+        sender: user,
+        executor: box.address,
+        transactionHash: resultPassMessageTx.tx,
+        status: false
+      })
+
+      await foreignBridge
+        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[0], gasPrice })
+        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[1], gasPrice })
+        .should.be.rejectedWith(ERROR_MSG)
+    })
+    it('status of RelayedMessage should be false on contract out of gas call', async () => {
+      const user = accounts[8]
+
+      // Deposit for user
+      await foreignBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      const methodOutOfGasData = box.contract.methods.methodOutOfGas().encodeABI()
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(
+        box.address,
+        methodOutOfGasData,
+        1000,
+        gasPrice,
+        {
+          from: user
+        }
+      )
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+
+      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+        from: authorities[0],
+        gasPrice
+      }).should.be.fulfilled
+      expectEventInLogs(logs, 'RelayedMessage', {
+        sender: user,
+        executor: box.address,
+        transactionHash: resultPassMessageTx.tx,
+        status: false
+      })
+
+      await foreignBridge
+        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[0], gasPrice })
+        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[1], gasPrice })
+        .should.be.rejectedWith(ERROR_MSG)
     })
   })
 })

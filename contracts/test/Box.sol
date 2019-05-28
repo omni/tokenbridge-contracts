@@ -10,6 +10,31 @@ contract Box {
     value = _value;
   }
 
+  function methodWillFail() public {
+    revert();
+  }
+
+  function methodOutOfGas() public {
+    uint256 a = 0;
+    for (uint i = 0; i < 1000; i++) {
+      a = a + i;
+    }
+  }
+
+  function methodWillFailOnOtherNetwork(address _bridge, address _executor) public {
+    bytes4 methodSelector = this.methodWillFail.selector;
+    bytes memory encodedData = abi.encodeWithSelector(methodSelector);
+    MessageDelivery bridge = MessageDelivery(_bridge);
+    bridge.requireToPassMessage(_executor, encodedData, 141647);
+  }
+
+  function methodOutOfGasOnOtherNetwork(address _bridge, address _executor) public {
+    bytes4 methodSelector = this.methodOutOfGas.selector;
+    bytes memory encodedData = abi.encodeWithSelector(methodSelector);
+    MessageDelivery bridge = MessageDelivery(_bridge);
+    bridge.requireToPassMessage(_executor, encodedData, 1000);
+  }
+
   function setValueOnOtherNetwork(uint256 _i, address _bridge, address _executor) public {
     bytes4 methodSelector = this.setValue.selector;
     bytes memory encodedData = abi.encodeWithSelector(methodSelector, _i);
@@ -31,19 +56,7 @@ contract Box {
     bridge.requireToPassMessage(_executor, encodedData, 821254, _oracleGasPriceSpeed);
   }
 
-  function getSetValueData(uint256 _value) public {
-    bytes4 methodSelector = this.setValue.selector;
-    bytes memory encodedData = abi.encodeWithSelector(methodSelector, _value);
-    emit dataEvent(encodedData);
-  }
-
   function withdrawFromDeposit(address _recipient) public {
-  }
-
-  function getWithdrawFromDepositData(address _recipient) public {
-    bytes4 methodSelector = this.withdrawFromDeposit.selector;
-    bytes memory encodedData = abi.encodeWithSelector(methodSelector, _recipient);
-    emit dataEvent(encodedData);
   }
 
 }

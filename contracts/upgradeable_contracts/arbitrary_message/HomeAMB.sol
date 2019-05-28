@@ -6,7 +6,7 @@ import "./BasicHomeAMB.sol";
 contract HomeAMB is BasicHomeAMB {
 
     event UserRequestForSignature(bytes encodedData);
-    event AffirmationCompleted(address sender, address executor, bytes32 txHash);
+    event AffirmationCompleted(address sender, address executor, bytes32 txHash, bool status);
 
     function getMaxGasPerTx() internal returns(uint256) {
         return maxGasPerTx();
@@ -24,7 +24,7 @@ contract HomeAMB is BasicHomeAMB {
         return keccak256(foreignToHomeMode()) == keccak256(SUBSIDIZED_MODE);
     }
 
-    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash) internal {
-        emit AffirmationCompleted(sender, executor, txHash);
+    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal {
+        emit AffirmationCompleted(sender, executor, txHash, status);
     }
 }

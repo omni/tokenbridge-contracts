@@ -6,7 +6,7 @@ import "./BasicForeignAMB.sol";
 contract ForeignAMB is BasicForeignAMB {
 
     event UserRequestForAffirmation(bytes encodedData);
-    event RelayedMessage(address sender, address executor, bytes32 transactionHash);
+    event RelayedMessage(address sender, address executor, bytes32 transactionHash, bool status);
 
     function getMaxGasPerTx() internal returns(uint256) {
         return maxGasPerTx();
@@ -28,8 +28,8 @@ contract ForeignAMB is BasicForeignAMB {
         emit UserRequestForAffirmation(encodedData);
     }
 
-    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash) internal {
-        emit RelayedMessage(sender, executor, txHash);
+    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal {
+        emit RelayedMessage(sender, executor, txHash, status);
     }
 
     function setMessageProcessed(bytes32 _txHash, bool _status) internal {

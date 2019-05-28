@@ -71,8 +71,7 @@ contract('HomeAMB', async accounts => {
       const userBalanceAfterDeposit = toBN(await web3.eth.getBalance(user))
       expect(userBalanceOnBridgeAfterDeposit).to.be.bignumber.equal(oneEther)
 
-      const result = await boxContract.getWithdrawFromDepositData(user)
-      const withdrawFromDepositData = result.logs[0].args.selectorData
+      const withdrawFromDepositData = await boxContract.contract.methods.withdrawFromDeposit(user).encodeABI()
 
       // Use these calls to simulate foreign bridge on Foreign network
       const resultPassMessageTx = await homeBridge.requireToPassMessage(
@@ -416,8 +415,7 @@ contract('HomeAMB', async accounts => {
 
       box = await Box.new()
       // Generate data for method we want to call on Box contract
-      const result = await box.getSetValueData(3)
-      setValueData = result.logs[0].args.selectorData
+      setValueData = await box.contract.methods.setValue(3).encodeABI()
     })
     it('should succeed on Subsidized mode', async () => {
       // set Home bridge on subsidized mode
@@ -443,7 +441,8 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx
+        txHash: resultPassMessageTx.tx,
+        status: true
       })
 
       // check Box value
@@ -477,7 +476,8 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx
+        txHash: resultPassMessageTx.tx,
+        status: true
       })
 
       // check Box value
@@ -521,7 +521,8 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: tx.tx
+        txHash: tx.tx,
+        status: true
       })
 
       // check Box value
@@ -603,7 +604,8 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(thirdSignature.logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx
+        txHash: resultPassMessageTx.tx,
+        status: true
       })
 
       const senderHash = web3.utils.soliditySha3(authoritiesFiveAccs[0], msgHash)
@@ -643,7 +645,8 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx
+        txHash: resultPassMessageTx.tx,
+        status: true
       })
 
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
@@ -675,6 +678,84 @@ contract('HomeAMB', async accounts => {
       logs[0].event.should.be.equal('SignedForAffirmation')
       logs[1].event.should.be.equal('AffirmationCompleted')
     })
+    it('status of AffirmationCompleted should be false on contract failed call', async () => {
+      const user = accounts[8]
+
+      // Deposit for user
+      await homeBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      const methodWillFailData = box.contract.methods.methodWillFail().encodeABI()
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        methodWillFailData,
+        141647,
+        gasPrice,
+        {
+          from: user
+        }
+      )
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const { logs } = await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be
+        .fulfilled
+      logs[0].event.should.be.equal('SignedForAffirmation')
+      expectEventInLogs(logs, 'AffirmationCompleted', {
+        sender: user,
+        executor: box.address,
+        txHash: resultPassMessageTx.tx,
+        status: false
+      })
+
+      await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('status of AffirmationCompleted should be false on contract out of gas call', async () => {
+      const user = accounts[8]
+
+      // Deposit for user
+      await homeBridge.depositForContractSender(user, {
+        from: user,
+        value: oneEther
+      })
+
+      const methodOutOfGasData = box.contract.methods.methodOutOfGas().encodeABI()
+
+      // Use these calls to simulate foreign bridge on Foreign network
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(
+        box.address,
+        methodOutOfGasData,
+        1000,
+        gasPrice,
+        {
+          from: user
+        }
+      )
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+
+      const { logs } = await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be
+        .fulfilled
+      logs[0].event.should.be.equal('SignedForAffirmation')
+      expectEventInLogs(logs, 'AffirmationCompleted', {
+        sender: user,
+        executor: box.address,
+        txHash: resultPassMessageTx.tx,
+        status: false
+      })
+
+      await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)
+    })
   })
   describe('submitSignature', () => {
     let homeBridge
@@ -691,8 +772,7 @@ contract('HomeAMB', async accounts => {
 
       box = await Box.new()
       // Generate data for method we want to call on Box contract
-      const result = await box.getSetValueData(3)
-      setValueData = result.logs[0].args.selectorData
+      setValueData = await box.contract.methods.setValue(3).encodeABI()
     })
     it('allows a validator to submit a signature', async () => {
       const user = accounts[8]

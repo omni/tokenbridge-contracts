@@ -67,18 +67,6 @@ if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)
 }
 
-if (!validRewardModes.includes(HOME_REWARDABLE)) {
-  throw new Error(
-    `Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`
-  )
-}
-
-if (!validRewardModes.includes(FOREIGN_REWARDABLE)) {
-  throw new Error(
-    `Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`
-  )
-}
-
 let validations = {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY: envalid.str(),
   DEPLOYMENT_GAS_LIMIT_EXTRA: envalid.num(),
@@ -89,9 +77,7 @@ let validations = {
   HOME_BRIDGE_OWNER: addressValidator(),
   HOME_VALIDATORS_OWNER: addressesValidator(),
   HOME_UPGRADEABLE_ADMIN: addressValidator(),
-  HOME_DAILY_LIMIT: bigNumValidator(),
   HOME_MAX_AMOUNT_PER_TX: bigNumValidator(),
-  HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
   HOME_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   HOME_GAS_PRICE: bigNumValidator(),
   FOREIGN_RPC_URL: envalid.str(),
@@ -103,6 +89,26 @@ let validations = {
   FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
   REQUIRED_NUMBER_OF_VALIDATORS: envalid.num(),
   VALIDATORS: addressesValidator()
+}
+
+if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
+  validations = {
+    ...validations,
+    HOME_DAILY_LIMIT: bigNumValidator(),
+    HOME_MIN_AMOUNT_PER_TX: bigNumValidator()
+  }
+
+  if (!validRewardModes.includes(HOME_REWARDABLE)) {
+    throw new Error(
+      `Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`
+    )
+  }
+
+  if (!validRewardModes.includes(FOREIGN_REWARDABLE)) {
+    throw new Error(
+      `Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`
+    )
+  }
 }
 
 if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
@@ -193,7 +199,10 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
+if (
+  BRIDGE_MODE !== 'ARBITRARY_MESSAGE' &&
+  (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false')
+) {
   validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
   validations = {
     ...validations,

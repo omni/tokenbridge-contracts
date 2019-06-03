@@ -56,6 +56,13 @@ contract Box {
     bridge.requireToPassMessage(_executor, encodedData, 821254, _oracleGasPriceSpeed);
   }
 
+  function withdrawFromDepositOnOtherNetworkGasPrice(address _recipient, address _bridge, address _executor, uint256 _gasPrice) public {
+    bytes4 methodSelector = this.withdrawFromDeposit.selector;
+    bytes memory encodedData = abi.encodeWithSelector(methodSelector, _recipient);
+    MessageDelivery bridge = MessageDelivery(_bridge);
+    bridge.requireToPassMessage(_executor, encodedData, 821254, _gasPrice);
+  }
+
   function withdrawFromDeposit(address _recipient) public {
   }
 

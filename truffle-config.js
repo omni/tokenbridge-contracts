@@ -37,7 +37,6 @@ if (process.env.SOLIDITY_COVERAGE === 'true') {
   provider.addProvider(ganacheSubprovider)
   provider.start(err => {
     if (err !== undefined) {
-      console.log(err)
       process.exit(1)
     }
   })
@@ -63,7 +62,7 @@ module.exports = {
       version: '0.4.24',
       settings: {
         optimizer: {
-          enabled: process.env.SOLIDITY_COVERAGE !== 'true',
+          enabled: true,
           runs: 200
         },
         evmVersion

@@ -45,11 +45,13 @@ start_ganache() {
   ganache_pid=$!
 }
 
-if ganache_running; then
-  echo "Using existing ganache instance"
-else
-  echo "Starting our own ganache instance"
-  start_ganache
+if [ "$SOLIDITY_COVERAGE" != true ]; then
+    if ganache_running; then
+      echo "Using existing ganache instance"
+    else
+      echo "Starting our own ganache instance"
+      start_ganache
+    fi
 fi
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then

@@ -7,6 +7,7 @@ const ERC677BridgeTokenRewardable = artifacts.require('ERC677BridgeTokenRewardab
 const FeeManagerErcToErcPOSDAO = artifacts.require('FeeManagerErcToErcPOSDAO.sol')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const BlockReward = artifacts.require('BlockReward')
+const OldBlockReward = artifacts.require('oldBlockReward')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -1255,6 +1256,10 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       // Then
       const newBlockReward = await homeBridge.blockRewardContract()
       newBlockReward.should.be.equals(newBlockRewardContract.address)
+
+      const oldBlockRewardContract = await OldBlockReward.new()
+      await homeBridge.setBlockRewardContract(oldBlockRewardContract.address).should.be.fulfilled
+      oldBlockRewardContract.address.should.be.equal(await homeBridge.blockRewardContract())
     })
   })
   describe('#onTokenTransfer', async () => {

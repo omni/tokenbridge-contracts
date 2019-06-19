@@ -4,7 +4,7 @@ import "../IBlockReward.sol";
 import "../libraries/SafeMath.sol";
 
 
-contract BlockReward is IBlockReward {
+contract BlockReward {
     using SafeMath for uint256;
 
     address[] public validatorList;
@@ -15,10 +15,6 @@ contract BlockReward is IBlockReward {
     address public token;
 
     function () external payable {
-    }
-
-    function bridgesAllowedLength() external view returns(uint256) {
-        return 3;
     }
 
     function addExtraReceiver(uint256 _amount, address _receiver) external {
@@ -97,5 +93,9 @@ contract BlockReward is IBlockReward {
 
     function random(uint256 _count) public view returns(uint256) {
         return uint256(blockhash(block.number.sub(1))) % _count;
+    }
+
+    function blockRewardContractId() public pure returns(bytes4) {
+        return bytes4(keccak256("blockReward"));
     }
 }

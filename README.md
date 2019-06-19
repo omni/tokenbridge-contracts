@@ -81,6 +81,13 @@ Please the [README.md](deploy/README.md) in the `deploy` folder for instructions
 npm test
 ```
 
+#### Run coverage tests
+```bash
+npm run coverage
+```
+
+The results can be found in the `coverage` directory.
+
 #### Flatten
 Fattened contracts can be used to verify the contract code in a block explorer like BlockScout or Etherscan.
 The following command will prepare flattened version of the contracts:
@@ -119,6 +126,14 @@ _Note: The container must be rebuilt every time the code in a contract or deploy
 2. In the following command, use the container name to copy the flattened contracts code to the current working directory. The contracts will be located in the `flats` directory.
    ```bash
    docker cp name-of-your-container:/contracts/flats ./
+   ```
+
+#### Test contract and run coverage (if needed)
+1. Discover the container name:
+   ```bash
+   $ docker-compose run bridge-contracts bash
+   $ npm test
+   $ npm run coverage
    ```
 
 #### Shutdown the container

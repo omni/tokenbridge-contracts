@@ -2,6 +2,7 @@ const HomeBridge = artifacts.require('HomeBridgeErcToNative.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const BlockReward = artifacts.require('BlockReward')
+const OldBlockReward = artifacts.require('oldBlockReward')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const FeeManagerErcToNative = artifacts.require('FeeManagerErcToNative.sol')
 const FeeManagerErcToNativePOSDAO = artifacts.require('FeeManagerErcToNativePOSDAO')
@@ -108,6 +109,10 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
 
       await homeContract.setBlockRewardContract(validatorContract.address).should.be.rejectedWith(ERROR_MSG)
       secondBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      const oldBlockRewardContract = await OldBlockReward.new()
+      await homeContract.setBlockRewardContract(oldBlockRewardContract.address).should.be.fulfilled
+      oldBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
     })
 
     it('cant set maxPerTx > dailyLimit', async () => {

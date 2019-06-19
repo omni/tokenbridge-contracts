@@ -994,16 +994,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
     })
   })
   describe('#OwnedUpgradeability', async () => {
-    it('upgradeabilityAdmin should return the proxy owner', async () => {
+    it('upgradeabilityAdmin should return the upgradeabilityOwner', async () => {
       const homeBridgeImpl = await HomeBridge.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
       const homeBridge = await HomeBridge.at(storageProxy.address)
 
-      const proxyOwner = await storageProxy.proxyOwner()
+      const upgradeabilityOwner = await storageProxy.upgradeabilityOwner()
       const upgradeabilityAdmin = await homeBridge.upgradeabilityAdmin()
 
-      upgradeabilityAdmin.should.be.equal(proxyOwner)
+      upgradeabilityAdmin.should.be.equal(upgradeabilityOwner)
     })
   })
 

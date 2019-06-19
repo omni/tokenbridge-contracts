@@ -27,16 +27,8 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @dev Throws if called by any account other than the owner.
     */
     modifier onlyProxyOwner() {
-        require(msg.sender == proxyOwner());
+        require(msg.sender == upgradeabilityOwner());
         _;
-    }
-
-    /**
-    * @dev Tells the address of the proxy owner
-    * @return the address of the proxy owner
-    */
-    function proxyOwner() public view returns (address) {
-        return upgradeabilityOwner();
     }
 
     /**
@@ -45,7 +37,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     */
     function transferProxyOwnership(address newOwner) public onlyProxyOwner {
         require(newOwner != address(0));
-        emit ProxyOwnershipTransferred(proxyOwner(), newOwner);
+        emit ProxyOwnershipTransferred(upgradeabilityOwner(), newOwner);
         setUpgradeabilityOwner(newOwner);
     }
 

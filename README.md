@@ -129,12 +129,11 @@ _Note: The container must be rebuilt every time the code in a contract or deploy
    ```
 
 #### Test contract and run coverage (if needed)
-1. Discover the container name:
-   ```bash
-   $ docker-compose run bridge-contracts bash
-   $ npm test
-   $ npm run coverage
-   ```
+```bash
+$ docker-compose run bridge-contracts bash
+$ npm test
+$ npm run coverage
+```
 
 #### Shutdown the container
 If the container is no longer needed, it can be shutdown:

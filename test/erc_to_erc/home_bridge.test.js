@@ -993,19 +993,6 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: owner }).should.be.fulfilled
     })
   })
-  describe('#OwnedUpgradeability', async () => {
-    it('upgradeabilityAdmin should return the upgradeabilityOwner', async () => {
-      const homeBridgeImpl = await HomeBridge.new()
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
-      const homeBridge = await HomeBridge.at(storageProxy.address)
-
-      const upgradeabilityOwner = await storageProxy.upgradeabilityOwner()
-      const upgradeabilityAdmin = await homeBridge.upgradeabilityAdmin()
-
-      upgradeabilityAdmin.should.be.equal(upgradeabilityOwner)
-    })
-  })
 
   describe('#rewardableInitialize', async () => {
     let homeFee

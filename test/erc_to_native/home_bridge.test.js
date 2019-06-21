@@ -180,7 +180,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
     it('can be upgraded keeping the state', async () => {
       const homeOwner = accounts[8]
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      const upgradeabilityOwner = await storageProxy.upgradeabilityOwner()
       const data = homeContract.contract.methods
         .initialize(
           validatorContract.address,
@@ -205,7 +204,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await finalContract.maxPerTx()).to.be.bignumber.equal('2')
       expect(await finalContract.minPerTx()).to.be.bignumber.equal('1')
       expect(await finalContract.blockRewardContract()).to.be.equal(blockRewardContract.address)
-      expect(await finalContract.upgradeabilityAdmin()).to.be.equal(upgradeabilityOwner)
 
       const homeContractV2 = await HomeBridge.new()
       await storageProxy.upgradeTo('2', homeContractV2.address).should.be.fulfilled
@@ -217,7 +215,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await finalContractV2.maxPerTx()).to.be.bignumber.equal('2')
       expect(await finalContractV2.minPerTx()).to.be.bignumber.equal('1')
       expect(await finalContractV2.blockRewardContract()).to.be.equal(blockRewardContract.address)
-      expect(await finalContractV2.upgradeabilityAdmin()).to.be.equal(upgradeabilityOwner)
     })
     it('cant initialize with invalid arguments', async () => {
       false.should.be.equal(await homeContract.isInitialized())
@@ -1378,19 +1375,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         .fixAssetsAboveLimits(transactionHash, true, { from: recipient })
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: owner }).should.be.fulfilled
-    })
-  })
-  describe('#OwnedUpgradeability', async () => {
-    it('upgradeabilityAdmin should return the upgradeabilityOwner', async () => {
-      const homeBridgeImpl = await HomeBridge.new()
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
-      const homeBridge = await HomeBridge.at(storageProxy.address)
-
-      const upgradeabilityOwner = await storageProxy.upgradeabilityOwner()
-      const upgradeabilityAdmin = await homeBridge.upgradeabilityAdmin()
-
-      upgradeabilityAdmin.should.be.equal(upgradeabilityOwner)
     })
   })
 

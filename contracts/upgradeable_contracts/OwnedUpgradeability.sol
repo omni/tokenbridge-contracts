@@ -4,14 +4,9 @@ import "../IOwnedUpgradeabilityProxy.sol";
 
 
 contract OwnedUpgradeability {
-
-    function upgradeabilityAdmin() public view returns (address) {
-        return IOwnedUpgradeabilityProxy(this).upgradeabilityOwner();
-    }
-
     // Avoid using onlyProxyOwner name to prevent issues with implementation from proxy contract
     modifier onlyIfOwnerOfProxy() {
-        require(msg.sender == upgradeabilityAdmin());
+        require(msg.sender == IOwnedUpgradeabilityProxy(this).upgradeabilityOwner());
         _;
     }
 }

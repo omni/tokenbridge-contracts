@@ -26,7 +26,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     /**
     * @dev Throws if called by any account other than the owner.
     */
-    modifier onlyProxyOwner() {
+    modifier onlyUpgradeabilityOwner() {
         require(msg.sender == upgradeabilityOwner());
         _;
     }
@@ -35,7 +35,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @dev Allows the current owner to transfer control of the contract to a newOwner.
     * @param newOwner The address to transfer ownership to.
     */
-    function transferProxyOwnership(address newOwner) public onlyProxyOwner {
+    function transferProxyOwnership(address newOwner) public onlyUpgradeabilityOwner {
         require(newOwner != address(0));
         emit ProxyOwnershipTransferred(upgradeabilityOwner(), newOwner);
         setUpgradeabilityOwner(newOwner);
@@ -46,7 +46,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @param version representing the version name of the new implementation to be set.
     * @param implementation representing the address of the new implementation to be set.
     */
-    function upgradeTo(uint256 version, address implementation) public onlyProxyOwner {
+    function upgradeTo(uint256 version, address implementation) public onlyUpgradeabilityOwner {
         _upgradeTo(version, implementation);
     }
 
@@ -58,7 +58,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @param data represents the msg.data to bet sent in the low level call. This parameter may include the function
     * signature of the implementation to be called with the needed payload
     */
-    function upgradeToAndCall(uint256 version, address implementation, bytes data) payable public onlyProxyOwner {
+    function upgradeToAndCall(uint256 version, address implementation, bytes data) payable public onlyUpgradeabilityOwner {
         upgradeTo(version, implementation);
         require(address(this).call.value(msg.value)(data));
     }

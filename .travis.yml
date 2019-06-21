@@ -9,10 +9,6 @@ cache:
 env:
   - SOLIDITY_COVERAGE=false
   - SOLIDITY_COVERAGE=true
-matrix:
-  fast_finish: true
-  allow_failures:
-    - env: SOLIDITY_COVERAGE=true
 script:
   - yarn lint:js
   - yarn test

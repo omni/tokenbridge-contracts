@@ -101,7 +101,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     }
 
     function deployedAtBlock() public view returns (uint256) {
-        return uintStorage[keccak256("deployedAtBlock")];
+        return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
     function getNextValidator(address _address) public view returns (address) {

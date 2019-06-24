@@ -115,10 +115,6 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         return boolStorage[keccak256(abi.encodePacked("messagesSigned", _message))];
     }
 
-    function messages(bytes32 _hash) internal view returns(bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("messages", _hash))];
-    }
-
     function signatures(bytes32 _hash) internal view returns(bytes) {
         return bytesStorage[keccak256(abi.encodePacked("signatures", _hash))];
     }
@@ -132,7 +128,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     }
 
     function message(bytes32 _hash) public view returns (bytes) {
-        return messages(_hash);
+        return bytesStorage[keccak256(abi.encodePacked("messages", _hash))];
     }
 
     function setNumMessagesSigned(bytes32 _message, uint256 _number) internal {

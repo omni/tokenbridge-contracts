@@ -193,10 +193,6 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         }
     }
 
-    function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
-        emit UserRequestForSignature(_from, _value);
-    }
-
     function setTotalBurntCoins(uint256 _amount) internal {
         uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
     }

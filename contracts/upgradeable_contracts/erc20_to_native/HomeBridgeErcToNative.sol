@@ -16,6 +16,10 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
     function () public payable {
+        nativeTransfer();
+    }
+
+    function nativeTransfer() public payable {
         require(msg.value > 0);
         require(msg.data.length == 0);
         require(withinLimit(msg.value));

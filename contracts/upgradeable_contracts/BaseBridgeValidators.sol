@@ -120,7 +120,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         addressStorage[keccak256(abi.encodePacked("validatorsList", _prevValidator))] = _validator;
     }
 
-    function setInitialize(bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
+    function setInitialize() internal {
+        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
     }
 }

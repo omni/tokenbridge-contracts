@@ -36,7 +36,7 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
         setOwner(_owner);
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 

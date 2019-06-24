@@ -32,7 +32,7 @@ contract BasicForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
         setOwner(_owner);
-        setInitialize(true);
+        setInitialize();
     }
 
     function getBridgeMode() public pure returns(bytes4 _data) {

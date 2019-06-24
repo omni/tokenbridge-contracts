@@ -47,7 +47,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
             _foreignMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 
@@ -81,7 +81,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 

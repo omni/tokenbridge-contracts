@@ -21,7 +21,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         require(withinLimit(msg.value));
         IBlockReward blockReward = blockRewardContract();
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
-        require(msg.value <= totalMinted.sub(totalBurntCoins()));
+        uint256 totalBurnt = totalBurntCoins();
+        require(msg.value <= totalMinted.sub(totalBurnt));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
@@ -31,7 +32,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
             valueToTransfer = valueToTransfer.sub(fee);
             valueToBurn = getAmountToBurn(valueToBurn);
         }
-        setTotalBurntCoins(totalBurntCoins().add(valueToBurn));
+        setTotalBurntCoins(totalBurnt.add(valueToBurn));
         address(0).transfer(valueToBurn);
         emit UserRequestForSignature(msg.sender, valueToTransfer);
     }

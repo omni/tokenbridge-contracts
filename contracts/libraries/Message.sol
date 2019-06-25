@@ -55,7 +55,7 @@ library Message {
     {
         require(isMessageValid(message));
         assembly {
-            recipient := and(mload(add(message, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            recipient := mload(add(message, 20))
             amount := mload(add(message, 52))
             txHash := mload(add(message, 84))
             contractAddress := mload(add(message, 104))
@@ -86,7 +86,6 @@ library Message {
 
     function hashMessage(bytes message) internal pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        // message is always 84 length
         string memory msgLength = "104";
         return keccak256(abi.encodePacked(prefix, msgLength, message));
     }
@@ -98,6 +97,7 @@ library Message {
         bytes32[] _ss,
         IBridgeValidators _validatorContract) internal view {
         require(isMessageValid(_message));
+        require(_vs.length == _rs.length && _rs.length == _ss.length);
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         require(_vs.length >= requiredSignatures);
         bytes32 hash = hashMessage(_message);

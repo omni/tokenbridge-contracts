@@ -55,7 +55,7 @@ library Message {
     {
         require(isMessageValid(message));
         assembly {
-            recipient := mload(add(message, 20))
+            recipient := and(mload(add(message, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
             amount := mload(add(message, 52))
             txHash := mload(add(message, 84))
             contractAddress := mload(add(message, 104))

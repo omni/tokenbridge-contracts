@@ -961,6 +961,36 @@ contract('ForeignBridge', async accounts => {
       // Then
       expect(await foreignBridge.getHomeFee()).to.be.bignumber.equals(newHomeFee)
     })
+    it('fee should be less than 100%', async () => {
+      const feeManager = await FeeManagerNativeToErc.new()
+      await foreignBridge.rewardableInitialize(
+        rewardableValidators.address,
+        token.address,
+        oneEther,
+        halfEther,
+        minPerTx,
+        gasPrice,
+        requireBlockConfirmations,
+        homeDailyLimit,
+        homeMaxPerTx,
+        owner,
+        feeManager.address,
+        homeFee
+      ).should.be.fulfilled
+
+      // Given
+      const invalidFee = ether('1')
+      const invalidBigFee = ether('2')
+      const newHomeFee = ether('0.99')
+
+      // When
+      await foreignBridge.setHomeFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.setHomeFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.setHomeFee(newHomeFee, { from: owner }).should.be.fulfilled
+
+      // Then
+      expect(await foreignBridge.getHomeFee()).to.be.bignumber.equals(newHomeFee)
+    })
 
     it('should be able to get fee manager mode', async () => {
       // Given

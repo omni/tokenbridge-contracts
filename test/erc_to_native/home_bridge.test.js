@@ -545,6 +545,41 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       const bridgeForeignFee = await homeContract.getForeignFee()
       bridgeForeignFee.should.be.bignumber.equal(newForeignFee)
     })
+    it('fee should be less than 100%', async () => {
+      await homeContract.rewardableInitialize(
+        validatorContract.address,
+        '3',
+        '2',
+        '1',
+        gasPrice,
+        requireBlockConfirmations,
+        blockRewardContract.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner,
+        feeManager.address,
+        homeFee,
+        foreignFee
+      ).should.be.fulfilled
+
+      const invalidFee = ether('1')
+      const invalidBigFee = ether('2')
+
+      await homeContract.setHomeFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setForeignFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await homeContract.setHomeFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setForeignFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      const newHomeFee = ether('0.99')
+      const newForeignFee = ether('0.99')
+
+      await homeContract.setHomeFee(newHomeFee, { from: owner }).should.be.fulfilled
+      await homeContract.setForeignFee(newForeignFee, { from: owner }).should.be.fulfilled
+
+      expect(await homeContract.getHomeFee()).to.be.bignumber.equals(newHomeFee)
+      expect(await homeContract.getForeignFee()).to.be.bignumber.equals(newForeignFee)
+    })
   })
 
   describe('#fallback', async () => {

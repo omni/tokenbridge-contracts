@@ -4,8 +4,8 @@ import "../interfaces/IOwnedUpgradeabilityProxy.sol";
 
 
 contract OwnedUpgradeability {
-    // Avoid using onlyProxyOwner name to prevent issues with implementation from proxy contract
-    modifier onlyIfOwnerOfProxy() {
+    // Avoid using onlyUpgradeabilityOwner name to prevent issues with implementation from proxy contract
+    modifier onlyIfUpgradeabilityOwner() {
         require(msg.sender == IOwnedUpgradeabilityProxy(this).upgradeabilityOwner());
         _;
     }

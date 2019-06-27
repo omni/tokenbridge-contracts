@@ -43,7 +43,7 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
         return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
     }
 
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner {
+    function claimTokens(address _token, address _to) public {
         require(_token != address(erc20token()));
         super.claimTokens(_token, _to);
     }

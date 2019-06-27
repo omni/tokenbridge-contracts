@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../IOwnedUpgradeabilityProxy.sol";
+import "../interfaces/IOwnedUpgradeabilityProxy.sol";
 
 
 contract OwnedUpgradeability {

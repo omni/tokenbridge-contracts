@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../../IBurnableMintableERC677Token.sol";
+import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../Sacrifice.sol";
 import "../ValidatorsFeeManager.sol";
 

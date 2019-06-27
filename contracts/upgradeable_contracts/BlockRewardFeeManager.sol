@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "./BaseFeeManager.sol";
-import "../IBlockReward.sol";
+import "../interfaces/IBlockReward.sol";
 
 contract BlockRewardFeeManager is BaseFeeManager {
 

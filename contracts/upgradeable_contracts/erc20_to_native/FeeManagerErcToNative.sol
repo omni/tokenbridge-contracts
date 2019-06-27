@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../../IBlockReward.sol";
+import "../../interfaces/IBlockReward.sol";
 import "../Sacrifice.sol";
 import "../ValidatorsFeeManager.sol";
 

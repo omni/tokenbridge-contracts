@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 
 import "./BasicBridge.sol";
-import "../ERC677.sol";
+import "../interfaces/ERC677.sol";
 
 contract ERC677Bridge is BasicBridge {
     function erc677token() public view returns(ERC677) {

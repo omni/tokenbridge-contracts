@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
-import "../IRewardableValidators.sol";
+import "../interfaces/IRewardableValidators.sol";
 import "./FeeTypes.sol";
 
 

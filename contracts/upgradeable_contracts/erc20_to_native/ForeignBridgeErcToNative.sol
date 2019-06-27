@@ -3,8 +3,7 @@ import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
 import "../BasicBridge.sol";
 import "../BasicForeignBridge.sol";
-import "../../IBurnableMintableERC677Token.sol";
-import "../../ERC677Receiver.sol";
+import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 

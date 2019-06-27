@@ -1,4 +1,5 @@
 const POA20 = artifacts.require('ERC677BridgeToken.sol')
+const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.sol')
 const POA20RewardableMock = artifacts.require('./mockContracts/ERC677BridgeTokenRewardableMock')
 const ERC677ReceiverTest = artifacts.require('ERC677ReceiverTest.sol')
 const BlockRewardTest = artifacts.require('BlockReward.sol')
@@ -509,6 +510,22 @@ async function testERC677BridgeToken(accounts, rewardable) {
       await token.claimTokens(tokenSecond.address, accounts[3], { from: owner })
       expect(await tokenSecond.balanceOf(token.address)).to.be.bignumber.equal(ZERO)
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[3]))
+    })
+    it('works with token that not return on transfer', async () => {
+      const owner = accounts[0]
+      const halfEther = ether('0.5')
+      const tokenMock = await NoReturnTransferTokenMock.new()
+
+      await tokenMock.mint(accounts[0], halfEther).should.be.fulfilled
+      expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+      await tokenMock.transfer(token.address, halfEther).should.be.fulfilled
+      expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await tokenMock.balanceOf(token.address)).to.be.bignumber.equal(halfEther)
+
+      await token.claimTokens(tokenMock.address, accounts[3], { from: owner }).should.be.fulfilled
+      expect(await tokenMock.balanceOf(token.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenMock.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
   })
   describe('#transfer', async () => {

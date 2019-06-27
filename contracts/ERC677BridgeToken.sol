@@ -5,6 +5,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./IBurnableMintableERC677Token.sol";
 import "./ERC677Receiver.sol";
+import "./libraries/Token.sol";
 
 
 contract ERC677BridgeToken is
@@ -93,16 +94,6 @@ contract ERC677BridgeToken is
     }
 
     function claimTokens(address _token, address _to) public onlyOwner {
-        require(_to != address(0));
-        if (_token == address(0)) {
-            _to.transfer(address(this).balance);
-            return;
-        }
-
-        DetailedERC20 token = DetailedERC20(_token);
-        uint256 balance = token.balanceOf(address(this));
-        require(token.transfer(_to, balance));
+        Token.claimTokens(_token, _to);
     }
-
-
 }

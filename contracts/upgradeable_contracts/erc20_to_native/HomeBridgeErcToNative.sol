@@ -19,7 +19,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         nativeTransfer();
     }
 
-    function nativeTransfer() public payable {
+    function nativeTransfer() internal {
         require(msg.value > 0);
         require(msg.data.length == 0);
         require(withinLimit(msg.value));

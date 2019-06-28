@@ -11,6 +11,10 @@ import "../Sacrifice.sol";
 contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
 
     function () public payable {
+        nativeTransfer();
+    }
+
+    function nativeTransfer() internal {
         require(msg.value > 0);
         require(msg.data.length == 0);
         require(withinLimit(msg.value));

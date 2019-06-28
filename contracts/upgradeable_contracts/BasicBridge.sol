@@ -5,10 +5,10 @@ import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
 import "./Validatable.sol";
 import "./Ownable.sol";
-import "../libraries/Token.sol";
+import "./Claimable.sol";
 
 
-contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeability {
+contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeability, Claimable {
     using SafeMath for uint256;
 
     event GasPriceChanged(uint256 gasPrice);
@@ -127,8 +127,8 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
         return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
     }
 
-    function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy {
-        Token.claimTokens(_token, _to);
+    function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy validAddress(_to) {
+        claimValues(_token, _to);
     }
 
     function isContract(address _addr) internal view returns (bool)

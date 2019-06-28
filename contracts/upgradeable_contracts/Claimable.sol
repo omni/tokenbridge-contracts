@@ -1,16 +1,31 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "./Sacrifice.sol";
 
-library Token {
+contract Claimable {
 
-    function claimTokens(address _token, address _to) internal {
+    modifier validAddress(address _to) {
         require(_to != address(0));
-        if (_token == address(0)) {
-            _to.transfer(address(this).balance);
-            return;
-        }
+        _;
+    }
 
+    function claimValues(address _token, address _to) internal {
+        if (_token == address(0)) {
+            claimNativeCoins(_to);
+        } else {
+            claimErc20Tokens(_token, _to);
+        }
+    }
+
+    function claimNativeCoins(address _to) internal {
+        uint256 value = address(this).balance;
+        if (!_to.send(value)) {
+            (new Sacrifice).value(value)(_to);
+        }
+    }
+
+    function claimErc20Tokens(address _token, address _to) internal {
         ERC20Basic token = ERC20Basic(_token);
         uint256 balance = token.balanceOf(this);
         safeTransfer(_token, _to, balance);

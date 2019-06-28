@@ -86,11 +86,9 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         boolStorage[keccak256(abi.encodePacked("messagesSigned", _hash))] = _status;
     }
 
-    function onExecuteAffirmation(address, uint256, bytes32) internal returns(bool) {
-    }
+    function onExecuteAffirmation(address, uint256, bytes32) internal returns(bool);
 
-    function onSignaturesCollected(bytes) internal {
-    }
+    function onSignaturesCollected(bytes) internal;
 
     function numAffirmationsSigned(bytes32 _withdrawal) public view returns(uint256) {
         return uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _withdrawal))];
@@ -110,19 +108,11 @@ contract BasicHomeBridge is EternalStorage, Validatable {
 
     function signature(bytes32 _hash, uint256 _index) public view returns (bytes) {
         bytes32 signIdx = keccak256(abi.encodePacked(_hash, _index));
-        return signatures(signIdx);
+        return bytesStorage[keccak256(abi.encodePacked("signatures", signIdx))];
     }
 
     function messagesSigned(bytes32 _message) public view returns(bool) {
         return boolStorage[keccak256(abi.encodePacked("messagesSigned", _message))];
-    }
-
-    function messages(bytes32 _hash) internal view returns(bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("messages", _hash))];
-    }
-
-    function signatures(bytes32 _hash) internal view returns(bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("signatures", _hash))];
     }
 
     function setSignatures(bytes32 _hash, bytes _signature) internal {
@@ -134,7 +124,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     }
 
     function message(bytes32 _hash) public view returns (bytes) {
-        return messages(_hash);
+        return bytesStorage[keccak256(abi.encodePacked("messages", _hash))];
     }
 
     function setNumMessagesSigned(bytes32 _message, uint256 _number) internal {
@@ -157,10 +147,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
         return Message.requiredMessageLength();
     }
 
-    function affirmationWithinLimits(uint256) internal view returns(bool) {
-        return true;
-    }
+    function affirmationWithinLimits(uint256) internal view returns(bool);
 
-    function onFailedAffirmation(address, uint256, bytes32) internal {
-    }
+    function onFailedAffirmation(address, uint256, bytes32) internal;
 }

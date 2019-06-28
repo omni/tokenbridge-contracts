@@ -15,12 +15,17 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
     function () public payable {
+        nativeTransfer();
+    }
+
+    function nativeTransfer() internal {
         require(msg.value > 0);
         require(msg.data.length == 0);
         require(withinLimit(msg.value));
         IBlockReward blockReward = blockRewardContract();
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
-        require(msg.value <= totalMinted.sub(totalBurntCoins()));
+        uint256 totalBurnt = totalBurntCoins();
+        require(msg.value <= totalMinted.sub(totalBurnt));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
@@ -30,7 +35,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
             valueToTransfer = valueToTransfer.sub(fee);
             valueToBurn = getAmountToBurn(valueToBurn);
         }
-        setTotalBurntCoins(totalBurntCoins().add(valueToBurn));
+        setTotalBurntCoins(totalBurnt.add(valueToBurn));
         address(0).transfer(valueToBurn);
         emit UserRequestForSignature(msg.sender, valueToTransfer);
     }
@@ -60,7 +65,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
             _foreignMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }
@@ -97,7 +102,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }
@@ -189,10 +194,6 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
             distributeFeeFromSignatures(fee, feeManager, txHash);
         }
-    }
-
-    function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
-        emit UserRequestForSignature(_from, _value);
     }
 
     function setTotalBurntCoins(uint256 _amount) internal {

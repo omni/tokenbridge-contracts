@@ -41,7 +41,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
             _foreignMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }
@@ -78,7 +78,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
             _homeFee,
             _foreignFee
         );
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }

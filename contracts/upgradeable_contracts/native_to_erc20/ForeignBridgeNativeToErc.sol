@@ -38,7 +38,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
             _homeMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 
@@ -71,7 +71,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 

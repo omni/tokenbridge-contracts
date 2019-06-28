@@ -72,8 +72,8 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
         return uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))];
     }
 
-    function setInitialize(bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
+    function setInitialize() internal {
+        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
     }
 
     function isInitialized() public view returns(bool) {

@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 import "../../libraries/SafeMath.sol";
 import "../BasicBridge.sol";
-import "../../IBurnableMintableERC677Token.sol";
-import "../../ERC677Receiver.sol";
+import "../../interfaces/IBurnableMintableERC677Token.sol";
+import "../../interfaces/ERC677Receiver.sol";
 import "../BasicForeignBridge.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
@@ -38,7 +38,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
             _homeMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 
@@ -71,7 +71,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 
@@ -79,7 +79,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
         return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 
-    function claimTokensFromErc677(address _token, address _to) external onlyIfOwnerOfProxy {
+    function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
         IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
 

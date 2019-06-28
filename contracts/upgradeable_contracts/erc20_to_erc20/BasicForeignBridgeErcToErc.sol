@@ -32,14 +32,14 @@ contract BasicForeignBridgeErcToErc is BasicBridge, BasicForeignBridge {
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
         setOwner(_owner);
-        setInitialize(true);
+        setInitialize();
     }
 
     function getBridgeMode() public pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 
-    function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy {
+    function claimTokens(address _token, address _to) public {
         require(_token != address(erc20token()));
         super.claimTokens(_token, _to);
     }

@@ -1,5 +1,5 @@
 pragma solidity 0.4.24;
-import "../IBridgeValidators.sol";
+import "../interfaces/IBridgeValidators.sol";
 import "./OwnedUpgradeability.sol";
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
@@ -72,8 +72,8 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
         return uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))];
     }
 
-    function setInitialize(bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
+    function setInitialize() internal {
+        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
     }
 
     function isInitialized() public view returns(bool) {
@@ -127,7 +127,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
         return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
     }
 
-    function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy validAddress(_to) {
+    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
         claimValues(_token, _to);
     }
 

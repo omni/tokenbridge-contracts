@@ -180,7 +180,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
     it('can be upgraded keeping the state', async () => {
       const homeOwner = accounts[8]
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      const proxyOwner = await storageProxy.proxyOwner()
       const data = homeContract.contract.methods
         .initialize(
           validatorContract.address,
@@ -205,7 +204,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await finalContract.maxPerTx()).to.be.bignumber.equal('2')
       expect(await finalContract.minPerTx()).to.be.bignumber.equal('1')
       expect(await finalContract.blockRewardContract()).to.be.equal(blockRewardContract.address)
-      expect(await finalContract.upgradeabilityAdmin()).to.be.equal(proxyOwner)
 
       const homeContractV2 = await HomeBridge.new()
       await storageProxy.upgradeTo('2', homeContractV2.address).should.be.fulfilled
@@ -217,7 +215,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await finalContractV2.maxPerTx()).to.be.bignumber.equal('2')
       expect(await finalContractV2.minPerTx()).to.be.bignumber.equal('1')
       expect(await finalContractV2.blockRewardContract()).to.be.equal(blockRewardContract.address)
-      expect(await finalContractV2.upgradeabilityAdmin()).to.be.equal(proxyOwner)
     })
     it('cant initialize with invalid arguments', async () => {
       false.should.be.equal(await homeContract.isInitialized())
@@ -544,6 +541,41 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       bridgeHomeFee.should.be.bignumber.equal(newHomeFee)
       const bridgeForeignFee = await homeContract.getForeignFee()
       bridgeForeignFee.should.be.bignumber.equal(newForeignFee)
+    })
+    it('fee should be less than 100%', async () => {
+      await homeContract.rewardableInitialize(
+        validatorContract.address,
+        '3',
+        '2',
+        '1',
+        gasPrice,
+        requireBlockConfirmations,
+        blockRewardContract.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner,
+        feeManager.address,
+        homeFee,
+        foreignFee
+      ).should.be.fulfilled
+
+      const invalidFee = ether('1')
+      const invalidBigFee = ether('2')
+
+      await homeContract.setHomeFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setForeignFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await homeContract.setHomeFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setForeignFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      const newHomeFee = ether('0.99')
+      const newForeignFee = ether('0.99')
+
+      await homeContract.setHomeFee(newHomeFee, { from: owner }).should.be.fulfilled
+      await homeContract.setForeignFee(newForeignFee, { from: owner }).should.be.fulfilled
+
+      expect(await homeContract.getHomeFee()).to.be.bignumber.equals(newHomeFee)
+      expect(await homeContract.getForeignFee()).to.be.bignumber.equals(newForeignFee)
     })
   })
 
@@ -1378,19 +1410,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         .fixAssetsAboveLimits(transactionHash, true, { from: recipient })
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: owner }).should.be.fulfilled
-    })
-  })
-  describe('#OwnedUpgradeability', async () => {
-    it('upgradeabilityAdmin should return the proxy owner', async () => {
-      const homeBridgeImpl = await HomeBridge.new()
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
-      const homeBridge = await HomeBridge.at(storageProxy.address)
-
-      const proxyOwner = await storageProxy.proxyOwner()
-      const upgradeabilityAdmin = await homeBridge.upgradeabilityAdmin()
-
-      upgradeabilityAdmin.should.be.equal(proxyOwner)
     })
   })
 

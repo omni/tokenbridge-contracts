@@ -469,6 +469,9 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
       expect(await tokenSecond.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
 
+      await foreignBridge
+        .claimTokens(tokenSecond.address, accounts[3], { from: accounts[3] })
+        .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge.claimTokens(tokenSecond.address, accounts[3], { from: owner })
       expect(await tokenSecond.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)

@@ -10,7 +10,7 @@ contract OverdrawManagement is EternalStorage, OwnedUpgradeability {
 
     event UserRequestForSignature(address recipient, uint256 value);
 
-    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign) external onlyIfOwnerOfProxy {
+    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign) external onlyIfUpgradeabilityOwner {
         require(!fixedAssets(txHash));
         address recipient;
         uint256 value;
@@ -20,7 +20,7 @@ contract OverdrawManagement is EternalStorage, OwnedUpgradeability {
         if (unlockOnForeign) {
             emit UserRequestForSignature(recipient, value);
         }
-        setFixedAssets(txHash, true);
+        setFixedAssets(txHash);
     }
 
     function outOfLimitAmount() public view returns(uint256) {
@@ -45,7 +45,7 @@ contract OverdrawManagement is EternalStorage, OwnedUpgradeability {
         uintStorage[keccak256(abi.encodePacked("txOutOfLimitValue", _txHash))] = _value;
     }
 
-    function setFixedAssets(bytes32 _txHash, bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("fixedAssets", _txHash))] = _status;
+    function setFixedAssets(bytes32 _txHash) internal {
+        boolStorage[keccak256(abi.encodePacked("fixedAssets", _txHash))] = true;
     }
 }

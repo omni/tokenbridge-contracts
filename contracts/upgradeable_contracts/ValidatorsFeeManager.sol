@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "./BaseFeeManager.sol";
-import "../IRewardableValidators.sol";
+import "../interfaces/IRewardableValidators.sol";
 
 contract ValidatorsFeeManager is BaseFeeManager {
 

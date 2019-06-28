@@ -993,19 +993,6 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: owner }).should.be.fulfilled
     })
   })
-  describe('#OwnedUpgradeability', async () => {
-    it('upgradeabilityAdmin should return the proxy owner', async () => {
-      const homeBridgeImpl = await HomeBridge.new()
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
-      const homeBridge = await HomeBridge.at(storageProxy.address)
-
-      const proxyOwner = await storageProxy.proxyOwner()
-      const upgradeabilityAdmin = await homeBridge.upgradeabilityAdmin()
-
-      upgradeabilityAdmin.should.be.equal(proxyOwner)
-    })
-  })
 
   describe('#rewardableInitialize', async () => {
     let homeFee
@@ -1197,6 +1184,45 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const bridgeForeignFee = await homeBridge.getForeignFee()
       bridgeHomeFee.should.be.bignumber.equal(newHomeFee)
       bridgeForeignFee.should.be.bignumber.equal(newForeignFee)
+    })
+    it('fee should be less than 100%', async () => {
+      const feeManager = await FeeManagerErcToErcPOSDAO.new()
+      await homeBridge.rewardableInitialize(
+        rewardableValidators.address,
+        oneEther,
+        halfEther,
+        minPerTx,
+        gasPrice,
+        requireBlockConfirmations,
+        token.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner,
+        feeManager.address,
+        homeFee,
+        foreignFee,
+        blockRewardContract.address
+      ).should.be.fulfilled
+
+      // Given
+      const invalidFee = ether('1')
+      const invalidBigFee = ether('2')
+      const newHomeFee = ether('0.99')
+      const newForeignFee = ether('0.99')
+
+      // When
+      await homeBridge.setHomeFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.setForeignFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await homeBridge.setHomeFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.setForeignFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await homeBridge.setHomeFee(newHomeFee, { from: owner }).should.be.fulfilled
+      await homeBridge.setForeignFee(newForeignFee, { from: owner }).should.be.fulfilled
+
+      // Then
+      expect(await homeBridge.getHomeFee()).to.be.bignumber.equals(newHomeFee)
+      expect(await homeBridge.getForeignFee()).to.be.bignumber.equals(newForeignFee)
     })
     it('should be able to get fee manager mode', async () => {
       // Given

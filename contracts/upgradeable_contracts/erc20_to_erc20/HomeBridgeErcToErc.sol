@@ -3,8 +3,8 @@ import "../../libraries/SafeMath.sol";
 import "../../libraries/Message.sol";
 import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
-import "../../IBurnableMintableERC677Token.sol";
-import "../../ERC677Receiver.sol";
+import "../../interfaces/IBurnableMintableERC677Token.sol";
+import "../../interfaces/ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToErc.sol";
@@ -41,7 +41,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
             _foreignMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }
@@ -78,7 +78,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
             _homeFee,
             _foreignFee
         );
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }

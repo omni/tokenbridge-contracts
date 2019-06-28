@@ -38,7 +38,7 @@ contract POSDAOHomeBridgeErcToErc is HomeBridgeErcToErc {
             _foreignFee
         );
         _setBlockRewardContract(_feeManager, _blockReward);
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }

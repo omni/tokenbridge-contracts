@@ -12,6 +12,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     event HomeFeeUpdated(uint256 fee);
     event ForeignFeeUpdated(uint256 fee);
 
+    // This is not a real fee value but a relative value used to calculate the fee percentage
     uint256 internal constant MAX_FEE = 1 ether;
 
     function calculateFee(uint256 _value, bool _recover, bytes32 _feeType) public view returns(uint256) {

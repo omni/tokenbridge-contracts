@@ -5,6 +5,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const FeeManagerNativeToErc = artifacts.require('FeeManagerNativeToErc.sol')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const POA20 = artifacts.require('ERC677BridgeToken.sol')
+const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -749,6 +750,39 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.claimTokensFromErc677(tokenSecond.address, accounts[3], { from: owner })
       expect(await tokenSecond.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal('150')
+    })
+    it('works with token that not return on transfer', async () => {
+      const owner = accounts[0]
+      token = await POA20.new('POA ERC20 Foundation', 'POA20', 18)
+      const foreignBridgeImpl = await ForeignBridge.new()
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
+      await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
+      const foreignBridge = await ForeignBridge.at(storageProxy.address)
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        oneEther,
+        halfEther,
+        minPerTx,
+        gasPrice,
+        requireBlockConfirmations,
+        homeDailyLimit,
+        homeMaxPerTx,
+        owner
+      )
+
+      const tokenMock = await NoReturnTransferTokenMock.new()
+
+      await tokenMock.mint(accounts[0], halfEther).should.be.fulfilled
+      expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+      await tokenMock.transfer(foreignBridge.address, halfEther).should.be.fulfilled
+      expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await tokenMock.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+
+      await foreignBridge.claimTokens(tokenMock.address, accounts[3], { from: owner }).should.be.fulfilled
+      expect(await tokenMock.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenMock.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
   })
 

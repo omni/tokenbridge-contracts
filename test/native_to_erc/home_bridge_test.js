@@ -5,6 +5,8 @@ const RevertFallback = artifacts.require('RevertFallback.sol')
 const FeeManagerNativeToErc = artifacts.require('FeeManagerNativeToErc.sol')
 const FeeManagerNativeToErcBothDirections = artifacts.require('FeeManagerNativeToErcBothDirections.sol')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
+const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
+const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -813,6 +815,78 @@ contract('HomeBridge', async accounts => {
 
     it('should return the required message length', async () => {
       expect(await homeContract.requiredMessageLength()).to.be.bignumber.equal('104')
+    })
+  })
+
+  describe('#claimTokens', () => {
+    it('should work with token that return bool on transfer', async () => {
+      const storageProxy = await EternalStorageProxy.new()
+      const data = homeContract.contract.methods
+        .initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, '3', '2', owner)
+        .encodeABI()
+      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address)
+
+      const token = await ERC677BridgeToken.new('Test', 'TST', 18)
+
+      await token.mint(accounts[0], halfEther).should.be.fulfilled
+      expect(await token.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+      await token.transfer(homeBridge.address, halfEther).should.be.fulfilled
+      expect(await token.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(homeBridge.address)).to.be.bignumber.equal(halfEther)
+
+      await homeBridge.claimTokens(token.address, accounts[3], { from: owner }).should.be.fulfilled
+      expect(await token.balanceOf(homeBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+    })
+    it('should works with token that not return on transfer', async () => {
+      const storageProxy = await EternalStorageProxy.new()
+      const data = homeContract.contract.methods
+        .initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, '3', '2', owner)
+        .encodeABI()
+      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address)
+
+      const tokenMock = await NoReturnTransferTokenMock.new()
+
+      await tokenMock.mint(accounts[0], halfEther).should.be.fulfilled
+      expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+      await tokenMock.transfer(homeBridge.address, halfEther).should.be.fulfilled
+      expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await tokenMock.balanceOf(homeBridge.address)).to.be.bignumber.equal(halfEther)
+
+      await homeBridge.claimTokens(tokenMock.address, accounts[3], { from: owner }).should.be.fulfilled
+      expect(await tokenMock.balanceOf(homeBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenMock.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+    })
+    it('should work for native coins', async () => {
+      const storageProxy = await EternalStorageProxy.new()
+      const data = homeContract.contract.methods
+        .initialize(
+          validatorContract.address,
+          oneEther.toString(),
+          halfEther.toString(),
+          '1',
+          gasPrice,
+          requireBlockConfirmations,
+          oneEther.toString(),
+          halfEther.toString(),
+          owner
+        )
+        .encodeABI()
+      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address)
+
+      const balanceBefore = toBN(await web3.eth.getBalance(accounts[3]))
+
+      await homeBridge.sendTransaction({ from: accounts[2], value: halfEther }).should.be.fulfilled
+      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(halfEther)
+
+      await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.fulfilled
+      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(ZERO)
+      expect(toBN(await web3.eth.getBalance(accounts[3]))).to.be.bignumber.equal(balanceBefore.add(halfEther))
     })
   })
 

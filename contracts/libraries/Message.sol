@@ -90,6 +90,9 @@ library Message {
         return keccak256(abi.encodePacked(prefix, msgLength, message));
     }
 
+    // It is not necessary to check that arrays have the same length since it will be handled
+    // during attempt to access to the corresponding elements in the loop and the call will be reverted.
+    // It will save gas for the rational validators actions and still be safe enough from security point of view
     function hasEnoughValidSignatures(
         bytes _message,
         uint8[] _vs,
@@ -97,7 +100,6 @@ library Message {
         bytes32[] _ss,
         IBridgeValidators _validatorContract) internal view {
         require(isMessageValid(_message));
-        require(_vs.length == _rs.length && _rs.length == _ss.length);
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         require(_vs.length >= requiredSignatures);
         bytes32 hash = hashMessage(_message);

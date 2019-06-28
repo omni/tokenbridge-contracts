@@ -442,12 +442,7 @@ contract('ForeignBridge', async accounts => {
       const signature3 = await sign(authoritiesFiveAccs[2], message)
       const vrs3 = signatureToVRS(signature3)
       await foreignBridgeWithThreeSigs
-        .executeSignatures(
-          [vrs.v, vrs2.v, vrs3.v, vrs3.v],
-          [vrs.r, vrs2.r, vrs3.r],
-          [vrs.s, vrs2.s, vrs3.s, vrs3.s, vrs3.s],
-          message
-        )
+        .executeSignatures([vrs.v, vrs2.v], [vrs.r], [vrs.s, vrs2.s, vrs3.s], message)
         .should.be.rejectedWith(ERROR_MSG)
       const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(
         [vrs.v, vrs2.v, vrs3.v],

@@ -86,7 +86,6 @@ library Message {
 
     function hashMessage(bytes message) internal pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        // message is always 84 length
         string memory msgLength = "104";
         return keccak256(abi.encodePacked(prefix, msgLength, message));
     }
@@ -99,6 +98,9 @@ library Message {
         IBridgeValidators _validatorContract) internal view {
         require(isMessageValid(_message));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
+        // It is not necessary to check that arrays have the same length since it will be handled
+        // during attempt to access to the corresponding elements in the loop and the call will be reverted.
+        // It will save gas for the rational validators actions and still be safe enough from security point of view
         require(_vs.length >= requiredSignatures);
         bytes32 hash = hashMessage(_message);
         address[] memory encounteredAddresses = new address[](requiredSignatures);

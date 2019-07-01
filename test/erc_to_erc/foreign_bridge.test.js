@@ -476,43 +476,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       expect(await tokenSecond.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
-    it('can call claimTokens on tokenAddress', async () => {
-      const owner = accounts[0]
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      const foreignBridgeImpl = await ForeignBridgeErc677ToErc677.new()
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
-      const foreignBridge = await ForeignBridgeErc677ToErc677.at(storageProxy.address)
-      await foreignBridge.initialize(
-        validatorContract.address,
-        token.address,
-        requireBlockConfirmations,
-        gasPrice,
-        dailyLimit,
-        maxPerTx,
-        minPerTx,
-        homeDailyLimit,
-        homeMaxPerTx,
-        owner
-      )
-      await token.transferOwnership(foreignBridge.address).should.be.fulfilled
-
-      const tokenSecond = await ERC677BridgeToken.new('Test Token', 'TST', 18)
-
-      await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
-      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
-
-      await tokenSecond.transfer(token.address, halfEther)
-      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
-      expect(await tokenSecond.balanceOf(token.address)).to.be.bignumber.equal(halfEther)
-
-      await foreignBridge
-        .claimTokensFromErc677(tokenSecond.address, accounts[3], { from: accounts[3] })
-        .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge.claimTokensFromErc677(tokenSecond.address, accounts[3], { from: owner }).should.be.fulfilled
-      expect(await tokenSecond.balanceOf(token.address)).to.be.bignumber.equal(ZERO)
-      expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
-    })
   })
   describe('#ForeignBridgeErc677ToErc677_onTokenTransfer', async () => {
     it('can only be called from token contract', async () => {

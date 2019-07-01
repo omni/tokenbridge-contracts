@@ -152,6 +152,10 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         setErc677token(_erc677token);
     }
 
+    function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
+    }
+
     function getBridgeMode() public pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }

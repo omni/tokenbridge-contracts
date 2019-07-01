@@ -3,9 +3,10 @@ pragma solidity 0.4.24;
 import "../upgradeability/EternalStorage.sol";
 import "../libraries/SafeMath.sol";
 import "./OwnedUpgradeability.sol";
+import "./RewardableBridge.sol";
 
 
-contract OverdrawManagement is EternalStorage, OwnedUpgradeability {
+contract OverdrawManagement is EternalStorage, RewardableBridge, OwnedUpgradeability {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
@@ -18,6 +19,11 @@ contract OverdrawManagement is EternalStorage, OwnedUpgradeability {
         require(recipient != address(0) && value > 0);
         setOutOfLimitAmount(outOfLimitAmount().sub(value));
         if (unlockOnForeign) {
+            address feeManager = feeManagerContract();
+            if (feeManager != address(0)) {
+                uint256 fee = calculateFee(value, false, feeManager, HOME_FEE);
+                value = value.sub(fee);
+            }
             emit UserRequestForSignature(recipient, value);
         }
         setFixedAssets(txHash);

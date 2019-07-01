@@ -992,6 +992,40 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: owner }).should.be.fulfilled
     })
+    it('Should emit UserRequestForSignature with value reduced by fee', async () => {
+      const recipient = accounts[5]
+      const value = oneEther
+      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+
+      const feeManager = await FeeManagerErcToErcPOSDAO.new()
+      const fee = 0.001
+      const feeInWei = ether(fee.toString())
+      const valueCalc = 1 - fee
+      const finalValue = ether(valueCalc.toString())
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setHomeFee(feeInWei, { from: owner }).should.be.fulfilled
+
+      const { logs: affirmationLogs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {
+        from: authorities[0]
+      }).should.be.fulfilled
+
+      expectEventInLogs(affirmationLogs, 'AmountLimitExceeded', {
+        recipient,
+        value,
+        transactionHash
+      })
+
+      const outOfLimitAmount = await homeBridge.outOfLimitAmount()
+      outOfLimitAmount.should.be.bignumber.equal(value)
+
+      const { logs } = await homeBridge.fixAssetsAboveLimits(transactionHash, true).should.be.fulfilled
+
+      logs.length.should.be.equal(1)
+      expectEventInLogs(logs, 'UserRequestForSignature', {
+        recipient,
+        value: finalValue
+      })
+    })
   })
 
   describe('#rewardableInitialize', async () => {

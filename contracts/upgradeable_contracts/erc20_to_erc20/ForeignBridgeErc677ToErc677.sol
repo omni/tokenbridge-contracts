@@ -3,6 +3,7 @@ pragma solidity 0.4.24;
 
 import "./BasicForeignBridgeErcToErc.sol";
 import "../ERC677Bridge.sol";
+import "../../interfaces/IBurnableMintableERC677Token.sol";
 
 
 contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc {
@@ -38,6 +39,10 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
 
         return isInitialized();
+    }
+
+    function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
 
     function erc20token() public view returns(ERC20Basic) {

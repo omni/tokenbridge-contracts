@@ -1027,7 +1027,46 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       })
     })
   })
+  describe('#claimTokens', () => {
+    it('should be able to call claimTokens on tokenAddress', async () => {
+      const token = await ERC677BridgeToken.new('Bridge Token', 'BT20', 18)
 
+      const homeBridgeImpl = await HomeBridge.new()
+      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
+      await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
+      const homeBridge = await HomeBridge.at(storageProxy.address)
+      await homeBridge.initialize(
+        validatorContract.address,
+        oneEther,
+        halfEther,
+        minPerTx,
+        gasPrice,
+        requireBlockConfirmations,
+        token.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner
+      ).should.be.fulfilled
+
+      await token.transferOwnership(homeBridge.address).should.be.fulfilled
+
+      const tokenSecond = await ERC677BridgeToken.new('Test Token', 'TST', 18)
+
+      await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+      await tokenSecond.transfer(token.address, halfEther)
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(token.address)).to.be.bignumber.equal(halfEther)
+
+      await homeBridge
+        .claimTokensFromErc677(tokenSecond.address, accounts[3], { from: accounts[3] })
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.claimTokensFromErc677(tokenSecond.address, accounts[3], { from: owner }).should.be.fulfilled
+      expect(await tokenSecond.balanceOf(token.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+    })
+  })
   describe('#rewardableInitialize', async () => {
     let homeFee
     let foreignFee

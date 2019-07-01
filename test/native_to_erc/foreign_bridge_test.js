@@ -800,7 +800,7 @@ contract('ForeignBridge', async accounts => {
       expect(await tokenSecond.balanceOf(token.address)).to.be.bignumber.equal('150')
 
       await foreignBridge.claimTokensFromErc677(tokenSecond.address, accounts[3], { from: owner })
-      expect(await tokenSecond.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(token.address)).to.be.bignumber.equal(ZERO)
       expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal('150')
     })
     it('works with token that not return on transfer', async () => {

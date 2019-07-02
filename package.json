@@ -21,7 +21,7 @@
     "@0x/subproviders": "^4.1.0",
     "ganache-cli": "^6.4.3",
     "istanbul": "^0.4.5",
-    "openzeppelin-solidity": "^1.10.0",
+    "openzeppelin-solidity": "1.12.0",
     "truffle": "^5.0.15",
     "web3-provider-engine": "^15.0.0"
   },

@@ -46,7 +46,7 @@ contract ERC677BridgeToken is
     }
 
     function getTokenInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
-        return (2, 0, 0);
+        return (2, 1, 0);
     }
 
     function superTransfer(address _to, uint256 _value) internal returns(bool)

@@ -98,7 +98,6 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         uint256 _homeFee,
         uint256 _foreignFee
     ) internal
-    returns(bool)
     {
         _initialize (
             _validatorContract,
@@ -130,7 +129,6 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
         uint256 _foreignMaxPerTx,
         address _owner
     ) internal
-    returns(bool)
     {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));

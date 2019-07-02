@@ -40,13 +40,13 @@ contract ERC677BridgeToken is
         emit Transfer(msg.sender, _to, _value, _data);
 
         if (isContract(_to)) {
-            require(contractFallback(_to, _value, _data));
+            require(contractFallback(msg.sender, _to, _value, _data));
         }
         return true;
     }
 
     function getTokenInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
-        return (2, 0, 0);
+        return (2, 1, 0);
     }
 
     function superTransfer(address _to, uint256 _value) internal returns(bool)
@@ -57,21 +57,28 @@ contract ERC677BridgeToken is
     function transfer(address _to, uint256 _value) public returns (bool)
     {
         require(superTransfer(_to, _value));
-        if (isContract(_to) && !contractFallback(_to, _value, new bytes(0))) {
-            if (_to == bridgeContract) {
-                revert();
-            } else {
-                emit ContractFallbackCallFailed(msg.sender, _to, _value);
-            }
-        }
+        callAfterTransfer(msg.sender, _to, _value);
         return true;
     }
 
-    function contractFallback(address _to, uint _value, bytes _data)
-        private
-        returns(bool)
-    {
-        return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)",  msg.sender, _value, _data));
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+        require(super.transferFrom(_from, _to, _value));
+        callAfterTransfer(_from, _to, _value);
+        return true;
+    }
+
+    function callAfterTransfer(address _from, address _to, uint256 _value) internal {
+        if (isContract(_to) && !contractFallback(_from, _to, _value, new bytes(0))) {
+            if (_to == bridgeContract) {
+                revert();
+            } else {
+                emit ContractFallbackCallFailed(_from, _to, _value);
+            }
+        }
+    }
+
+    function contractFallback(address _from, address _to, uint _value, bytes _data) private returns(bool) {
+        return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)",  _from, _value, _data));
     }
 
     function isContract(address _addr)

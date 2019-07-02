@@ -360,9 +360,27 @@ async function testERC677BridgeToken(accounts, rewardable) {
       })
     }
   })
+  describe('#transferFrom', async () => {
+    it('should call onTokenTransfer', async () => {
+      const receiver = await ERC677ReceiverTest.new()
+      const amount = ether('1')
+      const user2 = accounts[2]
 
-  if (rewardable) {
-    describe('#transferFrom', async () => {
+      await token.setBridgeContract(receiver.address).should.be.fulfilled
+
+      expect(await receiver.from()).to.be.equal(ZERO_ADDRESS)
+      expect(await receiver.value()).to.be.bignumber.equal(ZERO)
+      expect(await receiver.data()).to.be.equal(null)
+
+      await token.mint(user, amount, { from: owner }).should.be.fulfilled
+      await token.approve(user2, amount, { from: user }).should.be.fulfilled
+      await token.transferFrom(user, receiver.address, amount, { from: user2 }).should.be.fulfilled
+
+      expect(await receiver.from()).to.be.equal(user)
+      expect(await receiver.value()).to.be.bignumber.equal(amount)
+      expect(await receiver.data()).to.be.equal(null)
+    })
+    if (rewardable) {
       it('fail to send tokens to Staking contract directly', async () => {
         const amount = ether('1')
         const user2 = accounts[2]
@@ -376,8 +394,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
           .should.be.rejectedWith(ERROR_MSG)
         await token.transferFrom(user, arbitraryAccountAddress, amount, { from: user2 }).should.be.fulfilled
       })
-    })
-  }
+    }
+  })
 
   describe('#burn', async () => {
     it('can burn', async () => {

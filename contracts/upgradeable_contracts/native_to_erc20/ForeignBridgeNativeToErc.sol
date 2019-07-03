@@ -1,6 +1,5 @@
 pragma solidity 0.4.24;
 
-import "../BasicBridge.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../../interfaces/ERC677Receiver.sol";
 import "../BasicForeignBridge.sol";
@@ -9,7 +8,7 @@ import "../ERC677BridgeForBurnableMintableToken.sol";
 import "./RewardableForeignBridgeNativeToErc.sol";
 
 
-contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBridge, ERC677BridgeForBurnableMintableToken, RewardableForeignBridgeNativeToErc {
+contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677BridgeForBurnableMintableToken, RewardableForeignBridgeNativeToErc {
 
     /// Event created on money withdraw.
     event UserRequestForAffirmation(address recipient, uint256 value);
@@ -130,10 +129,6 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicBridge, BasicForeignBr
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
         emit UserRequestForAffirmation(_from, _value);
-    }
-
-    function messageWithinLimits(uint256 _amount) internal view returns(bool) {
-        return withinExecutionLimit(_amount);
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {

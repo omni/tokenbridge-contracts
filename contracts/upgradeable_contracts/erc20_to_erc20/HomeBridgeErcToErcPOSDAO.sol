@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 import "./HomeBridgeErcToErc.sol";
 
-contract POSDAOHomeBridgeErcToErc is HomeBridgeErcToErc {
+contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
 
     function rewardableInitialize (
         address _validatorContract,

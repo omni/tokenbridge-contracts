@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 import "../interfaces/IBridgeValidators.sol";
 import "./OwnedUpgradeability.sol";
 import "../upgradeability/EternalStorage.sol";
-import "../libraries/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Validatable.sol";
 import "./Ownable.sol";
 import "./Claimable.sol";

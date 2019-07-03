@@ -1,5 +1,5 @@
 pragma solidity 0.4.24;
-import "../../libraries/SafeMath.sol";
+
 import "../BasicBridge.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../../interfaces/ERC677Receiver.sol";

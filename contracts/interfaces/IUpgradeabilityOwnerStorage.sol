@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
 
-interface IOwnedUpgradeabilityProxy {
+interface IUpgradeabilityOwnerStorage {
     function upgradeabilityOwner() public view returns (address);
 }

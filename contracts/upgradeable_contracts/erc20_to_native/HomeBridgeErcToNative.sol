@@ -1,7 +1,6 @@
 pragma solidity 0.4.24;
 
 import "../../libraries/Message.sol";
-import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBlockReward.sol";
 import "../BasicHomeBridge.sol";
@@ -10,7 +9,7 @@ import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToNative.sol";
 
 
-contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
+contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
@@ -198,10 +197,6 @@ contract HomeBridgeErcToNative is EternalStorage, BasicBridge, BasicHomeBridge, 
 
     function setTotalBurntCoins(uint256 _amount) internal {
         uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
-    }
-
-    function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {
-        return withinExecutionLimit(_amount);
     }
 
     function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {

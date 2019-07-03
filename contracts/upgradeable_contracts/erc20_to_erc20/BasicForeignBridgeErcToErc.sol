@@ -17,7 +17,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         address _owner
     ) internal {
         require(!isInitialized());
-        require(_validatorContract != address(0) && isContract(_validatorContract));
+        require(isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);

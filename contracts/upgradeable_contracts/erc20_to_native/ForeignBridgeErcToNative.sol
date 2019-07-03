@@ -20,7 +20,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         address _owner
     ) public returns(bool) {
         require(!isInitialized());
-        require(_validatorContract != address(0) && isContract(_validatorContract));
+        require(isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
@@ -57,7 +57,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
     }
 
     function setErc20token(address _token) private {
-        require(_token != address(0) && isContract(_token));
+        require(isContract(_token));
         addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
     }
 

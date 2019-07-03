@@ -1,13 +1,12 @@
 pragma solidity 0.4.24;
 
 import "../../libraries/Message.sol";
-import "../BasicBridge.sol";
 import "../BasicForeignBridge.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
 
-contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
+contract ForeignBridgeErcToNative is BasicForeignBridge {
     event RelayedMessage(address recipient, uint value, bytes32 transactionHash);
 
     function initialize(
@@ -60,10 +59,6 @@ contract ForeignBridgeErcToNative is BasicBridge, BasicForeignBridge {
     function setErc20token(address _token) private {
         require(_token != address(0) && isContract(_token));
         addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
-    }
-
-    function messageWithinLimits(uint256 _amount) internal view returns(bool) {
-        return withinExecutionLimit(_amount);
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {

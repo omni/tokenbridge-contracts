@@ -1,14 +1,13 @@
 pragma solidity 0.4.24;
 
 import "../../libraries/Message.sol";
-import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../BasicHomeBridge.sol";
 import "./RewardableHomeBridgeNativeToErc.sol";
 import "../Sacrifice.sol";
 
 
-contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
+contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
 
     function () public payable {
         nativeTransfer();
@@ -154,10 +153,6 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
             (new Sacrifice).value(valueToTransfer)(_recipient);
         }
         return true;
-    }
-
-    function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {
-        return withinExecutionLimit(_amount);
     }
 
     function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {

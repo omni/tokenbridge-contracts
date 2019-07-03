@@ -1,7 +1,6 @@
 pragma solidity 0.4.24;
 
 import "../../libraries/Message.sol";
-import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../../interfaces/ERC677Receiver.sol";
@@ -11,7 +10,7 @@ import "./RewardableHomeBridgeErcToErc.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 
 
-contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, BasicHomeBridge, ERC677BridgeForBurnableMintableToken, OverdrawManagement, RewardableHomeBridgeErcToErc {
+contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, ERC677BridgeForBurnableMintableToken, OverdrawManagement, RewardableHomeBridgeErcToErc {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
@@ -195,10 +194,6 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicBridge, Basi
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
             distributeFeeFromSignatures(fee, feeManager, txHash);
         }
-    }
-
-    function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {
-        return withinExecutionLimit(_amount);
     }
 
     function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {

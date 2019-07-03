@@ -5,9 +5,10 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
+import "./BasicBridge.sol";
 
 
-contract BasicHomeBridge is EternalStorage, Validatable {
+contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
@@ -17,7 +18,7 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash, uint256 NumberOfCollectedSignatures);
 
     function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
-        if (affirmationWithinLimits(value)) {
+        if (withinExecutionLimit(value)) {
             bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
             bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
             // Duplicated affirmations
@@ -146,8 +147,6 @@ contract BasicHomeBridge is EternalStorage, Validatable {
     function requiredMessageLength() public pure returns(uint256) {
         return Message.requiredMessageLength();
     }
-
-    function affirmationWithinLimits(uint256) internal view returns(bool);
 
     function onFailedAffirmation(address, uint256, bytes32) internal;
 }

@@ -2,11 +2,11 @@ pragma solidity 0.4.24;
 
 import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./OwnedUpgradeability.sol";
+import "./Upgradeable.sol";
 import "./RewardableBridge.sol";
 
 
-contract OverdrawManagement is EternalStorage, RewardableBridge, OwnedUpgradeability {
+contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);

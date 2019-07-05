@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 import "../interfaces/IBridgeValidators.sol";
-import "./OwnedUpgradeability.sol";
+import "./Upgradeable.sol";
 import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Validatable.sol";
@@ -8,7 +8,7 @@ import "./Ownable.sol";
 import "./Claimable.sol";
 
 
-contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeability, Claimable {
+contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claimable {
     using SafeMath for uint256;
 
     event GasPriceChanged(uint256 gasPrice);

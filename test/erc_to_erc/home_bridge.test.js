@@ -1,5 +1,5 @@
 const HomeBridge = artifacts.require('HomeBridgeErcToErc.sol')
-const POSDAOHomeBridge = artifacts.require('POSDAOHomeBridgeErcToErc.sol')
+const POSDAOHomeBridge = artifacts.require('HomeBridgeErcToErcPOSDAO.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')

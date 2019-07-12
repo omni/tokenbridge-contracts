@@ -114,6 +114,20 @@ contract('ForeignBridge', async accounts => {
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .initialize(
+          validatorContract.address,
+          token.address,
+          oneEther,
+          halfEther,
+          minPerTx,
+          gasPrice,
+          0,
+          homeDailyLimit,
+          homeMaxPerTx,
+          owner
+        )
+        .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,

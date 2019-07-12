@@ -167,7 +167,6 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
-    BLOCK_REWARD_ADDRESS: addressValidator(),
     ERC20_EXTENDED_BY_ERC677: envalid.bool()
   }
 
@@ -181,7 +180,8 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
     validations = {
       ...validations,
-      DPOS_STAKING_ADDRESS: addressValidator()
+      DPOS_STAKING_ADDRESS: addressValidator(),
+      BLOCK_REWARD_ADDRESS: addressValidator()
     }
   }
 }

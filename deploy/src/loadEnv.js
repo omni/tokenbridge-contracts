@@ -154,7 +154,8 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
     validations = {
       ...validations,
-      DPOS_STAKING_ADDRESS: addressValidator()
+      DPOS_STAKING_ADDRESS: addressValidator(),
+      BLOCK_REWARD_ADDRESS: addressValidator()
     }
   }
 }

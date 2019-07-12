@@ -97,6 +97,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677B
         require(!isInitialized());
         require(isContract(_validatorContract));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
+        require(_requiredBlockConfirmations > 0);
         require(_foreignGasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));

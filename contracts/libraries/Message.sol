@@ -107,9 +107,7 @@ library Message {
         for (uint256 i = 0; i < requiredSignatures; i++) {
             address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
             require(_validatorContract.isValidator(recoveredAddress));
-            if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
-                revert();
-            }
+            require(!addressArrayContains(encounteredAddresses, recoveredAddress));
             encounteredAddresses[i] = recoveredAddress;
         }
     }

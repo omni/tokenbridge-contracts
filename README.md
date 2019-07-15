@@ -1,5 +1,6 @@
 [![Join the chat at https://gitter.im/poanetwork/poa-bridge](https://badges.gitter.im/poanetwork/poa-bridge.svg)](https://gitter.im/poanetwork/poa-bridge?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts)
+[![Coverage Status](https://coveralls.io/repos/github/poanetwork/poa-bridge-contracts/badge.svg?branch=master)](https://coveralls.io/github/poanetwork/poa-bridge-contracts?branch=master)
 
 # POA Bridge Smart Contracts
 These contracts provide the core functionality for the POA bridge. They implement the logic to relay assests between two EVM-based blockchain networks. The contracts collect bridge validator's signatures to approve and facilitate relay operations. 
@@ -81,6 +82,13 @@ Please the [README.md](deploy/README.md) in the `deploy` folder for instructions
 npm test
 ```
 
+#### Run coverage tests
+```bash
+npm run coverage
+```
+
+The results can be found in the `coverage` directory.
+
 #### Flatten
 Fattened contracts can be used to verify the contract code in a block explorer like BlockScout or Etherscan.
 The following command will prepare flattened version of the contracts:
@@ -120,6 +128,13 @@ _Note: The container must be rebuilt every time the code in a contract or deploy
    ```bash
    docker cp name-of-your-container:/contracts/flats ./
    ```
+
+#### Test contract and run coverage (if needed)
+```bash
+$ docker-compose run bridge-contracts bash
+$ npm test
+$ npm run coverage
+```
 
 #### Shutdown the container
 If the container is no longer needed, it can be shutdown:

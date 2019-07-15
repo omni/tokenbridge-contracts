@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "./Ownable.sol";
-import "../libraries/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../upgradeability/EternalStorage.sol";
 
 
@@ -101,7 +101,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     }
 
     function deployedAtBlock() public view returns (uint256) {
-        return uintStorage[keccak256("deployedAtBlock")];
+        return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
     function getNextValidator(address _address) public view returns (address) {
@@ -120,7 +120,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         addressStorage[keccak256(abi.encodePacked("validatorsList", _prevValidator))] = _validator;
     }
 
-    function setInitialize(bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
+    function setInitialize() internal {
+        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
     }
 }

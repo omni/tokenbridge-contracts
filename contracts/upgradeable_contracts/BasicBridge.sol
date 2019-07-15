@@ -1,14 +1,14 @@
 pragma solidity 0.4.24;
 
-import "./OwnedUpgradeability.sol";
+import "./Upgradeable.sol";
 import "../upgradeability/EternalStorage.sol";
-import "../libraries/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Validatable.sol";
 import "./Ownable.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "./Claimable.sol";
 
 
-contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeability {
+contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claimable {
     using SafeMath for uint256;
 
     event GasPriceChanged(uint256 gasPrice);
@@ -42,26 +42,17 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, OwnedUpgradeabilit
         return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
-    function setInitialize(bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
+    function setInitialize() internal {
+        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
     }
 
     function isInitialized() public view returns(bool) {
         return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
     }
 
-    function claimTokens(address _token, address _to) public onlyIfOwnerOfProxy {
-        require(_to != address(0));
-        if (_token == address(0)) {
-            _to.transfer(address(this).balance);
-            return;
-        }
-
-        ERC20Basic token = ERC20Basic(_token);
-        uint256 balance = token.balanceOf(this);
-        require(token.transfer(_to, balance));
+    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
+        claimValues(_token, _to);
     }
-
 
     function isContract(address _addr) internal view returns (bool)
     {

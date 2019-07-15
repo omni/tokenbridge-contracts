@@ -18,7 +18,7 @@ function getContracts(evmVersion) {
     HomeBridgeErcToErc: require(`../../build/${buildPath}/HomeBridgeErcToErc.json`),
     ForeignBridgeErcToErc: require(`../../build/${buildPath}/ForeignBridgeErcToErc.json`),
     ForeignBridgeErc677ToErc677: require(`../../build/${buildPath}/ForeignBridgeErc677ToErc677.json`),
-    POSDAOHomeBridgeErcToErc: require(`../../build/${buildPath}/POSDAOHomeBridgeErcToErc.json`),
+    HomeBridgeErcToErcPOSDAO: require(`../../build/${buildPath}/HomeBridgeErcToErcPOSDAO.json`),
     ERC677BridgeToken: require(`../../build/${buildPath}/ERC677BridgeToken.json`),
     ERC677BridgeTokenRewardable: require(`../../build/${buildPath}/ERC677BridgeTokenRewardable.json`),
     ForeignBridgeErcToNative: require(`../../build/${buildPath}/ForeignBridgeErcToNative.json`),

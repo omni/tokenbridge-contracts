@@ -7,7 +7,7 @@ pragma solidity 0.4.24;
  */
 contract UpgradeabilityOwnerStorage {
     // Owner of the contract
-    address private _upgradeabilityOwner;
+    address internal _upgradeabilityOwner;
 
     /**
     * @dev Tells the address of the owner

@@ -1,15 +1,14 @@
 pragma solidity 0.4.24;
-import "../../libraries/SafeMath.sol";
-import "../BasicTokenBridge.sol";
-import "../../IBurnableMintableERC677Token.sol";
-import "../../ERC677Receiver.sol";
+
+import "../../interfaces/IBurnableMintableERC677Token.sol";
+import "../../interfaces/ERC677Receiver.sol";
 import "../BasicForeignBridge.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 import "./RewardableForeignBridgeNativeToErc.sol";
 
 
-contract ForeignBridgeNativeToErc is ERC677Receiver, BasicTokenBridge, BasicForeignBridge, ERC677BridgeForBurnableMintableToken, RewardableForeignBridgeNativeToErc {
+contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677BridgeForBurnableMintableToken, RewardableForeignBridgeNativeToErc {
 
     /// Event created on money withdraw.
     event UserRequestForAffirmation(address recipient, uint256 value);
@@ -38,7 +37,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicTokenBridge, BasicFore
             _homeMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 
@@ -71,7 +70,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicTokenBridge, BasicFore
         require(isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 
@@ -79,7 +78,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicTokenBridge, BasicFore
         return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 
-    function claimTokensFromErc677(address _token, address _to) external onlyIfOwnerOfProxy {
+    function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
         IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
 
@@ -96,8 +95,9 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicTokenBridge, BasicFore
         address _owner
     ) internal {
         require(!isInitialized());
-        require(_validatorContract != address(0) && isContract(_validatorContract));
+        require(isContract(_validatorContract));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
+        require(_requiredBlockConfirmations > 0);
         require(_foreignGasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
@@ -130,10 +130,6 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicTokenBridge, BasicFore
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
         emit UserRequestForAffirmation(_from, _value);
-    }
-
-    function messageWithinLimits(uint256 _amount) internal view returns(bool) {
-        return withinExecutionLimit(_amount);
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {

@@ -1,27 +1,30 @@
 pragma solidity 0.4.24;
-import "../../libraries/SafeMath.sol";
+
 import "../../libraries/Message.sol";
-import "../BasicTokenBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
-import "../../IBlockReward.sol";
-import "../../ERC677Receiver.sol";
+import "../../interfaces/IBlockReward.sol";
 import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToNative.sol";
 
 
-contract HomeBridgeErcToNative is EternalStorage, BasicTokenBridge, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
+contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
 
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
     function () public payable {
+        nativeTransfer();
+    }
+
+    function nativeTransfer() internal {
         require(msg.value > 0);
         require(msg.data.length == 0);
         require(withinLimit(msg.value));
         IBlockReward blockReward = blockRewardContract();
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
-        require(msg.value <= totalMinted.sub(totalBurntCoins()));
+        uint256 totalBurnt = totalBurntCoins();
+        require(msg.value <= totalMinted.sub(totalBurnt));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
@@ -31,7 +34,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicTokenBridge, BasicHomeBri
             valueToTransfer = valueToTransfer.sub(fee);
             valueToBurn = getAmountToBurn(valueToBurn);
         }
-        setTotalBurntCoins(totalBurntCoins().add(valueToBurn));
+        setTotalBurntCoins(totalBurnt.add(valueToBurn));
         address(0).transfer(valueToBurn);
         emit UserRequestForSignature(msg.sender, valueToTransfer);
     }
@@ -61,7 +64,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicTokenBridge, BasicHomeBri
             _foreignMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }
@@ -98,7 +101,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicTokenBridge, BasicHomeBri
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }
@@ -116,7 +119,17 @@ contract HomeBridgeErcToNative is EternalStorage, BasicTokenBridge, BasicHomeBri
     }
 
     function setBlockRewardContract(address _blockReward) public onlyOwner {
-        require(_blockReward != address(0) && isContract(_blockReward) && (IBlockReward(_blockReward).bridgesAllowedLength() != 0));
+        require(isContract(_blockReward));
+
+        // Before store the contract we need to make sure that it is the block reward contract in actual fact,
+        // call a specific method from the contract that should return a specific value
+        bool isBlockRewardContract = false;
+        if (_blockReward.call(abi.encodeWithSignature("blockRewardContractId()"))) {
+            isBlockRewardContract = IBlockReward(_blockReward).blockRewardContractId() == bytes4(keccak256("blockReward"));
+        } else if (_blockReward.call(abi.encodeWithSignature("bridgesAllowedLength()"))) {
+            isBlockRewardContract = IBlockReward(_blockReward).bridgesAllowedLength() != 0;
+        }
+        require(isBlockRewardContract);
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
     }
 
@@ -134,7 +147,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicTokenBridge, BasicHomeBri
     ) internal
     {
         require(!isInitialized());
-        require(_validatorContract != address(0) && isContract(_validatorContract));
+        require(isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_blockReward == address(0) || isContract(_blockReward));
@@ -182,16 +195,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicTokenBridge, BasicHomeBri
         }
     }
 
-    function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
-        emit UserRequestForSignature(_from, _value);
-    }
-
     function setTotalBurntCoins(uint256 _amount) internal {
         uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
-    }
-
-    function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {
-        return withinExecutionLimit(_amount);
     }
 
     function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {

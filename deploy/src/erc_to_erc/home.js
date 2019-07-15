@@ -23,7 +23,7 @@ const {
     RewardableValidators,
     FeeManagerErcToErcPOSDAO,
     HomeBridgeErcToErc: HomeBridge,
-    POSDAOHomeBridgeErcToErc,
+    HomeBridgeErcToErcPOSDAO,
     ERC677BridgeToken,
     ERC677BridgeTokenRewardable
   }
@@ -221,7 +221,7 @@ async function deployHome() {
   console.log('\ndeploying homeBridge implementation\n')
   const bridgeContract =
     isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS
-      ? POSDAOHomeBridgeErcToErc
+      ? HomeBridgeErcToErcPOSDAO
       : HomeBridge
   const homeBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,

@@ -247,7 +247,6 @@ if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
 }
 
 if (env.BRIDGE_MODE === 'ERC_TO_ERC') {
-  checkGasPrices(env.HOME_GAS_PRICE, homePrefix)
   if (env.ERC20_EXTENDED_BY_ERC677) {
     checkLimits(
       env.FOREIGN_MIN_AMOUNT_PER_TX,

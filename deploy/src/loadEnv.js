@@ -6,6 +6,9 @@ const { isAddress, toBN } = require('web3').utils
 const envalid = require('envalid')
 const { ZERO_ADDRESS, EVM_TYPES } = require('./constants')
 
+const homePrefix = 'HOME'
+const foreignPrefix = 'FOREIGN'
+
 // Validations and constants
 const evmVersions = [EVM_TYPES.BYZANTIUM, EVM_TYPES.SPURIOUSDRAGON]
 const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
@@ -34,6 +37,36 @@ const validateRewardableAddresses = (validators, rewards) => {
   }
 }
 
+function checkValidators(validators, requiredValidators) {
+  if (validators.split(' ').length < requiredValidators) {
+    throw new Error(
+      `The number of validators VALIDATORS = ${
+        validators.split(' ').length
+      } should be bigger or equal the number of required signatures REQUIRED_NUMBER_OF_VALIDATORS = ${requiredValidators} .`
+    )
+  }
+}
+
+function checkGasPrices(gasPrice, prefix) {
+  if (gasPrice.isZero()) {
+    throw new Error(`${prefix}_GAS_PRICE should be bigger than zero.`)
+  }
+}
+
+function checkBlockConfirmations(confirmations, prefix) {
+  if (confirmations <= 0) {
+    throw new Error(`${prefix}_REQUIRED_BLOCK_CONFIRMATIONS should be bigger than zero.`)
+  }
+}
+
+function checkLimits(min, max, daily, prefix) {
+  if (min.isZero() || min.gte(max) || max.gte(daily)) {
+    throw new Error(
+      `Limit parameters should be defined as 0 < ${prefix}_MIN_AMOUNT_PER_TX < ${prefix}_MAX_AMOUNT_PER_TX < ${prefix}_DAILY_LIMIT`
+    )
+  }
+}
+
 const {
   BRIDGE_MODE,
   HOME_REWARDABLE,
@@ -46,6 +79,8 @@ const {
   HOME_EVM_VERSION,
   FOREIGN_EVM_VERSION
 } = process.env
+
+// Types validations
 
 if (HOME_EVM_VERSION) {
   if (!evmVersions.includes(HOME_EVM_VERSION)) {
@@ -101,6 +136,7 @@ let validations = {
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   FOREIGN_GAS_PRICE: bigNumValidator(),
   FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
+  FOREIGN_DAILY_LIMIT: bigNumValidator(),
   REQUIRED_NUMBER_OF_VALIDATORS: envalid.num(),
   VALIDATORS: addressesValidator()
 }
@@ -111,31 +147,19 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
     BRIDGEABLE_TOKEN_NAME: envalid.str(),
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
-    FOREIGN_DAILY_LIMIT: bigNumValidator(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
-    BLOCK_REWARD_ADDRESS: addressValidator()
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool()
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
     validations = {
       ...validations,
-      DPOS_STAKING_ADDRESS: addressValidator()
+      DPOS_STAKING_ADDRESS: addressValidator(),
+      BLOCK_REWARD_ADDRESS: addressValidator()
     }
   }
-
-  if (FOREIGN_REWARDABLE === 'BOTH_DIRECTIONS') {
-    throw new Error(
-      `FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE} is not supported on ${BRIDGE_MODE} bridge mode`
-    )
-  }
-
-  if (HOME_REWARDABLE === 'BOTH_DIRECTIONS' && FOREIGN_REWARDABLE === 'ONE_DIRECTION') {
-    throw new Error(
-      `Combination of HOME_REWARDABLE: ${HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE} should be avoided on ${BRIDGE_MODE} bridge mode.`
-    )
-  }
 }
+
 if (BRIDGE_MODE === 'ERC_TO_ERC') {
   validations = {
     ...validations,
@@ -144,25 +168,25 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
-    DPOS_STAKING_ADDRESS: addressValidator(),
-    BLOCK_REWARD_ADDRESS: addressValidator(),
     ERC20_EXTENDED_BY_ERC677: envalid.bool()
   }
 
   if (ERC20_EXTENDED_BY_ERC677 === 'true') {
     validations = {
       ...validations,
-      FOREIGN_DAILY_LIMIT: bigNumValidator(),
       FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
     }
   }
 
-  if (FOREIGN_REWARDABLE !== 'false') {
-    throw new Error(
-      `Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`
-    )
+  if (DEPLOY_REWARDABLE_TOKEN === 'true') {
+    validations = {
+      ...validations,
+      DPOS_STAKING_ADDRESS: addressValidator(),
+      BLOCK_REWARD_ADDRESS: addressValidator()
+    }
   }
 }
+
 if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   validations = {
     ...validations,
@@ -170,6 +194,87 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     BLOCK_REWARD_ADDRESS: addressValidator({
       default: ZERO_ADDRESS
     })
+  }
+}
+
+if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
+  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
+  validations = {
+    ...validations,
+    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
+    HOME_TRANSACTIONS_FEE: envalid.num(),
+    FOREIGN_TRANSACTIONS_FEE: envalid.num()
+  }
+}
+
+const env = envalid.cleanEnv(process.env, validations)
+
+// Logic validations
+checkValidators(env.VALIDATORS, env.REQUIRED_NUMBER_OF_VALIDATORS)
+checkGasPrices(env.FOREIGN_GAS_PRICE, foreignPrefix)
+checkBlockConfirmations(env.HOME_REQUIRED_BLOCK_CONFIRMATIONS, homePrefix)
+checkBlockConfirmations(env.FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS, foreignPrefix)
+checkLimits(
+  env.HOME_MIN_AMOUNT_PER_TX,
+  env.HOME_MAX_AMOUNT_PER_TX,
+  env.HOME_DAILY_LIMIT,
+  homePrefix
+)
+
+if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
+  checkGasPrices(env.HOME_GAS_PRICE, homePrefix)
+  checkLimits(
+    env.FOREIGN_MIN_AMOUNT_PER_TX,
+    env.FOREIGN_MAX_AMOUNT_PER_TX,
+    env.FOREIGN_DAILY_LIMIT,
+    foreignPrefix
+  )
+  if (env.FOREIGN_REWARDABLE === 'BOTH_DIRECTIONS') {
+    throw new Error(
+      `FOREIGN_REWARDABLE: ${env.FOREIGN_REWARDABLE} is not supported on ${
+        env.BRIDGE_MODE
+      } bridge mode`
+    )
+  }
+
+  if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS' && env.FOREIGN_REWARDABLE === 'ONE_DIRECTION') {
+    throw new Error(
+      `Combination of HOME_REWARDABLE: ${env.HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${
+        env.FOREIGN_REWARDABLE
+      } should be avoided on ${env.BRIDGE_MODE} bridge mode.`
+    )
+  }
+}
+
+if (env.BRIDGE_MODE === 'ERC_TO_ERC') {
+  checkGasPrices(env.HOME_GAS_PRICE, homePrefix)
+  if (env.ERC20_EXTENDED_BY_ERC677) {
+    checkLimits(
+      env.FOREIGN_MIN_AMOUNT_PER_TX,
+      env.FOREIGN_MAX_AMOUNT_PER_TX,
+      env.FOREIGN_DAILY_LIMIT,
+      foreignPrefix
+    )
+  } else if (env.FOREIGN_MAX_AMOUNT_PER_TX.gte(env.FOREIGN_DAILY_LIMIT)) {
+    throw new Error(`FOREIGN_DAILY_LIMIT should be greater than FOREIGN_MAX_AMOUNT_PER_TX`)
+  }
+
+  if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS' && env.BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
+    throw new Error(
+      'Collecting fees on Home Network on ERC_TO_ERC mode without Block Reward contract is not supported.'
+    )
+  }
+
+  if (env.FOREIGN_REWARDABLE !== 'false') {
+    throw new Error(
+      `Collecting fees on Foreign Network on ${env.BRIDGE_MODE} bridge mode is not supported.`
+    )
+  }
+}
+
+if (env.BRIDGE_MODE === 'ERC_TO_NATIVE') {
+  if (env.FOREIGN_MAX_AMOUNT_PER_TX.gte(env.FOREIGN_DAILY_LIMIT)) {
+    throw new Error(`FOREIGN_DAILY_LIMIT should be greater than FOREIGN_MAX_AMOUNT_PER_TX`)
   }
 
   if (HOME_REWARDABLE === 'ONE_DIRECTION') {
@@ -191,28 +296,6 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
       )
     }
   }
-}
-
-if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
-  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
-  validations = {
-    ...validations,
-    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
-    HOME_TRANSACTIONS_FEE: envalid.num(),
-    FOREIGN_TRANSACTIONS_FEE: envalid.num()
-  }
-}
-
-const env = envalid.cleanEnv(process.env, validations)
-
-if (
-  env.BRIDGE_MODE === 'ERC_TO_ERC' &&
-  env.HOME_REWARDABLE === 'true' &&
-  env.BLOCK_REWARD_ADDRESS === ZERO_ADDRESS
-) {
-  throw new Error(
-    'Collecting fees on Home Network on ERC_TO_ERC mode without Block Reward contract is not supported.'
-  )
 }
 
 module.exports = env

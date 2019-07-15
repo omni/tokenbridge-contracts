@@ -25,7 +25,7 @@ contract RewardableBridge is Ownable, FeeTypes {
         return fee;
     }
 
-    function getFeeManagerMode() public view returns(bytes4) {
+    function getFeeManagerMode() external view returns(bytes4) {
         bytes4 mode;
         bytes memory callData = abi.encodeWithSignature("getFeeManagerMode()");
         address feeManager = feeManagerContract();
@@ -43,7 +43,7 @@ contract RewardableBridge is Ownable, FeeTypes {
         return addressStorage[keccak256(abi.encodePacked("feeManagerContract"))];
     }
 
-    function setFeeManagerContract(address _feeManager) public onlyOwner {
+    function setFeeManagerContract(address _feeManager) external onlyOwner {
         require(_feeManager == address(0) || isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
     }

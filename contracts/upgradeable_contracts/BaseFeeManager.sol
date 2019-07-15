@@ -50,7 +50,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
 
     function distributeFeeFromSignatures(uint256 _fee) external;
 
-    function getFeeManagerMode() public pure returns(bytes4);
+    function getFeeManagerMode() external pure returns(bytes4);
 
     function random(uint256 _count) public view returns(uint256) {
         return uint256(blockhash(block.number.sub(1))) % _count;

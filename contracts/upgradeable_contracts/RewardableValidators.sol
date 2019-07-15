@@ -64,7 +64,7 @@ contract RewardableValidators is BaseBridgeValidators {
         emit ValidatorRemoved(_validator);
     }
 
-    function getValidatorRewardAddress(address _validator) public view returns (address) {
+    function getValidatorRewardAddress(address _validator) external view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("validatorsRewards", _validator))];
     }
 

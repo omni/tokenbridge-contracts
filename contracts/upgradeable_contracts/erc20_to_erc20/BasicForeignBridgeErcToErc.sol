@@ -34,7 +34,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         setInitialize();
     }
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 

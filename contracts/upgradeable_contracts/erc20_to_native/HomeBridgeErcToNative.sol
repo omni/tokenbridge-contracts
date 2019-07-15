@@ -50,7 +50,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) public returns(bool)
+    ) external returns(bool)
     {
         _initialize(
             _validatorContract,
@@ -83,7 +83,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         address _feeManager,
         uint256 _homeFee,
         uint256 _foreignFee
-    ) public returns(bool)
+    ) external returns(bool)
     {
         _initialize(
             _validatorContract,
@@ -106,7 +106,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         return isInitialized();
     }
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
     }
 
@@ -118,7 +118,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         return uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))];
     }
 
-    function setBlockRewardContract(address _blockReward) public onlyOwner {
+    function setBlockRewardContract(address _blockReward) external onlyOwner {
         require(isContract(_blockReward));
 
         // Before store the contract we need to make sure that it is the block reward contract in actual fact,

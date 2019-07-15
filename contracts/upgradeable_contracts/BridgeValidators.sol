@@ -10,7 +10,7 @@ contract BridgeValidators is BaseBridgeValidators {
         address[] _initialValidators,
         address _owner
     )
-        public
+        external
         returns (bool)
     {
         require(!isInitialized());

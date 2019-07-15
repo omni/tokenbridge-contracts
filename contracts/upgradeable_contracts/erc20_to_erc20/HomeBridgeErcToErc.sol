@@ -25,7 +25,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) public
+    ) external
       returns(bool)
     {
         _initialize (
@@ -59,7 +59,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         address _feeManager,
         uint256 _homeFee,
         uint256 _foreignFee
-    ) public
+    ) external
     returns(bool)
     {
         _rewardableInitialize (
@@ -153,7 +153,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 

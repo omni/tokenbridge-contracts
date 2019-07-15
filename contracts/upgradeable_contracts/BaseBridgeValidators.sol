@@ -25,14 +25,14 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     }
 
     function getBridgeValidatorsInterfacesVersion()
-    public
+    external
     pure
     returns (uint64 major, uint64 minor, uint64 patch)
     {
         return (2, 2, 0);
     }
 
-    function validatorList() public view returns (address[]) {
+    function validatorList() external view returns (address[]) {
         address [] memory list = new address[](validatorCount());
         uint256 counter = 0;
         address nextValidator = getNextValidator(F_ADDR);
@@ -100,7 +100,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
     }
 
-    function deployedAtBlock() public view returns (uint256) {
+    function deployedAtBlock() external view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 

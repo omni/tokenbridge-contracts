@@ -3,7 +3,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS, BN } = require('./setup')
-const { expectEventInLogs } = require('./helpers/helpers')
+const { expectEventInLogs, createAccounts } = require('./helpers/helpers')
 
 const ZERO = new BN(0)
 
@@ -47,6 +47,20 @@ contract('BridgeValidators', async accounts => {
       expect(major).to.be.bignumber.gte(ZERO)
       expect(minor).to.be.bignumber.gte(ZERO)
       expect(patch).to.be.bignumber.gte(ZERO)
+    })
+    it('should fail if exceed amount of validators', async () => {
+      // Given
+      const validators = createAccounts(web3, 101)
+
+      // When
+      await bridgeValidators
+        .initialize(99, validators, accounts[2], { from: accounts[2] })
+        .should.be.rejectedWith(ERROR_MSG)
+      await bridgeValidators.initialize(99, validators.slice(0, 100), accounts[2], { from: accounts[2] }).should.be
+        .fulfilled
+
+      // Then
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('100')
     })
   })
 

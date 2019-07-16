@@ -9,6 +9,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     using SafeMath for uint256;
 
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    uint256 internal constant MAX_VALIDATORS = 100;
 
     event ValidatorAdded (address indexed validator);
     event ValidatorRemoved (address indexed validator);

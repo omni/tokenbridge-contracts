@@ -69,11 +69,8 @@ contract ERC677BridgeToken is
 
     function callAfterTransfer(address _from, address _to, uint256 _value) internal {
         if (isContract(_to) && !contractFallback(_from, _to, _value, new bytes(0))) {
-            if (_to == bridgeContract) {
-                revert();
-            } else {
-                emit ContractFallbackCallFailed(_from, _to, _value);
-            }
+            require(_to != bridgeContract);
+            emit ContractFallbackCallFailed(_from, _to, _value);
         }
     }
 

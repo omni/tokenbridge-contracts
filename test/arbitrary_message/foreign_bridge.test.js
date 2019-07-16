@@ -270,11 +270,11 @@ contract('ForeignAMB', async accounts => {
         requiredBlockConfirmations,
         owner
       ).should.be.fulfilled
-      expect(await proxy.proxyOwner()).to.be.equal(owner)
+      expect(await proxy.upgradeabilityOwner()).to.be.equal(owner)
 
       const newOwner = accounts[1]
       await proxy.transferProxyOwnership(newOwner).should.be.fulfilled
-      expect(await proxy.proxyOwner()).to.be.equal(newOwner)
+      expect(await proxy.upgradeabilityOwner()).to.be.equal(newOwner)
     })
   })
   describe('requireToPassMessage', () => {

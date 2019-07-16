@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../../libraries/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 
 contract MessageDelivery {

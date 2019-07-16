@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
-import "../IBridgeValidators.sol";
+
+import "../interfaces/IBridgeValidators.sol";
 
 
 library ArbitraryMessage {

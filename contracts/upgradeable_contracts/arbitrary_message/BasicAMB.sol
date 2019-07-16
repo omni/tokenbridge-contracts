@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../../upgradeability/EternalStorage.sol";
-import "../../libraries/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../Validatable.sol";
 import "../BasicBridge.sol";
 
@@ -31,7 +31,7 @@ contract BasicAMB is BasicBridge {
         bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = DEFRAYAL_MODE;
         bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))] = DEFRAYAL_MODE;
         setOwner(_owner);
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 

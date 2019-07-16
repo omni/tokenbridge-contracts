@@ -5,10 +5,10 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
-import "./BasicBridge.sol";
+import "./BasicTokenBridge.sol";
 
 
-contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
+contract BasicHomeBridge is EternalStorage, Validatable, BasicTokenBridge {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);

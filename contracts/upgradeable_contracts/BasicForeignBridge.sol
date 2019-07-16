@@ -5,9 +5,9 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
-import "./BasicBridge.sol";
+import "./BasicTokenBridge.sol";
 
-contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge {
+contract BasicForeignBridge is EternalStorage, Validatable, BasicTokenBridge {
     using SafeMath for uint256;
     /// triggered when relay of deposit from HomeBridge is complete
     event RelayedMessage(address recipient, uint value, bytes32 transactionHash);

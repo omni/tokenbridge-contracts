@@ -126,7 +126,13 @@ let validations = {
   VALIDATORS: addressesValidator()
 }
 
-if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
+if (BRIDGE_MODE === 'ARBITRARY_MESSAGE') {
+  validations = {
+    ...validations,
+    HOME_AMB_SUBSIDIZED_MODE: envalid.bool(),
+    FOREIGN_AMB_SUBSIDIZED_MODE: envalid.bool()
+  }
+} else {
   validations = {
     ...validations,
     HOME_DAILY_LIMIT: bigNumValidator(),
@@ -220,12 +226,22 @@ checkValidators(env.VALIDATORS, env.REQUIRED_NUMBER_OF_VALIDATORS)
 checkGasPrices(env.FOREIGN_GAS_PRICE, foreignPrefix)
 checkBlockConfirmations(env.HOME_REQUIRED_BLOCK_CONFIRMATIONS, homePrefix)
 checkBlockConfirmations(env.FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS, foreignPrefix)
-checkLimits(
-  env.HOME_MIN_AMOUNT_PER_TX,
-  env.HOME_MAX_AMOUNT_PER_TX,
-  env.HOME_DAILY_LIMIT,
-  homePrefix
-)
+
+if (env.BRIDGE_MODE === 'ARBITRARY_MESSAGE') {
+  if (env.HOME_MAX_AMOUNT_PER_TX.isZero()) {
+    throw new Error(`HOME_MAX_AMOUNT_PER_TX should be greater than 0`)
+  }
+  if (env.FOREIGN_MAX_AMOUNT_PER_TX.isZero()) {
+    throw new Error(`FOREIGN_MAX_AMOUNT_PER_TX should be greater than 0`)
+  }
+} else {
+  checkLimits(
+    env.HOME_MIN_AMOUNT_PER_TX,
+    env.HOME_MAX_AMOUNT_PER_TX,
+    env.HOME_DAILY_LIMIT,
+    homePrefix
+  )
+}
 
 if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
   checkGasPrices(env.HOME_GAS_PRICE, homePrefix)

@@ -8,6 +8,14 @@ contract MessageProcessor is BalanceHandler {
 
     uint256 internal constant PASS_MESSAGE_GAS = 100000;
 
+    function messageSender() external view returns(address) {
+        return addressStorage[keccak256(abi.encodePacked("messageSender"))];
+    }
+
+    function setMessageSender(address _sender) internal {
+        addressStorage[keccak256(abi.encodePacked("messageSender"))] = _sender;
+    }
+
     function processMessage(bytes _data, bool applyDataOffset) internal {
         address sender;
         address executor;
@@ -61,8 +69,10 @@ contract MessageProcessor is BalanceHandler {
                 setAccountForAction(_sender);
             }
         }
-
-        return _contract.call.gas(_gas)(_data);
+        setMessageSender(_sender);
+        bool status = _contract.call.gas(_gas)(_data);
+        setMessageSender(address(0));
+        return status;
     }
 
     function isMessageProcessorSubsidizedMode() internal returns(bool);

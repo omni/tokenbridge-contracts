@@ -1,13 +1,16 @@
 pragma solidity 0.4.24;
 
 import "../upgradeable_contracts/arbitrary_message/MessageDelivery.sol";
+import "./IAMB.sol";
 
 contract Box {
   event dataEvent(bytes selectorData);
   uint256 public value;
+  address public lastSender;
 
   function setValue(uint256 _value) public {
     value = _value;
+    lastSender = IAMB(msg.sender).messageSender();
   }
 
   function methodWillFail() public {

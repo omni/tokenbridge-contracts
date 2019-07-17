@@ -373,8 +373,9 @@ contract('ForeignAMB', async accounts => {
       })
 
       // check Box value
-      const boxValue = await box.value()
-      boxValue.should.be.bignumber.equal('3')
+      expect(await box.value()).to.be.bignumber.equal('3')
+      expect(await box.lastSender()).to.be.equal(user)
+      expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('should succeed on defrayal mode', async () => {
       const user = accounts[8]
@@ -419,8 +420,9 @@ contract('ForeignAMB', async accounts => {
       })
 
       // check Box value
-      const boxValue = await box.value()
-      boxValue.should.be.bignumber.equal('3')
+      expect(await box.value()).to.be.bignumber.equal('3')
+      expect(await box.lastSender()).to.be.equal(user)
+      expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('should succeed on defrayal mode using message with gas price parameter', async () => {
       const user = accounts[8]
@@ -467,8 +469,9 @@ contract('ForeignAMB', async accounts => {
       })
 
       // check Box value
-      const boxValue = await box.value()
-      boxValue.should.be.bignumber.equal('3')
+      expect(await box.value()).to.be.bignumber.equal('3')
+      expect(await box.lastSender()).to.be.equal(user)
+      expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('test with 3 signatures required', async () => {
       // set validator
@@ -545,8 +548,9 @@ contract('ForeignAMB', async accounts => {
       })
 
       // check Box value
-      const boxValue = await box.value()
-      boxValue.should.be.bignumber.equal('3')
+      expect(await box.value()).to.be.bignumber.equal('3')
+      expect(await box.lastSender()).to.be.equal(user)
+      expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('should not allow to double execute signatures', async () => {
       const user = accounts[8]

@@ -35,23 +35,23 @@ contract BasicAMB is BasicBridge {
         return isInitialized();
     }
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("arbitrary-message-bridge-core")));
     }
 
-    function setSubsidizedModeForHomeToForeign() public onlyOwner {
+    function setSubsidizedModeForHomeToForeign() external onlyOwner {
         bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = SUBSIDIZED_MODE;
     }
 
-    function setDefrayalModeForHomeToForeign() public onlyOwner {
+    function setDefrayalModeForHomeToForeign() external onlyOwner {
         bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))] = DEFRAYAL_MODE;
     }
 
-    function setSubsidizedModeForForeignToHome() public onlyOwner {
+    function setSubsidizedModeForForeignToHome() external onlyOwner {
         bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))] = SUBSIDIZED_MODE;
     }
 
-    function setDefrayalModeForForeignToHome() public onlyOwner {
+    function setDefrayalModeForForeignToHome() external onlyOwner {
         bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))] = DEFRAYAL_MODE;
     }
 

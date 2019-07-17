@@ -24,7 +24,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677B
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
         address _owner
-    ) public returns(bool) {
+    ) external returns(bool) {
         _initialize(
             _validatorContract,
             _erc677token,
@@ -54,7 +54,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677B
         address _owner,
         address _feeManager,
         uint256 _homeFee
-    ) public returns(bool) {
+    ) external returns(bool) {
         _initialize(
             _validatorContract,
             _erc677token,
@@ -74,7 +74,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677B
         return isInitialized();
     }
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 

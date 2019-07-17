@@ -7,7 +7,7 @@ import "../ValidatorsFeeManager.sol";
 
 contract FeeManagerErcToNative is ValidatorsFeeManager {
 
-    function getFeeManagerMode() public pure returns(bytes4) {
+    function getFeeManagerMode() external pure returns(bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
     }
 

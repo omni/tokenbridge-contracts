@@ -145,20 +145,6 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
           '3',
           '2',
           '1',
-          0,
-          requireBlockConfirmations,
-          token.address,
-          foreignDailyLimit,
-          foreignMaxPerTx,
-          owner
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-      await homeContract
-        .initialize(
-          validatorContract.address,
-          '3',
-          '2',
-          '1',
           gasPrice,
           0,
           token.address,
@@ -250,6 +236,27 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         owner
       ).should.be.fulfilled
 
+      expect(await homeContract.isInitialized()).to.be.equal(true)
+    })
+    it('can initialize with zero gas price ', async () => {
+      // Given
+      expect(await homeContract.isInitialized()).to.be.equal(false)
+
+      // When
+      await homeContract.initialize(
+        validatorContract.address,
+        '3',
+        '2',
+        '1',
+        0,
+        requireBlockConfirmations,
+        token.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner
+      ).should.be.fulfilled
+
+      // Then
       expect(await homeContract.isInitialized()).to.be.equal(true)
     })
   })
@@ -1099,22 +1106,6 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         halfEther,
         minPerTx,
         gasPrice,
-        requireBlockConfirmations,
-        token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
-        owner,
-        feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
-      ).should.be.rejected
-      await homeBridge.rewardableInitialize(
-        rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
-        0,
         requireBlockConfirmations,
         token.address,
         foreignDailyLimit,

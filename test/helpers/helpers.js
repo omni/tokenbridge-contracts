@@ -162,3 +162,13 @@ function isBN(object) {
 }
 
 module.exports.expectEventInLogs = expectEventInLogs
+
+function createAccounts(web3, amount) {
+  const array = []
+  for (let i = 0; i < amount; i++) {
+    array[i] = web3.eth.accounts.create().address
+  }
+  return array
+}
+
+module.exports.createAccounts = createAccounts

@@ -58,12 +58,12 @@ contract BasicTokenBridge is BasicBridge {
         uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = _value;
     }
 
-    function setDailyLimit(uint256 _dailyLimit) public onlyOwner {
+    function setDailyLimit(uint256 _dailyLimit) external onlyOwner {
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
         emit DailyLimitChanged(_dailyLimit);
     }
 
-    function setExecutionDailyLimit(uint256 _dailyLimit) public onlyOwner {
+    function setExecutionDailyLimit(uint256 _dailyLimit) external onlyOwner {
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _dailyLimit;
         emit ExecutionDailyLimitChanged(_dailyLimit);
     }

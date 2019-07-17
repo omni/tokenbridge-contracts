@@ -20,7 +20,7 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
         address _owner
-    ) public returns(bool) {
+    ) external returns(bool) {
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
 
         _initialize(

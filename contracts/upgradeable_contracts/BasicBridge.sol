@@ -14,31 +14,31 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
 
-    function getBridgeInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
+    function getBridgeInterfacesVersion() external pure returns(uint64 major, uint64 minor, uint64 patch) {
         return (2, 2, 0);
     }
 
-    function setGasPrice(uint256 _gasPrice) public onlyOwner {
+    function setGasPrice(uint256 _gasPrice) external onlyOwner {
         require(_gasPrice > 0);
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
         emit GasPriceChanged(_gasPrice);
     }
 
-    function gasPrice() public view returns(uint256) {
+    function gasPrice() external view returns(uint256) {
         return uintStorage[keccak256(abi.encodePacked("gasPrice"))];
     }
 
-    function setRequiredBlockConfirmations(uint256 _blockConfirmations) public onlyOwner {
+    function setRequiredBlockConfirmations(uint256 _blockConfirmations) external onlyOwner {
         require(_blockConfirmations > 0);
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _blockConfirmations;
         emit RequiredBlockConfirmationChanged(_blockConfirmations);
     }
 
-    function requiredBlockConfirmations() public view returns(uint256) {
+    function requiredBlockConfirmations() external view returns(uint256) {
         return uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))];
     }
 
-    function deployedAtBlock() public view returns(uint256) {
+    function deployedAtBlock() external view returns(uint256) {
         return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 

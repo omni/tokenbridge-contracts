@@ -14,7 +14,7 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc {
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
         address _owner
-    ) public returns(bool) {
+    ) external returns(bool) {
         _initialize(
             _validatorContract,
             _erc20token,

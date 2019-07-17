@@ -18,7 +18,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
         address _owner
-    ) public returns(bool) {
+    ) external returns(bool) {
         require(!isInitialized());
         require(isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
@@ -38,7 +38,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         return isInitialized();
     }
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
     }
 

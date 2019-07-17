@@ -19,7 +19,7 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         uint256 _homeFee,
         uint256 _foreignFee,
         address _blockReward
-    ) public
+    ) external
     returns(bool)
     {
         _rewardableInitialize (
@@ -59,7 +59,7 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         return blockReward;
     }
 
-    function setBlockRewardContract(address _blockReward) public onlyOwner {
+    function setBlockRewardContract(address _blockReward) external onlyOwner {
         address feeManager = feeManagerContract();
         _setBlockRewardContract(feeManager, _blockReward);
     }

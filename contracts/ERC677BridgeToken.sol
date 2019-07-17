@@ -23,7 +23,7 @@ contract ERC677BridgeToken is
         uint8 _decimals)
     public DetailedERC20(_name, _symbol, _decimals) {}
 
-    function setBridgeContract(address _bridgeContract) onlyOwner public {
+    function setBridgeContract(address _bridgeContract) onlyOwner external {
         require(isContract(_bridgeContract));
         bridgeContract = _bridgeContract;
     }
@@ -45,7 +45,7 @@ contract ERC677BridgeToken is
         return true;
     }
 
-    function getTokenInterfacesVersion() public pure returns(uint64 major, uint64 minor, uint64 patch) {
+    function getTokenInterfacesVersion() external pure returns(uint64 major, uint64 minor, uint64 patch) {
         return (2, 1, 0);
     }
 

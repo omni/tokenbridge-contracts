@@ -37,7 +37,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) public returns(bool)
+    ) external returns(bool)
     {
         _initialize(
             _validatorContract,
@@ -67,7 +67,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         address _feeManager,
         uint256 _homeFee,
         uint256 _foreignFee
-    ) public returns(bool)
+    ) external returns(bool)
     {
         _initialize(
             _validatorContract,
@@ -88,7 +88,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         return isInitialized();
     }
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns(bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 

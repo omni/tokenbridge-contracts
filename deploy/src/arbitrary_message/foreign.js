@@ -66,7 +66,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   }
   nonce++
 
-  if (HOME_AMB_SUBSIDIZED_MODE === 'true') {
+  if (HOME_AMB_SUBSIDIZED_MODE) {
     console.log('setting subsidized mode for home side')
     const homeBridgeSubsidizedModeData = await bridge.methods
       .setSubsidizedModeForForeignToHome()
@@ -93,7 +93,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     nonce++
   }
 
-  if (FOREIGN_AMB_SUBSIDIZED_MODE === 'true') {
+  if (FOREIGN_AMB_SUBSIDIZED_MODE) {
     console.log('setting subsidized mode for foreign side')
     const foreignBridgeSubsidizedModeData = await bridge.methods
       .setSubsidizedModeForHomeToForeign()

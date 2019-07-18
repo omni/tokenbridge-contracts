@@ -42,7 +42,7 @@ contract MessageProcessor is BalanceHandler {
             require(!isMessageProcessorSubsidizedMode());
             status = _defrayAndPassMessage(sender, executor, data, gasLimit);
         } else {
-            revert();
+            status = false;
         }
 
         emitEventOnMessageProcessed(sender, executor, txHash, status);

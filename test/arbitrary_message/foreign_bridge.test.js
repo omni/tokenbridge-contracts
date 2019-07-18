@@ -117,13 +117,13 @@ contract('ForeignAMB', async accounts => {
       const defrayalHash = web3.utils.toHex('AMB-defrayal-mode')
       const subsidizedHash = web3.utils.toHex('AMB-subsidized-mode')
 
-      const defrayalMode = await foreignBridge.homeToForeignMode()
-      defrayalMode.should.be.equal(defrayalHash)
+      expect(await foreignBridge.homeToForeignMode()).to.be.equal(defrayalHash)
 
       await foreignBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled
+      expect(await foreignBridge.homeToForeignMode()).to.be.equal(subsidizedHash)
 
-      const subsidizedMode = await foreignBridge.homeToForeignMode()
-      subsidizedMode.should.be.equal(subsidizedHash)
+      await foreignBridge.setDefrayalModeForHomeToForeign().should.be.fulfilled
+      expect(await foreignBridge.homeToForeignMode()).to.be.equal(defrayalHash)
     })
     it('should return foreignToHomeMode', async () => {
       const foreignBridge = await ForeignBridge.new()
@@ -133,13 +133,13 @@ contract('ForeignAMB', async accounts => {
       const defrayalHash = web3.utils.toHex('AMB-defrayal-mode')
       const subsidizedHash = web3.utils.toHex('AMB-subsidized-mode')
 
-      const defrayalMode = await foreignBridge.foreignToHomeMode()
-      defrayalMode.should.be.equal(defrayalHash)
+      expect(await foreignBridge.foreignToHomeMode()).to.be.equal(defrayalHash)
 
       await foreignBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled
+      expect(await foreignBridge.foreignToHomeMode()).to.be.equal(subsidizedHash)
 
-      const subsidizedMode = await foreignBridge.foreignToHomeMode()
-      subsidizedMode.should.be.equal(subsidizedHash)
+      await foreignBridge.setDefrayalModeForForeignToHome().should.be.fulfilled
+      expect(await foreignBridge.foreignToHomeMode()).to.be.equal(defrayalHash)
     })
   })
   describe('initialize', () => {
@@ -290,11 +290,11 @@ contract('ForeignAMB', async accounts => {
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
     })
     it('call requireToPassMessage(address, bytes, uint256, bytes1)', async () => {
-      const { logs } = await foreignBridge.requireToPassMessage(
+      const { logs } = await foreignBridge.methods['requireToPassMessage(address,bytes,uint256,bytes1)'](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         1535604485,
-        1
+        '0x01'
       )
       logs.length.should.be.equal(1)
       logs[0].event.should.be.equal('UserRequestForAffirmation')
@@ -377,7 +377,7 @@ contract('ForeignAMB', async accounts => {
       expect(await box.lastSender()).to.be.equal(user)
       expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
-    it('should succeed on defrayal mode', async () => {
+    it('should succeed on defrayal mode using message with oracle gas price', async () => {
       const user = accounts[8]
 
       const boxInitialValue = await box.value()
@@ -390,11 +390,11 @@ contract('ForeignAMB', async accounts => {
       })
 
       // Use these calls to simulate home bridge on home network
-      const resultPassMessageTx = await foreignBridge.requireToPassMessage(
+      const resultPassMessageTx = await foreignBridge.methods['requireToPassMessage(address,bytes,uint256,bytes1)'](
         box.address,
         setValueData,
         821254,
-        gasPrice,
+        '0x01',
         {
           from: user
         }
@@ -729,6 +729,39 @@ contract('ForeignAMB', async accounts => {
       await foreignBridge
         .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[1], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
+    })
+    it('status of RelayedMessage should be false if invalid dataType', async () => {
+      // set foreign bridge on subsidized mode
+      await foreignBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled
+
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(ZERO)
+
+      // Use these calls to simulate home bridge on Home network
+      await foreignBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, 1, {
+        from: user
+      })
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const updatedMessage = `${message.slice(0, 210)}06${message.slice(212, message.length)}`
+
+      const signature = await sign(authorities[0], updatedMessage)
+      const vrs = signatureToVRS(signature)
+
+      const { logs } = await foreignBridge.executeSignatures(updatedMessage, [vrs.v], [vrs.r], [vrs.s], {
+        from: authorities[0]
+      }).should.be.fulfilled
+      expectEventInLogs(logs, 'RelayedMessage', {
+        sender: user,
+        executor: box.address,
+        transactionHash: resultPassMessageTx.tx,
+        status: false
+      })
     })
   })
 })

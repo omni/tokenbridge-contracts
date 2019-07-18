@@ -128,9 +128,6 @@ library ArbitraryMessage {
                 srcdataptr := add(srcdataptr, 0x01)
                 if eq(applyDataOffset, 1) { dataOffset := sub(srcdataptr, 10) }
             }
-            default {
-                revert(0, 1)
-            }
             datasize := sub(mload(_data), srcdataptr)
         }
         data = new bytes(datasize);

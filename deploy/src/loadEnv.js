@@ -151,6 +151,16 @@ if (BRIDGE_MODE === 'ARBITRARY_MESSAGE') {
       `Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`
     )
   }
+
+  if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
+    validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
+    validations = {
+      ...validations,
+      VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
+      HOME_TRANSACTIONS_FEE: envalid.num(),
+      FOREIGN_TRANSACTIONS_FEE: envalid.num()
+    }
+  }
 }
 
 if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
@@ -206,16 +216,6 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     BLOCK_REWARD_ADDRESS: addressValidator({
       default: ZERO_ADDRESS
     })
-  }
-}
-
-if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
-  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
-  validations = {
-    ...validations,
-    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
-    HOME_TRANSACTIONS_FEE: envalid.num(),
-    FOREIGN_TRANSACTIONS_FEE: envalid.num()
   }
 }
 

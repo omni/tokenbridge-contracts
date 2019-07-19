@@ -5,7 +5,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Upgradeable.sol";
 import "./RewardableBridge.sol";
 
-
 contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable {
     using SafeMath for uint256;
 
@@ -29,11 +28,11 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable {
         setFixedAssets(txHash);
     }
 
-    function outOfLimitAmount() public view returns(uint256) {
+    function outOfLimitAmount() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))];
     }
 
-    function fixedAssets(bytes32 _txHash) public view returns(bool) {
+    function fixedAssets(bytes32 _txHash) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("fixedAssets", _txHash))];
     }
 
@@ -41,7 +40,7 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable {
         uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))] = _value;
     }
 
-    function txAboveLimits(bytes32 _txHash) internal view returns(address recipient, uint256 value) {
+    function txAboveLimits(bytes32 _txHash) internal view returns (address recipient, uint256 value) {
         recipient = addressStorage[keccak256(abi.encodePacked("txOutOfLimitRecipient", _txHash))];
         value = uintStorage[keccak256(abi.encodePacked("txOutOfLimitValue", _txHash))];
     }

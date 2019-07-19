@@ -3,7 +3,6 @@ pragma solidity 0.4.24;
 import "./EternalStorage.sol";
 import "./OwnedUpgradeabilityProxy.sol";
 
-
 /**
  * @title EternalStorageProxy
  * @dev This proxy holds the storage of the token contract and delegates every call to the current implementation set.

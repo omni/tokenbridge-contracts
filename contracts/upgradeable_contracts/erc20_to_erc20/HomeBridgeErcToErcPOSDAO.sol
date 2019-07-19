@@ -3,8 +3,7 @@ pragma solidity 0.4.24;
 import "./HomeBridgeErcToErc.sol";
 
 contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
-
-    function rewardableInitialize (
+    function rewardableInitialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -19,10 +18,8 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         uint256 _homeFee,
         uint256 _foreignFee,
         address _blockReward
-    ) external
-    returns(bool)
-    {
-        _rewardableInitialize (
+    ) external returns (bool) {
+        _rewardableInitialize(
             _validatorContract,
             _dailyLimit,
             _maxPerTx,
@@ -43,7 +40,7 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         return isInitialized();
     }
 
-    function blockRewardContract() public view returns(address) {
+    function blockRewardContract() public view returns (address) {
         address blockReward;
         address feeManager = feeManagerContract();
         bytes memory callData = abi.encodeWithSignature("blockRewardContract()");
@@ -53,7 +50,9 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
             blockReward := mload(0)
 
             switch result
-            case 0 { revert(0, 0) }
+                case 0 {
+                    revert(0, 0)
+                }
         }
 
         return blockReward;

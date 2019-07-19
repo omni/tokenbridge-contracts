@@ -1,9 +1,7 @@
 pragma solidity 0.4.24;
 
-
 import "../BasicForeignBridge.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
-
 
 contract BasicForeignBridgeErcToErc is BasicForeignBridge {
     function _initialize(
@@ -34,7 +32,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         setInitialize();
     }
 
-    function getBridgeMode() external pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns (bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 
@@ -43,7 +41,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         super.claimTokens(_token, _to);
     }
 
-    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns(bool){
+    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         return erc20token().transfer(_recipient, _amount);
     }
@@ -52,7 +50,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         revert();
     }
 
-    function erc20token() public view returns(ERC20Basic);
+    function erc20token() public view returns (ERC20Basic);
 
     function setErc20token(address _token) internal;
 }

@@ -5,7 +5,6 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../interfaces/IRewardableValidators.sol";
 import "./FeeTypes.sol";
 
-
 contract BaseFeeManager is EternalStorage, FeeTypes {
     using SafeMath for uint256;
 
@@ -15,7 +14,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     // This is not a real fee value but a relative value used to calculate the fee percentage
     uint256 internal constant MAX_FEE = 1 ether;
 
-    function calculateFee(uint256 _value, bool _recover, bytes32 _feeType) public view returns(uint256) {
+    function calculateFee(uint256 _value, bool _recover, bytes32 _feeType) public view returns (uint256) {
         uint256 fee = _feeType == HOME_FEE ? getHomeFee() : getForeignFee();
         if (!_recover) {
             return _value.mul(fee).div(MAX_FEE);
@@ -33,7 +32,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
         emit HomeFeeUpdated(_fee);
     }
 
-    function getHomeFee() public view returns(uint256) {
+    function getHomeFee() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("homeFee"))];
     }
 
@@ -42,7 +41,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
         emit ForeignFeeUpdated(_fee);
     }
 
-    function getForeignFee() public view returns(uint256) {
+    function getForeignFee() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("foreignFee"))];
     }
 
@@ -50,9 +49,9 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
 
     function distributeFeeFromSignatures(uint256 _fee) external;
 
-    function getFeeManagerMode() external pure returns(bytes4);
+    function getFeeManagerMode() external pure returns (bytes4);
 
-    function random(uint256 _count) public view returns(uint256) {
+    function random(uint256 _count) public view returns (uint256) {
         return uint256(blockhash(block.number.sub(1))) % _count;
     }
 }

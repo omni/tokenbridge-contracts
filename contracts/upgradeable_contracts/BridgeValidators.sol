@@ -2,14 +2,8 @@ pragma solidity 0.4.24;
 
 import "./BaseBridgeValidators.sol";
 
-
 contract BridgeValidators is BaseBridgeValidators {
-
-    function initialize(
-        uint256 _requiredSignatures,
-        address[] _initialValidators,
-        address _owner
-    )
+    function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
         external
         returns (bool)
     {

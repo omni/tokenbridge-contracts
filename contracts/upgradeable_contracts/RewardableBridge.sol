@@ -3,13 +3,11 @@ pragma solidity 0.4.24;
 import "./Ownable.sol";
 import "./FeeTypes.sol";
 
-
 contract RewardableBridge is Ownable, FeeTypes {
-
     event FeeDistributedFromAffirmation(uint256 feeAmount, bytes32 indexed transactionHash);
     event FeeDistributedFromSignatures(uint256 feeAmount, bytes32 indexed transactionHash);
 
-    function _getFee(bytes32 _feeType) internal view returns(uint256) {
+    function _getFee(bytes32 _feeType) internal view returns (uint256) {
         uint256 fee;
         address feeManager = feeManagerContract();
         string memory method = _feeType == HOME_FEE ? "getHomeFee()" : "getForeignFee()";
@@ -20,12 +18,14 @@ contract RewardableBridge is Ownable, FeeTypes {
             fee := mload(0)
 
             switch result
-            case 0 { revert(0, 0) }
+                case 0 {
+                    revert(0, 0)
+                }
         }
         return fee;
     }
 
-    function getFeeManagerMode() external view returns(bytes4) {
+    function getFeeManagerMode() external view returns (bytes4) {
         bytes4 mode;
         bytes memory callData = abi.encodeWithSignature("getFeeManagerMode()");
         address feeManager = feeManagerContract();
@@ -34,12 +34,14 @@ contract RewardableBridge is Ownable, FeeTypes {
             mode := mload(0)
 
             switch result
-            case 0 { revert(0, 0) }
+                case 0 {
+                    revert(0, 0)
+                }
         }
         return mode;
     }
 
-    function feeManagerContract() public view returns(address) {
+    function feeManagerContract() public view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("feeManagerContract"))];
     }
 
@@ -53,22 +55,34 @@ contract RewardableBridge is Ownable, FeeTypes {
         require(_feeManager.delegatecall(abi.encodeWithSignature(method, _fee)));
     }
 
-    function isContract(address _addr) internal view returns (bool)
-    {
-        uint length;
-        assembly { length := extcodesize(_addr) }
+    function isContract(address _addr) internal view returns (bool) {
+        uint256 length;
+        assembly {
+            length := extcodesize(_addr)
+        }
         return length > 0;
     }
 
-    function calculateFee(uint256 _value, bool _recover, address _impl, bytes32 _feeType) internal view returns(uint256) {
+    function calculateFee(uint256 _value, bool _recover, address _impl, bytes32 _feeType)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 fee;
-        bytes memory callData = abi.encodeWithSignature("calculateFee(uint256,bool,bytes32)", _value, _recover, _feeType);
+        bytes memory callData = abi.encodeWithSignature(
+            "calculateFee(uint256,bool,bytes32)",
+            _value,
+            _recover,
+            _feeType
+        );
         assembly {
             let result := callcode(gas, _impl, 0x0, add(callData, 0x20), mload(callData), 0, 32)
             fee := mload(0)
 
             switch result
-            case 0 { revert(0, 0) }
+                case 0 {
+                    revert(0, 0)
+                }
         }
         return fee;
     }

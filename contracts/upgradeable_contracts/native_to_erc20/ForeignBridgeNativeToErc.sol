@@ -7,9 +7,12 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 import "./RewardableForeignBridgeNativeToErc.sol";
 
-
-contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677BridgeForBurnableMintableToken, RewardableForeignBridgeNativeToErc {
-
+contract ForeignBridgeNativeToErc is
+    ERC677Receiver,
+    BasicForeignBridge,
+    ERC677BridgeForBurnableMintableToken,
+    RewardableForeignBridgeNativeToErc
+{
     /// Event created on money withdraw.
     event UserRequestForAffirmation(address recipient, uint256 value);
 
@@ -24,7 +27,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677B
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
         address _owner
-    ) external returns(bool) {
+    ) external returns (bool) {
         _initialize(
             _validatorContract,
             _erc677token,
@@ -54,7 +57,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677B
         address _owner,
         address _feeManager,
         uint256 _homeFee
-    ) external returns(bool) {
+    ) external returns (bool) {
         _initialize(
             _validatorContract,
             _erc677token,
@@ -74,7 +77,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677B
         return isInitialized();
     }
 
-    function getBridgeMode() external pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns (bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 
@@ -114,7 +117,7 @@ contract ForeignBridgeNativeToErc is ERC677Receiver, BasicForeignBridge, ERC677B
         setOwner(_owner);
     }
 
-    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns(bool) {
+    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         uint256 valueToMint = _amount;
         address feeManager = feeManagerContract();

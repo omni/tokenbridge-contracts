@@ -6,24 +6,14 @@ import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./interfaces/IBurnableMintableERC677Token.sol";
 import "./upgradeable_contracts/Claimable.sol";
 
-contract ERC677BridgeToken is
-    IBurnableMintableERC677Token,
-    DetailedERC20,
-    BurnableToken,
-    MintableToken,
-    Claimable {
-
+contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, BurnableToken, MintableToken, Claimable {
     address public bridgeContract;
 
-    event ContractFallbackCallFailed(address from, address to, uint value);
+    event ContractFallbackCallFailed(address from, address to, uint256 value);
 
-    constructor(
-        string _name,
-        string _symbol,
-        uint8 _decimals)
-    public DetailedERC20(_name, _symbol, _decimals) {}
+    constructor(string _name, string _symbol, uint8 _decimals) public DetailedERC20(_name, _symbol, _decimals) {}
 
-    function setBridgeContract(address _bridgeContract) onlyOwner external {
+    function setBridgeContract(address _bridgeContract) external onlyOwner {
         require(isContract(_bridgeContract));
         bridgeContract = _bridgeContract;
     }
@@ -33,9 +23,7 @@ contract ERC677BridgeToken is
         _;
     }
 
-    function transferAndCall(address _to, uint _value, bytes _data)
-        external validRecipient(_to) returns (bool)
-    {
+    function transferAndCall(address _to, uint256 _value, bytes _data) external validRecipient(_to) returns (bool) {
         require(superTransfer(_to, _value));
         emit Transfer(msg.sender, _to, _value, _data);
 
@@ -45,17 +33,15 @@ contract ERC677BridgeToken is
         return true;
     }
 
-    function getTokenInterfacesVersion() external pure returns(uint64 major, uint64 minor, uint64 patch) {
+    function getTokenInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (2, 1, 0);
     }
 
-    function superTransfer(address _to, uint256 _value) internal returns(bool)
-    {
+    function superTransfer(address _to, uint256 _value) internal returns (bool) {
         return super.transfer(_to, _value);
     }
 
-    function transfer(address _to, uint256 _value) public returns (bool)
-    {
+    function transfer(address _to, uint256 _value) public returns (bool) {
         require(superTransfer(_to, _value));
         callAfterTransfer(msg.sender, _to, _value);
         return true;
@@ -74,17 +60,15 @@ contract ERC677BridgeToken is
         }
     }
 
-    function contractFallback(address _from, address _to, uint _value, bytes _data) private returns(bool) {
-        return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)",  _from, _value, _data));
+    function contractFallback(address _from, address _to, uint256 _value, bytes _data) private returns (bool) {
+        return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)", _from, _value, _data));
     }
 
-    function isContract(address _addr)
-        internal
-        view
-        returns (bool)
-    {
-        uint length;
-        assembly { length := extcodesize(_addr) }
+    function isContract(address _addr) internal view returns (bool) {
+        uint256 length;
+        assembly {
+            length := extcodesize(_addr)
+        }
         return length > 0;
     }
 

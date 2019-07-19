@@ -3,12 +3,11 @@ pragma solidity 0.4.24;
 import "../BlockRewardFeeManager.sol";
 
 contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
-
-    function getFeeManagerMode() external pure returns(bytes4) {
+    function getFeeManagerMode() external pure returns (bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
     }
 
-    function blockRewardContract() external view returns(address) {
+    function blockRewardContract() external view returns (address) {
         return _blockRewardContract();
     }
 
@@ -19,7 +18,8 @@ contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
         // call a specific method from the contract that should return a specific value
         bool isBlockRewardContract = false;
         if (_blockReward.call(abi.encodeWithSignature("blockRewardContractId()"))) {
-            isBlockRewardContract = IBlockReward(_blockReward).blockRewardContractId() == bytes4(keccak256("blockReward"));
+            isBlockRewardContract =
+                IBlockReward(_blockReward).blockRewardContractId() == bytes4(keccak256("blockReward"));
         } else if (_blockReward.call(abi.encodeWithSignature("bridgesAllowedLength()"))) {
             isBlockRewardContract = IBlockReward(_blockReward).bridgesAllowedLength() != 0;
         }
@@ -32,10 +32,11 @@ contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
         blockReward.addBridgeTokenFeeReceivers(_fee);
     }
 
-    function isContract(address _addr) internal view returns (bool)
-    {
-        uint length;
-        assembly { length := extcodesize(_addr) }
+    function isContract(address _addr) internal view returns (bool) {
+        uint256 length;
+        assembly {
+            length := extcodesize(_addr)
+        }
         return length > 0;
     }
 }

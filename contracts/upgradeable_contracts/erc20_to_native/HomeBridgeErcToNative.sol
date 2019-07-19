@@ -8,12 +8,10 @@ import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToNative.sol";
 
-
 contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
-
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
-    function () public payable {
+    function() public payable {
         nativeTransfer();
     }
 
@@ -39,7 +37,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         emit UserRequestForSignature(msg.sender, valueToTransfer);
     }
 
-    function initialize (
+    function initialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -50,8 +48,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) external returns(bool)
-    {
+    ) external returns (bool) {
         _initialize(
             _validatorContract,
             _dailyLimit,
@@ -69,7 +66,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         return isInitialized();
     }
 
-    function rewardableInitialize (
+    function rewardableInitialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -83,8 +80,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         address _feeManager,
         uint256 _homeFee,
         uint256 _foreignFee
-    ) external returns(bool)
-    {
+    ) external returns (bool) {
         _initialize(
             _validatorContract,
             _dailyLimit,
@@ -106,15 +102,15 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         return isInitialized();
     }
 
-    function getBridgeMode() external pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns (bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
     }
 
-    function blockRewardContract() public view returns(IBlockReward) {
+    function blockRewardContract() public view returns (IBlockReward) {
         return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
     }
 
-    function totalBurntCoins() public view returns(uint256) {
+    function totalBurntCoins() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))];
     }
 
@@ -125,7 +121,8 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         // call a specific method from the contract that should return a specific value
         bool isBlockRewardContract = false;
         if (_blockReward.call(abi.encodeWithSignature("blockRewardContractId()"))) {
-            isBlockRewardContract = IBlockReward(_blockReward).blockRewardContractId() == bytes4(keccak256("blockReward"));
+            isBlockRewardContract =
+                IBlockReward(_blockReward).blockRewardContractId() == bytes4(keccak256("blockReward"));
         } else if (_blockReward.call(abi.encodeWithSignature("bridgesAllowedLength()"))) {
             isBlockRewardContract = IBlockReward(_blockReward).bridgesAllowedLength() != 0;
         }
@@ -133,7 +130,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
     }
 
-    function _initialize (
+    function _initialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -144,8 +141,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) internal
-    {
+    ) internal {
         require(!isInitialized());
         require(isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);
@@ -166,7 +162,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         setOwner(_owner);
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns(bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));

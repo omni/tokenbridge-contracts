@@ -6,7 +6,9 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
     address public blockRewardContract;
     address public stakingContract;
 
-    constructor(string _name, string _symbol, uint8 _decimals) public ERC677BridgeToken(_name, _symbol, _decimals) {}
+    constructor(string _name, string _symbol, uint8 _decimals) public ERC677BridgeToken(_name, _symbol, _decimals) {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
     function setBlockRewardContract(address _blockRewardContract) external onlyOwner {
         require(isContract(_blockRewardContract));

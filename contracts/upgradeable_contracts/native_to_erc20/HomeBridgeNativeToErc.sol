@@ -150,7 +150,11 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         return true;
     }
 
-    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
+    function onFailedAffirmation(
+        address, /*_recipient*/
+        uint256, /*_value*/
+        bytes32 /*_txHash*/
+    ) internal {
         revert();
     }
 }

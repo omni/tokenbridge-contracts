@@ -26,7 +26,11 @@ contract ERC677Bridge is BasicBridge {
         return true;
     }
 
-    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value) internal {
+    function bridgeSpecificActionsOnTokenTransfer(
+        ERC677, /*_token*/
+        address _from,
+        uint256 _value
+    ) internal {
         fireEventOnTokenTransfer(_from, _value);
     }
 

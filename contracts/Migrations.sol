@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 contract Migrations {
     address public owner;
+    // solhint-disable-next-line var-name-mixedcase
     uint256 public last_completed_migration;
 
     modifier restricted() {

@@ -9,4 +9,5 @@ import "./OwnedUpgradeabilityProxy.sol";
  * Besides, it allows to upgrade the token's behaviour towards further implementations, and provides basic
  * authorization control functionalities
  */
+// solhint-disable-next-line no-empty-blocks
 contract EternalStorageProxy is OwnedUpgradeabilityProxy, EternalStorage {}

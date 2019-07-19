@@ -80,6 +80,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     }
 
     function getCurrentDay() public view returns (uint256) {
+        // solhint-disable-next-line not-rely-on-time
         return now / 1 days;
     }
 

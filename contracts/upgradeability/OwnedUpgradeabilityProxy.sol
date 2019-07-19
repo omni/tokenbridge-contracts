@@ -63,6 +63,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
         onlyUpgradeabilityOwner
     {
         upgradeTo(version, implementation);
+        // solhint-disable-next-line avoid-call-value
         require(address(this).call.value(msg.value)(data));
     }
 }

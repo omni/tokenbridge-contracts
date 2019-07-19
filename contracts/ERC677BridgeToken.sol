@@ -11,7 +11,9 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
 
     event ContractFallbackCallFailed(address from, address to, uint256 value);
 
-    constructor(string _name, string _symbol, uint8 _decimals) public DetailedERC20(_name, _symbol, _decimals) {}
+    constructor(string _name, string _symbol, uint8 _decimals) public DetailedERC20(_name, _symbol, _decimals) {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
     function setBridgeContract(address _bridgeContract) external onlyOwner {
         require(isContract(_bridgeContract));

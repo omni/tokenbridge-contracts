@@ -13,7 +13,9 @@ contract BlockReward {
     bytes32 internal constant MINTED_TOTALLY_BY_BRIDGE = "mintedTotallyByBridge";
     address public token;
 
-    function() external payable {}
+    function() external payable {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
     function addExtraReceiver(uint256 _amount, address _receiver) external {
         require(_amount > 0);

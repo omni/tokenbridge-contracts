@@ -26,6 +26,7 @@ contract ValidatorsFeeManager is BaseFeeManager {
 
     function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {
         IRewardableValidators validators = rewardableValidatorContract();
+        // solhint-disable-next-line var-name-mixedcase
         address F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
         uint256 numOfValidators = validators.validatorCount();
 

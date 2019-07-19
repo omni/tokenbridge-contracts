@@ -4,6 +4,7 @@ import "./EternalStorage.sol";
 import "./OwnedUpgradeabilityProxy.sol";
 
 contract ClassicEternalStorageProxy is EternalStorage, OwnedUpgradeabilityProxy {
+    // solhint-disable-next-line no-complex-fallback
     function() public payable {
         address _impl = implementation();
         require(_impl != address(0));

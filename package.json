@@ -8,6 +8,7 @@
     "test:gasreport": "GASREPORT=true npm run test",
     "compile": "truffle compile && truffle compile spuriousDragon",
     "flatten": "bash flatten.sh",
+    "lint": "npm run lint:js && npm run lint:sol",
     "lint:js": "eslint .",
     "lint:js:fix": "eslint . --fix",
     "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",

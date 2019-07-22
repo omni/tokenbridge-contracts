@@ -2,24 +2,20 @@ pragma solidity 0.4.24;
 
 import "./ERC677BridgeToken.sol";
 
-
 contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
-
     address public blockRewardContract;
     address public stakingContract;
 
-    constructor(
-        string _name,
-        string _symbol,
-        uint8 _decimals
-    ) public ERC677BridgeToken(_name, _symbol, _decimals) {}
+    constructor(string _name, string _symbol, uint8 _decimals) public ERC677BridgeToken(_name, _symbol, _decimals) {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 
-    function setBlockRewardContract(address _blockRewardContract) onlyOwner external {
+    function setBlockRewardContract(address _blockRewardContract) external onlyOwner {
         require(isContract(_blockRewardContract));
         blockRewardContract = _blockRewardContract;
     }
 
-    function setStakingContract(address _stakingContract) onlyOwner external {
+    function setStakingContract(address _stakingContract) external onlyOwner {
         require(isContract(_stakingContract));
         stakingContract = _stakingContract;
     }
@@ -66,12 +62,12 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
         emit Transfer(stakingContract, _staker, _amount);
     }
 
-    function transfer(address _to, uint256 _value) public returns(bool) {
+    function transfer(address _to, uint256 _value) public returns (bool) {
         require(_to != stakingContract);
         return super.transfer(_to, _value);
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) public returns(bool) {
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
         require(_to != stakingContract);
         return super.transferFrom(_from, _to, _value);
     }

@@ -3,7 +3,6 @@ pragma solidity 0.4.24;
 import "../interfaces/IBlockReward.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
-
 contract BlockReward {
     using SafeMath for uint256;
 
@@ -14,7 +13,8 @@ contract BlockReward {
     bytes32 internal constant MINTED_TOTALLY_BY_BRIDGE = "mintedTotallyByBridge";
     address public token;
 
-    function () external payable {
+    function() external payable {
+        // solhint-disable-previous-line no-empty-blocks
     }
 
     function addExtraReceiver(uint256 _amount, address _receiver) external {
@@ -29,10 +29,8 @@ contract BlockReward {
         return mintedCoins;
     }
 
-    function mintedTotallyByBridge(address _bridge) public view returns(uint256) {
-        return uintStorage[
-        keccak256(abi.encode(MINTED_TOTALLY_BY_BRIDGE, _bridge))
-        ];
+    function mintedTotallyByBridge(address _bridge) public view returns (uint256) {
+        return uintStorage[keccak256(abi.encode(MINTED_TOTALLY_BY_BRIDGE, _bridge))];
     }
 
     function addMintedTotallyByBridge(uint256 _amount, address _bridge) external {
@@ -91,11 +89,11 @@ contract BlockReward {
         require(token.call(abi.encodeWithSignature("mintReward(address[],uint256[])", receivers, rewards)));
     }
 
-    function random(uint256 _count) public view returns(uint256) {
+    function random(uint256 _count) public view returns (uint256) {
         return uint256(blockhash(block.number.sub(1))) % _count;
     }
 
-    function blockRewardContractId() public pure returns(bytes4) {
+    function blockRewardContractId() public pure returns (bytes4) {
         return bytes4(keccak256("blockReward"));
     }
 }

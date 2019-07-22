@@ -5,7 +5,7 @@ import "../interfaces/ERC677.sol";
 
 
 contract ERC677Bridge is BasicTokenBridge {
-    function erc677token() public view returns(ERC677) {
+    function erc677token() public view returns (ERC677) {
         return ERC677(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
     }
 
@@ -14,7 +14,11 @@ contract ERC677Bridge is BasicTokenBridge {
         addressStorage[keccak256(abi.encodePacked("erc677token"))] = _token;
     }
 
-    function onTokenTransfer(address _from, uint256 _value, bytes /*_data*/) external returns(bool) {
+    function onTokenTransfer(
+        address _from,
+        uint256 _value,
+        bytes /*_data*/
+    ) external returns (bool) {
         ERC677 token = erc677token();
         require(msg.sender == address(token));
         require(withinLimit(_value));
@@ -23,7 +27,11 @@ contract ERC677Bridge is BasicTokenBridge {
         return true;
     }
 
-    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value) internal {
+    function bridgeSpecificActionsOnTokenTransfer(
+        ERC677, /*_token*/
+        address _from,
+        uint256 _value
+    ) internal {
         fireEventOnTokenTransfer(_from, _value);
     }
 

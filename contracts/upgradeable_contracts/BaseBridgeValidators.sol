@@ -4,37 +4,29 @@ import "./Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../upgradeability/EternalStorage.sol";
 
-
 contract BaseBridgeValidators is EternalStorage, Ownable {
     using SafeMath for uint256;
 
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
     uint256 internal constant MAX_VALIDATORS = 100;
 
-    event ValidatorAdded (address indexed validator);
-    event ValidatorRemoved (address indexed validator);
-    event RequiredSignaturesChanged (uint256 requiredSignatures);
+    event ValidatorAdded(address indexed validator);
+    event ValidatorRemoved(address indexed validator);
+    event RequiredSignaturesChanged(uint256 requiredSignatures);
 
-    function setRequiredSignatures(uint256 _requiredSignatures)
-    external
-    onlyOwner
-    {
+    function setRequiredSignatures(uint256 _requiredSignatures) external onlyOwner {
         require(validatorCount() >= _requiredSignatures);
         require(_requiredSignatures != 0);
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
         emit RequiredSignaturesChanged(_requiredSignatures);
     }
 
-    function getBridgeValidatorsInterfacesVersion()
-    external
-    pure
-    returns (uint64 major, uint64 minor, uint64 patch)
-    {
+    function getBridgeValidatorsInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (2, 2, 0);
     }
 
     function validatorList() external view returns (address[]) {
-        address [] memory list = new address[](validatorCount());
+        address[] memory list = new address[](validatorCount());
         uint256 counter = 0;
         address nextValidator = getNextValidator(F_ADDR);
         require(nextValidator != address(0));

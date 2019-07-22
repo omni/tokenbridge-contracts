@@ -9,12 +9,17 @@ import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToErc.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 
-
-contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, ERC677BridgeForBurnableMintableToken, OverdrawManagement, RewardableHomeBridgeErcToErc {
-
+contract HomeBridgeErcToErc is
+    ERC677Receiver,
+    EternalStorage,
+    BasicHomeBridge,
+    ERC677BridgeForBurnableMintableToken,
+    OverdrawManagement,
+    RewardableHomeBridgeErcToErc
+{
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
-    function initialize (
+    function initialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -25,10 +30,8 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) external
-      returns(bool)
-    {
-        _initialize (
+    ) external returns (bool) {
+        _initialize(
             _validatorContract,
             _dailyLimit,
             _maxPerTx,
@@ -45,7 +48,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         return isInitialized();
     }
 
-    function rewardableInitialize (
+    function rewardableInitialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -59,10 +62,8 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         address _feeManager,
         uint256 _homeFee,
         uint256 _foreignFee
-    ) external
-    returns(bool)
-    {
-        _rewardableInitialize (
+    ) external returns (bool) {
+        _rewardableInitialize(
             _validatorContract,
             _dailyLimit,
             _maxPerTx,
@@ -82,7 +83,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         return isInitialized();
     }
 
-    function _rewardableInitialize (
+    function _rewardableInitialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -96,9 +97,8 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         address _feeManager,
         uint256 _homeFee,
         uint256 _foreignFee
-    ) internal
-    {
-        _initialize (
+    ) internal {
+        _initialize(
             _validatorContract,
             _dailyLimit,
             _maxPerTx,
@@ -116,7 +116,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
     }
 
-    function _initialize (
+    function _initialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -127,8 +127,7 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) internal
-    {
+    ) internal {
         require(!isInitialized());
         require(isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);
@@ -152,11 +151,11 @@ contract HomeBridgeErcToErc is ERC677Receiver, EternalStorage, BasicHomeBridge, 
         IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
 
-    function getBridgeMode() external pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns (bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns(bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         uint256 valueToMint = _value;
         address feeManager = feeManagerContract();

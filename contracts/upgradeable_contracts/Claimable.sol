@@ -4,7 +4,6 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Sacrifice.sol";
 
 contract Claimable {
-
     modifier validAddress(address _to) {
         require(_to != address(0));
         _;
@@ -41,7 +40,9 @@ contract Claimable {
             returnDataResult := mload(0)
 
             switch result
-            case 0 { revert(0, 0) }
+                case 0 {
+                    revert(0, 0)
+                }
         }
 
         // Return data is optional

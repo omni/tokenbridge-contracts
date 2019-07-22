@@ -7,14 +7,13 @@ import "./Validatable.sol";
 import "./Ownable.sol";
 import "./Claimable.sol";
 
-
 contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claimable {
     using SafeMath for uint256;
 
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
 
-    function getBridgeInterfacesVersion() external pure returns(uint64 major, uint64 minor, uint64 patch) {
+    function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (2, 2, 0);
     }
 
@@ -24,7 +23,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         emit GasPriceChanged(_gasPrice);
     }
 
-    function gasPrice() external view returns(uint256) {
+    function gasPrice() external view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("gasPrice"))];
     }
 
@@ -34,11 +33,11 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         emit RequiredBlockConfirmationChanged(_blockConfirmations);
     }
 
-    function requiredBlockConfirmations() external view returns(uint256) {
+    function requiredBlockConfirmations() external view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))];
     }
 
-    function deployedAtBlock() external view returns(uint256) {
+    function deployedAtBlock() external view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
@@ -46,7 +45,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
     }
 
-    function isInitialized() public view returns(bool) {
+    function isInitialized() public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
     }
 
@@ -54,10 +53,11 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         claimValues(_token, _to);
     }
 
-    function isContract(address _addr) internal view returns (bool)
-    {
-        uint length;
-        assembly { length := extcodesize(_addr) }
+    function isContract(address _addr) internal view returns (bool) {
+        uint256 length;
+        assembly {
+            length := extcodesize(_addr)
+        }
         return length > 0;
     }
 }

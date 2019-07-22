@@ -38,16 +38,16 @@ contract BalanceHandler is EternalStorage {
         addressStorage[keccak256(abi.encodePacked("accountForAction"))] = _account;
     }
 
-    function isWithdrawFromDepositSelector(bytes _data) internal pure returns (bool _retval) {
-        _retval = false;
-        bytes4 withdrawFromDepositSelector = this.withdrawFromDeposit.selector;
+    function isWithdrawFromDepositSelector(bytes _data) internal pure returns (bool) {
+        bytes4 selector = this.withdrawFromDeposit.selector;
         if (
-            (_data[0] == withdrawFromDepositSelector[0]) &&
-            (_data[1] == withdrawFromDepositSelector[1]) &&
-            (_data[2] == withdrawFromDepositSelector[2]) &&
-            (_data[3] == withdrawFromDepositSelector[3])
+            (_data[0] == selector[0]) &&
+            (_data[1] == selector[1]) &&
+            (_data[2] == selector[2]) &&
+            (_data[3] == selector[3])
         ) {
-            _retval = true;
+            return true;
         }
+        return false;
     }
 }

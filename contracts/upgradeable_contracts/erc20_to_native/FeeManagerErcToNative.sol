@@ -4,14 +4,12 @@ import "../../interfaces/IBlockReward.sol";
 import "../Sacrifice.sol";
 import "../ValidatorsFeeManager.sol";
 
-
 contract FeeManagerErcToNative is ValidatorsFeeManager {
-
-    function getFeeManagerMode() external pure returns(bytes4) {
+    function getFeeManagerMode() external pure returns (bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
     }
 
-    function blockRewardContract() internal view returns(IBlockReward) {
+    function blockRewardContract() internal view returns (IBlockReward) {
         return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
     }
 
@@ -26,7 +24,7 @@ contract FeeManagerErcToNative is ValidatorsFeeManager {
         }
     }
 
-    function getAmountToBurn(uint256 _value) public view returns(uint256) {
+    function getAmountToBurn(uint256 _value) public view returns (uint256) {
         uint256 fee = calculateFee(_value, false, HOME_FEE);
         return _value.sub(fee);
     }

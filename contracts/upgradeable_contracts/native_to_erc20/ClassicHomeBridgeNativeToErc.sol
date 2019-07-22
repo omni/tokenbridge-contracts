@@ -2,10 +2,8 @@ pragma solidity 0.4.24;
 
 import "./HomeBridgeNativeToErc.sol";
 
-
 contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
-
-    function _initialize (
+    function _initialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -15,8 +13,7 @@ contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) internal
-    {
+    ) internal {
         super._initialize(
             _validatorContract,
             _dailyLimit,

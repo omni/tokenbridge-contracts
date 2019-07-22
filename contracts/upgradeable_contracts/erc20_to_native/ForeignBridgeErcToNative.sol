@@ -5,9 +5,8 @@ import "../BasicForeignBridge.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 
-
 contract ForeignBridgeErcToNative is BasicForeignBridge {
-    event RelayedMessage(address recipient, uint value, bytes32 transactionHash);
+    event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
 
     function initialize(
         address _validatorContract,
@@ -18,7 +17,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
         address _owner
-    ) external returns(bool) {
+    ) external returns (bool) {
         require(!isInitialized());
         require(isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
@@ -38,7 +37,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         return isInitialized();
     }
 
-    function getBridgeMode() external pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns (bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
     }
 
@@ -47,11 +46,15 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         super.claimTokens(_token, _to);
     }
 
-    function erc20token() public view returns(ERC20Basic) {
+    function erc20token() public view returns (ERC20Basic) {
         return ERC20Basic(addressStorage[keccak256(abi.encodePacked("erc20token"))]);
     }
 
-    function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns(bool) {
+    function onExecuteMessage(
+        address _recipient,
+        uint256 _amount,
+        bytes32 /*_txHash*/
+    ) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         return erc20token().transfer(_recipient, _amount);
     }

@@ -3,17 +3,16 @@ pragma solidity 0.4.24;
 import "./UpgradeabilityProxy.sol";
 import "./UpgradeabilityOwnerStorage.sol";
 
-
 /**
  * @title OwnedUpgradeabilityProxy
  * @dev This contract combines an upgradeability proxy with basic authorization control functionalities
  */
 contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityProxy {
-  /**
-  * @dev Event to show ownership has been transferred
-  * @param previousOwner representing the address of the previous owner
-  * @param newOwner representing the address of the new owner
-  */
+    /**
+    * @dev Event to show ownership has been transferred
+    * @param previousOwner representing the address of the previous owner
+    * @param newOwner representing the address of the new owner
+    */
     event ProxyOwnershipTransferred(address previousOwner, address newOwner);
 
     /**
@@ -58,8 +57,13 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     * @param data represents the msg.data to bet sent in the low level call. This parameter may include the function
     * signature of the implementation to be called with the needed payload
     */
-    function upgradeToAndCall(uint256 version, address implementation, bytes data) payable external onlyUpgradeabilityOwner {
+    function upgradeToAndCall(uint256 version, address implementation, bytes data)
+        external
+        payable
+        onlyUpgradeabilityOwner
+    {
         upgradeTo(version, implementation);
+        // solhint-disable-next-line avoid-call-value
         require(address(this).call.value(msg.value)(data));
     }
 }

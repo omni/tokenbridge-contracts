@@ -1,7 +1,6 @@
 pragma solidity 0.4.24;
 import "../interfaces/IBridgeValidators.sol";
 
-
 library Message {
     // function uintToString(uint256 inputValue) internal pure returns (string) {
     //     // figure out the length of the resulting string
@@ -50,7 +49,7 @@ library Message {
     function parseMessage(bytes message)
         internal
         pure
-        returns(address recipient, uint256 amount, bytes32 txHash, address contractAddress)
+        returns (address recipient, uint256 amount, bytes32 txHash, address contractAddress)
     {
         require(isMessageValid(message));
         assembly {
@@ -61,11 +60,11 @@ library Message {
         }
     }
 
-    function isMessageValid(bytes _msg) internal pure returns(bool) {
+    function isMessageValid(bytes _msg) internal pure returns (bool) {
         return _msg.length == requiredMessageLength();
     }
 
-    function requiredMessageLength() internal pure returns(uint256) {
+    function requiredMessageLength() internal pure returns (uint256) {
         return 104;
     }
 
@@ -94,7 +93,8 @@ library Message {
         uint8[] _vs,
         bytes32[] _rs,
         bytes32[] _ss,
-        IBridgeValidators _validatorContract) internal view {
+        IBridgeValidators _validatorContract
+    ) internal view {
         require(isMessageValid(_message));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         // It is not necessary to check that arrays have the same length since it will be handled

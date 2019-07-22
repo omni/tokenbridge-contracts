@@ -1,12 +1,10 @@
 pragma solidity 0.4.24;
 
-
 /**
  * @title EternalStorage
  * @dev This contract holds all the necessary state variables to carry out the storage of any contract.
  */
 contract EternalStorage {
-
     mapping(bytes32 => uint256) internal uintStorage;
     mapping(bytes32 => string) internal stringStorage;
     mapping(bytes32 => address) internal addressStorage;

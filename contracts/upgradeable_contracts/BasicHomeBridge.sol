@@ -7,15 +7,18 @@ import "./Validatable.sol";
 import "../libraries/Message.sol";
 import "./BasicBridge.sol";
 
-
 contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
-    event AffirmationCompleted (address recipient, uint256 value, bytes32 transactionHash);
+    event AffirmationCompleted(address recipient, uint256 value, bytes32 transactionHash);
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
     event SignedForAffirmation(address indexed signer, bytes32 transactionHash);
-    event CollectedSignatures(address authorityResponsibleForRelay, bytes32 messageHash, uint256 NumberOfCollectedSignatures);
+    event CollectedSignatures(
+        address authorityResponsibleForRelay,
+        bytes32 messageHash,
+        uint256 NumberOfCollectedSignatures
+    );
 
     function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
         if (withinExecutionLimit(value)) {
@@ -67,7 +70,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
         }
         setMessagesSigned(hashSender, true);
 
-        bytes32 signIdx = keccak256(abi.encodePacked(hashMsg, (signed-1)));
+        bytes32 signIdx = keccak256(abi.encodePacked(hashMsg, (signed - 1)));
         setSignatures(signIdx, signature);
 
         setNumMessagesSigned(hashMsg, signed);
@@ -87,11 +90,11 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
         boolStorage[keccak256(abi.encodePacked("messagesSigned", _hash))] = _status;
     }
 
-    function onExecuteAffirmation(address, uint256, bytes32) internal returns(bool);
+    function onExecuteAffirmation(address, uint256, bytes32) internal returns (bool);
 
     function onSignaturesCollected(bytes) internal;
 
-    function numAffirmationsSigned(bytes32 _withdrawal) public view returns(uint256) {
+    function numAffirmationsSigned(bytes32 _withdrawal) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _withdrawal))];
     }
 
@@ -103,7 +106,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
         uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _withdrawal))] = _number;
     }
 
-    function affirmationsSigned(bytes32 _withdrawal) public view returns(bool) {
+    function affirmationsSigned(bytes32 _withdrawal) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("affirmationsSigned", _withdrawal))];
     }
 
@@ -112,7 +115,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
         return bytesStorage[keccak256(abi.encodePacked("signatures", signIdx))];
     }
 
-    function messagesSigned(bytes32 _message) public view returns(bool) {
+    function messagesSigned(bytes32 _message) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("messagesSigned", _message))];
     }
 
@@ -132,19 +135,19 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
         uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))] = _number;
     }
 
-    function markAsProcessed(uint256 _v) internal pure returns(uint256) {
+    function markAsProcessed(uint256 _v) internal pure returns (uint256) {
         return _v | 2 ** 255;
     }
 
-    function isAlreadyProcessed(uint256 _number) public pure returns(bool) {
-        return _number & 2**255 == 2**255;
+    function isAlreadyProcessed(uint256 _number) public pure returns (bool) {
+        return _number & 2 ** 255 == 2 ** 255;
     }
 
-    function numMessagesSigned(bytes32 _message) public view returns(uint256) {
+    function numMessagesSigned(bytes32 _message) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))];
     }
 
-    function requiredMessageLength() public pure returns(uint256) {
+    function requiredMessageLength() public pure returns (uint256) {
         return Message.requiredMessageLength();
     }
 

@@ -2,9 +2,7 @@ pragma solidity 0.4.24;
 
 import "../RewardableBridge.sol";
 
-
 contract RewardableHomeBridgeErcToNative is RewardableBridge {
-
     function setHomeFee(uint256 _fee) external onlyOwner {
         _setFee(feeManagerContract(), _fee, HOME_FEE);
     }
@@ -13,15 +11,15 @@ contract RewardableHomeBridgeErcToNative is RewardableBridge {
         _setFee(feeManagerContract(), _fee, FOREIGN_FEE);
     }
 
-    function getHomeFee() public view returns(uint256) {
+    function getHomeFee() public view returns (uint256) {
         return _getFee(HOME_FEE);
     }
 
-    function getForeignFee() public view returns(uint256) {
+    function getForeignFee() public view returns (uint256) {
         return _getFee(FOREIGN_FEE);
     }
 
-    function getAmountToBurn(uint256 _value) public view returns(uint256) {
+    function getAmountToBurn(uint256 _value) public view returns (uint256) {
         uint256 amount;
         bytes memory callData = abi.encodeWithSignature("getAmountToBurn(uint256)", _value);
         address feeManager = feeManagerContract();
@@ -30,7 +28,9 @@ contract RewardableHomeBridgeErcToNative is RewardableBridge {
             amount := mload(0)
 
             switch result
-            case 0 { revert(0, 0) }
+                case 0 {
+                    revert(0, 0)
+                }
         }
         return amount;
     }

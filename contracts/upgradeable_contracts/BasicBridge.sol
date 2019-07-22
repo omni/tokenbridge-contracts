@@ -7,7 +7,6 @@ import "./Validatable.sol";
 import "./Ownable.sol";
 import "./Claimable.sol";
 
-
 contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claimable {
     using SafeMath for uint256;
 
@@ -16,7 +15,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     event DailyLimitChanged(uint256 newLimit);
     event ExecutionDailyLimitChanged(uint256 newLimit);
 
-    function getBridgeInterfacesVersion() external pure returns(uint64 major, uint64 minor, uint64 patch) {
+    function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (2, 2, 0);
     }
 
@@ -26,7 +25,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         emit GasPriceChanged(_gasPrice);
     }
 
-    function gasPrice() external view returns(uint256) {
+    function gasPrice() external view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("gasPrice"))];
     }
 
@@ -36,11 +35,11 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         emit RequiredBlockConfirmationChanged(_blockConfirmations);
     }
 
-    function requiredBlockConfirmations() external view returns(uint256) {
+    function requiredBlockConfirmations() external view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))];
     }
 
-    function deployedAtBlock() external view returns(uint256) {
+    function deployedAtBlock() external view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
@@ -48,7 +47,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))] = _value;
     }
 
-    function totalSpentPerDay(uint256 _day) public view returns(uint256) {
+    function totalSpentPerDay(uint256 _day) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
     }
 
@@ -56,19 +55,19 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = _value;
     }
 
-    function totalExecutedPerDay(uint256 _day) public view returns(uint256) {
+    function totalExecutedPerDay(uint256 _day) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))];
     }
 
-    function minPerTx() public view returns(uint256) {
+    function minPerTx() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("minPerTx"))];
     }
 
-    function maxPerTx() public view returns(uint256) {
+    function maxPerTx() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("maxPerTx"))];
     }
 
-    function executionMaxPerTx() public view returns(uint256) {
+    function executionMaxPerTx() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))];
     }
 
@@ -76,11 +75,12 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
     }
 
-    function isInitialized() public view returns(bool) {
+    function isInitialized() public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
     }
 
-    function getCurrentDay() public view returns(uint256) {
+    function getCurrentDay() public view returns (uint256) {
+        // solhint-disable-next-line not-rely-on-time
         return now / 1 days;
     }
 
@@ -89,7 +89,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         emit DailyLimitChanged(_dailyLimit);
     }
 
-    function dailyLimit() public view returns(uint256) {
+    function dailyLimit() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("dailyLimit"))];
     }
 
@@ -98,7 +98,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         emit ExecutionDailyLimitChanged(_dailyLimit);
     }
 
-    function executionDailyLimit() public view returns(uint256) {
+    function executionDailyLimit() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))];
     }
 
@@ -117,12 +117,12 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
     }
 
-    function withinLimit(uint256 _amount) public view returns(bool) {
+    function withinLimit(uint256 _amount) public view returns (bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
         return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
     }
 
-    function withinExecutionLimit(uint256 _amount) public view returns(bool) {
+    function withinExecutionLimit(uint256 _amount) public view returns (bool) {
         uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
         return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
     }
@@ -131,10 +131,11 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         claimValues(_token, _to);
     }
 
-    function isContract(address _addr) internal view returns (bool)
-    {
-        uint length;
-        assembly { length := extcodesize(_addr) }
+    function isContract(address _addr) internal view returns (bool) {
+        uint256 length;
+        assembly {
+            length := extcodesize(_addr)
+        }
         return length > 0;
     }
 }

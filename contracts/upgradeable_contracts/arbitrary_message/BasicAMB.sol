@@ -5,11 +5,9 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../Validatable.sol";
 import "../BasicBridge.sol";
 
-
 contract BasicAMB is BasicBridge {
-
-    bytes constant internal SUBSIDIZED_MODE = bytes(abi.encodePacked("AMB-subsidized-mode"));
-    bytes constant internal DEFRAYAL_MODE = bytes(abi.encodePacked("AMB-defrayal-mode"));
+    bytes internal constant SUBSIDIZED_MODE = bytes(abi.encodePacked("AMB-subsidized-mode"));
+    bytes internal constant DEFRAYAL_MODE = bytes(abi.encodePacked("AMB-defrayal-mode"));
 
     function initialize(
         address _validatorContract,
@@ -17,7 +15,7 @@ contract BasicAMB is BasicBridge {
         uint256 _gasPrice,
         uint256 _requiredBlockConfirmations,
         address _owner
-    ) public returns(bool) {
+    ) public returns (bool) {
         require(!isInitialized());
         require(_validatorContract != address(0) && isContract(_validatorContract));
         require(_gasPrice > 0);
@@ -35,7 +33,7 @@ contract BasicAMB is BasicBridge {
         return isInitialized();
     }
 
-    function getBridgeMode() external pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns (bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("arbitrary-message-bridge-core")));
     }
 
@@ -55,15 +53,15 @@ contract BasicAMB is BasicBridge {
         bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))] = DEFRAYAL_MODE;
     }
 
-    function homeToForeignMode() public view returns(bytes) {
+    function homeToForeignMode() public view returns (bytes) {
         return bytesStorage[keccak256(abi.encodePacked("homeToForeignMode"))];
     }
 
-    function foreignToHomeMode() public view returns(bytes) {
+    function foreignToHomeMode() public view returns (bytes) {
         return bytesStorage[keccak256(abi.encodePacked("foreignToHomeMode"))];
     }
 
-    function maxGasPerTx() public view returns(uint256) {
+    function maxGasPerTx() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("maxGasPerTx"))];
     }
 
@@ -72,4 +70,3 @@ contract BasicAMB is BasicBridge {
         uintStorage[keccak256(abi.encodePacked("maxGasPerTx"))] = _maxGasPerTx;
     }
 }
-

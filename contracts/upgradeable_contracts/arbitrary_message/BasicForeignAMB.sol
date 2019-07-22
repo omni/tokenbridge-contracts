@@ -5,16 +5,14 @@ import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
 import "./MessageProcessor.sol";
 
-
 contract BasicForeignAMB is BasicAMB, MessageDelivery, MessageProcessor {
-
     function executeSignatures(bytes _data, uint8[] vs, bytes32[] rs, bytes32[] ss) external {
         ArbitraryMessage.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract());
 
         processMessage(_data, true);
     }
 
-    function relayedMessages(bytes32 _txHash) public view returns(bool) {
+    function relayedMessages(bytes32 _txHash) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
     }
 

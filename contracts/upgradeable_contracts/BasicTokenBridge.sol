@@ -2,51 +2,50 @@ pragma solidity 0.4.24;
 
 import "./BasicBridge.sol";
 
-
 contract BasicTokenBridge is BasicBridge {
-
     event DailyLimitChanged(uint256 newLimit);
     event ExecutionDailyLimitChanged(uint256 newLimit);
 
-    function totalSpentPerDay(uint256 _day) public view returns(uint256) {
+    function totalSpentPerDay(uint256 _day) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
     }
 
-    function totalExecutedPerDay(uint256 _day) public view returns(uint256) {
+    function totalExecutedPerDay(uint256 _day) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))];
     }
 
-    function dailyLimit() public view returns(uint256) {
+    function dailyLimit() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("dailyLimit"))];
     }
 
-    function executionDailyLimit() public view returns(uint256) {
+    function executionDailyLimit() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))];
     }
 
-    function maxPerTx() public view returns(uint256) {
+    function maxPerTx() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("maxPerTx"))];
     }
 
-    function executionMaxPerTx() public view returns(uint256) {
+    function executionMaxPerTx() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))];
     }
 
-    function minPerTx() public view returns(uint256) {
+    function minPerTx() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("minPerTx"))];
     }
 
-    function withinLimit(uint256 _amount) public view returns(bool) {
+    function withinLimit(uint256 _amount) public view returns (bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
         return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
     }
 
-    function withinExecutionLimit(uint256 _amount) public view returns(bool) {
+    function withinExecutionLimit(uint256 _amount) public view returns (bool) {
         uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
         return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
     }
 
-    function getCurrentDay() public view returns(uint256) {
+    function getCurrentDay() public view returns (uint256) {
+        // solhint-disable-next-line not-rely-on-time
         return now / 1 days;
     }
 

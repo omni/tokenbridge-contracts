@@ -3,12 +3,10 @@ pragma solidity 0.4.24;
 import "./BalanceHandler.sol";
 import "../../libraries/ArbitraryMessage.sol";
 
-
 contract MessageProcessor is BalanceHandler {
-
     uint256 internal constant PASS_MESSAGE_GAS = 100000;
 
-    function messageSender() external view returns(address) {
+    function messageSender() external view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("messageSender"))];
     }
 
@@ -24,7 +22,10 @@ contract MessageProcessor is BalanceHandler {
         uint256 gasPrice;
         bytes32 txHash;
         bytes memory data;
-        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data, applyDataOffset);
+        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(
+            _data,
+            applyDataOffset
+        );
 
         require(!messageProcessed(txHash));
         setMessageProcessed(txHash, true);
@@ -48,7 +49,10 @@ contract MessageProcessor is BalanceHandler {
         emitEventOnMessageProcessed(sender, executor, txHash, status);
     }
 
-    function _defrayAndPassMessage(address _sender, address _contract, bytes _data, uint256 _gas) internal returns(bool) {
+    function _defrayAndPassMessage(address _sender, address _contract, bytes _data, uint256 _gas)
+        internal
+        returns (bool)
+    {
         uint256 fee = PASS_MESSAGE_GAS.add(_gas).mul(tx.gasprice);
         require(balanceOf(_sender) >= fee);
         require(address(this).balance >= fee);
@@ -62,7 +66,7 @@ contract MessageProcessor is BalanceHandler {
         return status;
     }
 
-    function _passMessage(address _sender, address _contract, bytes _data, uint256 _gas) internal returns(bool) {
+    function _passMessage(address _sender, address _contract, bytes _data, uint256 _gas) internal returns (bool) {
         if (_contract == address(this)) {
             //Special check to handle invocation of withdrawFromDeposit
             if (isWithdrawFromDepositSelector(_data)) {
@@ -75,15 +79,15 @@ contract MessageProcessor is BalanceHandler {
         return status;
     }
 
-    function isMessageProcessorSubsidizedMode() internal returns(bool);
+    function isMessageProcessorSubsidizedMode() internal returns (bool);
 
     function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal;
 
-    function messageProcessed(bytes32 _txHash) internal view returns(bool) {
-        // should be overridden
+    function messageProcessed(bytes32 _txHash) internal view returns (bool) {
+        // solhint-disable-previous-line no-empty-blocks
     }
 
     function setMessageProcessed(bytes32 _txHash, bool _status) internal {
-        // should be overridden
+        // solhint-disable-previous-line no-empty-blocks
     }
 }

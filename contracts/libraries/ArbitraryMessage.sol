@@ -2,7 +2,6 @@ pragma solidity 0.4.24;
 
 import "../interfaces/IBridgeValidators.sol";
 
-
 library ArbitraryMessage {
     function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
         require(signature.length == 65);
@@ -23,18 +22,18 @@ library ArbitraryMessage {
         return keccak256(abi.encodePacked(prefix, uintToString(message.length), message));
     }
 
-    function uintToString(uint i) internal pure returns (string) {
+    function uintToString(uint256 i) internal pure returns (string) {
         if (i == 0) return "0";
-        uint j = i;
-        uint length;
-        while (j != 0){
+        uint256 j = i;
+        uint256 length;
+        while (j != 0) {
             length++;
             j /= 10;
         }
         bytes memory bstr = new bytes(length);
-        uint k = length - 1;
-        while (i != 0){
-            bstr[k--] = byte(48 + i % 10);
+        uint256 k = length - 1;
+        while (i != 0) {
+            bstr[k--] = bytes1(48 + i % 10);
             i /= 10;
         }
         return string(bstr);
@@ -45,7 +44,8 @@ library ArbitraryMessage {
         uint8[] _vs,
         bytes32[] _rs,
         bytes32[] _ss,
-        IBridgeValidators _validatorContract) internal view {
+        IBridgeValidators _validatorContract
+    ) internal view {
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         require(_vs.length >= requiredSignatures);
         bytes32 hash = hashMessage(_message);
@@ -91,22 +91,22 @@ library ArbitraryMessage {
     // https://github.com/paritytech/parity-bridge/issues/61
 
     function unpackData(bytes _data, bool applyDataOffset)
-    internal
-    pure
-    returns(
-        address sender,
-        address executor,
-        bytes32 txHash,
-        uint256 gasLimit,
-        bytes1 dataType,
-        uint256 gasPrice,
-        bytes memory data
-    )
+        internal
+        pure
+        returns (
+            address sender,
+            address executor,
+            bytes32 txHash,
+            uint256 gasLimit,
+            bytes1 dataType,
+            uint256 gasPrice,
+            bytes memory data
+        )
     {
         uint256 dataOffset = 0;
         uint256 datasize;
         // 20 (sender)  + 20 (executor) + 32 (tx hash) + 32 (gasLimit) + 1 (dataType)
-        uint256 srcdataptr = 20 + 20 + 32 + 32 + 1 ;
+        uint256 srcdataptr = 20 + 20 + 32 + 32 + 1;
         assembly {
             sender := and(mload(add(_data, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
             executor := and(mload(add(_data, 40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
@@ -114,20 +114,26 @@ library ArbitraryMessage {
             gasLimit := mload(add(_data, 104))
             dataType := and(mload(add(_data, 136)), 0xFF00000000000000000000000000000000000000000000000000000000000000)
             switch dataType
-            case 0x0000000000000000000000000000000000000000000000000000000000000000 {
-                gasPrice := 0
-                if eq(applyDataOffset, 1) { dataOffset := sub(srcdataptr, 9) }
-            }
-            case 0x0100000000000000000000000000000000000000000000000000000000000000 {
-                gasPrice := mload(add(_data, 137)) // 32
-                srcdataptr := add(srcdataptr, 0x20)
-                if eq(applyDataOffset, 1) { dataOffset := sub(srcdataptr, 41) }
-            }
-            case 0x0200000000000000000000000000000000000000000000000000000000000000 {
-                gasPrice := 0
-                srcdataptr := add(srcdataptr, 0x01)
-                if eq(applyDataOffset, 1) { dataOffset := sub(srcdataptr, 10) }
-            }
+                case 0x0000000000000000000000000000000000000000000000000000000000000000 {
+                    gasPrice := 0
+                    if eq(applyDataOffset, 1) {
+                        dataOffset := sub(srcdataptr, 9)
+                    }
+                }
+                case 0x0100000000000000000000000000000000000000000000000000000000000000 {
+                    gasPrice := mload(add(_data, 137)) // 32
+                    srcdataptr := add(srcdataptr, 0x20)
+                    if eq(applyDataOffset, 1) {
+                        dataOffset := sub(srcdataptr, 41)
+                    }
+                }
+                case 0x0200000000000000000000000000000000000000000000000000000000000000 {
+                    gasPrice := 0
+                    srcdataptr := add(srcdataptr, 0x01)
+                    if eq(applyDataOffset, 1) {
+                        dataOffset := sub(srcdataptr, 10)
+                    }
+                }
             datasize := sub(mload(_data), srcdataptr)
         }
         data = new bytes(datasize);

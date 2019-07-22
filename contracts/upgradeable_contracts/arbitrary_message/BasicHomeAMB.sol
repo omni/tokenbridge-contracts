@@ -5,9 +5,7 @@ import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
 import "./MessageProcessor.sol";
 
-
 contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
-
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
     event SignedForAffirmation(address indexed signer, bytes32 messageHash);
 
@@ -72,11 +70,11 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
         }
     }
 
-    function isAlreadyProcessed(uint256 _number) public pure returns(bool) {
-        return _number & 2**255 == 2**255;
+    function isAlreadyProcessed(uint256 _number) public pure returns (bool) {
+        return _number & 2 ** 255 == 2 ** 255;
     }
 
-    function numMessagesSigned(bytes32 _message) public view returns(uint256) {
+    function numMessagesSigned(bytes32 _message) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))];
     }
 
@@ -85,7 +83,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
         return signatures(signIdx);
     }
 
-    function messagesSigned(bytes32 _message) public view returns(bool) {
+    function messagesSigned(bytes32 _message) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("messagesSigned", _message))];
     }
 
@@ -93,11 +91,11 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
         return messages(_hash);
     }
 
-    function affirmationsSigned(bytes32 _hash) public view returns(bool) {
+    function affirmationsSigned(bytes32 _hash) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("affirmationsSigned", _hash))];
     }
 
-    function numAffirmationsSigned(bytes32 _hash) public view returns(uint256) {
+    function numAffirmationsSigned(bytes32 _hash) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _hash))];
     }
 
@@ -105,11 +103,11 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
         boolStorage[keccak256(abi.encodePacked("messagesSigned", _hash))] = _status;
     }
 
-    function messages(bytes32 _hash) internal view returns(bytes) {
+    function messages(bytes32 _hash) internal view returns (bytes) {
         return bytesStorage[keccak256(abi.encodePacked("messages", _hash))];
     }
 
-    function signatures(bytes32 _hash) internal view returns(bytes) {
+    function signatures(bytes32 _hash) internal view returns (bytes) {
         return bytesStorage[keccak256(abi.encodePacked("signatures", _hash))];
     }
 
@@ -125,7 +123,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
         uintStorage[keccak256(abi.encodePacked("numMessagesSigned", _message))] = _number;
     }
 
-    function markAsProcessed(uint256 _v) internal pure returns(uint256) {
+    function markAsProcessed(uint256 _v) internal pure returns (uint256) {
         return _v | 2 ** 255;
     }
 

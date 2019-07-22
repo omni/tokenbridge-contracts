@@ -3,7 +3,6 @@ pragma solidity 0.4.24;
 import "./BasicTokenBridge.sol";
 import "../interfaces/ERC677.sol";
 
-
 contract ERC677Bridge is BasicTokenBridge {
     function erc677token() public view returns (ERC677) {
         return ERC677(addressStorage[keccak256(abi.encodePacked("erc677token"))]);

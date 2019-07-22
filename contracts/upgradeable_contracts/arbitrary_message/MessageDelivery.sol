@@ -2,7 +2,6 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
-
 contract MessageDelivery {
     using SafeMath for uint256;
 
@@ -13,8 +12,7 @@ contract MessageDelivery {
     }
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas, uint256 _gasPrice) public {
-        if (isMessageDeliverySubsidizedMode())
-            requireToPassMessage(_contract, _data, _gas);
+        if (isMessageDeliverySubsidizedMode()) requireToPassMessage(_contract, _data, _gas);
         else {
             require(_gas >= getMinimumGasUsage(_data) && _gas <= getMaxGasPerTx());
             emitEventOnMessageRequest(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x01), _gasPrice, _data));
@@ -22,8 +20,7 @@ contract MessageDelivery {
     }
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas, bytes1 _oracleGasPriceSpeed) public {
-        if (isMessageDeliverySubsidizedMode())
-            requireToPassMessage(_contract, _data, _gas);
+        if (isMessageDeliverySubsidizedMode()) requireToPassMessage(_contract, _data, _gas);
         else {
             require(_gas >= getMinimumGasUsage(_data) && _gas <= getMaxGasPerTx());
             emitEventOnMessageRequest(
@@ -32,15 +29,15 @@ contract MessageDelivery {
         }
     }
 
-    function getMinimumGasUsage(bytes _data) public pure returns(uint256 gas) {
+    function getMinimumGasUsage(bytes _data) public pure returns (uint256 gas) {
         //From Ethereum Yellow Paper
         // 68 gas is paid for every non-zero byte of data or code for a transaction
         return _data.length.mul(68);
     }
 
-    function getMaxGasPerTx() internal returns(uint256);
+    function getMaxGasPerTx() internal returns (uint256);
 
-    function isMessageDeliverySubsidizedMode() internal returns(bool);
+    function isMessageDeliverySubsidizedMode() internal returns (bool);
 
     function emitEventOnMessageRequest(bytes encodedData) internal;
 }

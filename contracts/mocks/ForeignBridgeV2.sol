@@ -1,6 +1,6 @@
 pragma solidity ^0.4.19;
 
-import "../../contracts/upgradeable_contracts/native_to_erc20/ForeignBridgeNativeToErc.sol";
+import "../upgradeable_contracts/native_to_erc20/ForeignBridgeNativeToErc.sol";
 
 interface OwnableToken {
     function transferOwnership(address) external;

@@ -24,6 +24,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
 
     modifier validFee(uint256 _fee) {
         require(_fee < MAX_FEE);
+        /* solcov ignore next */
         _;
     }
 

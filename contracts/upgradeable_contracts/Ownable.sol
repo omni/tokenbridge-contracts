@@ -19,6 +19,7 @@ contract Ownable is EternalStorage {
     */
     modifier onlyOwner() {
         require(msg.sender == owner());
+        /* solcov ignore next */
         _;
     }
 

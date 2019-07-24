@@ -9,6 +9,7 @@ contract Validatable is EternalStorage {
 
     modifier onlyValidator() {
         require(validatorContract().isValidator(msg.sender));
+        /* solcov ignore next */
         _;
     }
 

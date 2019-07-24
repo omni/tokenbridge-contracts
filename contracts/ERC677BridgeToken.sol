@@ -22,6 +22,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
 
     modifier validRecipient(address _recipient) {
         require(_recipient != address(0) && _recipient != address(this));
+        /* solcov ignore next */
         _;
     }
 

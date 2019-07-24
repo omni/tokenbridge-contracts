@@ -35,7 +35,8 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
     }
 
     function mintReward(address[] _receivers, uint256[] _rewards) external onlyBlockRewardContract {
-        for (uint256 i = 0; i < _receivers.length; i++) {
+        uint256 receiversLength = _receivers.length;
+        for (uint256 i = 0; i < receiversLength; i++) {
             uint256 amount = _rewards[i];
 
             if (amount == 0) continue;

@@ -437,7 +437,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx,
+        transactionHash: resultPassMessageTx.tx,
         status: true
       })
 
@@ -479,7 +479,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx,
+        transactionHash: resultPassMessageTx.tx,
         status: true
       })
 
@@ -525,7 +525,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: tx.tx,
+        transactionHash: tx.tx,
         status: true
       })
 
@@ -609,7 +609,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(thirdSignature.logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx,
+        transactionHash: resultPassMessageTx.tx,
         status: true
       })
 
@@ -651,7 +651,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx,
+        transactionHash: resultPassMessageTx.tx,
         status: true
       })
 
@@ -716,7 +716,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx,
+        transactionHash: resultPassMessageTx.tx,
         status: false
       })
 
@@ -755,7 +755,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx,
+        transactionHash: resultPassMessageTx.tx,
         status: false
       })
 
@@ -787,7 +787,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        txHash: resultPassMessageTx.tx,
+        transactionHash: resultPassMessageTx.tx,
         status: false
       })
     })

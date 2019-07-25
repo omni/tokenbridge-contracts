@@ -4,7 +4,7 @@ import "./BasicHomeAMB.sol";
 
 contract HomeAMB is BasicHomeAMB {
     event UserRequestForSignature(bytes encodedData);
-    event AffirmationCompleted(address sender, address executor, bytes32 txHash, bool status);
+    event AffirmationCompleted(address sender, address executor, bytes32 transactionHash, bool status);
 
     function getMaxGasPerTx() internal returns (uint256) {
         return maxGasPerTx();

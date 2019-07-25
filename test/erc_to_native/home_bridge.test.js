@@ -6,6 +6,7 @@ const OldBlockReward = artifacts.require('oldBlockReward')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const FeeManagerErcToNative = artifacts.require('FeeManagerErcToNative.sol')
 const FeeManagerErcToNativePOSDAO = artifacts.require('FeeManagerErcToNativePOSDAO')
+const FeeManagerMock = artifacts.require('FeeManagerMock')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -2160,14 +2161,14 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
   describe('#FeeManager_random', async () => {
     it('should return value between 0 and 3', async () => {
       // Given
-      const feeManager = await FeeManagerErcToNative.new()
+      const feeManager = await FeeManagerMock.new()
 
       for (let i = 0; i < 10; i++) {
         // send Tx to generate new blocks
         await feeManager.setHomeFee(0).should.be.fulfilled
 
         // When
-        const result = await feeManager.random(3)
+        const result = await feeManager.randomTest(3)
 
         // Then
         expect(result).to.be.bignumber.gte(ZERO)

@@ -12,7 +12,7 @@
     "lint:js": "eslint .",
     "lint:js:fix": "eslint . --fix",
     "lint:sol": "solhint --max-warnings 0 \"contracts/**/*.sol\"",
-    "lint:sol:prettier:fix": "prettier --write **/*.sol",
+    "lint:sol:prettier:fix": "prettier --write \"contracts/**/*.sol\"",
     "watch-tests": "./node_modules/.bin/nodemon ./node_modules/.bin/truffle test --network test",
     "coverage": "SOLIDITY_COVERAGE=true scripts/test.sh"
   },

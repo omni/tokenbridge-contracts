@@ -7,7 +7,7 @@ const ERC677BridgeTokenRewardable = artifacts.require('ERC677BridgeTokenRewardab
 const FeeManagerErcToErcPOSDAO = artifacts.require('FeeManagerErcToErcPOSDAO.sol')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const BlockReward = artifacts.require('BlockReward')
-const OldBlockReward = artifacts.require('oldBlockReward')
+const OldBlockReward = artifacts.require('OldBlockReward')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')

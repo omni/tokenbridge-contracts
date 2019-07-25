@@ -1,4 +1,4 @@
-pragma solidity ^0.4.19;
+pragma solidity 0.4.24;
 
 import "../interfaces/ERC677Receiver.sol";
 

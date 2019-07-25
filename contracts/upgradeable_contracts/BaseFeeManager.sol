@@ -51,7 +51,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
 
     function getFeeManagerMode() external pure returns (bytes4);
 
-    function random(uint256 _count) public view returns (uint256) {
+    function random(uint256 _count) internal view returns (uint256) {
         return uint256(blockhash(block.number.sub(1))) % _count;
     }
 }

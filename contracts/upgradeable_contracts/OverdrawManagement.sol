@@ -11,7 +11,10 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, Ba
 
     event UserRequestForSignature(address recipient, uint256 value);
 
-    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock) external onlyIfUpgradeabilityOwner {
+    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
+        external
+        onlyIfUpgradeabilityOwner
+    {
         require(!fixedAssets(txHash));
         require(valueToUnlock <= maxPerTx());
         address recipient;

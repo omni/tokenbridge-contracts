@@ -54,7 +54,9 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         revert();
     }
 
+    /* solcov ignore next */
     function erc20token() public view returns (ERC20Basic);
 
+    /* solcov ignore next */
     function setErc20token(address _token) internal;
 }

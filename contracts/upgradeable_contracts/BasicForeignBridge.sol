@@ -29,6 +29,7 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge {
         }
     }
 
+    /* solcov ignore next */
     function onExecuteMessage(address, uint256, bytes32) internal returns (bool);
 
     function setRelayedMessages(bytes32 _txHash, bool _status) internal {
@@ -39,5 +40,6 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge {
         return boolStorage[keccak256(abi.encodePacked("relayedMessages", _txHash))];
     }
 
+    /* solcov ignore next */
     function onFailedMessage(address, uint256, bytes32) internal;
 }

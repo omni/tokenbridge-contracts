@@ -34,5 +34,6 @@ contract ERC677Bridge is BasicBridge {
         fireEventOnTokenTransfer(_from, _value);
     }
 
+    /* solcov ignore next */
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal;
 }

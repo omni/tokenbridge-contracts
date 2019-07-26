@@ -16,5 +16,6 @@ contract BlockRewardFeeManager is BaseFeeManager {
         return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
     }
 
+    /* solcov ignore next */
     function distributeFeeFromBlockReward(uint256 _fee) internal;
 }

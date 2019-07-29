@@ -912,7 +912,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       await homeBridge.fixAssetsAboveLimits(transactionHash, false, value).should.be.rejectedWith(ERROR_MSG)
     })
-    it('Should allow to partially reduce outOfLimitAmount and not emit any event', async () => {
+    it('Should allow to partially reduce outOfLimitAmount and not emit UserRequestForSignature', async () => {
       const recipient = accounts[5]
       const value = oneEther
       const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
@@ -927,13 +927,23 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       const { logs } = await homeBridge.fixAssetsAboveLimits(transactionHash, false, halfEther).should.be.fulfilled
 
-      logs.length.should.be.equal(0)
+      logs.length.should.be.equal(1)
+      expectEventInLogs(logs, 'AssetAboveLimitsFixed', {
+        transactionHash,
+        value: halfEther,
+        remaining: halfEther
+      })
       expect(await homeBridge.outOfLimitAmount()).to.be.bignumber.equal(halfEther)
 
       const { logs: logsSecondTx } = await homeBridge.fixAssetsAboveLimits(transactionHash, false, halfEther).should.be
         .fulfilled
 
-      logsSecondTx.length.should.be.equal(0)
+      logsSecondTx.length.should.be.equal(1)
+      expectEventInLogs(logsSecondTx, 'AssetAboveLimitsFixed', {
+        transactionHash,
+        value: halfEther,
+        remaining: ZERO
+      })
       expect(await homeBridge.outOfLimitAmount()).to.be.bignumber.equal(ZERO)
     })
     it('Should allow to partially reduce outOfLimitAmount and emit UserRequestForSignature', async () => {
@@ -951,7 +961,12 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       const { logs } = await homeBridge.fixAssetsAboveLimits(transactionHash, true, halfEther).should.be.fulfilled
 
-      logs.length.should.be.equal(1)
+      logs.length.should.be.equal(2)
+      expectEventInLogs(logs, 'AssetAboveLimitsFixed', {
+        transactionHash,
+        value: halfEther,
+        remaining: halfEther
+      })
       expectEventInLogs(logs, 'UserRequestForSignature', {
         recipient,
         value: halfEther
@@ -962,7 +977,12 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const { logs: logsSecondTx } = await homeBridge.fixAssetsAboveLimits(transactionHash, true, halfEther).should.be
         .fulfilled
 
-      logsSecondTx.length.should.be.equal(1)
+      logsSecondTx.length.should.be.equal(2)
+      expectEventInLogs(logsSecondTx, 'AssetAboveLimitsFixed', {
+        transactionHash,
+        value: halfEther,
+        remaining: ZERO
+      })
       expectEventInLogs(logsSecondTx, 'UserRequestForSignature', {
         recipient,
         value: halfEther
@@ -985,7 +1005,12 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       const { logs } = await homeBridge.fixAssetsAboveLimits(transactionHash, true, halfEther).should.be.fulfilled
 
-      logs.length.should.be.equal(1)
+      logs.length.should.be.equal(2)
+      expectEventInLogs(logs, 'AssetAboveLimitsFixed', {
+        transactionHash,
+        value: halfEther,
+        remaining: halfEther
+      })
       expectEventInLogs(logs, 'UserRequestForSignature', {
         recipient,
         value: halfEther
@@ -996,7 +1021,12 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const { logs: logsSecondTx } = await homeBridge.fixAssetsAboveLimits(transactionHash, true, quarterEther).should
         .be.fulfilled
 
-      logsSecondTx.length.should.be.equal(1)
+      logsSecondTx.length.should.be.equal(2)
+      expectEventInLogs(logsSecondTx, 'AssetAboveLimitsFixed', {
+        transactionHash,
+        value: quarterEther,
+        remaining: quarterEther
+      })
       expectEventInLogs(logsSecondTx, 'UserRequestForSignature', {
         recipient,
         value: quarterEther
@@ -1005,7 +1035,17 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(await homeBridge.outOfLimitAmount()).to.be.bignumber.equal(quarterEther)
 
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, halfEther).should.be.rejectedWith(ERROR_MSG)
-      await homeBridge.fixAssetsAboveLimits(transactionHash, true, quarterEther).should.be.fulfilled
+      const { logs: logsThirdTx } = await homeBridge.fixAssetsAboveLimits(transactionHash, true, quarterEther).should.be
+        .fulfilled
+      expectEventInLogs(logsThirdTx, 'AssetAboveLimitsFixed', {
+        transactionHash,
+        value: quarterEther,
+        remaining: ZERO
+      })
+      expectEventInLogs(logsThirdTx, 'UserRequestForSignature', {
+        recipient,
+        value: quarterEther
+      })
 
       expect(await homeBridge.outOfLimitAmount()).to.be.bignumber.equal(ZERO)
     })
@@ -1098,7 +1138,12 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       const { logs } = await homeBridge.fixAssetsAboveLimits(transactionHash, true, halfEther).should.be.fulfilled
 
-      logs.length.should.be.equal(1)
+      logs.length.should.be.equal(2)
+      expectEventInLogs(logs, 'AssetAboveLimitsFixed', {
+        transactionHash,
+        value: halfEther,
+        remaining: halfEther
+      })
       expectEventInLogs(logs, 'UserRequestForSignature', {
         recipient,
         value: finalValue

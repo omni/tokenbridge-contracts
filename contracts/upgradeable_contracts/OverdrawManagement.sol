@@ -10,6 +10,7 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, Ba
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
+    event AssetAboveLimitsFixed(bytes32 indexed transactionHash, uint256 value, uint256 remaining);
 
     function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
         external
@@ -24,6 +25,10 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, Ba
         setOutOfLimitAmount(outOfLimitAmount().sub(valueToUnlock));
         uint256 pendingValue = value.sub(valueToUnlock);
         setTxAboveLimitsValue(pendingValue, txHash);
+        emit AssetAboveLimitsFixed(txHash, valueToUnlock, pendingValue);
+        if (pendingValue == 0) {
+            setFixedAssets(txHash);
+        }
         if (unlockOnForeign) {
             address feeManager = feeManagerContract();
             uint256 eventValue = valueToUnlock;
@@ -32,9 +37,6 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, Ba
                 eventValue = valueToUnlock.sub(fee);
             }
             emit UserRequestForSignature(recipient, eventValue);
-        }
-        if (pendingValue == 0) {
-            setFixedAssets(txHash);
         }
     }
 

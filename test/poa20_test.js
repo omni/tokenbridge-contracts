@@ -193,39 +193,6 @@ async function testERC677BridgeToken(accounts, rewardable) {
         expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal('100')
       })
     })
-
-    describe('#withdraw', async () => {
-      it('can only be called by Staking contract', async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['100'], { from: accounts[2] }).should.be.fulfilled
-        await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[3] }).should.be.fulfilled
-        await token.withdraw(user, '100', { from: accounts[4] }).should.be.rejectedWith(ERROR_MSG)
-        await token.withdraw(user, '100', { from: accounts[3] }).should.be.fulfilled
-      })
-      it("should revert if Staking doesn't have enough balance", async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['100'], { from: accounts[2] }).should.be.fulfilled
-        expect(await token.balanceOf(user)).to.be.bignumber.equal('100')
-        await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[3] }).should.be.fulfilled
-        await token.withdraw(user, '101', { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG)
-        await token.withdraw(user, '100', { from: accounts[3] }).should.be.fulfilled
-      })
-      it("should decrease Staking's balance and increase user's balance", async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['100'], { from: accounts[2] }).should.be.fulfilled
-        expect(await token.balanceOf(user)).to.be.bignumber.equal('100')
-        expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal(ZERO)
-        await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[3] }).should.be.fulfilled
-        expect(await token.balanceOf(user)).to.be.bignumber.equal('0')
-        expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal('100')
-        await token.withdraw(user, 60, { from: accounts[3] }).should.be.fulfilled
-        expect(await token.balanceOf(user)).to.be.bignumber.equal('60')
-        expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal('40')
-      })
-    })
   }
 
   describe('#mint', async () => {

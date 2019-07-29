@@ -1549,6 +1549,18 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       const feeManagerMode = await homeBridge.getFeeManagerMode()
       feeManagerMode.should.be.equals(bothDirectionsModeHash)
     })
+    it('should be able to get fee manager mode from POSDAO fee manager', async () => {
+      // Given
+      const feeManager = await FeeManagerErcToNativePOSDAO.new()
+      const bothDirectionsModeHash = '0xd7de965f'
+
+      // When
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+
+      // Then
+      const feeManagerMode = await homeBridge.getFeeManagerMode()
+      feeManagerMode.should.be.equals(bothDirectionsModeHash)
+    })
   })
   describe('#feeManager_ExecuteAffirmation', async () => {
     it('should distribute fee to validator', async () => {

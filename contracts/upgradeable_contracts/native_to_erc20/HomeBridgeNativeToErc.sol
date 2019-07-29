@@ -1,16 +1,17 @@
 pragma solidity 0.4.24;
-import "../../libraries/SafeMath.sol";
+
 import "../../libraries/Message.sol";
-import "../BasicBridge.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../BasicHomeBridge.sol";
 import "./RewardableHomeBridgeNativeToErc.sol";
 import "../Sacrifice.sol";
 
+contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
+    function() public payable {
+        nativeTransfer();
+    }
 
-contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
-
-    function () public payable {
+    function nativeTransfer() internal {
         require(msg.value > 0);
         require(msg.data.length == 0);
         require(withinLimit(msg.value));
@@ -24,7 +25,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         emit UserRequestForSignature(msg.sender, valueToTransfer);
     }
 
-    function initialize (
+    function initialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -34,8 +35,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) public returns(bool)
-    {
+    ) external returns (bool) {
         _initialize(
             _validatorContract,
             _dailyLimit,
@@ -47,11 +47,11 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
             _foreignMaxPerTx,
             _owner
         );
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 
-    function rewardableInitialize (
+    function rewardableInitialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -64,8 +64,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         address _feeManager,
         uint256 _homeFee,
         uint256 _foreignFee
-    ) public returns(bool)
-    {
+    ) external returns (bool) {
         _initialize(
             _validatorContract,
             _dailyLimit,
@@ -81,15 +80,15 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
-        setInitialize(true);
+        setInitialize();
         return isInitialized();
     }
 
-    function getBridgeMode() public pure returns(bytes4 _data) {
+    function getBridgeMode() external pure returns (bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
     }
 
-    function _initialize (
+    function _initialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -99,10 +98,9 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
         address _owner
-    ) internal
-    {
+    ) internal {
         require(!isInitialized());
-        require(_validatorContract != address(0) && isContract(_validatorContract));
+        require(isContract(_validatorContract));
         require(_homeGasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
@@ -135,7 +133,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         }
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns(bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         uint256 valueToTransfer = _value;
 
@@ -152,11 +150,11 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicBridge, BasicHomeBridge, 
         return true;
     }
 
-    function affirmationWithinLimits(uint256 _amount) internal view returns(bool) {
-        return withinExecutionLimit(_amount);
-    }
-
-    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
+    function onFailedAffirmation(
+        address, /*_recipient*/
+        uint256, /*_value*/
+        bytes32 /*_txHash*/
+    ) internal {
         revert();
     }
 }

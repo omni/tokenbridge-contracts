@@ -1,23 +1,22 @@
 pragma solidity 0.4.24;
 
-
 /**
  * @title Proxy
  * @dev Gives the possibility to delegate any call to a foreign implementation.
  */
 contract Proxy {
-
-  /**
-  * @dev Tells the address of the implementation where every call will be delegated.
-  * @return address of the implementation to which it will be delegated
-  */
+    /**
+    * @dev Tells the address of the implementation where every call will be delegated.
+    * @return address of the implementation to which it will be delegated
+    */
     function implementation() public view returns (address);
 
-  /**
-  * @dev Fallback function allowing to perform a delegatecall to the given implementation.
-  * This function will return whatever the implementation call returns
-  */
-    function () payable public {
+    /**
+    * @dev Fallback function allowing to perform a delegatecall to the given implementation.
+    * This function will return whatever the implementation call returns
+    */
+    function() public payable {
+        // solhint-disable-previous-line no-complex-fallback
         address _impl = implementation();
         require(_impl != address(0));
         assembly {
@@ -85,8 +84,12 @@ contract Proxy {
                 copied to `ptr` from the delegatecall return data
             */
             switch result
-            case 0 { revert(ptr, returndatasize) }
-            default { return(ptr, returndatasize) }
+                case 0 {
+                    revert(ptr, returndatasize)
+                }
+                default {
+                    return(ptr, returndatasize)
+                }
         }
     }
 }

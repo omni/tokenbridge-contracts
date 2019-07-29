@@ -7,9 +7,10 @@ const { BRIDGE_MODE, ERC20_TOKEN_ADDRESS } = env
 const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
 
 async function deployNativeToErc() {
+  const preDeploy = require('./src/native_to_erc/preDeploy')
   const deployHome = require('./src/native_to_erc/home')
   const deployForeign = require('./src/native_to_erc/foreign')
-
+  await preDeploy()
   const { homeBridge } = await deployHome()
   const { foreignBridge, erc677 } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')
@@ -79,9 +80,10 @@ async function deployErcToErc() {
 }
 
 async function deployErcToNative() {
+  const preDeploy = require('./src/erc_to_native/preDeploy')
   const deployHome = require('./src/erc_to_native/home')
   const deployForeign = require('./src/erc_to_native/foreign')
-
+  await preDeploy()
   const { homeBridge } = await deployHome()
   const { foreignBridge } = await deployForeign()
   console.log('\nDeployment has been completed.\n\n')

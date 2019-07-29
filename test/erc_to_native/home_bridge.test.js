@@ -2,9 +2,11 @@ const HomeBridge = artifacts.require('HomeBridgeErcToNative.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const BlockReward = artifacts.require('BlockReward')
+const OldBlockReward = artifacts.require('oldBlockReward')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const FeeManagerErcToNative = artifacts.require('FeeManagerErcToNative.sol')
 const FeeManagerErcToNativePOSDAO = artifacts.require('FeeManagerErcToNativePOSDAO')
+const FeeManagerMock = artifacts.require('FeeManagerMock')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -108,6 +110,10 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
 
       await homeContract.setBlockRewardContract(validatorContract.address).should.be.rejectedWith(ERROR_MSG)
       secondBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
+
+      const oldBlockRewardContract = await OldBlockReward.new()
+      await homeContract.setBlockRewardContract(oldBlockRewardContract.address).should.be.fulfilled
+      oldBlockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
     })
 
     it('cant set maxPerTx > dailyLimit', async () => {
@@ -175,7 +181,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
     it('can be upgraded keeping the state', async () => {
       const homeOwner = accounts[8]
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      const proxyOwner = await storageProxy.proxyOwner()
       const data = homeContract.contract.methods
         .initialize(
           validatorContract.address,
@@ -200,7 +205,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await finalContract.maxPerTx()).to.be.bignumber.equal('2')
       expect(await finalContract.minPerTx()).to.be.bignumber.equal('1')
       expect(await finalContract.blockRewardContract()).to.be.equal(blockRewardContract.address)
-      expect(await finalContract.upgradeabilityAdmin()).to.be.equal(proxyOwner)
 
       const homeContractV2 = await HomeBridge.new()
       await storageProxy.upgradeTo('2', homeContractV2.address).should.be.fulfilled
@@ -212,7 +216,6 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await finalContractV2.maxPerTx()).to.be.bignumber.equal('2')
       expect(await finalContractV2.minPerTx()).to.be.bignumber.equal('1')
       expect(await finalContractV2.blockRewardContract()).to.be.equal(blockRewardContract.address)
-      expect(await finalContractV2.upgradeabilityAdmin()).to.be.equal(proxyOwner)
     })
     it('cant initialize with invalid arguments', async () => {
       false.should.be.equal(await homeContract.isInitialized())
@@ -539,6 +542,41 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       bridgeHomeFee.should.be.bignumber.equal(newHomeFee)
       const bridgeForeignFee = await homeContract.getForeignFee()
       bridgeForeignFee.should.be.bignumber.equal(newForeignFee)
+    })
+    it('fee should be less than 100%', async () => {
+      await homeContract.rewardableInitialize(
+        validatorContract.address,
+        '3',
+        '2',
+        '1',
+        gasPrice,
+        requireBlockConfirmations,
+        blockRewardContract.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner,
+        feeManager.address,
+        homeFee,
+        foreignFee
+      ).should.be.fulfilled
+
+      const invalidFee = ether('1')
+      const invalidBigFee = ether('2')
+
+      await homeContract.setHomeFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setForeignFee(invalidFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await homeContract.setHomeFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setForeignFee(invalidBigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      const newHomeFee = ether('0.99')
+      const newForeignFee = ether('0.99')
+
+      await homeContract.setHomeFee(newHomeFee, { from: owner }).should.be.fulfilled
+      await homeContract.setForeignFee(newForeignFee, { from: owner }).should.be.fulfilled
+
+      expect(await homeContract.getHomeFee()).to.be.bignumber.equals(newHomeFee)
+      expect(await homeContract.getForeignFee()).to.be.bignumber.equals(newForeignFee)
     })
   })
 
@@ -1374,18 +1412,69 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge.fixAssetsAboveLimits(transactionHash, true, { from: owner }).should.be.fulfilled
     })
-  })
-  describe('#OwnedUpgradeability', async () => {
-    it('upgradeabilityAdmin should return the proxy owner', async () => {
+    it('Should emit UserRequestForSignature with value reduced by fee', async () => {
+      // Initialize
+      const owner = accounts[9]
+      const validators = [accounts[1]]
+      const rewards = [accounts[2]]
+      const requiredSignatures = 1
+      const rewardableValidators = await RewardableValidators.new()
       const homeBridgeImpl = await HomeBridge.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
       const homeBridge = await HomeBridge.at(storageProxy.address)
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      await homeBridge.initialize(
+        rewardableValidators.address,
+        oneEther,
+        halfEther,
+        minPerTx,
+        gasPrice,
+        requireBlockConfirmations,
+        blockRewardContract.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner
+      ).should.be.fulfilled
+      await blockRewardContract.sendTransaction({
+        from: accounts[2],
+        value: oneEther
+      }).should.be.fulfilled
 
-      const proxyOwner = await storageProxy.proxyOwner()
-      const upgradeabilityAdmin = await homeBridge.upgradeabilityAdmin()
+      // Given
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = ether(fee.toString())
+      const feeManager = await FeeManagerErcToNative.new()
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+      await homeBridge.setHomeFee(feeInWei, { from: owner }).should.be.fulfilled
 
-      upgradeabilityAdmin.should.be.equal(proxyOwner)
+      const recipient = accounts[5]
+      const value = oneEther
+      const valueCalc = 1 - fee
+      const finalValue = ether(valueCalc.toString())
+      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+
+      // When
+      const { logs: affirmationLogs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {
+        from: validators[0]
+      }).should.be.fulfilled
+
+      expectEventInLogs(affirmationLogs, 'AmountLimitExceeded', {
+        recipient,
+        value,
+        transactionHash
+      })
+
+      const { logs } = await homeBridge.fixAssetsAboveLimits(transactionHash, true).should.be.fulfilled
+
+      // Then
+      expectEventInLogs(logs, 'UserRequestForSignature', {
+        recipient,
+        value: finalValue
+      })
     })
   })
 
@@ -2072,14 +2161,14 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
   describe('#FeeManager_random', async () => {
     it('should return value between 0 and 3', async () => {
       // Given
-      const feeManager = await FeeManagerErcToNative.new()
+      const feeManager = await FeeManagerMock.new()
 
       for (let i = 0; i < 10; i++) {
         // send Tx to generate new blocks
         await feeManager.setHomeFee(0).should.be.fulfilled
 
         // When
-        const result = await feeManager.random(3)
+        const result = await feeManager.randomTest(3)
 
         // Then
         expect(result).to.be.bignumber.gte(ZERO)

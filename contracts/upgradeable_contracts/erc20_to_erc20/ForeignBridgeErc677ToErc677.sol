@@ -1,12 +1,9 @@
 pragma solidity 0.4.24;
 
-
 import "./BasicForeignBridgeErcToErc.sol";
 import "../ERC677Bridge.sol";
 
-
 contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc {
-
     event UserRequestForAffirmation(address recipient, uint256 value);
 
     function initialize(
@@ -20,7 +17,7 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
         address _owner
-    ) public returns(bool) {
+    ) external returns (bool) {
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
 
         _initialize(
@@ -40,7 +37,7 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         return isInitialized();
     }
 
-    function erc20token() public view returns(ERC20Basic) {
+    function erc20token() public view returns (ERC20Basic) {
         return erc677token();
     }
 

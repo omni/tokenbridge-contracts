@@ -1,17 +1,15 @@
 pragma solidity 0.4.24;
 
-import "../../IBurnableMintableERC677Token.sol";
+import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../Sacrifice.sol";
 import "../ValidatorsFeeManager.sol";
 
-
 contract FeeManagerNativeToErc is ValidatorsFeeManager {
-
-    function getFeeManagerMode() public pure returns(bytes4) {
+    function getFeeManagerMode() external pure returns (bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-one-direction")));
     }
 
-    function erc677token() public view returns(IBurnableMintableERC677Token) {
+    function erc677token() public view returns (IBurnableMintableERC677Token) {
         return IBurnableMintableERC677Token(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
     }
 

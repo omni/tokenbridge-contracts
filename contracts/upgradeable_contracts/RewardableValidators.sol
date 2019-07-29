@@ -2,23 +2,19 @@ pragma solidity 0.4.24;
 
 import "./BaseBridgeValidators.sol";
 
-
 contract RewardableValidators is BaseBridgeValidators {
-
     function initialize(
         uint256 _requiredSignatures,
         address[] _initialValidators,
         address[] _initialRewards,
         address _owner
-    )
-    public
-    returns (bool)
-    {
+    ) public returns (bool) {
         require(!isInitialized());
         require(_owner != address(0));
         setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
+        require(_initialValidators.length <= MAX_VALIDATORS);
         require(_initialValidators.length == _initialRewards.length);
 
         for (uint256 i = 0; i < _initialValidators.length; i++) {
@@ -44,8 +40,8 @@ contract RewardableValidators is BaseBridgeValidators {
         }
 
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
-        uintStorage[keccak256("deployedAtBlock")] = block.number;
-        setInitialize(true);
+        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        setInitialize();
         emit RequiredSignaturesChanged(_requiredSignatures);
 
         return isInitialized();
@@ -64,7 +60,7 @@ contract RewardableValidators is BaseBridgeValidators {
         emit ValidatorRemoved(_validator);
     }
 
-    function getValidatorRewardAddress(address _validator) public view returns (address) {
+    function getValidatorRewardAddress(address _validator) external view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("validatorsRewards", _validator))];
     }
 

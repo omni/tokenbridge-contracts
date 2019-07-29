@@ -296,6 +296,11 @@ function getSendTxMethod(url) {
   return url === HOME_RPC_URL ? sendRawTxHome : sendRawTxForeign
 }
 
+async function isContract(web3, address) {
+  const code = await web3.eth.getCode(address)
+  return code !== '0x' && code !== '0x0'
+}
+
 module.exports = {
   deployContract,
   sendRawTxHome,
@@ -307,5 +312,6 @@ module.exports = {
   transferProxyOwnership,
   transferOwnership,
   setBridgeContract,
-  assertStateWithRetry
+  assertStateWithRetry,
+  isContract
 }

@@ -2,15 +2,9 @@ pragma solidity 0.4.24;
 
 import "./BaseBridgeValidators.sol";
 
-
 contract BridgeValidators is BaseBridgeValidators {
-
-    function initialize(
-        uint256 _requiredSignatures,
-        address[] _initialValidators,
-        address _owner
-    )
-        public
+    function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
+        external
         returns (bool)
     {
         require(!isInitialized());
@@ -18,6 +12,7 @@ contract BridgeValidators is BaseBridgeValidators {
         setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
+        require(_initialValidators.length <= MAX_VALIDATORS);
 
         for (uint256 i = 0; i < _initialValidators.length; i++) {
             require(_initialValidators[i] != address(0) && _initialValidators[i] != F_ADDR);
@@ -40,8 +35,8 @@ contract BridgeValidators is BaseBridgeValidators {
         }
 
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
-        uintStorage[keccak256("deployedAtBlock")] = block.number;
-        setInitialize(true);
+        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        setInitialize();
         emit RequiredSignaturesChanged(_requiredSignatures);
 
         return isInitialized();

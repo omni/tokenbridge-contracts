@@ -2,9 +2,8 @@ pragma solidity 0.4.24;
 
 import "./HomeBridgeErcToErc.sol";
 
-contract POSDAOHomeBridgeErcToErc is HomeBridgeErcToErc {
-
-    function rewardableInitialize (
+contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
+    function rewardableInitialize(
         address _validatorContract,
         uint256 _dailyLimit,
         uint256 _maxPerTx,
@@ -19,10 +18,8 @@ contract POSDAOHomeBridgeErcToErc is HomeBridgeErcToErc {
         uint256 _homeFee,
         uint256 _foreignFee,
         address _blockReward
-    ) public
-    returns(bool)
-    {
-        _rewardableInitialize (
+    ) external returns (bool) {
+        _rewardableInitialize(
             _validatorContract,
             _dailyLimit,
             _maxPerTx,
@@ -38,12 +35,12 @@ contract POSDAOHomeBridgeErcToErc is HomeBridgeErcToErc {
             _foreignFee
         );
         _setBlockRewardContract(_feeManager, _blockReward);
-        setInitialize(true);
+        setInitialize();
 
         return isInitialized();
     }
 
-    function blockRewardContract() public view returns(address) {
+    function blockRewardContract() public view returns (address) {
         address blockReward;
         address feeManager = feeManagerContract();
         bytes memory callData = abi.encodeWithSignature("blockRewardContract()");
@@ -53,13 +50,15 @@ contract POSDAOHomeBridgeErcToErc is HomeBridgeErcToErc {
             blockReward := mload(0)
 
             switch result
-            case 0 { revert(0, 0) }
+                case 0 {
+                    revert(0, 0)
+                }
         }
 
         return blockReward;
     }
 
-    function setBlockRewardContract(address _blockReward) public onlyOwner {
+    function setBlockRewardContract(address _blockReward) external onlyOwner {
         address feeManager = feeManagerContract();
         _setBlockRewardContract(feeManager, _blockReward);
     }

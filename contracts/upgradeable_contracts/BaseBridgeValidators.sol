@@ -1,39 +1,32 @@
 pragma solidity 0.4.24;
 
 import "./Ownable.sol";
-import "../libraries/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../upgradeability/EternalStorage.sol";
-
 
 contract BaseBridgeValidators is EternalStorage, Ownable {
     using SafeMath for uint256;
 
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    uint256 internal constant MAX_VALIDATORS = 100;
 
-    event ValidatorAdded (address indexed validator);
-    event ValidatorRemoved (address indexed validator);
-    event RequiredSignaturesChanged (uint256 requiredSignatures);
+    event ValidatorAdded(address indexed validator);
+    event ValidatorRemoved(address indexed validator);
+    event RequiredSignaturesChanged(uint256 requiredSignatures);
 
-    function setRequiredSignatures(uint256 _requiredSignatures)
-    external
-    onlyOwner
-    {
+    function setRequiredSignatures(uint256 _requiredSignatures) external onlyOwner {
         require(validatorCount() >= _requiredSignatures);
         require(_requiredSignatures != 0);
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
         emit RequiredSignaturesChanged(_requiredSignatures);
     }
 
-    function getBridgeValidatorsInterfacesVersion()
-    public
-    pure
-    returns (uint64 major, uint64 minor, uint64 patch)
-    {
+    function getBridgeValidatorsInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (2, 2, 0);
     }
 
-    function validatorList() public view returns (address[]) {
-        address [] memory list = new address[](validatorCount());
+    function validatorList() external view returns (address[]) {
+        address[] memory list = new address[](validatorCount());
         uint256 counter = 0;
         address nextValidator = getNextValidator(F_ADDR);
         require(nextValidator != address(0));
@@ -43,9 +36,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
             nextValidator = getNextValidator(nextValidator);
             counter++;
 
-            if (nextValidator == address(0) ) {
-                revert();
-            }
+            require(nextValidator != address(0));
         }
 
         return list;
@@ -74,9 +65,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
             index = next;
             next = getNextValidator(index);
 
-            if (next == F_ADDR || next == address(0) ) {
-                revert();
-            }
+            require(next != F_ADDR && next != address(0));
         }
 
         setNextValidator(index, validatorsNext);
@@ -100,8 +89,8 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
     }
 
-    function deployedAtBlock() public view returns (uint256) {
-        return uintStorage[keccak256("deployedAtBlock")];
+    function deployedAtBlock() external view returns (uint256) {
+        return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
     }
 
     function getNextValidator(address _address) public view returns (address) {
@@ -120,7 +109,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
         addressStorage[keccak256(abi.encodePacked("validatorsList", _prevValidator))] = _validator;
     }
 
-    function setInitialize(bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = _status;
+    function setInitialize() internal {
+        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
     }
 }

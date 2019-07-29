@@ -1,6 +1,5 @@
 pragma solidity 0.4.24;
-import "../IBridgeValidators.sol";
-
+import "../interfaces/IBridgeValidators.sol";
 
 library Message {
     // function uintToString(uint256 inputValue) internal pure returns (string) {
@@ -38,11 +37,10 @@ library Message {
     // offset 84: 32 bytes :: bytes32 - transaction hash
     // offset 104: 20 bytes :: address - contract address to prevent double spending
 
-    // bytes 1 to 32 are 0 because message length is stored as little endian.
     // mload always reads 32 bytes.
     // so we can and have to start reading recipient at offset 20 instead of 32.
     // if we were to read at 32 the address would contain part of value and be corrupted.
-    // when reading from offset 20 mload will read 12 zero bytes followed
+    // when reading from offset 20 mload will read 12 bytes (most of them zeros) followed
     // by the 20 recipient address bytes and correctly convert it into an address.
     // this saves some storage/gas over the alternative solution
     // which is padding address to 32 bytes and reading recipient at offset 32.
@@ -51,22 +49,22 @@ library Message {
     function parseMessage(bytes message)
         internal
         pure
-        returns(address recipient, uint256 amount, bytes32 txHash, address contractAddress)
+        returns (address recipient, uint256 amount, bytes32 txHash, address contractAddress)
     {
         require(isMessageValid(message));
         assembly {
-            recipient := and(mload(add(message, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            recipient := mload(add(message, 20))
             amount := mload(add(message, 52))
             txHash := mload(add(message, 84))
             contractAddress := mload(add(message, 104))
         }
     }
 
-    function isMessageValid(bytes _msg) internal pure returns(bool) {
+    function isMessageValid(bytes _msg) internal pure returns (bool) {
         return _msg.length == requiredMessageLength();
     }
 
-    function requiredMessageLength() internal pure returns(uint256) {
+    function requiredMessageLength() internal pure returns (uint256) {
         return 104;
     }
 
@@ -86,7 +84,6 @@ library Message {
 
     function hashMessage(bytes message) internal pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        // message is always 84 length
         string memory msgLength = "104";
         return keccak256(abi.encodePacked(prefix, msgLength, message));
     }
@@ -96,9 +93,13 @@ library Message {
         uint8[] _vs,
         bytes32[] _rs,
         bytes32[] _ss,
-        IBridgeValidators _validatorContract) internal view {
+        IBridgeValidators _validatorContract
+    ) internal view {
         require(isMessageValid(_message));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
+        // It is not necessary to check that arrays have the same length since it will be handled
+        // during attempt to access to the corresponding elements in the loop and the call will be reverted.
+        // It will save gas for the rational validators actions and still be safe enough from security point of view
         require(_vs.length >= requiredSignatures);
         bytes32 hash = hashMessage(_message);
         address[] memory encounteredAddresses = new address[](requiredSignatures);
@@ -106,9 +107,7 @@ library Message {
         for (uint256 i = 0; i < requiredSignatures; i++) {
             address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
             require(_validatorContract.isValidator(recoveredAddress));
-            if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
-                revert();
-            }
+            require(!addressArrayContains(encounteredAddresses, recoveredAddress));
             encounteredAddresses[i] = recoveredAddress;
         }
     }

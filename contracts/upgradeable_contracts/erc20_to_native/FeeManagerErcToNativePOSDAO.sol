@@ -1,11 +1,10 @@
 pragma solidity 0.4.24;
 
-import "../../IBlockReward.sol";
+import "../../interfaces/IBlockReward.sol";
 import "../BlockRewardFeeManager.sol";
 
 contract FeeManagerErcToNativePOSDAO is BlockRewardFeeManager {
-
-    function getFeeManagerMode() public pure returns(bytes4) {
+    function getFeeManagerMode() external pure returns (bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
     }
 
@@ -14,7 +13,7 @@ contract FeeManagerErcToNativePOSDAO is BlockRewardFeeManager {
         blockReward.addBridgeNativeFeeReceivers(_fee);
     }
 
-    function getAmountToBurn(uint256 _value) public view returns(uint256) {
+    function getAmountToBurn(uint256 _value) public view returns (uint256) {
         return _value;
     }
 }

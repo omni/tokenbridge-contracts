@@ -1,6 +1,6 @@
 {
   "name": "token-bridge-contracts",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "description": "Bridge",
   "main": "index.js",
   "scripts": {

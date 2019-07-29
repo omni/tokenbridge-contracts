@@ -180,7 +180,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         await token.mintReward([user], ['99'], { from: accounts[2] }).should.be.fulfilled
         expect(await token.balanceOf(user)).to.be.bignumber.equal('99')
         await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG)
+        await token.stake(user, '100', { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG_OPCODE)
       })
       it("should decrease user's balance and increase Staking's balance", async () => {
         await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled

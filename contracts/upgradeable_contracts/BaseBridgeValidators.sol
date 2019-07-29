@@ -22,7 +22,7 @@ contract BaseBridgeValidators is EternalStorage, Ownable {
     }
 
     function getBridgeValidatorsInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (2, 2, 0);
+        return (2, 2, 1);
     }
 
     function validatorList() external view returns (address[]) {

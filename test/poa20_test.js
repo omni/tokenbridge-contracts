@@ -9,7 +9,7 @@ const ForeignNativeToErcBridge = artifacts.require('ForeignBridgeNativeToErc.sol
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 
 const { expect } = require('chai')
-const { ERROR_MSG, ZERO_ADDRESS, BN } = require('./setup')
+const { ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS, BN } = require('./setup')
 const { ether, expectEventInLogs } = require('./helpers/helpers')
 
 const minPerTx = ether('0.01')

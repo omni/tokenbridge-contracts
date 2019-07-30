@@ -85,6 +85,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     }
 
     function setDailyLimit(uint256 _dailyLimit) external onlyOwner {
+        require(_dailyLimit > maxPerTx() || _dailyLimit == 0);
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
         emit DailyLimitChanged(_dailyLimit);
     }
@@ -94,6 +95,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     }
 
     function setExecutionDailyLimit(uint256 _dailyLimit) external onlyOwner {
+        require(_dailyLimit > executionMaxPerTx() || _dailyLimit == 0);
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _dailyLimit;
         emit ExecutionDailyLimitChanged(_dailyLimit);
     }

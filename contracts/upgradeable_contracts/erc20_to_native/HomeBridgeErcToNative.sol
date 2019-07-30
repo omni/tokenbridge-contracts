@@ -93,7 +93,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
             _foreignMaxPerTx,
             _owner
         );
-        require(isContract(_feeManager));
+        require(_feeManager.isContract());
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
@@ -115,7 +115,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
     }
 
     function setBlockRewardContract(address _blockReward) external onlyOwner {
-        require(isContract(_blockReward));
+        require(_blockReward.isContract());
 
         // Before store the contract we need to make sure that it is the block reward contract in actual fact,
         // call a specific method from the contract that should return a specific value
@@ -143,10 +143,10 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         address _owner
     ) internal {
         require(!isInitialized());
-        require(isContract(_validatorContract));
+        require(_validatorContract.isContract());
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
-        require(_blockReward == address(0) || isContract(_blockReward));
+        require(_blockReward == address(0) || _blockReward.isContract());
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;

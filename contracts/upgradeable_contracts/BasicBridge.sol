@@ -1,14 +1,17 @@
 pragma solidity 0.4.24;
+
 import "../interfaces/IBridgeValidators.sol";
 import "./Upgradeable.sol";
 import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./Validatable.sol";
 import "./Ownable.sol";
 import "./Claimable.sol";
 
 contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claimable {
     using SafeMath for uint256;
+    using AddressUtils for address;
 
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
@@ -129,13 +132,5 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
         claimValues(_token, _to);
-    }
-
-    function isContract(address _addr) internal view returns (bool) {
-        uint256 length;
-        assembly {
-            length := extcodesize(_addr)
-        }
-        return length > 0;
     }
 }

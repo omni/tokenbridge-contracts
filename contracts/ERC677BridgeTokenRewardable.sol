@@ -11,12 +11,12 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
     }
 
     function setBlockRewardContract(address _blockRewardContract) external onlyOwner {
-        require(isContract(_blockRewardContract));
+        require(_blockRewardContract.isContract());
         blockRewardContract = _blockRewardContract;
     }
 
     function setStakingContract(address _stakingContract) external onlyOwner {
-        require(isContract(_stakingContract));
+        require(_stakingContract.isContract());
         stakingContract = _stakingContract;
     }
 

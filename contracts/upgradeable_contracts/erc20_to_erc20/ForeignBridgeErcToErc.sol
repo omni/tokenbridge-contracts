@@ -31,7 +31,7 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc {
     }
 
     function setErc20token(address _token) internal {
-        require(isContract(_token));
+        require(_token.isContract());
         addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
     }
 }

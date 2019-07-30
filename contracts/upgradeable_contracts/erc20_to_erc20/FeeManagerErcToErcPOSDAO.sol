@@ -1,8 +1,11 @@
 pragma solidity 0.4.24;
 
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../BlockRewardFeeManager.sol";
 
 contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
+    using AddressUtils for address;
+
     function getFeeManagerMode() external pure returns (bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
     }
@@ -12,7 +15,7 @@ contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
     }
 
     function setBlockRewardContract(address _blockReward) external {
-        require(isContract(_blockReward));
+        require(_blockReward.isContract());
 
         // Before store the contract we need to make sure that it is the block reward contract in actual fact,
         // call a specific method from the contract that should return a specific value
@@ -30,13 +33,5 @@ contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
     function distributeFeeFromBlockReward(uint256 _fee) internal {
         IBlockReward blockReward = _blockRewardContract();
         blockReward.addBridgeTokenFeeReceivers(_fee);
-    }
-
-    function isContract(address _addr) internal view returns (bool) {
-        uint256 length;
-        assembly {
-            length := extcodesize(_addr)
-        }
-        return length > 0;
     }
 }

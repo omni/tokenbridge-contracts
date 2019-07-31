@@ -12,7 +12,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
-    event DailyLimitChanged(uint256 newLimit);
+    event DailyLimitChanged(uint256 previousLimit, uint256 newLimit);
     event ExecutionDailyLimitChanged(uint256 previousLimit, uint256 newLimit);
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
@@ -85,8 +85,8 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     }
 
     function setDailyLimit(uint256 _dailyLimit) external onlyOwner {
+        emit DailyLimitChanged(dailyLimit(), _dailyLimit);
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        emit DailyLimitChanged(_dailyLimit);
     }
 
     function dailyLimit() public view returns (uint256) {

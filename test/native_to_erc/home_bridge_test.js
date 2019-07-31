@@ -291,6 +291,14 @@ contract('HomeBridge', async accounts => {
 
       await homeContract.setMinPerTx(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
+    it('setDailyLimit should emit DailyLimitChanged', async () => {
+      const { logs } = await homeContract.setDailyLimit('4', { from: owner }).should.be.fulfilled
+
+      expectEventInLogs(logs, 'DailyLimitChanged', {
+        previousLimit: '3',
+        newLimit: '4'
+      })
+    })
   })
 
   describe('#executeAffirmation', async () => {

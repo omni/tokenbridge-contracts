@@ -10,4 +10,4 @@ import "./OwnedUpgradeabilityProxy.sol";
  * authorization control functionalities
  */
 // solhint-disable-next-line no-empty-blocks
-contract EternalStorageProxy is OwnedUpgradeabilityProxy, EternalStorage {}
+contract EternalStorageProxy is EternalStorage, OwnedUpgradeabilityProxy {}

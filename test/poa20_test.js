@@ -9,7 +9,7 @@ const ForeignNativeToErcBridge = artifacts.require('ForeignBridgeNativeToErc.sol
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 
 const { expect } = require('chai')
-const { ERROR_MSG, ZERO_ADDRESS, BN } = require('./setup')
+const { ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS, BN } = require('./setup')
 const { ether, expectEventInLogs } = require('./helpers/helpers')
 
 const minPerTx = ether('0.01')
@@ -180,7 +180,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         await token.mintReward([user], ['99'], { from: accounts[2] }).should.be.fulfilled
         expect(await token.balanceOf(user)).to.be.bignumber.equal('99')
         await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG)
+        await token.stake(user, '100', { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG_OPCODE)
       })
       it("should decrease user's balance and increase Staking's balance", async () => {
         await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
@@ -191,39 +191,6 @@ async function testERC677BridgeToken(accounts, rewardable) {
         await token.stake(user, '100', { from: accounts[3] }).should.be.fulfilled
         expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal('100')
-      })
-    })
-
-    describe('#withdraw', async () => {
-      it('can only be called by Staking contract', async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['100'], { from: accounts[2] }).should.be.fulfilled
-        await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[3] }).should.be.fulfilled
-        await token.withdraw(user, '100', { from: accounts[4] }).should.be.rejectedWith(ERROR_MSG)
-        await token.withdraw(user, '100', { from: accounts[3] }).should.be.fulfilled
-      })
-      it("should revert if Staking doesn't have enough balance", async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['100'], { from: accounts[2] }).should.be.fulfilled
-        expect(await token.balanceOf(user)).to.be.bignumber.equal('100')
-        await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[3] }).should.be.fulfilled
-        await token.withdraw(user, '101', { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG)
-        await token.withdraw(user, '100', { from: accounts[3] }).should.be.fulfilled
-      })
-      it("should decrease Staking's balance and increase user's balance", async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['100'], { from: accounts[2] }).should.be.fulfilled
-        expect(await token.balanceOf(user)).to.be.bignumber.equal('100')
-        expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal(ZERO)
-        await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[3] }).should.be.fulfilled
-        expect(await token.balanceOf(user)).to.be.bignumber.equal('0')
-        expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal('100')
-        await token.withdraw(user, 60, { from: accounts[3] }).should.be.fulfilled
-        expect(await token.balanceOf(user)).to.be.bignumber.equal('60')
-        expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal('40')
       })
     })
   }

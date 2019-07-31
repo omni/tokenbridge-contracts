@@ -784,8 +784,12 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       initialExecutionDailyLimit.should.be.bignumber.not.equal(newValue)
 
       await homeContract.setExecutionDailyLimit(newValue, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setExecutionDailyLimit(newValue, { from: owner }).should.be.fulfilled
+      const { logs } = await homeContract.setExecutionDailyLimit(newValue, { from: owner }).should.be.fulfilled
 
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', {
+        previousLimit: foreignDailyLimit,
+        newLimit: newValue
+      })
       const executionDailyLimit = await homeContract.executionDailyLimit()
       executionDailyLimit.should.be.bignumber.equal(newValue)
     })

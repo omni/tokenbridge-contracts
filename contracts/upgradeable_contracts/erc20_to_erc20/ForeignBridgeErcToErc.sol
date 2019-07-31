@@ -12,7 +12,8 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
         uint256 _maxPerTx,
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
-        address _owner
+        address _owner,
+        uint256 _decimalShift
     ) external returns (bool) {
         _initialize(
             _validatorContract,
@@ -22,7 +23,8 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
             _maxPerTx,
             _homeDailyLimit,
             _homeMaxPerTx,
-            _owner
+            _owner,
+            _decimalShift
         );
         return isInitialized();
     }

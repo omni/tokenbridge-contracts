@@ -27,7 +27,8 @@ contract HomeBridgeErcToErc is
         address _erc677token,
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
-        address _owner
+        address _owner,
+        uint256 _decimalShift
     ) external returns (bool) {
         _initialize(
             _validatorContract,
@@ -39,7 +40,8 @@ contract HomeBridgeErcToErc is
             _erc677token,
             _foreignDailyLimit,
             _foreignMaxPerTx,
-            _owner
+            _owner,
+            _decimalShift
         );
         setInitialize();
 
@@ -106,7 +108,8 @@ contract HomeBridgeErcToErc is
             _erc677token,
             _foreignDailyLimit,
             _foreignMaxPerTx,
-            _owner
+            _owner,
+            0
         );
         require(AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
@@ -124,7 +127,8 @@ contract HomeBridgeErcToErc is
         address _erc677token,
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
-        address _owner
+        address _owner,
+        uint256 _decimalShift
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
@@ -141,6 +145,7 @@ contract HomeBridgeErcToErc is
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignMaxPerTx;
+        uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setErc677token(_erc677token);
 
@@ -160,7 +165,7 @@ contract HomeBridgeErcToErc is
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-        uint256 valueToMint = _value;
+        uint256 valueToMint = _value.mul(10 ** decimalShift());
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);

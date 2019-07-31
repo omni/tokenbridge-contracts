@@ -16,7 +16,8 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         uint256 _minPerTx,
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
-        address _owner
+        address _owner,
+        uint256 _decimalShift
     ) external returns (bool) {
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
 
@@ -28,7 +29,8 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
             _maxPerTx,
             _homeDailyLimit,
             _homeMaxPerTx,
-            _owner
+            _owner,
+            _decimalShift
         );
 
         uintStorage[DAILY_LIMIT] = _dailyLimit;

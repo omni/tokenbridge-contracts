@@ -21,6 +21,7 @@ const halfEther = ether('0.5')
 const foreignDailyLimit = oneEther
 const foreignMaxPerTx = halfEther
 const ZERO = toBN(0)
+const decimalShiftZero = 0
 
 contract('HomeBridge_ERC20_to_Native', async accounts => {
   let homeContract
@@ -45,6 +46,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await homeContract.deployedAtBlock()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.maxPerTx()).to.be.bignumber.equal(ZERO)
+      expect(await homeContract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.isInitialized()).to.be.equal(false)
       expect(await homeContract.blockRewardContract()).to.be.equal(ZERO_ADDRESS)
 
@@ -58,7 +60,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        '9'
       ).should.be.fulfilled
 
       expect(await homeContract.isInitialized()).to.be.equal(true)
@@ -67,6 +70,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await homeContract.dailyLimit()).to.be.bignumber.equal('3')
       expect(await homeContract.maxPerTx()).to.be.bignumber.equal('2')
       expect(await homeContract.minPerTx()).to.be.bignumber.equal('1')
+      expect(await homeContract.decimalShift()).to.be.bignumber.equal('9')
       expect(await homeContract.blockRewardContract()).to.be.equal(blockRewardContract.address)
       expect(await homeContract.gasPrice()).to.be.bignumber.equal(gasPrice)
       const bridgeMode = '0x18762d46' // 4 bytes of keccak256('erc-to-native-core')
@@ -97,7 +101,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
 
       blockRewardContract.address.should.be.equal(await homeContract.blockRewardContract())
@@ -138,7 +143,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           blockRewardContract.address,
           foreignDailyLimit,
           foreignMaxPerTx,
-          owner
+          owner,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -152,7 +158,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           blockRewardContract.address,
           foreignDailyLimit,
           foreignMaxPerTx,
-          owner
+          owner,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -172,7 +179,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           blockRewardContract.address,
           '3',
           '2',
-          owner
+          owner,
+          decimalShiftZero
         )
         .encodeABI()
 
@@ -200,7 +208,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           blockRewardContract.address,
           '3',
           '2',
-          homeOwner
+          homeOwner,
+          decimalShiftZero
         )
         .encodeABI()
 
@@ -238,7 +247,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           blockRewardContract.address,
           foreignDailyLimit,
           foreignMaxPerTx,
-          owner
+          owner,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -252,7 +262,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           blockRewardContract.address,
           foreignDailyLimit,
           foreignMaxPerTx,
-          owner
+          owner,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -266,7 +277,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           blockRewardContract.address,
           foreignDailyLimit,
           foreignMaxPerTx,
-          owner
+          owner,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -280,7 +292,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           owner,
           foreignDailyLimit,
           foreignMaxPerTx,
-          owner
+          owner,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -294,7 +307,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           blockRewardContract.address,
           halfEther,
           oneEther,
-          owner
+          owner,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract.initialize(
@@ -307,7 +321,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       true.should.be.equal(await homeContract.isInitialized())
     })
@@ -328,6 +343,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await homeContract.deployedAtBlock()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.maxPerTx()).to.be.bignumber.equal(ZERO)
+      expect(await homeContract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.isInitialized()).to.be.equal(false)
       expect(await homeContract.blockRewardContract()).to.be.equal(ZERO_ADDRESS)
 
@@ -344,7 +360,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        foreignFee
+        foreignFee,
+        '9'
       ).should.be.fulfilled
 
       expect(await homeContract.isInitialized()).to.be.equal(true)
@@ -353,6 +370,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await homeContract.dailyLimit()).to.be.bignumber.equal('3')
       expect(await homeContract.maxPerTx()).to.be.bignumber.equal('2')
       expect(await homeContract.minPerTx()).to.be.bignumber.equal('1')
+      expect(await homeContract.decimalShift()).to.be.bignumber.equal('9')
       expect(await homeContract.blockRewardContract()).to.be.equal(blockRewardContract.address)
       expect(await homeContract.gasPrice()).to.be.bignumber.equal(gasPrice)
       const bridgeMode = '0x18762d46' // 4 bytes of keccak256('erc-to-native-core')
@@ -386,7 +404,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          foreignFee
+          foreignFee,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -403,7 +422,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          foreignFee
+          foreignFee,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -420,7 +440,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          foreignFee
+          foreignFee,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -437,7 +458,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          foreignFee
+          foreignFee,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -454,7 +476,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          foreignFee
+          foreignFee,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -471,7 +494,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           owner,
           ZERO_ADDRESS,
           homeFee,
-          foreignFee
+          foreignFee,
+          decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract.rewardableInitialize(
@@ -487,7 +511,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        foreignFee
+        foreignFee,
+        decimalShiftZero
       ).should.be.fulfilled
       true.should.be.equal(await homeContract.isInitialized())
     })
@@ -506,7 +531,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        foreignFee
+        foreignFee,
+        decimalShiftZero
       ).should.be.fulfilled
 
       // Given
@@ -534,7 +560,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        foreignFee
+        foreignFee,
+        decimalShiftZero
       ).should.be.fulfilled
 
       // Given
@@ -565,7 +592,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        foreignFee
+        foreignFee,
+        decimalShiftZero
       ).should.be.fulfilled
 
       const invalidFee = ether('1')
@@ -601,7 +629,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
     })
 
@@ -747,7 +776,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
     })
     it('setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
@@ -818,7 +848,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
       await blockRewardContract.sendTransaction({
         from: accounts[2],
@@ -895,7 +926,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
       const recipient = accounts[5]
       const value = halfEther
@@ -961,7 +993,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         ZERO_ADDRESS,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
 
       const recipient = accounts[5]
@@ -989,7 +1022,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
 
       const value = halfEther
@@ -1142,7 +1176,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
     })
 
@@ -1212,7 +1247,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
 
       const value = halfEther
@@ -1320,7 +1356,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
     })
     it('Should revert if value to unlock is bigger than max per transaction', async () => {
@@ -1560,7 +1597,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[2],
@@ -1632,7 +1670,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[2],
@@ -1718,7 +1757,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[2],
@@ -1794,7 +1834,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[0],
@@ -1901,7 +1942,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[0],
@@ -2005,7 +2047,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
     })
@@ -2063,7 +2106,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
 
@@ -2134,7 +2178,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
 
@@ -2230,7 +2275,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
 
@@ -2345,7 +2391,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[2],
@@ -2424,7 +2471,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[0],
@@ -2535,7 +2583,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.sendTransaction({
         from: accounts[0],
@@ -2652,7 +2701,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
     })
@@ -2711,7 +2761,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
 
@@ -2789,7 +2840,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
 
@@ -2892,7 +2944,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         blockRewardContract.address,
         foreignDailyLimit,
         foreignMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       ).should.be.fulfilled
       await blockRewardContract.addMintedTotallyByBridge(oneEther, homeBridge.address)
 
@@ -2976,6 +3029,137 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
 
       const feeAmountBlockReward = await blockRewardContract.feeAmount()
       feeAmountBlockReward.should.be.bignumber.equal(feeAmount)
+    })
+  })
+
+  describe('#decimals Shift', async () => {
+    const decimalShiftTwo = 2
+    it('Foreign to Home: test with 2 signatures required and decimal shift 2', async () => {
+      await blockRewardContract.sendTransaction({
+        from: accounts[2],
+        value: oneEther
+      }).should.be.fulfilled
+      const recipient = accounts[5]
+      const valueOnHome = halfEther
+
+      const valueOnForeign = toBN(valueOnHome / 10 ** decimalShiftTwo)
+
+      const validatorContractWith2Signatures = await BridgeValidators.new()
+      const authoritiesThreeAccs = [accounts[1], accounts[2], accounts[3]]
+      const ownerOfValidators = accounts[0]
+      await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, ownerOfValidators)
+      const homeBridgeWithTwoSigs = await HomeBridge.new()
+      const currentDay = await homeBridgeWithTwoSigs.getCurrentDay()
+
+      await homeBridgeWithTwoSigs.initialize(
+        validatorContractWith2Signatures.address,
+        oneEther,
+        halfEther,
+        minPerTx,
+        gasPrice,
+        requireBlockConfirmations,
+        blockRewardContract.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner,
+        decimalShiftTwo
+      )
+      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+      const balanceBefore = toBN(await web3.eth.getBalance(recipient))
+      const totalExecutedPerDayBefore = await homeBridgeWithTwoSigs.totalExecutedPerDay(currentDay)
+      const msgHash = web3.utils.soliditySha3(recipient, valueOnForeign, transactionHash)
+
+      const { logs } = await homeBridgeWithTwoSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
+        from: authoritiesThreeAccs[0]
+      }).should.be.fulfilled
+
+      expectEventInLogs(logs, 'SignedForAffirmation', { signer: authorities[0], transactionHash })
+
+      const notProcessed = await homeBridgeWithTwoSigs.numAffirmationsSigned(msgHash)
+      notProcessed.should.be.bignumber.equal('1')
+
+      await homeBridgeWithTwoSigs
+        .executeAffirmation(recipient, valueOnForeign, transactionHash, { from: authoritiesThreeAccs[0] })
+        .should.be.rejectedWith(ERROR_MSG)
+
+      const secondSignature = await homeBridgeWithTwoSigs.executeAffirmation(
+        recipient,
+        valueOnForeign,
+        transactionHash,
+        { from: authoritiesThreeAccs[1] }
+      ).should.be.fulfilled
+      const balanceAfter = toBN(await web3.eth.getBalance(recipient))
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(valueOnHome))
+
+      const totalExecutedPerDayAfter = await homeBridgeWithTwoSigs.totalExecutedPerDay(currentDay)
+      totalExecutedPerDayAfter.should.be.bignumber.equal(totalExecutedPerDayBefore.add(valueOnForeign))
+
+      expectEventInLogs(secondSignature.logs, 'AffirmationCompleted', {
+        recipient,
+        value: valueOnForeign,
+        transactionHash
+      })
+
+      const senderHash = web3.utils.soliditySha3(authoritiesThreeAccs[0], msgHash)
+      true.should.be.equal(await homeBridgeWithTwoSigs.affirmationsSigned(senderHash))
+
+      const senderHash2 = web3.utils.soliditySha3(authoritiesThreeAccs[1], msgHash)
+      true.should.be.equal(await homeBridgeWithTwoSigs.affirmationsSigned(senderHash2))
+
+      const markedAsProcessed = await homeBridgeWithTwoSigs.numAffirmationsSigned(msgHash)
+      const processed = toBN(2)
+        .pow(toBN(255))
+        .add(toBN(2))
+      markedAsProcessed.should.be.bignumber.equal(processed)
+    })
+
+    it('Home to Foreign: test decimal shift 2, no impact on UserRequestForSignature value', async () => {
+      homeContract = await HomeBridge.new()
+      await homeContract.initialize(
+        validatorContract.address,
+        '3',
+        '2',
+        '1',
+        gasPrice,
+        requireBlockConfirmations,
+        blockRewardContract.address,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner,
+        decimalShiftTwo
+      )
+
+      const currentDay = await homeContract.getCurrentDay()
+      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      await blockRewardContract.addMintedTotallyByBridge(10, homeContract.address)
+      const minted = await blockRewardContract.mintedTotallyByBridge(homeContract.address)
+      minted.should.be.bignumber.equal('10')
+
+      const recipientAccount = accounts[1]
+
+      const { logs } = await homeContract.sendTransaction({ from: recipientAccount, value: 1 }).should.be.fulfilled
+
+      expectEventInLogs(logs, 'UserRequestForSignature', { recipient: recipientAccount, value: toBN(1) })
+      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
+      expect(await homeContract.totalBurntCoins()).to.be.bignumber.equal('1')
+
+      const homeContractBalance = toBN(await web3.eth.getBalance(homeContract.address))
+      homeContractBalance.should.be.bignumber.equal(ZERO)
+
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, 1, transactionHash, homeContract.address)
+
+      const signature = await sign(authorities[0], message)
+
+      expect(await validatorContract.requiredSignatures()).to.be.bignumber.equal('1')
+
+      const { logs: logsSubmitSignature } = await homeContract.submitSignature(signature, message, {
+        from: authorities[0]
+      }).should.be.fulfilled
+
+      logsSubmitSignature.length.should.be.equal(2)
+      logsSubmitSignature[1].event.should.be.equal('CollectedSignatures')
     })
   })
 })

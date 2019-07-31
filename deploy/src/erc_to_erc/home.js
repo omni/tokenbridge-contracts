@@ -53,12 +53,15 @@ const {
   DPOS_STAKING_ADDRESS,
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
-  FOREIGN_TRANSACTIONS_FEE
+  FOREIGN_TRANSACTIONS_FEE,
+  FOREIGN_TO_HOME_DECIMAL_SHIFT
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
+
+const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
 
 async function initializeBridge({ validatorsBridge, bridge, erc677token, initialNonce }) {
   let nonce = initialNonce
@@ -116,7 +119,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       HOME_MIN_AMOUNT_PER_TX
     )} in eth,
-    HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}
+    HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
+    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
     `)
     initializeHomeBridgeData = await bridge.methods
       .initialize(
@@ -129,7 +133,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
         erc677token.options.address,
         FOREIGN_DAILY_LIMIT,
         FOREIGN_MAX_AMOUNT_PER_TX,
-        HOME_BRIDGE_OWNER
+        HOME_BRIDGE_OWNER,
+        foreignToHomeDecimalShift
       )
       .encodeABI()
   }
@@ -151,6 +156,36 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }
   nonce++
+
+  if (isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS && FOREIGN_TO_HOME_DECIMAL_SHIFT) {
+    console.log(`Initialize decimal shift with parameter :
+    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+    `)
+    let initializeDecimalShiftData = await bridge.methods
+    .setDecimalShift(
+      foreignToHomeDecimalShift
+    )
+    .encodeABI()
+
+    const txInitializeDecimalShift = await sendRawTxHome({
+      data: initializeDecimalShiftData,
+      nonce,
+      to: bridge.options.address,
+      privateKey: deploymentPrivateKey,
+      url: HOME_RPC_URL
+    })
+    if (txInitializedecimalShift.status) {
+      assert.strictEqual(
+        Web3Utils.hexToNumber(txInitializedecimalShift.status),
+        1,
+        'Transaction Failed'
+      )
+    } else {
+      await assertStateWithRetry(bridge.methods.decimalShift().call, foreignToHomeDecimalShift)
+    }
+    nonce++
+  }
+
 
   return nonce
 }

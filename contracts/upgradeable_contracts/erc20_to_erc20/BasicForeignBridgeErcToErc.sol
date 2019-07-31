@@ -12,7 +12,8 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         uint256 _maxPerTx,
         uint256 _homeDailyLimit,
         uint256 _homeMaxPerTx,
-        address _owner
+        address _owner,
+        uint256 _decimalShift
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
@@ -29,6 +30,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         uintStorage[MAX_PER_TX] = _maxPerTx;
         uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _homeMaxPerTx;
+        uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setInitialize();
 
@@ -52,7 +54,8 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         bytes32 /*_txHash*/
     ) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
-        return erc20token().transfer(_recipient, _amount);
+        uint256 amount = _amount.div(10 ** decimalShift());
+        return erc20token().transfer(_recipient, amount);
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {

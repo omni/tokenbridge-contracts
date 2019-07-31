@@ -20,6 +20,7 @@ const halfEther = ether('0.5')
 const executionDailyLimit = oneEther
 const executionMaxPerTx = halfEther
 const ZERO = new BN(0)
+const decimalShiftZero = 0
 
 async function testERC677BridgeToken(accounts, rewardable) {
   let token
@@ -234,7 +235,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         token.address,
         executionDailyLimit,
         executionMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
       await foreignNativeToErcBridge.initialize(
@@ -247,7 +249,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         requireBlockConfirmations,
         executionDailyLimit,
         executionMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
     })
     it('sends tokens to recipient', async () => {
@@ -393,7 +396,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         token.address,
         executionDailyLimit,
         executionMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
       foreignNativeToErcBridge = await ForeignNativeToErcBridge.new()
       await foreignNativeToErcBridge.initialize(
@@ -406,7 +410,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         requireBlockConfirmations,
         executionDailyLimit,
         executionMaxPerTx,
-        owner
+        owner,
+        decimalShiftZero
       )
     })
     it('calls contractFallback', async () => {

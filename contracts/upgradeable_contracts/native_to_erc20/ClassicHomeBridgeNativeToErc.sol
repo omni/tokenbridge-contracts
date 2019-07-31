@@ -12,7 +12,8 @@ contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
         uint256 _requiredBlockConfirmations,
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
-        address _owner
+        address _owner,
+        uint256 _decimalShift
     ) internal {
         super._initialize(
             _validatorContract,
@@ -23,7 +24,8 @@ contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
             _requiredBlockConfirmations,
             _foreignDailyLimit,
             _foreignMaxPerTx,
-            _owner
+            _owner,
+            _decimalShift
         );
         uintStorage[keccak256(abi.encodePacked("dataSizes", bytes4(keccak256("signature(bytes32,uint256)"))))] = 132;
         uintStorage[keccak256(abi.encodePacked("dataSizes", bytes4(keccak256("message(bytes32)"))))] = 210;

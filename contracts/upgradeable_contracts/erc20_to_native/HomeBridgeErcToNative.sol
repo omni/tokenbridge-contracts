@@ -56,7 +56,8 @@ contract HomeBridgeErcToNative is
         address _blockReward,
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
-        address _owner
+        address _owner,
+        uint256 _decimalShift
     ) external returns (bool) {
         _initialize(
             _validatorContract,
@@ -68,7 +69,8 @@ contract HomeBridgeErcToNative is
             _blockReward,
             _foreignDailyLimit,
             _foreignMaxPerTx,
-            _owner
+            _owner,
+            _decimalShift
         );
         setInitialize();
 
@@ -88,7 +90,8 @@ contract HomeBridgeErcToNative is
         address _owner,
         address _feeManager,
         uint256 _homeFee,
-        uint256 _foreignFee
+        uint256 _foreignFee,
+        uint256 _decimalShift
     ) external returns (bool) {
         _initialize(
             _validatorContract,
@@ -100,7 +103,8 @@ contract HomeBridgeErcToNative is
             _blockReward,
             _foreignDailyLimit,
             _foreignMaxPerTx,
-            _owner
+            _owner,
+            _decimalShift
         );
         require(AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
@@ -137,7 +141,8 @@ contract HomeBridgeErcToNative is
         address _blockReward,
         uint256 _foreignDailyLimit,
         uint256 _foreignMaxPerTx,
-        address _owner
+        address _owner,
+        uint256 _decimalShift
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
@@ -157,6 +162,7 @@ contract HomeBridgeErcToNative is
         addressStorage[BLOCK_REWARD_CONTRACT] = _blockReward;
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignMaxPerTx;
+        uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
@@ -169,8 +175,7 @@ contract HomeBridgeErcToNative is
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
-        uint256 valueToMint = _value;
-
+        uint256 valueToMint = _value.mul(10 ** decimalShift());
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);

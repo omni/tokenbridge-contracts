@@ -37,10 +37,13 @@ const {
   HOME_MAX_AMOUNT_PER_TX,
   FOREIGN_MIN_AMOUNT_PER_TX,
   FOREIGN_DAILY_LIMIT,
-  ERC20_EXTENDED_BY_ERC677
+  ERC20_EXTENDED_BY_ERC677,
+  FOREIGN_TO_HOME_DECIMAL_SHIFT
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
+
+const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
 
 async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   console.log(`Foreign Validators: ${validatorsBridge.options.address},
@@ -53,7 +56,8 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
     HOME_MAX_AMOUNT_PER_TX
   )} in eth,
-  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER}
+  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
   `)
   let initializeFBridgeData
 
@@ -69,7 +73,8 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
         FOREIGN_MIN_AMOUNT_PER_TX,
         HOME_DAILY_LIMIT,
         HOME_MAX_AMOUNT_PER_TX,
-        FOREIGN_BRIDGE_OWNER
+        FOREIGN_BRIDGE_OWNER,
+        foreignToHomeDecimalShift
       )
       .encodeABI()
   } else {
@@ -82,7 +87,8 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
         FOREIGN_MAX_AMOUNT_PER_TX,
         HOME_DAILY_LIMIT,
         HOME_MAX_AMOUNT_PER_TX,
-        FOREIGN_BRIDGE_OWNER
+        FOREIGN_BRIDGE_OWNER,
+        foreignToHomeDecimalShift
       )
       .encodeABI()
   }

@@ -9,8 +9,6 @@ import "./UpgradeabilityStorage.sol";
  * @dev This contract represents a proxy where the implementation address to which it will delegate can be upgraded
  */
 contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
-    using AddressUtils for address;
-
     /**
     * @dev This event will be emitted every time the implementation gets upgraded
     * @param version representing the version name of the upgraded implementation
@@ -25,7 +23,7 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
     */
     function _upgradeTo(uint256 version, address implementation) internal {
         require(_implementation != implementation);
-        require(implementation.isContract());
+        require(AddressUtils.isContract(implementation));
         require(version > _version);
         _version = version;
         _implementation = implementation;

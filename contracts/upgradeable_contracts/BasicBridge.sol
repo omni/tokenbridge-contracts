@@ -11,7 +11,6 @@ import "./Claimable.sol";
 
 contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claimable {
     using SafeMath for uint256;
-    using AddressUtils for address;
 
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);

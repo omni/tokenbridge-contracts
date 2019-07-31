@@ -9,7 +9,7 @@ contract ERC677Bridge is BasicBridge {
     }
 
     function setErc677token(address _token) internal {
-        require(_token.isContract());
+        require(AddressUtils.isContract(_token));
         addressStorage[keccak256(abi.encodePacked("erc677token"))] = _token;
     }
 

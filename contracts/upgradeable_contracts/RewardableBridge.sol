@@ -5,8 +5,6 @@ import "./Ownable.sol";
 import "./FeeTypes.sol";
 
 contract RewardableBridge is Ownable, FeeTypes {
-    using AddressUtils for address;
-
     event FeeDistributedFromAffirmation(uint256 feeAmount, bytes32 indexed transactionHash);
     event FeeDistributedFromSignatures(uint256 feeAmount, bytes32 indexed transactionHash);
 
@@ -49,7 +47,7 @@ contract RewardableBridge is Ownable, FeeTypes {
     }
 
     function setFeeManagerContract(address _feeManager) external onlyOwner {
-        require(_feeManager == address(0) || _feeManager.isContract());
+        require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
     }
 

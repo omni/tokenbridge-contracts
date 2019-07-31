@@ -8,8 +8,6 @@ import "./interfaces/IBurnableMintableERC677Token.sol";
 import "./upgradeable_contracts/Claimable.sol";
 
 contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, BurnableToken, MintableToken, Claimable {
-    using AddressUtils for address;
-
     address public bridgeContract;
 
     event ContractFallbackCallFailed(address from, address to, uint256 value);
@@ -19,7 +17,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
     }
 
     function setBridgeContract(address _bridgeContract) external onlyOwner {
-        require(_bridgeContract.isContract());
+        require(AddressUtils.isContract(_bridgeContract));
         bridgeContract = _bridgeContract;
     }
 
@@ -32,7 +30,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
         require(superTransfer(_to, _value));
         emit Transfer(msg.sender, _to, _value, _data);
 
-        if (_to.isContract()) {
+        if (AddressUtils.isContract(_to)) {
             require(contractFallback(msg.sender, _to, _value, _data));
         }
         return true;
@@ -59,7 +57,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
     }
 
     function callAfterTransfer(address _from, address _to, uint256 _value) internal {
-        if (_to.isContract() && !contractFallback(_from, _to, _value, new bytes(0))) {
+        if (AddressUtils.isContract(_to) && !contractFallback(_from, _to, _value, new bytes(0))) {
             require(_to != bridgeContract);
             emit ContractFallbackCallFailed(_from, _to, _value);
         }

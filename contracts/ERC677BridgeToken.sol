@@ -3,6 +3,7 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./interfaces/IBurnableMintableERC677Token.sol";
 import "./upgradeable_contracts/Claimable.sol";
 
@@ -16,7 +17,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
     }
 
     function setBridgeContract(address _bridgeContract) external onlyOwner {
-        require(isContract(_bridgeContract));
+        require(AddressUtils.isContract(_bridgeContract));
         bridgeContract = _bridgeContract;
     }
 
@@ -30,7 +31,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
         require(superTransfer(_to, _value));
         emit Transfer(msg.sender, _to, _value, _data);
 
-        if (isContract(_to)) {
+        if (AddressUtils.isContract(_to)) {
             require(contractFallback(msg.sender, _to, _value, _data));
         }
         return true;
@@ -57,7 +58,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
     }
 
     function callAfterTransfer(address _from, address _to, uint256 _value) internal {
-        if (isContract(_to) && !contractFallback(_from, _to, _value, new bytes(0))) {
+        if (AddressUtils.isContract(_to) && !contractFallback(_from, _to, _value, new bytes(0))) {
             require(_to != bridgeContract);
             emit ContractFallbackCallFailed(_from, _to, _value);
         }
@@ -65,14 +66,6 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
 
     function contractFallback(address _from, address _to, uint256 _value, bytes _data) private returns (bool) {
         return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)", _from, _value, _data));
-    }
-
-    function isContract(address _addr) internal view returns (bool) {
-        uint256 length;
-        assembly {
-            length := extcodesize(_addr)
-        }
-        return length > 0;
     }
 
     function finishMinting() public returns (bool) {

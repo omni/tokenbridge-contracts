@@ -164,6 +164,8 @@ contract('HomeBridge', async accounts => {
       const data = homeContract.contract.methods
         .initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, '3', '2', owner)
         .encodeABI()
+      await storageProxy.upgradeTo('1', accounts[5]).should.be.rejectedWith(ERROR_MSG)
+      await storageProxy.upgradeToAndCall('1', accounts[5], data).should.be.rejectedWith(ERROR_MSG)
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
       const finalContract = await HomeBridge.at(storageProxy.address)
 

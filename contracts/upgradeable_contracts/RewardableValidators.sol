@@ -34,11 +34,11 @@ contract RewardableValidators is BaseBridgeValidators {
                 setNextValidator(_initialValidators[i - 1], _initialValidators[i]);
             }
 
-            setValidatorCount(validatorCount().add(1));
             setValidatorRewardAddress(_initialValidators[i], _initialRewards[i]);
             emit ValidatorAdded(_initialValidators[i]);
         }
 
+        setValidatorCount(_initialValidators.length);
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         setInitialize();

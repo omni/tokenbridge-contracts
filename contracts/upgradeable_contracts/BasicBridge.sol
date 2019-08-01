@@ -13,7 +13,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     using SafeMath for uint256;
 
     event GasPriceChanged(uint256 gasPrice);
-    event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
+    event RequiredBlockConfirmationChanged(uint256 previousBlockConfirmations, uint256 newBlockConfirmations);
     event DailyLimitChanged(uint256 previousLimit, uint256 newLimit);
     event ExecutionDailyLimitChanged(uint256 previousLimit, uint256 newLimit);
 
@@ -33,11 +33,11 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     function setRequiredBlockConfirmations(uint256 _blockConfirmations) external onlyOwner {
         require(_blockConfirmations > 0);
+        emit RequiredBlockConfirmationChanged(requiredBlockConfirmations(), _blockConfirmations);
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _blockConfirmations;
-        emit RequiredBlockConfirmationChanged(_blockConfirmations);
     }
 
-    function requiredBlockConfirmations() external view returns (uint256) {
+    function requiredBlockConfirmations() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))];
     }
 

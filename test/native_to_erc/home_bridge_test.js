@@ -156,7 +156,8 @@ contract('HomeBridge', async accounts => {
       // Then
       expect(await homeContract.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(newRequiredBlockConfirmations))
       expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
-        requiredBlockConfirmations: toBN(newRequiredBlockConfirmations)
+        previousBlockConfirmations: toBN(requireBlockConfirmations),
+        newBlockConfirmations: toBN(newRequiredBlockConfirmations)
       })
     })
     it('can be deployed via upgradeToAndCall', async () => {

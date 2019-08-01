@@ -12,7 +12,7 @@ import "./Claimable.sol";
 contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claimable {
     using SafeMath for uint256;
 
-    event GasPriceChanged(uint256 gasPrice);
+    event GasPriceChanged(uint256 previousGasPrice, uint256 newGasPrice);
     event RequiredBlockConfirmationChanged(uint256 previousBlockConfirmations, uint256 newBlockConfirmations);
     event DailyLimitChanged(uint256 previousLimit, uint256 newLimit);
     event ExecutionDailyLimitChanged(uint256 previousLimit, uint256 newLimit);
@@ -23,11 +23,11 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     function setGasPrice(uint256 _gasPrice) external onlyOwner {
         require(_gasPrice > 0);
+        emit GasPriceChanged(gasPrice(), _gasPrice);
         uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
-        emit GasPriceChanged(_gasPrice);
     }
 
-    function gasPrice() external view returns (uint256) {
+    function gasPrice() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("gasPrice"))];
     }
 

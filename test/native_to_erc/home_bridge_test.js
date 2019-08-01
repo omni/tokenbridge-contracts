@@ -126,7 +126,7 @@ contract('HomeBridge', async accounts => {
 
       // Then
       expect(await homeContract.gasPrice()).to.be.bignumber.equal(newGasPrice)
-      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice: newGasPrice })
+      expectEventInLogs(logs, 'GasPriceChanged', { previousGasPrice: gasPrice, newGasPrice })
     })
     it('can set Required Block Confirmations', async () => {
       // Given

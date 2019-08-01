@@ -13,7 +13,7 @@ contract UpgradeabilityStorage {
 
     /**
     * @dev Tells the version name of the current implementation
-    * @return string representing the name of the current version
+    * @return uint256 representing the name of the current version
     */
     function version() external view returns (uint256) {
         return _version;

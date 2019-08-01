@@ -370,12 +370,24 @@ contract('HomeBridge', async accounts => {
 
       await homeContract.setMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
-
     it('#setMinPerTx allows to set only to owner and cannot be more than daily limit and should be less than maxPerTx', async () => {
       await homeContract.setMinPerTx(1, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
       await homeContract.setMinPerTx(1, { from: owner }).should.be.fulfilled
 
       await homeContract.setMinPerTx(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('#setDailyLimit allow to set by owner and should be greater than maxPerTx or zero', async () => {
+      await homeContract.setDailyLimit(4, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setDailyLimit(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await homeContract.setDailyLimit(4, { from: owner }).should.be.fulfilled
+      expect(await homeContract.dailyLimit()).to.be.bignumber.equal('4')
+
+      await homeContract.setDailyLimit(0, { from: owner }).should.be.fulfilled
+      expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
+
+      await homeContract.setDailyLimit(4, { from: owner }).should.be.fulfilled
+      expect(await homeContract.dailyLimit()).to.be.bignumber.equal('4')
     })
   })
 

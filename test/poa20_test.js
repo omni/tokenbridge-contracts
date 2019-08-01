@@ -1,6 +1,6 @@
 const POA20 = artifacts.require('ERC677BridgeToken.sol')
 const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.sol')
-const POA20RewardableMock = artifacts.require('./mockContracts/ERC677BridgeTokenRewardableMock')
+const POA20RewardableMock = artifacts.require('ERC677BridgeTokenRewardableMock')
 const ERC677ReceiverTest = artifacts.require('ERC677ReceiverTest.sol')
 const BlockRewardTest = artifacts.require('BlockReward.sol')
 const StakingTest = artifacts.require('Staking.sol')
@@ -540,6 +540,12 @@ async function testERC677BridgeToken(accounts, rewardable) {
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
       tokenTransfer.logs[0].event.should.be.equal('Transfer')
       tokenTransfer2.logs[0].event.should.be.equal('Transfer')
+    })
+  })
+  describe('#renounceOwnership', () => {
+    it('should not be able to renounce ownership', async () => {
+      await token.renounceOwnership({ from: user }).should.be.rejectedWith(ERROR_MSG)
+      await token.renounceOwnership().should.be.rejectedWith(ERROR_MSG)
     })
   })
 }

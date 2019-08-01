@@ -90,8 +90,10 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
         boolStorage[keccak256(abi.encodePacked("messagesSigned", _hash))] = _status;
     }
 
+    /* solcov ignore next */
     function onExecuteAffirmation(address, uint256, bytes32) internal returns (bool);
 
+    /* solcov ignore next */
     function onSignaturesCollected(bytes) internal;
 
     function numAffirmationsSigned(bytes32 _withdrawal) public view returns (uint256) {
@@ -151,5 +153,6 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge {
         return Message.requiredMessageLength();
     }
 
+    /* solcov ignore next */
     function onFailedAffirmation(address, uint256, bytes32) internal;
 }

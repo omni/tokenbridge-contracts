@@ -65,7 +65,9 @@ contract ValidatorsFeeManager is BaseFeeManager {
         }
     }
 
+    /* solcov ignore next */
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal;
 
+    /* solcov ignore next */
     function onSignatureFeeDistribution(address _rewardAddress, uint256 _fee) internal;
 }

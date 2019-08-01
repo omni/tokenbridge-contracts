@@ -22,11 +22,13 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
 
     modifier onlyBlockRewardContract() {
         require(msg.sender == blockRewardContract);
+        /* solcov ignore next */
         _;
     }
 
     modifier onlyStakingContract() {
         require(msg.sender == stakingContract);
+        /* solcov ignore next */
         _;
     }
 

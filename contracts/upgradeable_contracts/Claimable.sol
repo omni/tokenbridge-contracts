@@ -6,6 +6,7 @@ import "./Sacrifice.sol";
 contract Claimable {
     modifier validAddress(address _to) {
         require(_to != address(0));
+        /* solcov ignore next */
         _;
     }
 

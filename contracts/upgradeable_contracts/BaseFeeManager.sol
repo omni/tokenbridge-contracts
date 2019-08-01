@@ -24,6 +24,7 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
 
     modifier validFee(uint256 _fee) {
         require(_fee < MAX_FEE);
+        /* solcov ignore next */
         _;
     }
 
@@ -45,10 +46,13 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
         return uintStorage[keccak256(abi.encodePacked("foreignFee"))];
     }
 
+    /* solcov ignore next */
     function distributeFeeFromAffirmation(uint256 _fee) external;
 
+    /* solcov ignore next */
     function distributeFeeFromSignatures(uint256 _fee) external;
 
+    /* solcov ignore next */
     function getFeeManagerMode() external pure returns (bytes4);
 
     function random(uint256 _count) internal view returns (uint256) {

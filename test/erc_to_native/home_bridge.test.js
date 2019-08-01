@@ -2,7 +2,7 @@ const HomeBridge = artifacts.require('HomeBridgeErcToNative.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const BlockReward = artifacts.require('BlockReward')
-const OldBlockReward = artifacts.require('oldBlockReward')
+const OldBlockReward = artifacts.require('OldBlockReward')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const FeeManagerErcToNative = artifacts.require('FeeManagerErcToNative.sol')
 const FeeManagerErcToNativePOSDAO = artifacts.require('FeeManagerErcToNativePOSDAO')
@@ -1658,6 +1658,18 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
     it('should be able to get fee manager mode', async () => {
       // Given
       const feeManager = await FeeManagerErcToNative.new()
+      const bothDirectionsModeHash = '0xd7de965f'
+
+      // When
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+
+      // Then
+      const feeManagerMode = await homeBridge.getFeeManagerMode()
+      feeManagerMode.should.be.equals(bothDirectionsModeHash)
+    })
+    it('should be able to get fee manager mode from POSDAO fee manager', async () => {
+      // Given
+      const feeManager = await FeeManagerErcToNativePOSDAO.new()
       const bothDirectionsModeHash = '0xd7de965f'
 
       // When

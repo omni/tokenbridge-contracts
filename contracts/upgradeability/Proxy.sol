@@ -9,6 +9,7 @@ contract Proxy {
     * @dev Tells the address of the implementation where every call will be delegated.
     * @return address of the implementation to which it will be delegated
     */
+    /* solcov ignore next */
     function implementation() public view returns (address);
 
     /**

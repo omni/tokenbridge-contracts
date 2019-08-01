@@ -9,7 +9,7 @@ contract ERC677Bridge is BasicBridge {
     }
 
     function setErc677token(address _token) internal {
-        require(isContract(_token));
+        require(AddressUtils.isContract(_token));
         addressStorage[keccak256(abi.encodePacked("erc677token"))] = _token;
     }
 
@@ -34,5 +34,6 @@ contract ERC677Bridge is BasicBridge {
         fireEventOnTokenTransfer(_from, _value);
     }
 
+    /* solcov ignore next */
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal;
 }

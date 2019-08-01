@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./Ownable.sol";
 import "./FeeTypes.sol";
 
@@ -46,21 +47,13 @@ contract RewardableBridge is Ownable, FeeTypes {
     }
 
     function setFeeManagerContract(address _feeManager) external onlyOwner {
-        require(_feeManager == address(0) || isContract(_feeManager));
+        require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
     }
 
     function _setFee(address _feeManager, uint256 _fee, bytes32 _feeType) internal {
         string memory method = _feeType == HOME_FEE ? "setHomeFee(uint256)" : "setForeignFee(uint256)";
         require(_feeManager.delegatecall(abi.encodeWithSignature(method, _fee)));
-    }
-
-    function isContract(address _addr) internal view returns (bool) {
-        uint256 length;
-        assembly {
-            length := extcodesize(_addr)
-        }
-        return length > 0;
     }
 
     function calculateFee(uint256 _value, bool _recover, address _impl, bytes32 _feeType)

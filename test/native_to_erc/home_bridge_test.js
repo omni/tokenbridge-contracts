@@ -101,12 +101,71 @@ contract('HomeBridge', async accounts => {
         .should.be.rejectedWith(ERROR_MSG)
       false.should.be.equal(await homeContract.isInitialized())
     })
+    it('can set gas Price ', async () => {
+      // Given
+      await homeContract.initialize(
+        validatorContract.address,
+        '3',
+        '2',
+        '1',
+        gasPrice,
+        requireBlockConfirmations,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner
+      ).should.be.fulfilled
 
+      expect(await homeContract.gasPrice()).to.be.bignumber.equal(gasPrice)
+
+      // When
+      const newGasPrice = web3.utils.toWei('2', 'gwei')
+
+      await homeContract.setGasPrice(newGasPrice, { from: accounts[2] }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setGasPrice(0, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await homeContract.setGasPrice(newGasPrice, { from: owner }).should.be.fulfilled
+
+      // Then
+      expect(await homeContract.gasPrice()).to.be.bignumber.equal(newGasPrice)
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice: newGasPrice })
+    })
+    it('can set Required Block Confirmations', async () => {
+      // Given
+      await homeContract.initialize(
+        validatorContract.address,
+        '3',
+        '2',
+        '1',
+        gasPrice,
+        requireBlockConfirmations,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner
+      ).should.be.fulfilled
+
+      expect(await homeContract.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(requireBlockConfirmations))
+
+      // When
+      const newRequiredBlockConfirmations = 15
+      await homeContract
+        .setRequiredBlockConfirmations(newRequiredBlockConfirmations, { from: accounts[2] })
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setRequiredBlockConfirmations(0, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await homeContract.setRequiredBlockConfirmations(newRequiredBlockConfirmations, { from: owner })
+        .should.be.fulfilled
+
+      // Then
+      expect(await homeContract.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(newRequiredBlockConfirmations))
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(newRequiredBlockConfirmations)
+      })
+    })
     it('can be deployed via upgradeToAndCall', async () => {
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       const data = homeContract.contract.methods
         .initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, '3', '2', owner)
         .encodeABI()
+      await storageProxy.upgradeTo('1', accounts[5]).should.be.rejectedWith(ERROR_MSG)
+      await storageProxy.upgradeToAndCall('1', accounts[5], data).should.be.rejectedWith(ERROR_MSG)
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
       const finalContract = await HomeBridge.at(storageProxy.address)
 
@@ -161,12 +220,41 @@ contract('HomeBridge', async accounts => {
       true.should.be.equal(await homeContract.isInitialized())
     })
     it('can transfer ownership', async () => {
+      // Given
+      await homeContract.initialize(
+        validatorContract.address,
+        '3',
+        '2',
+        '1',
+        gasPrice,
+        requireBlockConfirmations,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner
+      ).should.be.fulfilled
+
+      expect(await homeContract.owner()).to.be.equal(owner)
+
+      // When
+      const newOwner = accounts[7]
+
+      await homeContract.transferOwnership(newOwner, { from: accounts[2] }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.transferOwnership(ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await homeContract.transferOwnership(newOwner, { from: owner }).should.be.fulfilled
+
+      // Then
+      expect(await homeContract.owner()).to.be.equal(newOwner)
+      expectEventInLogs(logs, 'OwnershipTransferred', { previousOwner: owner, newOwner })
+    })
+    it('can transfer proxyOwnership', async () => {
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       const data = homeContract.contract.methods
         .initialize(validatorContract.address, '3', '2', '1', gasPrice, requireBlockConfirmations, '3', '2', owner)
         .encodeABI()
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
       await storageProxy.transferProxyOwnership(owner).should.be.fulfilled
+
+      expect(await storageProxy.version()).to.be.bignumber.equal(toBN('1'))
     })
   })
 
@@ -284,18 +372,26 @@ contract('HomeBridge', async accounts => {
 
       await homeContract.setMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
-
     it('#setMinPerTx allows to set only to owner and cannot be more than daily limit and should be less than maxPerTx', async () => {
       await homeContract.setMinPerTx(1, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
       await homeContract.setMinPerTx(1, { from: owner }).should.be.fulfilled
 
       await homeContract.setMinPerTx(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
-    it('setDailyLimit should emit DailyLimitChanged', async () => {
-      const { logs } = await homeContract.setDailyLimit('4', { from: owner }).should.be.fulfilled
+    it('#setDailyLimit allow to set by owner and should be greater than maxPerTx or zero', async () => {
+      await homeContract.setDailyLimit(4, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setDailyLimit(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
+      await homeContract.setDailyLimit(4, { from: owner }).should.be.fulfilled
+      expect(await homeContract.dailyLimit()).to.be.bignumber.equal('4')
+
+      await homeContract.setDailyLimit(0, { from: owner }).should.be.fulfilled
+      expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
+
+      const { logs } = await homeContract.setDailyLimit(4, { from: owner }).should.be.fulfilled
+      expect(await homeContract.dailyLimit()).to.be.bignumber.equal('4')
       expectEventInLogs(logs, 'DailyLimitChanged', {
-        previousLimit: '3',
+        previousLimit: ZERO,
         newLimit: '4'
       })
     })
@@ -1129,6 +1225,31 @@ contract('HomeBridge', async accounts => {
       // Then
       const feeManagerMode = await homeBridge.getFeeManagerMode()
       feeManagerMode.should.be.equals(oneDirectionsModeHash)
+    })
+    it('should be able to get fee manager mode for both directions', async () => {
+      // Given
+      const feeManager = await FeeManagerNativeToErcBothDirections.new()
+      const bothDirectionsModeHash = '0xd7de965f'
+
+      // When
+      await homeBridge.rewardableInitialize(
+        rewardableValidators.address,
+        oneEther,
+        halfEther,
+        minPerTx,
+        gasPrice,
+        requireBlockConfirmations,
+        foreignDailyLimit,
+        foreignMaxPerTx,
+        owner,
+        feeManager.address,
+        homeFee,
+        foreignFee
+      ).should.be.fulfilled
+
+      // Then
+      const feeManagerMode = await homeBridge.getFeeManagerMode()
+      feeManagerMode.should.be.equals(bothDirectionsModeHash)
     })
   })
 

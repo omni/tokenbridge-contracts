@@ -110,7 +110,7 @@ contract HomeBridgeErcToErc is
             _foreignMaxPerTx,
             _owner
         );
-        require(isContract(_feeManager));
+        require(AddressUtils.isContract(_feeManager));
         addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
@@ -129,7 +129,7 @@ contract HomeBridgeErcToErc is
         address _owner
     ) internal {
         require(!isInitialized());
-        require(isContract(_validatorContract));
+        require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignMaxPerTx < _foreignDailyLimit);

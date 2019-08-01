@@ -2,7 +2,7 @@ const HomeBridge = artifacts.require('HomeBridgeErcToNative.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const BlockReward = artifacts.require('BlockReward')
-const OldBlockReward = artifacts.require('oldBlockReward')
+const OldBlockReward = artifacts.require('OldBlockReward')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const FeeManagerErcToNative = artifacts.require('FeeManagerErcToNative.sol')
 const FeeManagerErcToNativePOSDAO = artifacts.require('FeeManagerErcToNativePOSDAO')
@@ -784,14 +784,20 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       initialExecutionDailyLimit.should.be.bignumber.not.equal(newValue)
 
       await homeContract.setExecutionDailyLimit(newValue, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
-      const { logs } = await homeContract.setExecutionDailyLimit(newValue, { from: owner }).should.be.fulfilled
+      await homeContract.setExecutionDailyLimit('2', { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
+      await homeContract.setExecutionDailyLimit(newValue, { from: owner }).should.be.fulfilled
+      expect(await homeContract.executionDailyLimit()).to.be.bignumber.equal(newValue)
+
+      await homeContract.setExecutionDailyLimit(0, { from: owner }).should.be.fulfilled
+      expect(await homeContract.executionDailyLimit()).to.be.bignumber.equal(ZERO)
+
+      const { logs } = await homeContract.setExecutionDailyLimit(newValue, { from: owner }).should.be.fulfilled
+      expect(await homeContract.executionDailyLimit()).to.be.bignumber.equal(newValue)
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', {
-        previousLimit: foreignDailyLimit,
+        previousLimit: ZERO,
         newLimit: newValue
       })
-      const executionDailyLimit = await homeContract.executionDailyLimit()
-      executionDailyLimit.should.be.bignumber.equal(newValue)
     })
   })
 
@@ -1662,6 +1668,18 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
     it('should be able to get fee manager mode', async () => {
       // Given
       const feeManager = await FeeManagerErcToNative.new()
+      const bothDirectionsModeHash = '0xd7de965f'
+
+      // When
+      await homeBridge.setFeeManagerContract(feeManager.address, { from: owner }).should.be.fulfilled
+
+      // Then
+      const feeManagerMode = await homeBridge.getFeeManagerMode()
+      feeManagerMode.should.be.equals(bothDirectionsModeHash)
+    })
+    it('should be able to get fee manager mode from POSDAO fee manager', async () => {
+      // Given
+      const feeManager = await FeeManagerErcToNativePOSDAO.new()
       const bothDirectionsModeHash = '0xd7de965f'
 
       // When

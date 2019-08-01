@@ -3,14 +3,12 @@ pragma solidity 0.4.24;
 import "../../libraries/Message.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
-import "../../interfaces/ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToErc.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 
 contract HomeBridgeErcToErc is
-    ERC677Receiver,
     EternalStorage,
     BasicHomeBridge,
     ERC677BridgeForBurnableMintableToken,

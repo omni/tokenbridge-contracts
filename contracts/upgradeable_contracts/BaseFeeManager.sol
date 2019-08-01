@@ -8,8 +8,8 @@ import "./FeeTypes.sol";
 contract BaseFeeManager is EternalStorage, FeeTypes {
     using SafeMath for uint256;
 
-    event HomeFeeUpdated(uint256 fee);
-    event ForeignFeeUpdated(uint256 fee);
+    event HomeFeeUpdated(uint256 previousFee, uint256 newFee);
+    event ForeignFeeUpdated(uint256 previousFee, uint256 newFee);
 
     // This is not a real fee value but a relative value used to calculate the fee percentage
     uint256 internal constant MAX_FEE = 1 ether;
@@ -29,8 +29,8 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     }
 
     function setHomeFee(uint256 _fee) external validFee(_fee) {
+        emit HomeFeeUpdated(getHomeFee(), _fee);
         uintStorage[keccak256(abi.encodePacked("homeFee"))] = _fee;
-        emit HomeFeeUpdated(_fee);
     }
 
     function getHomeFee() public view returns (uint256) {
@@ -38,8 +38,8 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     }
 
     function setForeignFee(uint256 _fee) external validFee(_fee) {
+        emit ForeignFeeUpdated(getForeignFee(), _fee);
         uintStorage[keccak256(abi.encodePacked("foreignFee"))] = _fee;
-        emit ForeignFeeUpdated(_fee);
     }
 
     function getForeignFee() public view returns (uint256) {

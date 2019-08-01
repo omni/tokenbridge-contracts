@@ -1403,6 +1403,15 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       // Then
       expect(await homeBridge.getHomeFee()).to.be.bignumber.equals(newHomeFee)
       expect(await homeBridge.getForeignFee()).to.be.bignumber.equals(newForeignFee)
+
+      const homeFeeManager = await FeeManagerErcToErcPOSDAO.at(homeBridge.address)
+      const homeFeeEvents = await getEvents(homeFeeManager, { event: 'HomeFeeUpdated' })
+      expect(toBN(homeFeeEvents[1].returnValues.previousFee)).to.be.bignumber.equal(homeFee)
+      expect(toBN(homeFeeEvents[1].returnValues.newFee)).to.be.bignumber.equal(newHomeFee)
+
+      const foreignFeeEvents = await getEvents(homeFeeManager, { event: 'ForeignFeeUpdated' })
+      expect(toBN(foreignFeeEvents[1].returnValues.previousFee)).to.be.bignumber.equal(foreignFee)
+      expect(toBN(foreignFeeEvents[1].returnValues.newFee)).to.be.bignumber.equal(newForeignFee)
     })
     it('should be able to get fee manager mode', async () => {
       // Given

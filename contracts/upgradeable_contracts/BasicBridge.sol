@@ -23,6 +23,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     bytes32 internal constant MAX_PER_TX = keccak256(abi.encodePacked("maxPerTx"));
     bytes32 internal constant DAILY_LIMIT = keccak256(abi.encodePacked("dailyLimit"));
     bytes32 internal constant EXECUTION_MAX_PER_TX = keccak256(abi.encodePacked("executionMaxPerTx"));
+    bytes32 internal constant EXECUTION_DAILY_LIMIT = keccak256(abi.encodePacked("executionDailyLimit"));
 
     bytes32 internal constant TOTAL_SPENT_PER_DAY = "totalSpentPerDay";
     bytes32 internal constant TOTAL_EXECUTED_PER_DAY = "totalExecutedPerDay";
@@ -108,12 +109,12 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     function setExecutionDailyLimit(uint256 _dailyLimit) external onlyOwner {
         require(_dailyLimit > executionMaxPerTx() || _dailyLimit == 0);
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _dailyLimit;
+        uintStorage[EXECUTION_DAILY_LIMIT] = _dailyLimit;
         emit ExecutionDailyLimitChanged(_dailyLimit);
     }
 
     function executionDailyLimit() public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))];
+        return uintStorage[EXECUTION_DAILY_LIMIT];
     }
 
     function setExecutionMaxPerTx(uint256 _maxPerTx) external onlyOwner {

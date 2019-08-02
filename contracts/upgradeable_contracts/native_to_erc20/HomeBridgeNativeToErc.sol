@@ -108,7 +108,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
+        uintStorage[DAILY_LIMIT] = _dailyLimit;
         uintStorage[MAX_PER_TX] = _maxPerTx;
         uintStorage[MIN_PER_TX] = _minPerTx;
         uintStorage[GAS_PRICE] = _homeGasPrice;

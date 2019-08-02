@@ -106,7 +106,7 @@ contract ForeignBridgeNativeToErc is
         require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc677token(_erc677token);
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
+        uintStorage[DAILY_LIMIT] = _dailyLimit;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[MAX_PER_TX] = _maxPerTx;
         uintStorage[MIN_PER_TX] = _minPerTx;

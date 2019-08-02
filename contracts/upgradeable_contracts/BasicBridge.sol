@@ -18,6 +18,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     event ExecutionDailyLimitChanged(uint256 newLimit);
 
     bytes32 internal constant GAS_PRICE = keccak256(abi.encodePacked("gasPrice"));
+    bytes32 internal constant REQUIRED_BLOCK_CONFIRMATIONS = keccak256(abi.encodePacked("requiredBlockConfirmations"));
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (2, 3, 0);
@@ -35,12 +36,12 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     function setRequiredBlockConfirmations(uint256 _blockConfirmations) external onlyOwner {
         require(_blockConfirmations > 0);
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _blockConfirmations;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _blockConfirmations;
         emit RequiredBlockConfirmationChanged(_blockConfirmations);
     }
 
     function requiredBlockConfirmations() external view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))];
+        return uintStorage[REQUIRED_BLOCK_CONFIRMATIONS];
     }
 
     function deployedAtBlock() external view returns (uint256) {

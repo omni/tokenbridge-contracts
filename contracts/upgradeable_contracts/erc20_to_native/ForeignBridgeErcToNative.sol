@@ -27,7 +27,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;

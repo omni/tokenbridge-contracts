@@ -140,7 +140,7 @@ contract HomeBridgeErcToErc is
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[GAS_PRICE] = _homeGasPrice;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
         setOwner(_owner);

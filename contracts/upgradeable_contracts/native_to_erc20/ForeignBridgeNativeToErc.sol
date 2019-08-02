@@ -111,7 +111,7 @@ contract ForeignBridgeNativeToErc is
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
         uintStorage[GAS_PRICE] = _foreignGasPrice;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
         setOwner(_owner);

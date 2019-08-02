@@ -12,6 +12,8 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, Ba
     event UserRequestForSignature(address recipient, uint256 value);
     event AssetAboveLimitsFixed(bytes32 indexed transactionHash, uint256 value, uint256 remaining);
 
+    bytes32 internal constant OUT_OF_LIMIT_AMOUNT = keccak256(abi.encodePacked("outOfLimitAmount"));
+
     function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
@@ -41,7 +43,7 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, Ba
     }
 
     function outOfLimitAmount() public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))];
+        return uintStorage[OUT_OF_LIMIT_AMOUNT];
     }
 
     function fixedAssets(bytes32 _txHash) public view returns (bool) {
@@ -49,7 +51,7 @@ contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, Ba
     }
 
     function setOutOfLimitAmount(uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("outOfLimitAmount"))] = _value;
+        uintStorage[OUT_OF_LIMIT_AMOUNT] = _value;
     }
 
     function txAboveLimits(bytes32 _txHash) internal view returns (address recipient, uint256 value) {

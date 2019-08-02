@@ -1,10 +1,10 @@
 pragma solidity 0.4.24;
+
 import "../interfaces/IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
+import "./ValidatorStorage.sol";
 
-contract Validatable is EternalStorage {
-    bytes32 internal constant VALIDATOR_CONTRACT = keccak256(abi.encodePacked("validatorContract"));
-
+contract Validatable is EternalStorage, ValidatorStorage {
     function validatorContract() public view returns (IBridgeValidators) {
         return IBridgeValidators(addressStorage[VALIDATOR_CONTRACT]);
     }

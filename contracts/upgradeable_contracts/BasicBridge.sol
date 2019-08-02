@@ -20,6 +20,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     bytes32 internal constant GAS_PRICE = keccak256(abi.encodePacked("gasPrice"));
     bytes32 internal constant REQUIRED_BLOCK_CONFIRMATIONS = keccak256(abi.encodePacked("requiredBlockConfirmations"));
     bytes32 internal constant TOTAL_SPENT_PER_DAY = "totalSpentPerDay";
+    bytes32 internal constant TOTAL_EXECUTED_PER_DAY = "totalExecutedPerDay";
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (2, 3, 0);
@@ -58,11 +59,11 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     }
 
     function setTotalExecutedPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = _value;
+        uintStorage[keccak256(abi.encodePacked(TOTAL_EXECUTED_PER_DAY, _day))] = _value;
     }
 
     function totalExecutedPerDay(uint256 _day) public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))];
+        return uintStorage[keccak256(abi.encodePacked(TOTAL_EXECUTED_PER_DAY, _day))];
     }
 
     function minPerTx() public view returns (uint256) {

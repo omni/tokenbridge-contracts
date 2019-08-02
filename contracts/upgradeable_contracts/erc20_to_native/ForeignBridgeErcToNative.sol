@@ -26,7 +26,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         setErc20token(_erc20token);
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
         uintStorage[MAX_PER_TX] = _maxPerTx;

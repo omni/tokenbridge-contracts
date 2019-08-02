@@ -40,7 +40,7 @@ contract RewardableValidators is BaseBridgeValidators {
 
         setValidatorCount(_initialValidators.length);
         uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         setInitialize();
         emit RequiredSignaturesChanged(_requiredSignatures);
 

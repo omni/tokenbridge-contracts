@@ -150,7 +150,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[DAILY_LIMIT] = _dailyLimit;
         uintStorage[MAX_PER_TX] = _maxPerTx;
         uintStorage[MIN_PER_TX] = _minPerTx;

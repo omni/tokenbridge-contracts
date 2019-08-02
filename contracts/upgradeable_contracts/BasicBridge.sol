@@ -2,14 +2,14 @@ pragma solidity 0.4.24;
 
 import "../interfaces/IBridgeValidators.sol";
 import "./Upgradeable.sol";
-import "../upgradeability/EternalStorage.sol";
+import "./Initializable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./Validatable.sol";
 import "./Ownable.sol";
 import "./Claimable.sol";
 
-contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claimable {
+contract BasicBridge is Initializable, Validatable, Ownable, Upgradeable, Claimable {
     using SafeMath for uint256;
 
     event GasPriceChanged(uint256 gasPrice);
@@ -52,10 +52,6 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
         return uintStorage[REQUIRED_BLOCK_CONFIRMATIONS];
     }
 
-    function deployedAtBlock() external view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))];
-    }
-
     function setTotalSpentPerDay(uint256 _day, uint256 _value) internal {
         uintStorage[keccak256(abi.encodePacked(TOTAL_SPENT_PER_DAY, _day))] = _value;
     }
@@ -82,14 +78,6 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     function executionMaxPerTx() public view returns (uint256) {
         return uintStorage[EXECUTION_MAX_PER_TX];
-    }
-
-    function setInitialize() internal {
-        boolStorage[keccak256(abi.encodePacked("isInitialized"))] = true;
-    }
-
-    function isInitialized() public view returns (bool) {
-        return boolStorage[keccak256(abi.encodePacked("isInitialized"))];
     }
 
     function getCurrentDay() public view returns (uint256) {

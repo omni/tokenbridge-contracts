@@ -154,7 +154,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
         uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
         uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
+        uintStorage[GAS_PRICE] = _homeGasPrice;
         uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
         addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;

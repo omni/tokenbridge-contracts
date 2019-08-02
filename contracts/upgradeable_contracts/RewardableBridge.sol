@@ -8,6 +8,8 @@ contract RewardableBridge is Ownable, FeeTypes {
     event FeeDistributedFromAffirmation(uint256 feeAmount, bytes32 indexed transactionHash);
     event FeeDistributedFromSignatures(uint256 feeAmount, bytes32 indexed transactionHash);
 
+    bytes32 internal constant FEE_MANAGER_CONTRACT = keccak256(abi.encodePacked("feeManagerContract"));
+
     function _getFee(bytes32 _feeType) internal view returns (uint256) {
         uint256 fee;
         address feeManager = feeManagerContract();
@@ -43,12 +45,12 @@ contract RewardableBridge is Ownable, FeeTypes {
     }
 
     function feeManagerContract() public view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("feeManagerContract"))];
+        return addressStorage[FEE_MANAGER_CONTRACT];
     }
 
     function setFeeManagerContract(address _feeManager) external onlyOwner {
         require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
-        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
     }
 
     function _setFee(address _feeManager, uint256 _fee, bytes32 _feeType) internal {

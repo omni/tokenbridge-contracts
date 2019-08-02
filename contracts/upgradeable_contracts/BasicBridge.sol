@@ -25,9 +25,6 @@ contract BasicBridge is Initializable, Validatable, Ownable, Upgradeable, Claima
     bytes32 internal constant EXECUTION_MAX_PER_TX = keccak256(abi.encodePacked("executionMaxPerTx"));
     bytes32 internal constant EXECUTION_DAILY_LIMIT = keccak256(abi.encodePacked("executionDailyLimit"));
 
-    bytes32 internal constant TOTAL_SPENT_PER_DAY = "totalSpentPerDay";
-    bytes32 internal constant TOTAL_EXECUTED_PER_DAY = "totalExecutedPerDay";
-
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (2, 3, 0);
     }
@@ -53,19 +50,19 @@ contract BasicBridge is Initializable, Validatable, Ownable, Upgradeable, Claima
     }
 
     function setTotalSpentPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked(TOTAL_SPENT_PER_DAY, _day))] = _value;
+        uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))] = _value;
     }
 
     function totalSpentPerDay(uint256 _day) public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked(TOTAL_SPENT_PER_DAY, _day))];
+        return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
     }
 
     function setTotalExecutedPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked(TOTAL_EXECUTED_PER_DAY, _day))] = _value;
+        uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = _value;
     }
 
     function totalExecutedPerDay(uint256 _day) public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked(TOTAL_EXECUTED_PER_DAY, _day))];
+        return uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))];
     }
 
     function minPerTx() public view returns (uint256) {

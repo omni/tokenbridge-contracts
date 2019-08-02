@@ -9,6 +9,7 @@ contract BaseBridgeValidators is Initializable, Ownable {
 
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
     uint256 internal constant MAX_VALIDATORS = 100;
+    bytes32 internal constant REQUIRED_SIGNATURES = keccak256(abi.encodePacked("requiredSignatures"));
 
     event ValidatorAdded(address indexed validator);
     event ValidatorRemoved(address indexed validator);
@@ -17,7 +18,7 @@ contract BaseBridgeValidators is Initializable, Ownable {
     function setRequiredSignatures(uint256 _requiredSignatures) external onlyOwner {
         require(validatorCount() >= _requiredSignatures);
         require(_requiredSignatures != 0);
-        uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
+        uintStorage[REQUIRED_SIGNATURES] = _requiredSignatures;
         emit RequiredSignaturesChanged(_requiredSignatures);
     }
 
@@ -74,7 +75,7 @@ contract BaseBridgeValidators is Initializable, Ownable {
     }
 
     function requiredSignatures() public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("requiredSignatures"))];
+        return uintStorage[REQUIRED_SIGNATURES];
     }
 
     function validatorCount() public view returns (uint256) {

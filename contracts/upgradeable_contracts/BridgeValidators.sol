@@ -34,7 +34,7 @@ contract BridgeValidators is BaseBridgeValidators {
         }
 
         setValidatorCount(_initialValidators.length);
-        uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
+        uintStorage[REQUIRED_SIGNATURES] = _requiredSignatures;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         setInitialize();
         emit RequiredSignaturesChanged(_requiredSignatures);

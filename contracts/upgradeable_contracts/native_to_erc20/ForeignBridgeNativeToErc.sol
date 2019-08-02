@@ -104,7 +104,7 @@ contract ForeignBridgeNativeToErc is
         require(_foreignGasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc677token(_erc677token);
         uintStorage[DAILY_LIMIT] = _dailyLimit;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;

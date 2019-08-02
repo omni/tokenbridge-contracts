@@ -3,8 +3,10 @@ import "../interfaces/IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
 
 contract Validatable is EternalStorage {
+    bytes32 internal constant VALIDATOR_CONTRACT = keccak256(abi.encodePacked("validatorContract"));
+
     function validatorContract() public view returns (IBridgeValidators) {
-        return IBridgeValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
+        return IBridgeValidators(addressStorage[VALIDATOR_CONTRACT]);
     }
 
     modifier onlyValidator() {

@@ -1,8 +1,9 @@
 pragma solidity 0.4.24;
 
 import "./BasicForeignBridgeErcToErc.sol";
+import "../ERC20Bridge.sol";
 
-contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc {
+contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
     function initialize(
         address _validatorContract,
         address _erc20token,
@@ -24,14 +25,5 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc {
             _owner
         );
         return isInitialized();
-    }
-
-    function erc20token() public view returns (ERC20Basic) {
-        return ERC20Basic(addressStorage[keccak256(abi.encodePacked("erc20token"))]);
-    }
-
-    function setErc20token(address _token) internal {
-        require(AddressUtils.isContract(_token));
-        addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
     }
 }

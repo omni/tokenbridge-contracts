@@ -21,7 +21,7 @@ contract ValidatorsFeeManager is BaseFeeManager {
     }
 
     function rewardableValidatorContract() internal view returns (IRewardableValidators) {
-        return IRewardableValidators(addressStorage[VALIDATOR_CONTRACT]);
+        return IRewardableValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
     }
 
     function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {

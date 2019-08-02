@@ -137,7 +137,7 @@ contract HomeBridgeErcToErc is
         addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
+        uintStorage[MAX_PER_TX] = _maxPerTx;
         uintStorage[MIN_PER_TX] = _minPerTx;
         uintStorage[GAS_PRICE] = _homeGasPrice;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;

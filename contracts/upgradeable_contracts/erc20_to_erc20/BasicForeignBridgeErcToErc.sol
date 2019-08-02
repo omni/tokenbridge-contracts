@@ -25,7 +25,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
+        uintStorage[MAX_PER_TX] = _maxPerTx;
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
         setOwner(_owner);

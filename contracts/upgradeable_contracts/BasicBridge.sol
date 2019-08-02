@@ -19,6 +19,8 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     bytes32 internal constant GAS_PRICE = keccak256(abi.encodePacked("gasPrice"));
     bytes32 internal constant REQUIRED_BLOCK_CONFIRMATIONS = keccak256(abi.encodePacked("requiredBlockConfirmations"));
+    bytes32 internal constant MIN_PER_TX = keccak256(abi.encodePacked("minPerTx"));
+
     bytes32 internal constant TOTAL_SPENT_PER_DAY = "totalSpentPerDay";
     bytes32 internal constant TOTAL_EXECUTED_PER_DAY = "totalExecutedPerDay";
 
@@ -67,7 +69,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
     }
 
     function minPerTx() public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("minPerTx"))];
+        return uintStorage[MIN_PER_TX];
     }
 
     function maxPerTx() public view returns (uint256) {
@@ -123,7 +125,7 @@ contract BasicBridge is EternalStorage, Validatable, Ownable, Upgradeable, Claim
 
     function setMinPerTx(uint256 _minPerTx) external onlyOwner {
         require(_minPerTx < dailyLimit() && _minPerTx < maxPerTx());
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
+        uintStorage[MIN_PER_TX] = _minPerTx;
     }
 
     function withinLimit(uint256 _amount) public view returns (bool) {

@@ -18,6 +18,8 @@ contract HomeBridgeErcToNative is
 {
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
+    bytes32 internal constant TOTAL_BURNT_COINS = keccak256(abi.encodePacked("totalBurntCoins"));
+
     function() public payable {
         nativeTransfer();
     }
@@ -118,7 +120,7 @@ contract HomeBridgeErcToNative is
     }
 
     function totalBurntCoins() public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))];
+        return uintStorage[TOTAL_BURNT_COINS];
     }
 
     function setBlockRewardContract(address _blockReward) external onlyOwner {
@@ -187,7 +189,7 @@ contract HomeBridgeErcToNative is
     }
 
     function setTotalBurntCoins(uint256 _amount) internal {
-        uintStorage[keccak256(abi.encodePacked("totalBurntCoins"))] = _amount;
+        uintStorage[TOTAL_BURNT_COINS] = _amount;
     }
 
     function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {

@@ -7,8 +7,15 @@ import "../BasicHomeBridge.sol";
 import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToNative.sol";
+import "../BlockRewardBridge.sol";
 
-contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManagement, RewardableHomeBridgeErcToNative {
+contract HomeBridgeErcToNative is
+    EternalStorage,
+    BasicHomeBridge,
+    OverdrawManagement,
+    RewardableHomeBridgeErcToNative,
+    BlockRewardBridge
+{
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
 
     function() public payable {
@@ -107,7 +114,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
     }
 
     function blockRewardContract() public view returns (IBlockReward) {
-        return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
+        return _blockRewardContract();
     }
 
     function totalBurntCoins() public view returns (uint256) {
@@ -115,19 +122,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
     }
 
     function setBlockRewardContract(address _blockReward) external onlyOwner {
-        require(AddressUtils.isContract(_blockReward));
-
-        // Before store the contract we need to make sure that it is the block reward contract in actual fact,
-        // call a specific method from the contract that should return a specific value
-        bool isBlockRewardContract = false;
-        if (_blockReward.call(abi.encodeWithSignature("blockRewardContractId()"))) {
-            isBlockRewardContract =
-                IBlockReward(_blockReward).blockRewardContractId() == bytes4(keccak256("blockReward"));
-        } else if (_blockReward.call(abi.encodeWithSignature("bridgesAllowedLength()"))) {
-            isBlockRewardContract = IBlockReward(_blockReward).bridgesAllowedLength() != 0;
-        }
-        require(isBlockRewardContract);
-        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
+        _setBlockRewardContract(_blockReward);
     }
 
     function _initialize(
@@ -156,7 +151,7 @@ contract HomeBridgeErcToNative is EternalStorage, BasicHomeBridge, OverdrawManag
         uintStorage[MIN_PER_TX] = _minPerTx;
         uintStorage[GAS_PRICE] = _homeGasPrice;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        addressStorage[keccak256(abi.encodePacked("blockRewardContract"))] = _blockReward;
+        addressStorage[BLOCK_REWARD_CONTRACT] = _blockReward;
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignMaxPerTx;
         setOwner(_owner);

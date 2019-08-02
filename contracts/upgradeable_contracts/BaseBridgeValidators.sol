@@ -10,6 +10,7 @@ contract BaseBridgeValidators is Initializable, Ownable {
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
     uint256 internal constant MAX_VALIDATORS = 100;
     bytes32 internal constant REQUIRED_SIGNATURES = keccak256(abi.encodePacked("requiredSignatures"));
+    bytes32 internal constant VALIDATOR_COUNT = keccak256(abi.encodePacked("validatorCount"));
 
     event ValidatorAdded(address indexed validator);
     event ValidatorRemoved(address indexed validator);
@@ -79,7 +80,7 @@ contract BaseBridgeValidators is Initializable, Ownable {
     }
 
     function validatorCount() public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("validatorCount"))];
+        return uintStorage[VALIDATOR_COUNT];
     }
 
     function isValidator(address _validator) public view returns (bool) {
@@ -95,7 +96,7 @@ contract BaseBridgeValidators is Initializable, Ownable {
     }
 
     function setValidatorCount(uint256 _validatorCount) internal {
-        uintStorage[keccak256(abi.encodePacked("validatorCount"))] = _validatorCount;
+        uintStorage[VALIDATOR_COUNT] = _validatorCount;
     }
 
     function setNextValidator(address _prevValidator, address _validator) internal {

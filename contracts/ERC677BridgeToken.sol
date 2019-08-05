@@ -12,8 +12,6 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
 
     event ContractFallbackCallFailed(address from, address to, uint256 value);
 
-    bytes4 internal constant ON_TOKEN_TRANSFER = 0xa4c0ed36; // onTokenTransfer(address,uint256,bytes)
-
     constructor(string _name, string _symbol, uint8 _decimals) public DetailedERC20(_name, _symbol, _decimals) {
         // solhint-disable-previous-line no-empty-blocks
     }
@@ -67,7 +65,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
     }
 
     function contractFallback(address _from, address _to, uint256 _value, bytes _data) private returns (bool) {
-        return _to.call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, _from, _value, _data));
+        return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)", _from, _value, _data));
     }
 
     function finishMinting() public returns (bool) {

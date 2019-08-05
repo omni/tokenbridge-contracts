@@ -20,14 +20,14 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         require(_gasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        uintStorage[GAS_PRICE] = _gasPrice;
+        uintStorage[MAX_PER_TX] = _maxPerTx;
+        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimit;
+        uintStorage[EXECUTION_MAX_PER_TX] = _homeMaxPerTx;
         setOwner(_owner);
         setInitialize();
     }

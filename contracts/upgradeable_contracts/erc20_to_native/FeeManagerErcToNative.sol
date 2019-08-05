@@ -3,18 +3,15 @@ pragma solidity 0.4.24;
 import "../../interfaces/IBlockReward.sol";
 import "../Sacrifice.sol";
 import "../ValidatorsFeeManager.sol";
+import "../BlockRewardBridge.sol";
 
-contract FeeManagerErcToNative is ValidatorsFeeManager {
+contract FeeManagerErcToNative is ValidatorsFeeManager, BlockRewardBridge {
     function getFeeManagerMode() external pure returns (bytes4) {
         return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
     }
 
-    function blockRewardContract() internal view returns (IBlockReward) {
-        return IBlockReward(addressStorage[keccak256(abi.encodePacked("blockRewardContract"))]);
-    }
-
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal {
-        IBlockReward blockReward = blockRewardContract();
+        IBlockReward blockReward = _blockRewardContract();
         blockReward.addExtraReceiver(_fee, _rewardAddress);
     }
 

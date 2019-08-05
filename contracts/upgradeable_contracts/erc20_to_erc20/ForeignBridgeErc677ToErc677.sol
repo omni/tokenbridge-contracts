@@ -31,8 +31,8 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
             _owner
         );
 
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
+        uintStorage[DAILY_LIMIT] = _dailyLimit;
+        uintStorage[MIN_PER_TX] = _minPerTx;
 
         return isInitialized();
     }

@@ -9,12 +9,20 @@ contract RewardableBridge is Ownable, FeeTypes {
     event FeeDistributedFromSignatures(uint256 feeAmount, bytes32 indexed transactionHash);
 
     bytes32 internal constant FEE_MANAGER_CONTRACT = keccak256(abi.encodePacked("feeManagerContract"));
+    bytes4 internal constant GET_HOME_FEE = 0x94da17cd; // getHomeFee()
+    bytes4 internal constant GET_FOREIGN_FEE = 0xffd66196; // getForeignFee()
+    bytes4 internal constant GET_FEE_MANAGER_MODE = 0xf2ba9561; // getFeeManagerMode()
+    bytes4 internal constant SET_HOME_FEE = 0x34a9e148; // setHomeFee(uint256)
+    bytes4 internal constant SET_FOREIGN_FEE = 0x286c4066; // setForeignFee(uint256)
+    bytes4 internal constant CALCULATE_FEE = 0x9862f26f; // calculateFee(uint256,bool,bytes32)
+    bytes4 internal constant DISTRIBUTE_FEE_FROM_SIGNATURES = 0x59d78464; // distributeFeeFromSignatures(uint256)
+    bytes4 internal constant DISTRIBUTE_FEE_FROM_AFFIRMATION = 0x054d46ec; // distributeFeeFromAffirmation(uint256)
 
     function _getFee(bytes32 _feeType) internal view returns (uint256) {
         uint256 fee;
         address feeManager = feeManagerContract();
-        string memory method = _feeType == HOME_FEE ? "getHomeFee()" : "getForeignFee()";
-        bytes memory callData = abi.encodeWithSignature(method);
+        bytes4 method = _feeType == HOME_FEE ? GET_HOME_FEE : GET_FOREIGN_FEE;
+        bytes memory callData = abi.encodeWithSelector(method);
 
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
@@ -30,7 +38,7 @@ contract RewardableBridge is Ownable, FeeTypes {
 
     function getFeeManagerMode() external view returns (bytes4) {
         bytes4 mode;
-        bytes memory callData = abi.encodeWithSignature("getFeeManagerMode()");
+        bytes memory callData = abi.encodeWithSelector(GET_FEE_MANAGER_MODE);
         address feeManager = feeManagerContract();
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 4)
@@ -54,8 +62,8 @@ contract RewardableBridge is Ownable, FeeTypes {
     }
 
     function _setFee(address _feeManager, uint256 _fee, bytes32 _feeType) internal {
-        string memory method = _feeType == HOME_FEE ? "setHomeFee(uint256)" : "setForeignFee(uint256)";
-        require(_feeManager.delegatecall(abi.encodeWithSignature(method, _fee)));
+        bytes4 method = _feeType == HOME_FEE ? SET_HOME_FEE : SET_FOREIGN_FEE;
+        require(_feeManager.delegatecall(abi.encodeWithSelector(method, _fee)));
     }
 
     function calculateFee(uint256 _value, bool _recover, address _impl, bytes32 _feeType)
@@ -64,12 +72,7 @@ contract RewardableBridge is Ownable, FeeTypes {
         returns (uint256)
     {
         uint256 fee;
-        bytes memory callData = abi.encodeWithSignature(
-            "calculateFee(uint256,bool,bytes32)",
-            _value,
-            _recover,
-            _feeType
-        );
+        bytes memory callData = abi.encodeWithSelector(CALCULATE_FEE, _value, _recover, _feeType);
         assembly {
             let result := callcode(gas, _impl, 0x0, add(callData, 0x20), mload(callData), 0, 32)
             fee := mload(0)
@@ -83,12 +86,12 @@ contract RewardableBridge is Ownable, FeeTypes {
     }
 
     function distributeFeeFromSignatures(uint256 _fee, address _feeManager, bytes32 _txHash) internal {
-        require(_feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromSignatures(uint256)", _fee)));
+        require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_SIGNATURES, _fee)));
         emit FeeDistributedFromSignatures(_fee, _txHash);
     }
 
     function distributeFeeFromAffirmation(uint256 _fee, address _feeManager, bytes32 _txHash) internal {
-        require(_feeManager.delegatecall(abi.encodeWithSignature("distributeFeeFromAffirmation(uint256)", _fee)));
+        require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_AFFIRMATION, _fee)));
         emit FeeDistributedFromAffirmation(_fee, _txHash);
     }
 }

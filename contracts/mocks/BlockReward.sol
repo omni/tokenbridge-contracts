@@ -11,6 +11,7 @@ contract BlockReward {
     uint256 public feeAmount = 0;
     mapping(bytes32 => uint256) internal uintStorage;
     bytes32 internal constant MINTED_TOTALLY_BY_BRIDGE = "mintedTotallyByBridge";
+    bytes4 internal constant MINT_REWARD = 0xe2f764a3; // mintReward(address[],uint256[])
     address public token;
 
     function() external payable {
@@ -86,7 +87,7 @@ contract BlockReward {
             rewards[i] = feeToDistribute;
         }
 
-        require(token.call(abi.encodeWithSignature("mintReward(address[],uint256[])", receivers, rewards)));
+        require(token.call(abi.encodeWithSelector(MINT_REWARD, receivers, rewards)));
     }
 
     function random(uint256 _count) public view returns (uint256) {

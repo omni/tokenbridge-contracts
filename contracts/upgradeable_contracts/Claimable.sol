@@ -4,6 +4,8 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Sacrifice.sol";
 
 contract Claimable {
+    bytes4 internal constant TRANSFER = 0xa9059cbb; // transfer(address,uint256)
+
     modifier validAddress(address _to) {
         require(_to != address(0));
         /* solcov ignore next */
@@ -34,7 +36,7 @@ contract Claimable {
     function safeTransfer(address _token, address _to, uint256 _value) internal {
         bytes memory returnData;
         bool returnDataResult;
-        bytes memory callData = abi.encodeWithSignature("transfer(address,uint256)", _to, _value);
+        bytes memory callData = abi.encodeWithSelector(TRANSFER, _to, _value);
         assembly {
             let result := call(gas, _token, 0x0, add(callData, 0x20), mload(callData), 0, 32)
             returnData := mload(0)

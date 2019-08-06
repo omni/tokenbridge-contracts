@@ -143,6 +143,11 @@ contract HomeBridgeErcToErc is
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignMaxPerTx;
         setOwner(_owner);
         setErc677token(_erc677token);
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_homeGasPrice);
+        emit DailyLimitChanged(_dailyLimit);
+        emit ExecutionDailyLimitChanged(_foreignDailyLimit);
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {

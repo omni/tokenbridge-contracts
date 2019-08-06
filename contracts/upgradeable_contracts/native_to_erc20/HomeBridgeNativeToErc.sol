@@ -106,6 +106,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
+
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[DAILY_LIMIT] = _dailyLimit;
@@ -116,6 +117,11 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignMaxPerTx;
         setOwner(_owner);
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_homeGasPrice);
+        emit DailyLimitChanged(_dailyLimit);
+        emit ExecutionDailyLimitChanged(_foreignDailyLimit);
     }
 
     function onSignaturesCollected(bytes _message) internal {

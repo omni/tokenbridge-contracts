@@ -146,6 +146,7 @@ contract HomeBridgeErcToNative is
         require(_blockReward == address(0) || AddressUtils.isContract(_blockReward));
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
+
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[DAILY_LIMIT] = _dailyLimit;
@@ -157,6 +158,11 @@ contract HomeBridgeErcToNative is
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignMaxPerTx;
         setOwner(_owner);
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_homeGasPrice);
+        emit DailyLimitChanged(_dailyLimit);
+        emit ExecutionDailyLimitChanged(_foreignDailyLimit);
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {

@@ -48,7 +48,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(await homeContract.isInitialized()).to.be.equal(false)
       expect(await homeContract.blockRewardContract()).to.be.equal(ZERO_ADDRESS)
 
-      await homeContract.initialize(
+      const { logs } = await homeContract.initialize(
         validatorContract.address,
         '3',
         '2',
@@ -75,6 +75,13 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(major).to.be.bignumber.gte(ZERO)
       expect(minor).to.be.bignumber.gte(ZERO)
       expect(patch).to.be.bignumber.gte(ZERO)
+
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(requireBlockConfirmations)
+      })
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: foreignDailyLimit })
+      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: '3' })
     })
 
     it('can update block reward contract', async () => {

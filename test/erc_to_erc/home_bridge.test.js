@@ -50,7 +50,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(await homeContract.maxPerTx()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.isInitialized()).to.be.equal(false)
 
-      await homeContract.initialize(
+      const { logs } = await homeContract.initialize(
         validatorContract.address,
         '3',
         '2',
@@ -75,6 +75,13 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(major).to.be.bignumber.gte(ZERO)
       expect(minor).to.be.bignumber.gte(ZERO)
       expect(patch).to.be.bignumber.gte(ZERO)
+
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(requireBlockConfirmations)
+      })
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: '3' })
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: foreignDailyLimit })
     })
     it('cant set maxPerTx > dailyLimit', async () => {
       expect(await homeContract.isInitialized()).to.be.equal(false)
@@ -1264,7 +1271,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         foreignFee,
         blockRewardContract.address
       ).should.be.rejected
-      await homeBridge.rewardableInitialize(
+      const { logs } = await homeBridge.rewardableInitialize(
         rewardableValidators.address,
         oneEther,
         halfEther,
@@ -1302,6 +1309,13 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       bridgeForeignFee.should.be.bignumber.equal(foreignFee)
       const blockReward = await homeBridge.blockRewardContract()
       blockReward.should.be.equals(blockRewardContract.address)
+
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(requireBlockConfirmations)
+      })
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: oneEther })
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: foreignDailyLimit })
     })
     it('can update fee contract', async () => {
       const feeManager = await FeeManagerErcToErcPOSDAO.new()

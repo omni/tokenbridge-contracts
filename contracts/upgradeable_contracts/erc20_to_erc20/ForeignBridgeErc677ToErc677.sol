@@ -34,6 +34,8 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         uintStorage[DAILY_LIMIT] = _dailyLimit;
         uintStorage[MIN_PER_TX] = _minPerTx;
 
+        emit DailyLimitChanged(_dailyLimit);
+
         return isInitialized();
     }
 

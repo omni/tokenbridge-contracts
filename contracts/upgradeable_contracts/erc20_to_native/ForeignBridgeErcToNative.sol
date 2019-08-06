@@ -22,6 +22,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
         require(_gasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
+
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
@@ -32,6 +33,11 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
         uintStorage[EXECUTION_MAX_PER_TX] = _homeMaxPerTx;
         setOwner(_owner);
         setInitialize();
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_gasPrice);
+        emit ExecutionDailyLimitChanged(_homeDailyLimit);
+
         return isInitialized();
     }
 

@@ -9,7 +9,7 @@ const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.s
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, signatureToVRS, getEvents, ether } = require('../helpers/helpers')
+const { createMessage, sign, signatureToVRS, getEvents, ether, expectEventInLogs } = require('../helpers/helpers')
 
 const oneEther = ether('1')
 const halfEther = ether('0.5')
@@ -128,7 +128,7 @@ contract('ForeignBridge', async accounts => {
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge.initialize(
+      const { logs } = await foreignBridge.initialize(
         validatorContract.address,
         token.address,
         oneEther,
@@ -157,6 +157,13 @@ contract('ForeignBridge', async accounts => {
       expect(major).to.be.bignumber.gte(ZERO)
       expect(minor).to.be.bignumber.gte(ZERO)
       expect(patch).to.be.bignumber.gte(ZERO)
+
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(requireBlockConfirmations)
+      })
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: homeDailyLimit })
+      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: oneEther })
     })
   })
 

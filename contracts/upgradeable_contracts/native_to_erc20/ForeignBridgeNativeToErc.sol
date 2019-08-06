@@ -102,6 +102,7 @@ contract ForeignBridgeNativeToErc is
         require(_foreignGasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
+
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc677token(_erc677token);
         uintStorage[DAILY_LIMIT] = _dailyLimit;
@@ -113,6 +114,11 @@ contract ForeignBridgeNativeToErc is
         uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _homeMaxPerTx;
         setOwner(_owner);
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_foreignGasPrice);
+        emit DailyLimitChanged(_dailyLimit);
+        emit ExecutionDailyLimitChanged(_homeDailyLimit);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {

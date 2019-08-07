@@ -76,8 +76,8 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
             _foreignMaxPerTx,
             _owner
         );
-        require(isContract(_feeManager));
-        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+        require(AddressUtils.isContract(_feeManager));
+        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
         setInitialize();
@@ -100,22 +100,28 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         address _owner
     ) internal {
         require(!isInitialized());
-        require(isContract(_validatorContract));
+        require(AddressUtils.isContract(_validatorContract));
         require(_homeGasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
+
+        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+        uintStorage[DAILY_LIMIT] = _dailyLimit;
+        uintStorage[MAX_PER_TX] = _maxPerTx;
+        uintStorage[MIN_PER_TX] = _minPerTx;
+        uintStorage[GAS_PRICE] = _homeGasPrice;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimit;
+        uintStorage[EXECUTION_MAX_PER_TX] = _foreignMaxPerTx;
         setOwner(_owner);
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_homeGasPrice);
+        emit DailyLimitChanged(_dailyLimit);
+        emit ExecutionDailyLimitChanged(_foreignDailyLimit);
     }
 
     function onSignaturesCollected(bytes _message) internal {

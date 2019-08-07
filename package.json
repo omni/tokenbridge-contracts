@@ -6,6 +6,7 @@
   "scripts": {
     "test": "scripts/test.sh",
     "test:gasreport": "GASREPORT=true npm run test",
+    "test:gasreport:ci": "npm run test:gasreport && npx codechecks",
     "compile": "truffle compile && truffle compile spuriousDragon",
     "flatten": "bash flatten.sh",
     "lint": "npm run lint:js && npm run lint:sol",
@@ -25,10 +26,10 @@
     "ganache-cli": "^6.4.3",
     "istanbul": "^0.4.5",
     "openzeppelin-solidity": "1.12.0",
-    "truffle": "^5.0.15",
-    "web3-provider-engine": "^15.0.0"
+    "truffle": "^5.0.15"
   },
   "devDependencies": {
+    "@codechecks/client": "^0.1.5",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "^0.1.1",
@@ -39,7 +40,7 @@
     "eslint-plugin-import": "^2.17.2",
     "eslint-plugin-node": "^9.0.1",
     "eslint-plugin-prettier": "^3.0.1",
-    "eth-gas-reporter": "^0.1.12",
+    "eth-gas-reporter": "^0.2.9",
     "nodemon": "^1.17.3",
     "prettier": "^1.17.1",
     "prettier-plugin-solidity": "^1.0.0-alpha.27",

@@ -5,5 +5,7 @@ contract RevertFallback {
         revert();
     }
 
-    function receiveEth() public payable {}
+    function receiveEth() public payable {
+        // solhint-disable-previous-line no-empty-blocks
+    }
 }

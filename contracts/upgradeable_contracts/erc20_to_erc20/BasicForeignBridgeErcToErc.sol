@@ -15,21 +15,26 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         address _owner
     ) internal {
         require(!isInitialized());
-        require(isContract(_validatorContract));
+        require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+
+        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        uintStorage[GAS_PRICE] = _gasPrice;
+        uintStorage[MAX_PER_TX] = _maxPerTx;
+        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimit;
+        uintStorage[EXECUTION_MAX_PER_TX] = _homeMaxPerTx;
         setOwner(_owner);
         setInitialize();
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_gasPrice);
+        emit ExecutionDailyLimitChanged(_homeDailyLimit);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -54,7 +59,9 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         revert();
     }
 
+    /* solcov ignore next */
     function erc20token() public view returns (ERC20Basic);
 
+    /* solcov ignore next */
     function setErc20token(address _token) internal;
 }

@@ -1,14 +1,17 @@
 pragma solidity 0.4.24;
+
 import "../interfaces/IBridgeValidators.sol";
 import "../upgradeability/EternalStorage.sol";
+import "./ValidatorStorage.sol";
 
-contract Validatable is EternalStorage {
+contract Validatable is EternalStorage, ValidatorStorage {
     function validatorContract() public view returns (IBridgeValidators) {
-        return IBridgeValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
+        return IBridgeValidators(addressStorage[VALIDATOR_CONTRACT]);
     }
 
     modifier onlyValidator() {
         require(validatorContract().isValidator(msg.sender));
+        /* solcov ignore next */
         _;
     }
 

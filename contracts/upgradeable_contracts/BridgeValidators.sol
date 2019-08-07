@@ -30,12 +30,12 @@ contract BridgeValidators is BaseBridgeValidators {
                 setNextValidator(_initialValidators[i - 1], _initialValidators[i]);
             }
 
-            setValidatorCount(validatorCount().add(1));
             emit ValidatorAdded(_initialValidators[i]);
         }
 
-        uintStorage[keccak256(abi.encodePacked("requiredSignatures"))] = _requiredSignatures;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
+        setValidatorCount(_initialValidators.length);
+        uintStorage[REQUIRED_SIGNATURES] = _requiredSignatures;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         setInitialize();
         emit RequiredSignaturesChanged(_requiredSignatures);
 

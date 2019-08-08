@@ -5,13 +5,14 @@ import "../../libraries/ArbitraryMessage.sol";
 
 contract MessageProcessor is BalanceHandler {
     uint256 internal constant PASS_MESSAGE_GAS = 100000;
+    bytes32 internal constant MESSAGE_SENDER = keccak256(abi.encodePacked("messageSender"));
 
     function messageSender() external view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("messageSender"))];
+        return addressStorage[MESSAGE_SENDER];
     }
 
     function setMessageSender(address _sender) internal {
-        addressStorage[keccak256(abi.encodePacked("messageSender"))] = _sender;
+        addressStorage[MESSAGE_SENDER] = _sender;
     }
 
     function processMessage(bytes _data, bool applyDataOffset) internal {

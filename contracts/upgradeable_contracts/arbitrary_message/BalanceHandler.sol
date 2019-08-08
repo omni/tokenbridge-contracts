@@ -6,6 +6,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract BalanceHandler is EternalStorage {
     using SafeMath for uint256;
 
+    bytes32 internal constant ACCOUNT_FOR_ACTION = keccak256(abi.encodePacked("accountForAction"));
+
     function depositForContractSender(address _contract) public payable {
         require(_contract != address(0));
         setBalanceOf(_contract, balanceOf(_contract).add(msg.value));
@@ -31,11 +33,11 @@ contract BalanceHandler is EternalStorage {
     }
 
     function accountForAction() internal view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("accountForAction"))];
+        return addressStorage[ACCOUNT_FOR_ACTION];
     }
 
     function setAccountForAction(address _account) internal {
-        addressStorage[keccak256(abi.encodePacked("accountForAction"))] = _account;
+        addressStorage[ACCOUNT_FOR_ACTION] = _account;
     }
 
     function isWithdrawFromDepositSelector(bytes _data) internal pure returns (bool) {

@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 import "../../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../Validatable.sol";
 import "../BasicBridge.sol";
 
@@ -17,7 +18,7 @@ contract BasicAMB is BasicBridge {
         address _owner
     ) public returns (bool) {
         require(!isInitialized());
-        require(_validatorContract != address(0) && isContract(_validatorContract));
+        require(_validatorContract != address(0) && AddressUtils.isContract(_validatorContract));
         require(_gasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(_maxGasPerTx > 0);

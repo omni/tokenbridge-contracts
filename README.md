@@ -1,5 +1,5 @@
 [![Join the chat at https://gitter.im/poanetwork/poa-bridge](https://badges.gitter.im/poanetwork/poa-bridge.svg)](https://gitter.im/poanetwork/poa-bridge?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/poa-parity-bridge-contracts)
+[![Build Status](https://travis-ci.org/poanetwork/poa-bridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/poa-bridge-contracts)
 [![Coverage Status](https://coveralls.io/repos/github/poanetwork/poa-bridge-contracts/badge.svg?branch=master)](https://coveralls.io/github/poanetwork/poa-bridge-contracts?branch=master)
 
 # POA Bridge Smart Contracts

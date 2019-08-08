@@ -6,7 +6,7 @@ const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, signatureToVRS, ether } = require('../helpers/helpers')
+const { createMessage, sign, signatureToVRS, ether, expectEventInLogs } = require('../helpers/helpers')
 
 const halfEther = ether('0.5')
 const requireBlockConfirmations = 8
@@ -125,7 +125,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         )
         .should.be.rejectedWith(ERROR_MSG)
 
-      await foreignBridge.initialize(
+      const { logs } = await foreignBridge.initialize(
         validatorContract.address,
         token.address,
         requireBlockConfirmations,
@@ -150,6 +150,12 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       expect(major).to.be.bignumber.gte(ZERO)
       expect(minor).to.be.bignumber.gte(ZERO)
       expect(patch).to.be.bignumber.gte(ZERO)
+
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(requireBlockConfirmations)
+      })
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: homeDailyLimit })
     })
   })
 

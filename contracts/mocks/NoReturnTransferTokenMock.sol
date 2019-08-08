@@ -25,6 +25,7 @@ contract NoReturnTransferTokenMock {
         return balances[_owner];
     }
 
+    // solhint-disable-next-line no-simple-event-func-name
     function transfer(address _to, uint256 _value) public {
         require(_value <= balances[msg.sender]);
         require(_to != address(0));

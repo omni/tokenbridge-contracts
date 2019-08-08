@@ -3,14 +3,12 @@ pragma solidity 0.4.24;
 import "../../libraries/Message.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
-import "../../interfaces/ERC677Receiver.sol";
 import "../BasicHomeBridge.sol";
 import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToErc.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 
 contract HomeBridgeErcToErc is
-    ERC677Receiver,
     EternalStorage,
     BasicHomeBridge,
     ERC677BridgeForBurnableMintableToken,
@@ -110,8 +108,8 @@ contract HomeBridgeErcToErc is
             _foreignMaxPerTx,
             _owner
         );
-        require(isContract(_feeManager));
-        addressStorage[keccak256(abi.encodePacked("feeManagerContract"))] = _feeManager;
+        require(AddressUtils.isContract(_feeManager));
+        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
         _setFee(_feeManager, _homeFee, HOME_FEE);
         _setFee(_feeManager, _foreignFee, FOREIGN_FEE);
     }
@@ -129,22 +127,27 @@ contract HomeBridgeErcToErc is
         address _owner
     ) internal {
         require(!isInitialized());
-        require(isContract(_validatorContract));
+        require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_foreignMaxPerTx < _foreignDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("dailyLimit"))] = _dailyLimit;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("minPerTx"))] = _minPerTx;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _homeGasPrice;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _foreignDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _foreignMaxPerTx;
+        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+        uintStorage[DAILY_LIMIT] = _dailyLimit;
+        uintStorage[MAX_PER_TX] = _maxPerTx;
+        uintStorage[MIN_PER_TX] = _minPerTx;
+        uintStorage[GAS_PRICE] = _homeGasPrice;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimit;
+        uintStorage[EXECUTION_MAX_PER_TX] = _foreignMaxPerTx;
         setOwner(_owner);
         setErc677token(_erc677token);
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_homeGasPrice);
+        emit DailyLimitChanged(_dailyLimit);
+        emit ExecutionDailyLimitChanged(_foreignDailyLimit);
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {

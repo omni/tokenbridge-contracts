@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./Proxy.sol";
 import "./UpgradeabilityStorage.sol";
 
@@ -22,6 +23,7 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
     */
     function _upgradeTo(uint256 version, address implementation) internal {
         require(_implementation != implementation);
+        require(AddressUtils.isContract(implementation));
         require(version > _version);
         _version = version;
         _implementation = implementation;

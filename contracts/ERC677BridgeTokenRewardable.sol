@@ -11,27 +11,30 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
     }
 
     function setBlockRewardContract(address _blockRewardContract) external onlyOwner {
-        require(isContract(_blockRewardContract));
+        require(AddressUtils.isContract(_blockRewardContract));
         blockRewardContract = _blockRewardContract;
     }
 
     function setStakingContract(address _stakingContract) external onlyOwner {
-        require(isContract(_stakingContract));
+        require(AddressUtils.isContract(_stakingContract));
         stakingContract = _stakingContract;
     }
 
     modifier onlyBlockRewardContract() {
         require(msg.sender == blockRewardContract);
+        /* solcov ignore next */
         _;
     }
 
     modifier onlyStakingContract() {
         require(msg.sender == stakingContract);
+        /* solcov ignore next */
         _;
     }
 
     function mintReward(address[] _receivers, uint256[] _rewards) external onlyBlockRewardContract {
-        for (uint256 i = 0; i < _receivers.length; i++) {
+        uint256 receiversLength = _receivers.length;
+        for (uint256 i = 0; i < receiversLength; i++) {
             uint256 amount = _rewards[i];
 
             if (amount == 0) continue;
@@ -48,18 +51,9 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
 
     function stake(address _staker, uint256 _amount) external onlyStakingContract {
         // Transfer `_amount` from `_staker` to `stakingContract`
-        require(_amount <= balances[_staker]);
         balances[_staker] = balances[_staker].sub(_amount);
         balances[stakingContract] = balances[stakingContract].add(_amount);
         emit Transfer(_staker, stakingContract, _amount);
-    }
-
-    function withdraw(address _staker, uint256 _amount) external onlyStakingContract {
-        // Transfer `_amount` from `stakingContract` to `_staker`
-        require(_amount <= balances[stakingContract]);
-        balances[stakingContract] = balances[stakingContract].sub(_amount);
-        balances[_staker] = balances[_staker].add(_amount);
-        emit Transfer(stakingContract, _staker, _amount);
     }
 
     function transfer(address _to, uint256 _value) public returns (bool) {

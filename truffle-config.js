@@ -1,5 +1,4 @@
-const ProviderEngine = require('web3-provider-engine')
-const { CoverageSubprovider } = require('@0x/sol-coverage')
+const { CoverageSubprovider, Web3ProviderEngine } = require('@0x/sol-coverage')
 const { TruffleArtifactAdapter } = require('@0x/sol-trace')
 const { GanacheSubprovider } = require('@0x/subproviders')
 
@@ -22,11 +21,11 @@ const solcVersion = '0.4.24'
 const defaultFromAddress = '0x5409ed021d9299bf6814279a6a1411a7e866a631'
 const isVerbose = true
 const artifactAdapter = new TruffleArtifactAdapter(projectRoot, solcVersion)
-const provider = new ProviderEngine()
+const provider = new Web3ProviderEngine()
 if (process.env.SOLIDITY_COVERAGE === 'true') {
   global.coverageSubprovider = new CoverageSubprovider(artifactAdapter, defaultFromAddress, {
     isVerbose,
-    ignoreFilesGlobs: ['**/Migrations.sol', '**/node_modules/**', '**/test/**', '**/interfaces/**']
+    ignoreFilesGlobs: ['**/Migrations.sol', '**/node_modules/**', '**/mocks/**', '**/interfaces/**']
   })
   provider.addProvider(global.coverageSubprovider)
   const ganacheSubprovider = new GanacheSubprovider({

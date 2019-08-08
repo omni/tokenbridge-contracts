@@ -1,11 +1,9 @@
 pragma solidity 0.4.24;
 
-import "../../libraries/Message.sol";
 import "../BasicForeignBridge.sol";
-import "../../interfaces/IBurnableMintableERC677Token.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "../ERC20Bridge.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge {
+contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
 
     function initialize(
@@ -19,21 +17,27 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         address _owner
     ) external returns (bool) {
         require(!isInitialized());
-        require(isContract(_validatorContract));
+        require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
         require(_homeMaxPerTx < _homeDailyLimit);
         require(_owner != address(0));
-        addressStorage[keccak256(abi.encodePacked("validatorContract"))] = _validatorContract;
+
+        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
-        uintStorage[keccak256(abi.encodePacked("deployedAtBlock"))] = block.number;
-        uintStorage[keccak256(abi.encodePacked("requiredBlockConfirmations"))] = _requiredBlockConfirmations;
-        uintStorage[keccak256(abi.encodePacked("gasPrice"))] = _gasPrice;
-        uintStorage[keccak256(abi.encodePacked("maxPerTx"))] = _maxPerTx;
-        uintStorage[keccak256(abi.encodePacked("executionDailyLimit"))] = _homeDailyLimit;
-        uintStorage[keccak256(abi.encodePacked("executionMaxPerTx"))] = _homeMaxPerTx;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        uintStorage[GAS_PRICE] = _gasPrice;
+        uintStorage[MAX_PER_TX] = _maxPerTx;
+        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimit;
+        uintStorage[EXECUTION_MAX_PER_TX] = _homeMaxPerTx;
         setOwner(_owner);
         setInitialize();
+
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_gasPrice);
+        emit ExecutionDailyLimitChanged(_homeDailyLimit);
+
         return isInitialized();
     }
 
@@ -46,10 +50,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
         super.claimTokens(_token, _to);
     }
 
-    function erc20token() public view returns (ERC20Basic) {
-        return ERC20Basic(addressStorage[keccak256(abi.encodePacked("erc20token"))]);
-    }
-
     function onExecuteMessage(
         address _recipient,
         uint256 _amount,
@@ -57,11 +57,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge {
     ) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         return erc20token().transfer(_recipient, _amount);
-    }
-
-    function setErc20token(address _token) private {
-        require(isContract(_token));
-        addressStorage[keccak256(abi.encodePacked("erc20token"))] = _token;
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {

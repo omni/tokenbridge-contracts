@@ -7,7 +7,7 @@ const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, signatureToVRS, ether, getEvents } = require('../helpers/helpers')
+const { createMessage, sign, signatureToVRS, ether, getEvents, expectEventInLogs } = require('../helpers/helpers')
 
 const oneEther = ether('1')
 const halfEther = ether('0.5')
@@ -116,7 +116,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         )
         .should.be.rejectedWith(ERROR_MSG)
 
-      await foreignBridge.initialize(
+      const { logs } = await foreignBridge.initialize(
         validatorContract.address,
         token.address,
         requireBlockConfirmations,
@@ -141,6 +141,12 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       expect(major).to.be.bignumber.gte(ZERO)
       expect(minor).to.be.bignumber.gte(ZERO)
       expect(patch).to.be.bignumber.gte(ZERO)
+
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(requireBlockConfirmations)
+      })
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: homeDailyLimit })
     })
   })
 
@@ -478,6 +484,30 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     })
   })
   describe('#ForeignBridgeErc677ToErc677_onTokenTransfer', async () => {
+    it('should emit correct events on initialize', async () => {
+      const owner = accounts[3]
+      token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
+      const foreignBridge = await ForeignBridgeErc677ToErc677.new()
+      const { logs } = await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        homeDailyLimit,
+        homeMaxPerTx,
+        owner
+      )
+
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(requireBlockConfirmations)
+      })
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: homeDailyLimit })
+      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })
+    })
     it('can only be called from token contract', async () => {
       const owner = accounts[3]
       const user = accounts[4]

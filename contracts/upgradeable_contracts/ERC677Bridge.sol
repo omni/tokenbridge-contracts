@@ -2,15 +2,17 @@ pragma solidity 0.4.24;
 
 import "./BasicBridge.sol";
 import "../interfaces/ERC677.sol";
+import "../interfaces/ERC677Receiver.sol";
+import "./ERC677Storage.sol";
 
-contract ERC677Bridge is BasicBridge {
+contract ERC677Bridge is BasicBridge, ERC677Receiver, ERC677Storage {
     function erc677token() public view returns (ERC677) {
-        return ERC677(addressStorage[keccak256(abi.encodePacked("erc677token"))]);
+        return ERC677(addressStorage[ERC677_TOKEN]);
     }
 
     function setErc677token(address _token) internal {
-        require(isContract(_token));
-        addressStorage[keccak256(abi.encodePacked("erc677token"))] = _token;
+        require(AddressUtils.isContract(_token));
+        addressStorage[ERC677_TOKEN] = _token;
     }
 
     function onTokenTransfer(
@@ -34,5 +36,6 @@ contract ERC677Bridge is BasicBridge {
         fireEventOnTokenTransfer(_from, _value);
     }
 
+    /* solcov ignore next */
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal;
 }

@@ -2,8 +2,9 @@ pragma solidity 0.4.24;
 
 import "./BaseFeeManager.sol";
 import "../interfaces/IRewardableValidators.sol";
+import "./ValidatorStorage.sol";
 
-contract ValidatorsFeeManager is BaseFeeManager {
+contract ValidatorsFeeManager is BaseFeeManager, ValidatorStorage {
     bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = keccak256(
         abi.encodePacked("reward-transferring-from-home")
     );
@@ -21,7 +22,7 @@ contract ValidatorsFeeManager is BaseFeeManager {
     }
 
     function rewardableValidatorContract() internal view returns (IRewardableValidators) {
-        return IRewardableValidators(addressStorage[keccak256(abi.encodePacked("validatorContract"))]);
+        return IRewardableValidators(addressStorage[VALIDATOR_CONTRACT]);
     }
 
     function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {
@@ -65,7 +66,9 @@ contract ValidatorsFeeManager is BaseFeeManager {
         }
     }
 
+    /* solcov ignore next */
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal;
 
+    /* solcov ignore next */
     function onSignatureFeeDistribution(address _rewardAddress, uint256 _fee) internal;
 }

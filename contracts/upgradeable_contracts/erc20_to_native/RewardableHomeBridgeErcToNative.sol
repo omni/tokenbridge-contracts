@@ -3,6 +3,8 @@ pragma solidity 0.4.24;
 import "../RewardableBridge.sol";
 
 contract RewardableHomeBridgeErcToNative is RewardableBridge {
+    bytes4 internal constant GET_AMOUNT_TO_BURN = 0x916850e9; // getAmountToBurn(uint256)
+
     function setHomeFee(uint256 _fee) external onlyOwner {
         _setFee(feeManagerContract(), _fee, HOME_FEE);
     }
@@ -21,7 +23,7 @@ contract RewardableHomeBridgeErcToNative is RewardableBridge {
 
     function getAmountToBurn(uint256 _value) public view returns (uint256) {
         uint256 amount;
-        bytes memory callData = abi.encodeWithSignature("getAmountToBurn(uint256)", _value);
+        bytes memory callData = abi.encodeWithSelector(GET_AMOUNT_TO_BURN, _value);
         address feeManager = feeManagerContract();
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)

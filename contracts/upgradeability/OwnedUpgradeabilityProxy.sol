@@ -27,6 +27,7 @@ contract OwnedUpgradeabilityProxy is UpgradeabilityOwnerStorage, UpgradeabilityP
     */
     modifier onlyUpgradeabilityOwner() {
         require(msg.sender == upgradeabilityOwner());
+        /* solcov ignore next */
         _;
     }
 

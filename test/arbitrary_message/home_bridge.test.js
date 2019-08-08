@@ -156,8 +156,13 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.owner()).to.be.equal(ZERO_ADDRESS)
       expect(await homeBridge.isInitialized()).to.be.equal(false)
 
-      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.fulfilled
+      const { logs } = await homeBridge.initialize(
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
 
       expect(await homeBridge.deployedAtBlock()).to.be.bignumber.above(ZERO)
       expect(await homeBridge.validatorContract()).to.be.equal(validatorContract.address)
@@ -166,6 +171,11 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(requiredBlockConfirmations))
       expect(await homeBridge.owner()).to.be.equal(owner)
       expect(await homeBridge.isInitialized()).to.be.equal(true)
+
+      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+        requiredBlockConfirmations: toBN(requiredBlockConfirmations)
+      })
+      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
     })
     it('should fail with invalid arguments', async () => {
       const homeBridge = await HomeAMB.new()

@@ -69,13 +69,9 @@ contract Box {
         address _executor,
         uint256 _gasPrice
     ) public {
-        bytes4 methodSelector = this.withdrawFromDeposit.selector;
+        bytes4 methodSelector = IAMB(0).withdrawFromDeposit.selector;
         bytes memory encodedData = abi.encodeWithSelector(methodSelector, _recipient);
         MessageDelivery bridge = MessageDelivery(_bridge);
         bridge.requireToPassMessage(_executor, encodedData, 821254, _gasPrice);
-    }
-
-    function withdrawFromDeposit(address _recipient) public {
-        // solhint-disable-previous-line no-empty-blocks
     }
 }

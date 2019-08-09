@@ -2,6 +2,7 @@ const HomeAMB = artifacts.require('HomeAMB.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const Box = artifacts.require('Box.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
+const IAMB = artifacts.require('IAMB.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -71,7 +72,8 @@ contract('HomeAMB', async accounts => {
       const userBalanceAfterDeposit = toBN(await web3.eth.getBalance(user))
       expect(userBalanceOnBridgeAfterDeposit).to.be.bignumber.equal(oneEther)
 
-      const withdrawFromDepositData = await boxContract.contract.methods.withdrawFromDeposit(user).encodeABI()
+      const amb = await IAMB.at(boxContract.address)
+      const withdrawFromDepositData = await amb.contract.methods.withdrawFromDeposit(user).encodeABI()
 
       // Use these calls to simulate foreign bridge on Foreign network
       const resultPassMessageTx = await homeBridge.requireToPassMessage(

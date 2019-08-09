@@ -68,7 +68,11 @@ library Message {
         return 104;
     }
 
-    function recoverAddressFromSignedMessage(bytes signature, bytes message, bool variableMsgLength) internal pure returns (address) {
+    function recoverAddressFromSignedMessage(bytes signature, bytes message, bool variableMsgLength)
+        internal
+        pure
+        returns (address)
+    {
         require(signature.length == 65);
         bytes32 r;
         bytes32 s;

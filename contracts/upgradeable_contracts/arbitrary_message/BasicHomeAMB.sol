@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../../libraries/ArbitraryMessage.sol";
+import "../../libraries/Message.sol";
 import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
 import "./MessageProcessor.sol";
@@ -39,7 +39,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
 
     function submitSignature(bytes signature, bytes message) external onlyValidator {
         // ensure that `signature` is really `message` signed by `msg.sender`
-        require(msg.sender == ArbitraryMessage.recoverAddressFromSignedMessage(signature, message));
+        require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message, true));
         bytes32 hashMsg = keccak256(abi.encodePacked(message));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
 

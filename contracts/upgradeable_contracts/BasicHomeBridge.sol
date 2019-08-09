@@ -54,7 +54,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicTokenBridge {
     function submitSignature(bytes signature, bytes message) external onlyValidator {
         // ensure that `signature` is really `message` signed by `msg.sender`
         require(Message.isMessageValid(message));
-        require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message));
+        require(msg.sender == Message.recoverAddressFromSignedMessage(signature, message, false));
         bytes32 hashMsg = keccak256(abi.encodePacked(message));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
 

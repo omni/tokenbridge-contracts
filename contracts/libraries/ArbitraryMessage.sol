@@ -1,74 +1,9 @@
 pragma solidity 0.4.24;
 
 import "../interfaces/IBridgeValidators.sol";
+import "./Message.sol";
 
 library ArbitraryMessage {
-    function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
-        require(signature.length == 65);
-        bytes32 r;
-        bytes32 s;
-        bytes1 v;
-
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := mload(add(signature, 0x60))
-        }
-        return ecrecover(hashMessage(message), uint8(v), r, s);
-    }
-
-    function hashMessage(bytes message) internal pure returns (bytes32) {
-        bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        return keccak256(abi.encodePacked(prefix, uintToString(message.length), message));
-    }
-
-    function uintToString(uint256 i) internal pure returns (string) {
-        if (i == 0) return "0";
-        uint256 j = i;
-        uint256 length;
-        while (j != 0) {
-            length++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(length);
-        uint256 k = length - 1;
-        while (i != 0) {
-            bstr[k--] = bytes1(48 + i % 10);
-            i /= 10;
-        }
-        return string(bstr);
-    }
-
-    function hasEnoughValidSignatures(
-        bytes _message,
-        uint8[] _vs,
-        bytes32[] _rs,
-        bytes32[] _ss,
-        IBridgeValidators _validatorContract
-    ) internal view {
-        uint256 requiredSignatures = _validatorContract.requiredSignatures();
-        require(_vs.length >= requiredSignatures);
-        bytes32 hash = hashMessage(_message);
-        address[] memory encounteredAddresses = new address[](requiredSignatures);
-        for (uint256 i = 0; i < requiredSignatures; i++) {
-            address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
-            require(_validatorContract.isValidator(recoveredAddress));
-            if (addressArrayContains(encounteredAddresses, recoveredAddress)) {
-                revert();
-            }
-            encounteredAddresses[i] = recoveredAddress;
-        }
-    }
-
-    function addressArrayContains(address[] array, address value) internal pure returns (bool) {
-        for (uint256 i = 0; i < array.length; i++) {
-            if (array[i] == value) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     // layout of message :: bytes:
     // offset  0: 32 bytes :: uint256 - message length
     // offset 32: 20 bytes :: address - sender address

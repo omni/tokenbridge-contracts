@@ -10,7 +10,7 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicTokenBridge {
     /// triggered when relay of deposit from HomeBridge is complete
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
     function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
-        Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract());
+        Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract(), false);
         address recipient;
         uint256 amount;
         bytes32 txHash;

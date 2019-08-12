@@ -68,7 +68,7 @@ library Message {
         return 104;
     }
 
-    function recoverAddressFromSignedMessage(bytes signature, bytes message, bool variableMsgLength)
+    function recoverAddressFromSignedMessage(bytes signature, bytes message, bool isAMBMessage)
         internal
         pure
         returns (address)
@@ -83,12 +83,12 @@ library Message {
             s := mload(add(signature, 0x40))
             v := mload(add(signature, 0x60))
         }
-        return ecrecover(hashMessage(message, variableMsgLength), uint8(v), r, s);
+        return ecrecover(hashMessage(message, isAMBMessage), uint8(v), r, s);
     }
 
-    function hashMessage(bytes message, bool variableMsgLength) internal pure returns (bytes32) {
+    function hashMessage(bytes message, bool isAMBMessage) internal pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        if (variableMsgLength) {
+        if (isAMBMessage) {
             return keccak256(abi.encodePacked(prefix, uintToString(message.length), message));
         } else {
             string memory msgLength = "104";
@@ -102,15 +102,15 @@ library Message {
         bytes32[] _rs,
         bytes32[] _ss,
         IBridgeValidators _validatorContract,
-        bool variableMsgLength
+        bool isAMBMessage
     ) internal view {
-        require(variableMsgLength || (!variableMsgLength && isMessageValid(_message)));
+        require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         // It is not necessary to check that arrays have the same length since it will be handled
         // during attempt to access to the corresponding elements in the loop and the call will be reverted.
         // It will save gas for the rational validators actions and still be safe enough from security point of view
         require(_vs.length >= requiredSignatures);
-        bytes32 hash = hashMessage(_message, variableMsgLength);
+        bytes32 hash = hashMessage(_message, isAMBMessage);
         address[] memory encounteredAddresses = new address[](requiredSignatures);
 
         for (uint256 i = 0; i < requiredSignatures; i++) {

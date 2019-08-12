@@ -47,7 +47,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
         require(!isAlreadyProcessed(signed));
         // the check above assumes that the case when the value could be overflew
         // will not happen in the addition operation below
-        signed = signed.add(1);
+        signed = signed + 1;
         if (signed > 1) {
             // Duplicated signatures
             require(!messagesSigned(hashSender));

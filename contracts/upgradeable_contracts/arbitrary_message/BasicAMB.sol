@@ -27,7 +27,6 @@ contract BasicAMB is BasicBridge {
         require(_validatorContract != address(0) && AddressUtils.isContract(_validatorContract));
         require(_gasPrice > 0);
         require(_requiredBlockConfirmations > 0);
-        require(_maxGasPerTx > 0);
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
@@ -80,7 +79,6 @@ contract BasicAMB is BasicBridge {
     }
 
     function setMaxGasPerTx(uint256 _maxGasPerTx) external onlyOwner {
-        require(_maxGasPerTx > 0);
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
     }
 }

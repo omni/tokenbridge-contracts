@@ -187,9 +187,6 @@ contract('HomeAMB', async accounts => {
         .initialize(accounts[0], oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(validatorContract.address, 0, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.rejectedWith(ERROR_MSG)
-      await homeBridge
         .initialize(validatorContract.address, oneEther, 0, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
@@ -212,7 +209,6 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
       expect(await homeBridge.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(requiredBlockConfirmations))
 
-      await homeBridge.setMaxGasPerTx(0).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.setGasPrice(0).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.setRequiredBlockConfirmations(0).should.be.rejectedWith(ERROR_MSG)
 
@@ -223,6 +219,9 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.maxGasPerTx()).to.be.bignumber.equal(twoEther)
       expect(await homeBridge.gasPrice()).to.be.bignumber.equal(alternativeGasPrice)
       expect(await homeBridge.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(alternativeBlockConfirmations))
+
+      await homeBridge.setMaxGasPerTx(0).should.be.fulfilled
+      expect(await homeBridge.maxGasPerTx()).to.be.bignumber.equal(ZERO)
     })
   })
   describe('upgradeable', async () => {

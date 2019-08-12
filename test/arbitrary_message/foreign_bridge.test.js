@@ -185,9 +185,6 @@ contract('ForeignAMB', async accounts => {
         .initialize(accounts[0], oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
-        .initialize(validatorContract.address, 0, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge
         .initialize(validatorContract.address, oneEther, 0, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -210,7 +207,6 @@ contract('ForeignAMB', async accounts => {
       expect(await foreignBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
       expect(await foreignBridge.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(requiredBlockConfirmations))
 
-      await foreignBridge.setMaxGasPerTx(0).should.be.rejectedWith(ERROR_MSG)
       await foreignBridge.setGasPrice(0).should.be.rejectedWith(ERROR_MSG)
       await foreignBridge.setRequiredBlockConfirmations(0).should.be.rejectedWith(ERROR_MSG)
 
@@ -223,6 +219,8 @@ contract('ForeignAMB', async accounts => {
       expect(await foreignBridge.requiredBlockConfirmations()).to.be.bignumber.equal(
         toBN(alternativeBlockConfirmations)
       )
+      await foreignBridge.setMaxGasPerTx(0).should.be.fulfilled
+      expect(await foreignBridge.maxGasPerTx()).to.be.bignumber.equal(ZERO)
     })
   })
   describe('upgradeable', async () => {

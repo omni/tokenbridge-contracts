@@ -10,10 +10,6 @@ contract ForeignAMB is BasicForeignAMB {
         return maxGasPerTx();
     }
 
-    function messageProcessed(bytes32 _txHash) internal view returns (bool) {
-        return relayedMessages(_txHash);
-    }
-
     function isMessageDeliverySubsidizedMode() internal returns (bool) {
         return foreignToHomeMode() == SUBSIDIZED_MODE;
     }
@@ -28,9 +24,5 @@ contract ForeignAMB is BasicForeignAMB {
 
     function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal {
         emit RelayedMessage(sender, executor, txHash, status);
-    }
-
-    function setMessageProcessed(bytes32 _txHash, bool _status) internal {
-        setRelayedMessages(_txHash, _status);
     }
 }

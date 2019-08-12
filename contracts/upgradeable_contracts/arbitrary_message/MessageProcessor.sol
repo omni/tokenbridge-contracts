@@ -18,19 +18,27 @@ contract MessageProcessor is BalanceHandler {
     function processMessage(bytes _data, bool applyDataOffset) internal {
         address sender;
         address executor;
+        bytes32 txHash;
         uint256 gasLimit;
         bytes1 dataType;
         uint256 gasPrice;
-        bytes32 txHash;
         bytes memory data;
         (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(
             _data,
             applyDataOffset
         );
+        processMessage(sender, executor, txHash, gasLimit, dataType, gasPrice, data);
+    }
 
-        require(!messageProcessed(txHash));
-        setMessageProcessed(txHash, true);
-
+    function processMessage(
+        address sender,
+        address executor,
+        bytes32 txHash,
+        uint256 gasLimit,
+        bytes1 dataType,
+        uint256 gasPrice,
+        bytes memory data
+    ) internal {
         bool status;
 
         if (dataType == 0x00) {
@@ -83,12 +91,4 @@ contract MessageProcessor is BalanceHandler {
     function isMessageProcessorSubsidizedMode() internal returns (bool);
 
     function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal;
-
-    function messageProcessed(bytes32 _txHash) internal view returns (bool) {
-        // solhint-disable-previous-line no-empty-blocks
-    }
-
-    function setMessageProcessed(bytes32 _txHash, bool _status) internal {
-        // solhint-disable-previous-line no-empty-blocks
-    }
 }

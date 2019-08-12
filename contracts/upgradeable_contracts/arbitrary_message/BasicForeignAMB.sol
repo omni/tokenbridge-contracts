@@ -10,6 +10,17 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery, MessageProc
     function executeSignatures(bytes _data, uint8[] vs, bytes32[] rs, bytes32[] ss) external {
         Message.hasEnoughValidSignatures(_data, vs, rs, ss, validatorContract(), true);
 
-        processMessage(_data, true);
+        address sender;
+        address executor;
+        bytes32 txHash;
+        uint256 gasLimit;
+        bytes1 dataType;
+        uint256 gasPrice;
+        bytes memory data;
+
+        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data, true);
+        require(!relayedMessages(txHash));
+        setRelayedMessages(txHash, true);
+        processMessage(sender, executor, txHash, gasLimit, dataType, gasPrice, data);
     }
 }

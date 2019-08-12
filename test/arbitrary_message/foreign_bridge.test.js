@@ -116,32 +116,26 @@ contract('ForeignAMB', async accounts => {
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.fulfilled
 
-      const defrayalHash = web3.utils.toHex('AMB-defrayal-mode')
-      const subsidizedHash = web3.utils.toHex('AMB-subsidized-mode')
-
-      expect(await foreignBridge.homeToForeignMode()).to.be.equal(defrayalHash)
-
-      await foreignBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled
-      expect(await foreignBridge.homeToForeignMode()).to.be.equal(subsidizedHash)
+      expect(await foreignBridge.homeToForeignMode()).to.be.bignumber.equal('0')
 
       await foreignBridge.setDefrayalModeForHomeToForeign().should.be.fulfilled
-      expect(await foreignBridge.homeToForeignMode()).to.be.equal(defrayalHash)
+      expect(await foreignBridge.homeToForeignMode()).to.be.bignumber.equal('1')
+
+      await foreignBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled
+      expect(await foreignBridge.homeToForeignMode()).to.be.bignumber.equal('0')
     })
     it('should return foreignToHomeMode', async () => {
       const foreignBridge = await ForeignBridge.new()
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.fulfilled
 
-      const defrayalHash = web3.utils.toHex('AMB-defrayal-mode')
-      const subsidizedHash = web3.utils.toHex('AMB-subsidized-mode')
-
-      expect(await foreignBridge.foreignToHomeMode()).to.be.equal(defrayalHash)
-
-      await foreignBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled
-      expect(await foreignBridge.foreignToHomeMode()).to.be.equal(subsidizedHash)
+      expect(await foreignBridge.foreignToHomeMode()).to.be.bignumber.equal('0')
 
       await foreignBridge.setDefrayalModeForForeignToHome().should.be.fulfilled
-      expect(await foreignBridge.foreignToHomeMode()).to.be.equal(defrayalHash)
+      expect(await foreignBridge.foreignToHomeMode()).to.be.bignumber.equal('1')
+
+      await foreignBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled
+      expect(await foreignBridge.foreignToHomeMode()).to.be.bignumber.equal('0')
     })
   })
   describe('initialize', () => {
@@ -176,6 +170,8 @@ contract('ForeignAMB', async accounts => {
         requiredBlockConfirmations: toBN(requiredBlockConfirmations)
       })
       expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'HomeToForeignModeChanged', { mode: ZERO })
+      expectEventInLogs(logs, 'ForeignToHomeModeChanged', { mode: ZERO })
     })
     it('should fail with invalid arguments', async () => {
       const foreignBridge = await ForeignBridge.new()
@@ -347,6 +343,8 @@ contract('ForeignAMB', async accounts => {
 
       foreignBridge = await ForeignBridge.at(proxy.address)
       await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await foreignBridge.setDefrayalModeForHomeToForeign().should.be.fulfilled
+      await foreignBridge.setDefrayalModeForForeignToHome().should.be.fulfilled
 
       box = await Box.new()
       // Generate data for method we want to call on Box contract

@@ -70,55 +70,55 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   }
   nonce++
 
-  if (HOME_AMB_SUBSIDIZED_MODE) {
-    console.log('setting subsidized mode for home side')
-    const homeBridgeSubsidizedModeData = await bridge.methods
-      .setSubsidizedModeForForeignToHome()
+  if (!HOME_AMB_SUBSIDIZED_MODE) {
+    console.log('setting defrayal mode for home side')
+    const homeBridgeDefrayalModeData = await bridge.methods
+      .setDefrayalModeForForeignToHome()
       .encodeABI()
-    const txHomeBridgeSubsidizedModeData = await sendRawTxHome({
-      data: homeBridgeSubsidizedModeData,
+    const txHomeBridgeDefrayalModeData = await sendRawTxHome({
+      data: homeBridgeDefrayalModeData,
       nonce,
       to: bridge.options.address,
       privateKey: deploymentPrivateKey,
       url: HOME_RPC_URL
     })
-    if (txHomeBridgeSubsidizedModeData.status) {
+    if (txHomeBridgeDefrayalModeData.status) {
       assert.strictEqual(
-        Web3Utils.hexToNumber(txHomeBridgeSubsidizedModeData.status),
+        Web3Utils.hexToNumber(txHomeBridgeDefrayalModeData.status),
         1,
         'Transaction Failed'
       )
     } else {
       await assertStateWithRetry(
-        bridge.methods.ForeignToHomeMode().call,
-        '0x414d422d646566726179616c2d6d6f6465'
+        bridge.methods.foreignToHomeMode().call,
+        '1'
       )
     }
     nonce++
   }
 
-  if (FOREIGN_AMB_SUBSIDIZED_MODE) {
-    console.log('setting subsidized mode for foreign side')
-    const foreignBridgeSubsidizedModeData = await bridge.methods
-      .setSubsidizedModeForHomeToForeign()
+  if (!FOREIGN_AMB_SUBSIDIZED_MODE) {
+    console.log('setting defrayal mode for foreign side')
+    const foreignBridgeDefrayalModeData = await bridge.methods
+      .setDefrayalModeForHomeToForeign()
       .encodeABI()
-    const txForeignBridgeSubsidizedModeData = await sendRawTxHome({
-      data: foreignBridgeSubsidizedModeData,
+    const txForeignBridgeDefrayalModeData = await sendRawTxHome({
+      data: foreignBridgeDefrayalModeData,
       nonce,
       to: bridge.options.address,
       privateKey: deploymentPrivateKey,
       url: HOME_RPC_URL
     })
-    if (txForeignBridgeSubsidizedModeData.status) {
+    if (txForeignBridgeDefrayalModeData.status) {
       assert.strictEqual(
-        Web3Utils.hexToNumber(txForeignBridgeSubsidizedModeData.status),
+        Web3Utils.hexToNumber(txForeignBridgeDefrayalModeData.status),
         1,
         'Transaction Failed'
       )
     } else {
       await assertStateWithRetry(
-        bridge.methods.HomeToForeignMode().call,
-        '0x414d422d646566726179616c2d6d6f6465'
+        bridge.methods.homeToForeignMode().call,
+        '1'
       )
     }
     nonce++

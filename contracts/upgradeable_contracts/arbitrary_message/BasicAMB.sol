@@ -7,8 +7,11 @@ import "../Validatable.sol";
 import "../BasicBridge.sol";
 
 contract BasicAMB is BasicBridge {
-    bytes internal constant SUBSIDIZED_MODE = bytes(abi.encodePacked("AMB-subsidized-mode"));
-    bytes internal constant DEFRAYAL_MODE = bytes(abi.encodePacked("AMB-defrayal-mode"));
+    event HomeToForeignModeChanged(uint256 mode);
+    event ForeignToHomeModeChanged(uint256 mode);
+
+    uint256 internal constant SUBSIDIZED_MODE = 0;
+    uint256 internal constant DEFRAYAL_MODE = 1;
     bytes32 internal constant HOME_TO_FOREIGN_MODE = keccak256(abi.encodePacked("homeToForeignMode"));
     bytes32 internal constant FOREIGN_TO_HOME_MODE = keccak256(abi.encodePacked("foreignToHomeMode"));
     bytes32 internal constant MAX_GAS_PER_TX = keccak256(abi.encodePacked("maxGasPerTx"));
@@ -31,13 +34,15 @@ contract BasicAMB is BasicBridge {
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
         uintStorage[GAS_PRICE] = _gasPrice;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        bytesStorage[HOME_TO_FOREIGN_MODE] = DEFRAYAL_MODE;
-        bytesStorage[FOREIGN_TO_HOME_MODE] = DEFRAYAL_MODE;
+        uintStorage[HOME_TO_FOREIGN_MODE] = SUBSIDIZED_MODE;
+        uintStorage[FOREIGN_TO_HOME_MODE] = SUBSIDIZED_MODE;
         setOwner(_owner);
         setInitialize();
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
+        emit HomeToForeignModeChanged(SUBSIDIZED_MODE);
+        emit ForeignToHomeModeChanged(SUBSIDIZED_MODE);
 
         return isInitialized();
     }
@@ -47,27 +52,27 @@ contract BasicAMB is BasicBridge {
     }
 
     function setSubsidizedModeForHomeToForeign() external onlyOwner {
-        bytesStorage[HOME_TO_FOREIGN_MODE] = SUBSIDIZED_MODE;
+        uintStorage[HOME_TO_FOREIGN_MODE] = SUBSIDIZED_MODE;
     }
 
     function setDefrayalModeForHomeToForeign() external onlyOwner {
-        bytesStorage[HOME_TO_FOREIGN_MODE] = DEFRAYAL_MODE;
+        uintStorage[HOME_TO_FOREIGN_MODE] = DEFRAYAL_MODE;
     }
 
     function setSubsidizedModeForForeignToHome() external onlyOwner {
-        bytesStorage[FOREIGN_TO_HOME_MODE] = SUBSIDIZED_MODE;
+        uintStorage[FOREIGN_TO_HOME_MODE] = SUBSIDIZED_MODE;
     }
 
     function setDefrayalModeForForeignToHome() external onlyOwner {
-        bytesStorage[FOREIGN_TO_HOME_MODE] = DEFRAYAL_MODE;
+        uintStorage[FOREIGN_TO_HOME_MODE] = DEFRAYAL_MODE;
     }
 
-    function homeToForeignMode() public view returns (bytes) {
-        return bytesStorage[HOME_TO_FOREIGN_MODE];
+    function homeToForeignMode() public view returns (uint256) {
+        return uintStorage[HOME_TO_FOREIGN_MODE];
     }
 
-    function foreignToHomeMode() public view returns (bytes) {
-        return bytesStorage[FOREIGN_TO_HOME_MODE];
+    function foreignToHomeMode() public view returns (uint256) {
+        return uintStorage[FOREIGN_TO_HOME_MODE];
     }
 
     function maxGasPerTx() public view returns (uint256) {

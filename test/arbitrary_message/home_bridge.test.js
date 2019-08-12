@@ -118,32 +118,26 @@ contract('HomeAMB', async accounts => {
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.fulfilled
 
-      const defrayalHash = web3.utils.toHex('AMB-defrayal-mode')
-      const subsidizedHash = web3.utils.toHex('AMB-subsidized-mode')
-
       const defrayalMode = await homeBridge.homeToForeignMode()
-      defrayalMode.should.be.equal(defrayalHash)
+      defrayalMode.should.be.bignumber.equal('0')
 
-      await homeBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled
+      await homeBridge.setDefrayalModeForHomeToForeign().should.be.fulfilled
 
       const subsidizedMode = await homeBridge.homeToForeignMode()
-      subsidizedMode.should.be.equal(subsidizedHash)
+      subsidizedMode.should.be.bignumber.equal('1')
     })
     it('should return foreignToHomeMode', async () => {
       const homeBridge = await HomeAMB.new()
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.fulfilled
 
-      const defrayalHash = web3.utils.toHex('AMB-defrayal-mode')
-      const subsidizedHash = web3.utils.toHex('AMB-subsidized-mode')
-
       const defrayalMode = await homeBridge.foreignToHomeMode()
-      defrayalMode.should.be.equal(defrayalHash)
+      defrayalMode.should.be.bignumber.equal('0')
 
-      await homeBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled
+      await homeBridge.setDefrayalModeForForeignToHome().should.be.fulfilled
 
       const subsidizedMode = await homeBridge.foreignToHomeMode()
-      subsidizedMode.should.be.equal(subsidizedHash)
+      subsidizedMode.should.be.bignumber.equal('1')
     })
   })
   describe('initialize', () => {
@@ -178,6 +172,8 @@ contract('HomeAMB', async accounts => {
         requiredBlockConfirmations: toBN(requiredBlockConfirmations)
       })
       expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'HomeToForeignModeChanged', { mode: ZERO })
+      expectEventInLogs(logs, 'ForeignToHomeModeChanged', { mode: ZERO })
     })
     it('should fail with invalid arguments', async () => {
       const homeBridge = await HomeAMB.new()
@@ -288,6 +284,8 @@ contract('HomeAMB', async accounts => {
 
       homeBridge = await HomeAMB.at(proxy.address)
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await homeBridge.setDefrayalModeForHomeToForeign().should.be.fulfilled
+      await homeBridge.setDefrayalModeForForeignToHome().should.be.fulfilled
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       await homeBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled
@@ -420,6 +418,8 @@ contract('HomeAMB', async accounts => {
 
       homeBridge = await HomeAMB.at(proxy.address)
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await homeBridge.setDefrayalModeForHomeToForeign().should.be.fulfilled
+      await homeBridge.setDefrayalModeForForeignToHome().should.be.fulfilled
 
       box = await Box.new()
       // Generate data for method we want to call on Box contract

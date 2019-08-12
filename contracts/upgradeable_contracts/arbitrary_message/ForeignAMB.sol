@@ -15,11 +15,11 @@ contract ForeignAMB is BasicForeignAMB {
     }
 
     function isMessageDeliverySubsidizedMode() internal returns (bool) {
-        return keccak256(foreignToHomeMode()) == keccak256(SUBSIDIZED_MODE);
+        return foreignToHomeMode() == SUBSIDIZED_MODE;
     }
 
     function isMessageProcessorSubsidizedMode() internal returns (bool) {
-        return keccak256(homeToForeignMode()) == keccak256(SUBSIDIZED_MODE);
+        return homeToForeignMode() == SUBSIDIZED_MODE;
     }
 
     function emitEventOnMessageRequest(bytes encodedData) internal {

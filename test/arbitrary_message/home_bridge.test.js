@@ -133,13 +133,15 @@ contract('HomeAMB', async accounts => {
       await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.fulfilled
 
-      const defrayalMode = await homeBridge.foreignToHomeMode()
-      defrayalMode.should.be.bignumber.equal('0')
+      expect(await homeBridge.foreignToHomeMode()).to.be.bignumber.equal('0')
 
-      await homeBridge.setDefrayalModeForForeignToHome().should.be.fulfilled
+      const { logs } = await homeBridge.setDefrayalModeForForeignToHome().should.be.fulfilled
+      expect(await homeBridge.foreignToHomeMode()).to.be.bignumber.equal('1')
+      expectEventInLogs(logs, 'ForeignToHomeModeChanged', { mode: toBN(1) })
 
-      const subsidizedMode = await homeBridge.foreignToHomeMode()
-      subsidizedMode.should.be.bignumber.equal('1')
+      const { logs: logs2 } = await homeBridge.setSubsidizedModeForForeignToHome().should.be.fulfilled
+      expect(await homeBridge.foreignToHomeMode()).to.be.bignumber.equal('0')
+      expectEventInLogs(logs2, 'ForeignToHomeModeChanged', { mode: ZERO })
     })
   })
   describe('initialize', () => {

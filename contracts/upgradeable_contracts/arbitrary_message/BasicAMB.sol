@@ -52,10 +52,12 @@ contract BasicAMB is BasicBridge {
 
     function setSubsidizedModeForHomeToForeign() external onlyOwner {
         uintStorage[HOME_TO_FOREIGN_MODE] = SUBSIDIZED_MODE;
+        emit HomeToForeignModeChanged(SUBSIDIZED_MODE);
     }
 
     function setDefrayalModeForHomeToForeign() external onlyOwner {
         uintStorage[HOME_TO_FOREIGN_MODE] = DEFRAYAL_MODE;
+        emit HomeToForeignModeChanged(DEFRAYAL_MODE);
     }
 
     function setSubsidizedModeForForeignToHome() external onlyOwner {

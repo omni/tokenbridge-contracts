@@ -118,11 +118,13 @@ contract('ForeignAMB', async accounts => {
 
       expect(await foreignBridge.homeToForeignMode()).to.be.bignumber.equal('0')
 
-      await foreignBridge.setDefrayalModeForHomeToForeign().should.be.fulfilled
+      const { logs } = await foreignBridge.setDefrayalModeForHomeToForeign().should.be.fulfilled
       expect(await foreignBridge.homeToForeignMode()).to.be.bignumber.equal('1')
+      expectEventInLogs(logs, 'HomeToForeignModeChanged', { mode: toBN(1) })
 
-      await foreignBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled
+      const { logs: logs2 } = await foreignBridge.setSubsidizedModeForHomeToForeign().should.be.fulfilled
       expect(await foreignBridge.homeToForeignMode()).to.be.bignumber.equal('0')
+      expectEventInLogs(logs2, 'HomeToForeignModeChanged', { mode: ZERO })
     })
     it('should return foreignToHomeMode', async () => {
       const foreignBridge = await ForeignBridge.new()

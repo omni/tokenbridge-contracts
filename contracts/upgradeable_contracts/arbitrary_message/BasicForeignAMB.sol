@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../../libraries/Message.sol";
+import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
 import "./MessageProcessor.sol";

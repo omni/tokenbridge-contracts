@@ -1,7 +1,6 @@
 pragma solidity 0.4.24;
 
 import "./BalanceHandler.sol";
-import "../../libraries/ArbitraryMessage.sol";
 
 contract MessageProcessor is BalanceHandler {
     uint256 internal constant PASS_MESSAGE_GAS = 100000;
@@ -13,21 +12,6 @@ contract MessageProcessor is BalanceHandler {
 
     function setMessageSender(address _sender) internal {
         addressStorage[MESSAGE_SENDER] = _sender;
-    }
-
-    function processMessage(bytes _data, bool applyDataOffset) internal {
-        address sender;
-        address executor;
-        bytes32 txHash;
-        uint256 gasLimit;
-        bytes1 dataType;
-        uint256 gasPrice;
-        bytes memory data;
-        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(
-            _data,
-            applyDataOffset
-        );
-        processMessage(sender, executor, txHash, gasLimit, dataType, gasPrice, data);
     }
 
     function processMessage(

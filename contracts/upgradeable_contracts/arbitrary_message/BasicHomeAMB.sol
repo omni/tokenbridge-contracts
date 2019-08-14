@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../../libraries/Message.sol";
+import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
 import "./MessageProcessor.sol";
@@ -33,8 +34,20 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
 
         if (signed >= requiredSignatures()) {
             setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-            processMessage(message, false);
+            handleMessage(message);
         }
+    }
+
+    function handleMessage(bytes _message) internal {
+        address sender;
+        address executor;
+        bytes32 txHash;
+        uint256 gasLimit;
+        bytes1 dataType;
+        uint256 gasPrice;
+        bytes memory data;
+        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_message, false);
+        processMessage(sender, executor, txHash, gasLimit, dataType, gasPrice, data);
     }
 
     function submitSignature(bytes signature, bytes message) external onlyValidator {

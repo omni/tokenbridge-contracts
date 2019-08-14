@@ -45,7 +45,7 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
-        bytes4 methodSelector = getMethodOnOtherNetwork();
+        bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value);
         bridgeContract().requireToPassMessage(mediatorContract(), data, requestGasLimit());
     }
@@ -105,5 +105,5 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         return bridgeContract().maxGasPerTx();
     }
 
-    function getMethodOnOtherNetwork() internal pure returns (bytes4);
+    function handleBridgedTokens(address _recipient, uint256 _value) external;
 }

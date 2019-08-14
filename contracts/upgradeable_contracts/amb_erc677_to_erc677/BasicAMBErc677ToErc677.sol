@@ -58,6 +58,18 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
     }
 
+    function relayTokens(uint256 _value) external {
+        ERC677 token = erc677token();
+        address from = msg.sender;
+        address to = address(this);
+        require(_value <= token.allowance(from, to));
+        require(withinLimit(_value));
+        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+
+        token.transferFrom(from, to, _value);
+        bridgeSpecificActionsOnTokenTransfer(token, from, _value);
+    }
+
     function setBridgeContract(address _bridgeContract) external onlyOwner {
         _setBridgeContract(_bridgeContract);
     }

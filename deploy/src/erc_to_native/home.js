@@ -24,7 +24,6 @@ const {
 } = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 
 const {
   BLOCK_REWARD_ADDRESS,
@@ -50,6 +49,12 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 
 const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
 const isFeeManagerPOSDAO = HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD'
+
+let VALIDATORS_REWARD_ACCOUNTS = []
+
+if (isRewardableBridge) {
+  VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
+}
 
 async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce

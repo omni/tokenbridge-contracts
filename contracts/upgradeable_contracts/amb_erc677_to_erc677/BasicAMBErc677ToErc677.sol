@@ -73,6 +73,10 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         bridgeSpecificActionsOnTokenTransfer(token, from, _value);
     }
 
+    function getBridgeMode() external pure returns (bytes4 _data) {
+        return bytes4(keccak256(abi.encodePacked("erc-to-erc-amb")));
+    }
+
     function setBridgeContract(address _bridgeContract) external onlyOwner {
         _setBridgeContract(_bridgeContract);
     }

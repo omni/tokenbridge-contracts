@@ -40,6 +40,7 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         uintStorage[EXECUTION_MAX_PER_TX] = _executionMaxPerTx;
         _setRequestGasLimit(_requestGasLimit);
         setOwner(_owner);
+        setInitialize();
 
         emit DailyLimitChanged(_dailyLimit);
         emit ExecutionDailyLimitChanged(_executionDailyLimit);

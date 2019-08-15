@@ -52,7 +52,7 @@ const isFeeManagerPOSDAO = HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD'
 
 let VALIDATORS_REWARD_ACCOUNTS = []
 
-if (isRewardableBridge) {
+if (isRewardableBridge && !isFeeManagerPOSDAO) {
   VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 }
 
@@ -180,7 +180,7 @@ async function deployHome() {
   nonce++
 
   console.log('\ndeploying implementation for home validators')
-  const bridgeValidatorsContract = isRewardableBridge ? RewardableValidators : BridgeValidators
+  const bridgeValidatorsContract = isRewardableBridge && !isFeeManagerPOSDAO ? RewardableValidators : BridgeValidators
   const bridgeValidatorsHome = await deployContract(bridgeValidatorsContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
@@ -202,7 +202,7 @@ async function deployHome() {
   bridgeValidatorsHome.options.address = storageValidatorsHome.options.address
   await initializeValidators({
     contract: bridgeValidatorsHome,
-    isRewardableBridge,
+    isRewardableBridge: isRewardableBridge && !isFeeManagerPOSDAO,
     requiredNumber: REQUIRED_NUMBER_OF_VALIDATORS,
     validators: VALIDATORS,
     rewardAccounts: VALIDATORS_REWARD_ACCOUNTS,

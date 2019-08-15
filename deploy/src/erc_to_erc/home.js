@@ -61,7 +61,7 @@ const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
 
 let VALIDATORS_REWARD_ACCOUNTS = []
 
-if (isRewardableBridge) {
+if (isRewardableBridge && BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
   VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 }
 

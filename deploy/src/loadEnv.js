@@ -198,12 +198,30 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
 }
 
 if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
-  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
   validations = {
     ...validations,
-    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
     HOME_TRANSACTIONS_FEE: envalid.num(),
-    FOREIGN_TRANSACTIONS_FEE: envalid.num()
+    FOREIGN_TRANSACTIONS_FEE: envalid.num(),
+  }
+  if (
+    (BRIDGE_MODE === 'ERC_TO_NATIVE' &&
+      HOME_REWARDABLE === 'BOTH_DIRECTIONS' &&
+      HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD') ||
+    (BRIDGE_MODE === 'ERC_TO_ERC' &&
+      HOME_REWARDABLE === 'BOTH_DIRECTIONS')
+  ) {
+    validations = {
+      ...validations,
+      BLOCK_REWARD_ADDRESS: addressValidator({
+        default: ZERO_ADDRESS
+      })
+    }
+  } else {
+    validations = {
+      ...validations,
+      VALIDATORS_REWARD_ACCOUNTS: addressesValidator()
+    }
+    validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
   }
 }
 

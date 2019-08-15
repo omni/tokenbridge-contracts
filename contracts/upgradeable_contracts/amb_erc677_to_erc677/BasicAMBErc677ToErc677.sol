@@ -20,7 +20,8 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         uint256 _minPerTx,
         uint256 _executionDailyLimit,
         uint256 _executionMaxPerTx,
-        uint256 _requestGasLimit
+        uint256 _requestGasLimit,
+        address _owner
     ) external returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_bridgeContract));
@@ -28,6 +29,7 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_executionMaxPerTx < _executionDailyLimit);
 
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         _setBridgeContract(_bridgeContract);
         _setMediatorContract(_mediatorContract);
         setErc677token(_erc677token);
@@ -37,6 +39,7 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _executionMaxPerTx;
         _setRequestGasLimit(_requestGasLimit);
+        setOwner(_owner);
 
         emit DailyLimitChanged(_dailyLimit);
         emit ExecutionDailyLimitChanged(_executionDailyLimit);

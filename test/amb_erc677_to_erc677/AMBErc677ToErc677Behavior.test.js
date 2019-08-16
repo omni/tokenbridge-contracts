@@ -1,6 +1,5 @@
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
-const HomeAMB = artifacts.require('HomeAMB.sol')
-const BridgeValidators = artifacts.require('BridgeValidators.sol')
+const AMBMock = artifacts.require('AMBMock.sol')
 
 const { expect } = require('chai')
 const { ZERO_ADDRESS, toBN, ERROR_MSG } = require('../setup')
@@ -21,11 +20,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
     let mediatorContract
     let erc677Token
     beforeEach(async () => {
-      const validatorContract = await BridgeValidators.new()
-      const authorities = [accounts[1], accounts[2]]
-      await validatorContract.initialize(1, authorities, owner)
-      bridgeContract = await HomeAMB.new()
-      await bridgeContract.initialize(validatorContract.address, maxGasPerTx, '1', '1', owner)
+      bridgeContract = await AMBMock.new()
+      await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
     })
@@ -221,7 +217,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
 
       expect(await contract.bridgeContract()).to.be.equal(bridgeContract.address)
 
-      const newBridgeContract = await HomeAMB.new()
+      const newBridgeContract = await AMBMock.new()
 
       await contract.setBridgeContract(newBridgeContract.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
       await contract.setBridgeContract(notAContractAddress, { from: owner }).should.be.rejectedWith(ERROR_MSG)

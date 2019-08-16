@@ -139,6 +139,17 @@ async function testERC677BridgeToken(accounts, rewardable) {
         await token.setStakingContract(ZERO_ADDRESS).should.be.rejectedWith(ERROR_MSG)
         ;(await token.stakingContract()).should.be.equal(ZERO_ADDRESS)
       })
+
+      it('fail to set Staking contract address with non-zero balance', async () => {
+        const stakingContract = await StakingTest.new()
+        ;(await token.stakingContract()).should.be.equal(ZERO_ADDRESS)
+
+        await token.mint(user, 1, { from: owner }).should.be.fulfilled
+        await token.transfer(stakingContract.address, 1, {from: user}).should.be.fulfilled
+
+        await token.setStakingContract(stakingContract.address).should.be.rejectedWith(ERROR_MSG)
+        ;(await token.stakingContract()).should.be.equal(ZERO_ADDRESS)
+      })
     })
 
     describe('#mintReward', async () => {

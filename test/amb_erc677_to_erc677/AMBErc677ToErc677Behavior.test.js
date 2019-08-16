@@ -31,7 +31,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
     })
     it('should initialize', async function() {
       const contract = this.bridge
-      expect(await this.bridge.isInitialized()).to.be.equal(false)
+      expect(await contract.isInitialized()).to.be.equal(false)
       expect(await contract.bridgeContract()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.mediatorContract()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.erc677token()).to.be.equal(ZERO_ADDRESS)
@@ -200,6 +200,104 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
 
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })
       expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })
+    })
+    it('only owner can set bridge contract', async function() {
+      const contract = this.bridge
+      const user = accounts[1]
+      const notAContractAddress = accounts[2]
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        executionDailyLimit,
+        executionMaxPerTx,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+
+      expect(await contract.bridgeContract()).to.be.equal(bridgeContract.address)
+
+      const newBridgeContract = await HomeAMB.new()
+
+      await contract.setBridgeContract(newBridgeContract.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.setBridgeContract(notAContractAddress, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await contract.setBridgeContract(newBridgeContract.address, { from: owner }).should.be.fulfilled
+      expect(await contract.bridgeContract()).to.be.equal(newBridgeContract.address)
+    })
+    it('only owner can set mediator contract', async function() {
+      const contract = this.bridge
+      const user = accounts[1]
+      const notAContractAddress = accounts[2]
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        executionDailyLimit,
+        executionMaxPerTx,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+
+      expect(await contract.bridgeContract()).to.be.equal(bridgeContract.address)
+
+      const newMediatorContract = await otherSideMediatorContract.new()
+
+      await contract.setMediatorContract(newMediatorContract.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.setMediatorContract(notAContractAddress, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await contract.setMediatorContract(newMediatorContract.address, { from: owner }).should.be.fulfilled
+      expect(await contract.mediatorContract()).to.be.equal(newMediatorContract.address)
+    })
+    it('only owner can set request Gas Limit', async function() {
+      const contract = this.bridge
+      const user = accounts[1]
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        executionDailyLimit,
+        executionMaxPerTx,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+
+      expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
+
+      const newMaxGasPerTx = ether('0.5')
+      const invalidMaxGasPerTx = ether('1.5')
+
+      await contract.setRequestGasLimit(newMaxGasPerTx, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+      // invalidMaxGasPerTx > bridgeContract.maxGasPerTx
+      await contract.setRequestGasLimit(invalidMaxGasPerTx, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await contract.setRequestGasLimit(newMaxGasPerTx, { from: owner }).should.be.fulfilled
+      expect(await contract.requestGasLimit()).to.be.bignumber.equal(newMaxGasPerTx)
+    })
+  })
+  describe('getBridgeMode', () => {
+    it('should return arbitrary message bridging mode and interface', async function() {
+      const contract = this.bridge
+      const bridgeModeHash = '0x76595b56' // 4 bytes of keccak256('erc-to-erc-amb')
+      expect(await contract.getBridgeMode()).to.be.equal(bridgeModeHash)
+
+      const { major, minor, patch } = await contract.getBridgeInterfacesVersion()
+      major.should.be.bignumber.gte(ZERO)
+      minor.should.be.bignumber.gte(ZERO)
+      patch.should.be.bignumber.gte(ZERO)
     })
   })
 }

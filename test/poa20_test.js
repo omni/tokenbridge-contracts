@@ -145,7 +145,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         ;(await token.stakingContract()).should.be.equal(ZERO_ADDRESS)
 
         await token.mint(user, 1, { from: owner }).should.be.fulfilled
-        await token.transfer(stakingContract.address, 1, {from: user}).should.be.fulfilled
+        await token.transfer(stakingContract.address, 1, { from: user }).should.be.fulfilled
 
         await token.setStakingContract(stakingContract.address).should.be.rejectedWith(ERROR_MSG)
         ;(await token.stakingContract()).should.be.equal(ZERO_ADDRESS)

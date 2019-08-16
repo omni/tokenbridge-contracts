@@ -117,11 +117,11 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         return uintStorage[REQUEST_GAS_LIMIT];
     }
 
-    function messageSender() public view returns (address) {
+    function messageSender() internal view returns (address) {
         return bridgeContract().messageSender();
     }
 
-    function maxGasPerTx() public view returns (uint256) {
+    function maxGasPerTx() internal view returns (uint256) {
         return bridgeContract().maxGasPerTx();
     }
 

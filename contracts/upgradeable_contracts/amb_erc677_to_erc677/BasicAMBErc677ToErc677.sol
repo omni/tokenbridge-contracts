@@ -125,5 +125,6 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         return bridgeContract().maxGasPerTx();
     }
 
+    /* solcov ignore next */
     function handleBridgedTokens(address _recipient, uint256 _value) external;
 }

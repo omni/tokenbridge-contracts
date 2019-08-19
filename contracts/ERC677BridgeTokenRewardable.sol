@@ -17,6 +17,7 @@ contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
 
     function setStakingContract(address _stakingContract) external onlyOwner {
         require(AddressUtils.isContract(_stakingContract));
+        require(balanceOf(_stakingContract) == 0);
         stakingContract = _stakingContract;
     }
 

@@ -1250,67 +1250,55 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       await homeBridge.rewardableInitialize(
         ZERO_ADDRESS,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.rejected
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
-        0,
-        foreignDailyLimit,
+        [0, foreignDailyLimit],
         token.address,
         foreignMaxPerTx,
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.rejected
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         ZERO_ADDRESS,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.rejected
       const { logs } = await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        '9'
       ).should.be.fulfilled
 
       expect(await homeBridge.isInitialized()).to.be.equal(true)
@@ -1319,8 +1307,6 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(await homeBridge.dailyLimit()).to.be.bignumber.equal(oneEther)
       expect(await homeBridge.maxPerTx()).to.be.bignumber.equal(halfEther)
       expect(await homeBridge.minPerTx()).to.be.bignumber.equal(minPerTx)
-      expect(await homeBridge.decimalShift()).to.be.bignumber.equal('0')
-      await homeBridge.setDecimalShift('9').should.be.fulfilled
       expect(await homeBridge.decimalShift()).to.be.bignumber.equal('9')
       const bridgeMode = '0xba4690f5' // 4 bytes of keccak256('erc-to-erc-core')
       expect(await homeBridge.getBridgeMode()).to.be.equal(bridgeMode)
@@ -1349,19 +1335,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeManager = await FeeManagerErcToErcPOSDAO.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.fulfilled
 
       // Given
@@ -1378,19 +1361,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeManager = await FeeManagerErcToErcPOSDAO.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.fulfilled
 
       // Given
@@ -1411,19 +1391,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeManager = await FeeManagerErcToErcPOSDAO.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.fulfilled
 
       // Given
@@ -1454,19 +1431,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       // When
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.fulfilled
 
       // Then
@@ -1479,19 +1453,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.fulfilled
 
       const blockReward = await homeBridge.blockRewardContract()
@@ -1562,19 +1533,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.fulfilled
       const value = halfEther
       const finalValueCalc = 0.5 * (1 - fee)
@@ -1609,19 +1577,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       blockRewardContract = await BlockReward.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.fulfilled
     })
     it('should distribute fee to one validator', async () => {
@@ -1803,19 +1768,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       blockRewardContract = await BlockReward.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        foreignDailyLimit,
-        foreignMaxPerTx,
+        [foreignDailyLimit, foreignMaxPerTx],
         owner,
         feeManager.address,
-        homeFee,
-        foreignFee,
-        blockRewardContract.address
+        [homeFee, foreignFee],
+        blockRewardContract.address,
+        decimalShiftZero
       ).should.be.fulfilled
     })
     it('should distribute fee to one validator', async () => {

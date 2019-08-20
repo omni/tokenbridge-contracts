@@ -100,19 +100,16 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     initializeHomeBridgeData = await bridge.methods
       .rewardableInitialize(
         validatorsBridge.options.address,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        HOME_MIN_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         erc677token.options.address,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
-        homeFeeInWei,
-        foreignFeeInWei,
-        BLOCK_REWARD_ADDRESS
+        [homeFeeInWei, foreignFeeInWei],
+        BLOCK_REWARD_ADDRESS,
+        foreignToHomeDecimalShift
       )
       .encodeABI()
   } else {
@@ -161,36 +158,6 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }
   nonce++
-
-  if (isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS && FOREIGN_TO_HOME_DECIMAL_SHIFT) {
-    console.log(`Initialize decimal shift with parameter :
-    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
-    `)
-    let initializeDecimalShiftData = await bridge.methods
-    .setDecimalShift(
-      foreignToHomeDecimalShift
-    )
-    .encodeABI()
-
-    const txInitializeDecimalShift = await sendRawTxHome({
-      data: initializeDecimalShiftData,
-      nonce,
-      to: bridge.options.address,
-      privateKey: deploymentPrivateKey,
-      url: HOME_RPC_URL
-    })
-    if (txInitializedecimalShift.status) {
-      assert.strictEqual(
-        Web3Utils.hexToNumber(txInitializedecimalShift.status),
-        1,
-        'Transaction Failed'
-      )
-    } else {
-      await assertStateWithRetry(bridge.methods.decimalShift().call, foreignToHomeDecimalShift)
-    }
-    nonce++
-  }
-
 
   return nonce
 }

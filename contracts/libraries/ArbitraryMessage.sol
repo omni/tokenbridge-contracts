@@ -6,9 +6,9 @@ import "./Message.sol";
 library ArbitraryMessage {
     // layout of message :: bytes:
     // offset  0: 32 bytes :: uint256 - message length
-    // offset 32: 20 bytes :: address - sender address
-    // offset 52: 20 bytes :: address - executor contract
-    // offset 72: 32 bytes :: bytes32 txHash
+    // offset 32: 32 bytes :: bytes32 txHash
+    // offset 52: 20 bytes :: address - sender address
+    // offset 72: 20 bytes :: address - executor contract
     // offset 104: 32 bytes :: uint256 - gasLimit
     // offset 136: 1 bytes :: bytes1 - dataType
     // (optional) 137: 32 bytes :: uint256 - gasPrice
@@ -40,12 +40,12 @@ library ArbitraryMessage {
     {
         uint256 dataOffset = 0;
         uint256 datasize;
-        // 20 (sender)  + 20 (executor) + 32 (tx hash) + 32 (gasLimit) + 1 (dataType)
-        uint256 srcdataptr = 20 + 20 + 32 + 32 + 1;
+        // 32 (tx hash) + 20 (sender)  + 20 (executor) + 32 (gasLimit) + 1 (dataType)
+        uint256 srcdataptr = 32 + 20 + 20 + 32 + 1;
         assembly {
-            sender := and(mload(add(_data, 20)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            executor := and(mload(add(_data, 40)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            txHash := mload(add(_data, 72))
+            txHash := mload(add(_data, 32))
+            sender := mload(add(_data, 52))
+            executor := mload(add(_data, 72))
             gasLimit := mload(add(_data, 104))
             dataType := and(mload(add(_data, 136)), 0xFF00000000000000000000000000000000000000000000000000000000000000)
             switch dataType

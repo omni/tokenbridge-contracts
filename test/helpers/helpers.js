@@ -172,3 +172,9 @@ function createAccounts(web3, amount) {
 }
 
 module.exports.createAccounts = createAccounts
+
+function addTxHashToAMBData(encodedData, transactionHash) {
+  return encodedData.slice(0, 2) + strip0x(transactionHash) + encodedData.slice(2)
+}
+
+module.exports.addTxHashToAMBData = addTxHashToAMBData

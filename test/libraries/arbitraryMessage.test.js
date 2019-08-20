@@ -1,6 +1,7 @@
 const MessageTest = artifacts.require('MessageTest.sol')
 
 const { expect } = require('chai')
+const { addTxHashToAMBData } = require('../helpers/helpers')
 
 contract('ArbitraryMessage.sol', async () => {
   describe('unpackData', () => {
@@ -23,7 +24,7 @@ contract('ArbitraryMessage.sol', async () => {
         'b1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03' // data
 
       // validator needs to add txHash into message
-      const message = eventMessage.slice(0, 82) + msgTxHash.replace(/^0x/, '') + eventMessage.slice(82)
+      const message = addTxHashToAMBData(eventMessage, msgTxHash)
 
       // when
       const messageTest = await MessageTest.new()
@@ -60,7 +61,7 @@ contract('ArbitraryMessage.sol', async () => {
         'b1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03' // data
 
       // validator needs to add txHash into message
-      const message = eventMessage.slice(0, 82) + msgTxHash.replace(/^0x/, '') + eventMessage.slice(82)
+      const message = addTxHashToAMBData(eventMessage, msgTxHash)
 
       // when
       const messageTest = await MessageTest.new()
@@ -96,7 +97,7 @@ contract('ArbitraryMessage.sol', async () => {
         '10b1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03' // data
 
       // validator needs to add txHash into message
-      const message = eventMessage.slice(0, 82) + msgTxHash.replace(/^0x/, '') + eventMessage.slice(82)
+      const message = addTxHashToAMBData(eventMessage, msgTxHash)
 
       // when
       const messageTest = await MessageTest.new()
@@ -133,7 +134,7 @@ contract('ArbitraryMessage.sol', async () => {
         'b1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03' // data
 
       // validator needs to add txHash into message
-      const message = eventMessage.slice(0, 82) + msgTxHash.replace(/^0x/, '') + eventMessage.slice(82)
+      const message = addTxHashToAMBData(eventMessage, msgTxHash)
 
       // when
       const messageTest = await MessageTest.new()
@@ -170,7 +171,7 @@ contract('ArbitraryMessage.sol', async () => {
         'b1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03' // data
 
       // validator needs to add txHash into message
-      const message = eventMessage.slice(0, 82) + msgTxHash.replace(/^0x/, '') + eventMessage.slice(82)
+      const message = addTxHashToAMBData(eventMessage, msgTxHash)
 
       // when
       const messageTest = await MessageTest.new()
@@ -206,7 +207,7 @@ contract('ArbitraryMessage.sol', async () => {
         '10b1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03' // data
 
       // validator needs to add txHash into message
-      const message = eventMessage.slice(0, 82) + msgTxHash.replace(/^0x/, '') + eventMessage.slice(82)
+      const message = addTxHashToAMBData(eventMessage, msgTxHash)
 
       // when
       const messageTest = await MessageTest.new()

@@ -5,7 +5,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const IAMB = artifacts.require('IAMB.sol')
 
 const { expect } = require('chai')
-const { sign, signatureToVRS, strip0x, ether, expectEventInLogs } = require('../helpers/helpers')
+const { sign, signatureToVRS, ether, expectEventInLogs, addTxHashToAMBData } = require('../helpers/helpers')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
 
 const requiredBlockConfirmations = 8
@@ -84,7 +84,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -369,7 +369,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -414,7 +414,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -459,7 +459,7 @@ contract('ForeignAMB', async accounts => {
       const { encodedData } = tx.receipt.logs[0].args
 
       // Validator on token-bridge add txHash to message
-      const message = encodedData.slice(0, 82) + strip0x(tx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, tx.tx)
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -524,7 +524,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature1 = await sign(authoritiesFiveAccs[0], message)
       const vrs = signatureToVRS(signature1)
@@ -586,7 +586,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -631,7 +631,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -672,7 +672,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -719,7 +719,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -759,7 +759,7 @@ contract('ForeignAMB', async accounts => {
 
       // Validator on token-bridge add txHash to message
       const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = encodedData.slice(0, 82) + strip0x(resultPassMessageTx.tx) + encodedData.slice(82)
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
       const updatedMessage = `${message.slice(0, 210)}06${message.slice(212, message.length)}`
 
       const signature = await sign(authorities[0], updatedMessage)

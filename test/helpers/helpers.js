@@ -44,6 +44,31 @@ function signatureToVRS(rawSignature) {
 }
 module.exports.signatureToVRS = signatureToVRS
 
+function signatureToVRSAMB(rawSignature) {
+  assert.equal(rawSignature.length, 2 + 32 * 2 + 32 * 2 + 2)
+  const signature = strip0x(rawSignature)
+  const v = signature.substr(64 * 2)
+  const r = signature.substr(0, 32 * 2)
+  const s = signature.substr(32 * 2, 32 * 2)
+  return { v, r, s }
+}
+module.exports.signatureToVRSAMB = signatureToVRSAMB
+
+function packSignatures(array) {
+  const length = web3.utils.toHex(array.length)
+  let v = ''
+  let r = ''
+  let s = ''
+  array.forEach(e => {
+    v = v.concat(e.v)
+    r = r.concat(e.r)
+    s = s.concat(e.s)
+  })
+
+  return `${length}${v}${r}${s}`
+}
+module.exports.packSignatures = packSignatures
+
 // returns BigNumber `num` converted to a little endian hex string
 // that is exactly 32 bytes long.
 // `num` must represent an unsigned integer

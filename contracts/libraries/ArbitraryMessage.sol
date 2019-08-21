@@ -51,23 +51,14 @@ library ArbitraryMessage {
             switch dataType
                 case 0x0000000000000000000000000000000000000000000000000000000000000000 {
                     gasPrice := 0
-                    if eq(applyDataOffset, 1) {
-                        dataOffset := sub(srcdataptr, 9)
-                    }
                 }
                 case 0x0100000000000000000000000000000000000000000000000000000000000000 {
                     gasPrice := mload(add(_data, 137)) // 32
                     srcdataptr := add(srcdataptr, 0x20)
-                    if eq(applyDataOffset, 1) {
-                        dataOffset := sub(srcdataptr, 41)
-                    }
                 }
                 case 0x0200000000000000000000000000000000000000000000000000000000000000 {
                     gasPrice := 0
                     srcdataptr := add(srcdataptr, 0x01)
-                    if eq(applyDataOffset, 1) {
-                        dataOffset := sub(srcdataptr, 10)
-                    }
                 }
             datasize := sub(mload(_data), srcdataptr)
         }
@@ -75,6 +66,9 @@ library ArbitraryMessage {
         assembly {
             // BYTES_HEADER_SIZE
             let dataptr := add(data, 32)
+            if eq(applyDataOffset, 1) {
+                dataOffset := 32
+            }
             // 68 = 4 (selector) + 32 (bytes header) + 32 (bytes length)
             calldatacopy(dataptr, add(add(68, srcdataptr), dataOffset), datasize)
         }

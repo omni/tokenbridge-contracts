@@ -5,7 +5,14 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const IAMB = artifacts.require('IAMB.sol')
 
 const { expect } = require('chai')
-const { sign, signatureToVRS, ether, expectEventInLogs, addTxHashToAMBData } = require('../helpers/helpers')
+const {
+  sign,
+  ether,
+  expectEventInLogs,
+  addTxHashToAMBData,
+  signatureToVRSAMB,
+  packSignatures
+} = require('../helpers/helpers')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
 
 const requiredBlockConfirmations = 8
@@ -87,9 +94,10 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(message, signatures, {
         from: authorities[0],
         gasPrice
       }).should.be.fulfilled
@@ -372,9 +380,10 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(message, signatures, {
         from: authorities[0]
       }).should.be.fulfilled
       expectEventInLogs(logs, 'RelayedMessage', {
@@ -417,9 +426,10 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(message, signatures, {
         from: authorities[0],
         gasPrice
       }).should.be.fulfilled
@@ -462,14 +472,11 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, tx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
       // should fail because a different gas price was used
-      await foreignBridge
-        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[0], gasPrice: '3000000000' })
-        .should.be.rejectedWith(ERROR_MSG)
-
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(message, signatures, {
         from: authorities[0],
         gasPrice
       }).should.be.fulfilled
@@ -527,31 +534,31 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature1 = await sign(authoritiesFiveAccs[0], message)
-      const vrs = signatureToVRS(signature1)
+      const vrs = signatureToVRSAMB(signature1)
 
       const signature2 = await sign(authoritiesFiveAccs[1], message)
-      const vrs2 = signatureToVRS(signature2)
+      const vrs2 = signatureToVRSAMB(signature2)
 
       const signature3 = await sign(authoritiesFiveAccs[2], message)
-      const vrs3 = signatureToVRS(signature3)
+      const vrs3 = signatureToVRSAMB(signature3)
+      const oneSignature = packSignatures([vrs])
+      const twoSignatures = packSignatures([vrs, vrs2])
+      const threeSignatures = packSignatures([vrs, vrs2, vrs3])
 
       await foreignBridgeWithThreeSigs
-        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authoritiesFiveAccs[2], gasPrice })
+        .executeSignatures(message, oneSignature, { from: authoritiesFiveAccs[2], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridgeWithThreeSigs
-        .executeSignatures(message, [vrs.v, vrs2.v], [vrs.r, vrs2.r], [vrs.s, vrs2.s], {
+        .executeSignatures(message, twoSignatures, {
           from: authoritiesFiveAccs[2],
           gasPrice
         })
         .should.be.rejectedWith(ERROR_MSG)
 
-      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(
-        message,
-        [vrs.v, vrs2.v, vrs3.v],
-        [vrs.r, vrs2.r, vrs3.r],
-        [vrs.s, vrs2.s, vrs3.s],
-        { from: authoritiesFiveAccs[2], gasPrice }
-      ).should.be.fulfilled
+      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(message, threeSignatures, {
+        from: authoritiesFiveAccs[2],
+        gasPrice
+      }).should.be.fulfilled
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
@@ -589,9 +596,10 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(message, signatures, {
         from: authorities[0],
         gasPrice
       }).should.be.fulfilled
@@ -603,10 +611,10 @@ contract('ForeignAMB', async accounts => {
       })
 
       await foreignBridge
-        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[0], gasPrice })
+        .executeSignatures(message, signatures, { from: authorities[0], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
-        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[1], gasPrice })
+        .executeSignatures(message, signatures, { from: authorities[1], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
     })
     it('should allow non-authorities to execute signatures', async () => {
@@ -634,9 +642,10 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(message, signatures, {
         from: user,
         gasPrice
       }).should.be.fulfilled
@@ -675,9 +684,10 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(message, signatures, {
         from: authorities[0],
         gasPrice
       }).should.be.fulfilled
@@ -689,10 +699,10 @@ contract('ForeignAMB', async accounts => {
       })
 
       await foreignBridge
-        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[0], gasPrice })
+        .executeSignatures(message, signatures, { from: authorities[0], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
-        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[1], gasPrice })
+        .executeSignatures(message, signatures, { from: authorities[1], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
     })
     it('status of RelayedMessage should be false on contract out of gas call', async () => {
@@ -722,9 +732,10 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(message, signatures, {
         from: authorities[0],
         gasPrice
       }).should.be.fulfilled
@@ -736,10 +747,10 @@ contract('ForeignAMB', async accounts => {
       })
 
       await foreignBridge
-        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[0], gasPrice })
+        .executeSignatures(message, signatures, { from: authorities[0], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
-        .executeSignatures(message, [vrs.v], [vrs.r], [vrs.s], { from: authorities[1], gasPrice })
+        .executeSignatures(message, signatures, { from: authorities[1], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
     })
     it('status of RelayedMessage should be false if invalid dataType', async () => {
@@ -763,9 +774,10 @@ contract('ForeignAMB', async accounts => {
       const updatedMessage = `${message.slice(0, 210)}06${message.slice(212, message.length)}`
 
       const signature = await sign(authorities[0], updatedMessage)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
+      const signatures = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(updatedMessage, [vrs.v], [vrs.r], [vrs.s], {
+      const { logs } = await foreignBridge.executeSignatures(updatedMessage, signatures, {
         from: authorities[0]
       }).should.be.fulfilled
       expectEventInLogs(logs, 'RelayedMessage', {

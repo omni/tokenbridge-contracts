@@ -138,7 +138,7 @@ contract('ArbitraryMessage.sol', async () => {
 
       // when
       const messageTest = await MessageTest.new()
-      const result = await messageTest.unpackDataWithExtraParams(message, [], [], [])
+      const result = await messageTest.unpackDataWithExtraParams(message, '0x')
 
       // then
       const { sender, executor, txHash, gasLimit, dataType, gasPrice, data } = result
@@ -175,7 +175,7 @@ contract('ArbitraryMessage.sol', async () => {
 
       // when
       const messageTest = await MessageTest.new()
-      const result = await messageTest.unpackDataWithExtraParams(message, [], [], [])
+      const result = await messageTest.unpackDataWithExtraParams(message, '0x')
 
       // then
       const { sender, executor, txHash, gasLimit, dataType, gasPrice, data } = result
@@ -211,7 +211,7 @@ contract('ArbitraryMessage.sol', async () => {
 
       // when
       const messageTest = await MessageTest.new()
-      const result = await messageTest.unpackDataWithExtraParams(message, [], [], [])
+      const result = await messageTest.unpackDataWithExtraParams(message, '0x')
 
       // then
       const { sender, executor, txHash, gasLimit, dataType, gasPrice, data } = result

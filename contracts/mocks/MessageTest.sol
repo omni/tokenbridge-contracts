@@ -21,9 +21,7 @@ contract MessageTest {
 
     function unpackDataWithExtraParams(
         bytes _data,
-        uint8[], /*vs*/
-        bytes32[], /*rs*/
-        bytes32[] /*ss*/
+        bytes /*signatures*/
     )
         public
         pure

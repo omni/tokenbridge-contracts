@@ -27,7 +27,6 @@ const {
 } = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -55,6 +54,12 @@ const {
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 const isRewardableBridge = FOREIGN_REWARDABLE === 'ONE_DIRECTION'
+
+let VALIDATORS_REWARD_ACCOUNTS = []
+
+if (isRewardableBridge) {
+  VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
+}
 
 async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, initialNonce }) {
   let nonce = initialNonce

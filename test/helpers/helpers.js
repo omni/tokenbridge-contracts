@@ -55,7 +55,8 @@ function signatureToVRSAMB(rawSignature) {
 module.exports.signatureToVRSAMB = signatureToVRSAMB
 
 function packSignatures(array) {
-  const length = web3.utils.toHex(array.length)
+  const length = strip0x(web3.utils.toHex(array.length))
+  const msgLength = length.length === 1 ? `0${length}` : length
   let v = ''
   let r = ''
   let s = ''
@@ -64,8 +65,7 @@ function packSignatures(array) {
     r = r.concat(e.r)
     s = s.concat(e.s)
   })
-
-  return `${length}${v}${r}${s}`
+  return `0x${msgLength}${v}${r}${s}`
 }
 module.exports.packSignatures = packSignatures
 

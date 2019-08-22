@@ -480,6 +480,7 @@ contract('HomeAMB', async accounts => {
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
+      expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
       expect(await homeBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('should succeed on defrayal mode using message with oracle gas price', async () => {
@@ -522,6 +523,7 @@ contract('HomeAMB', async accounts => {
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
+      expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
       expect(await homeBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('should succeed on defrayal mode using message with gas price parameter', async () => {
@@ -568,6 +570,7 @@ contract('HomeAMB', async accounts => {
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
+      expect(await box.txHash()).to.be.equal(tx.tx)
       expect(await homeBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('test with 3 signatures required', async () => {
@@ -661,6 +664,7 @@ contract('HomeAMB', async accounts => {
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
+      expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
       expect(await homeBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('should not allow to double execute', async () => {

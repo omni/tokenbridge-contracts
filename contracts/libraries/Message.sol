@@ -121,6 +121,41 @@ library Message {
         }
     }
 
+    function hasEnoughValidSignatures(
+        bytes _message,
+        bytes _signatures,
+        IBridgeValidators _validatorContract,
+        bool isAMBMessage
+    ) internal view {
+        require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
+        uint256 requiredSignatures = _validatorContract.requiredSignatures();
+        uint8 amount;
+        assembly {
+            amount := mload(add(_signatures, 1))
+        }
+        require(amount >= requiredSignatures);
+        bytes32 hash = hashMessage(_message, isAMBMessage);
+        address[] memory encounteredAddresses = new address[](requiredSignatures);
+
+        for (uint256 i = 0; i < requiredSignatures; i++) {
+            uint8 v;
+            bytes32 r;
+            bytes32 s;
+            uint256 posr = 33 + amount + 32 * i;
+            uint256 poss = posr + 32 * amount;
+            assembly {
+                v := mload(add(_signatures, add(2, i)))
+                r := mload(add(_signatures, posr))
+                s := mload(add(_signatures, poss))
+            }
+
+            address recoveredAddress = ecrecover(hash, v, r, s);
+            require(_validatorContract.isValidator(recoveredAddress));
+            require(!addressArrayContains(encounteredAddresses, recoveredAddress));
+            encounteredAddresses[i] = recoveredAddress;
+        }
+    }
+
     function uintToString(uint256 i) internal pure returns (string) {
         if (i == 0) return "0";
         uint256 j = i;

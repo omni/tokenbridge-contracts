@@ -93,7 +93,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
 
     function signature(bytes32 _hash, uint256 _index) public view returns (bytes) {
         bytes32 signIdx = keccak256(abi.encodePacked(_hash, _index));
-        return signatures(signIdx);
+        return bytesStorage[keccak256(abi.encodePacked("signatures", signIdx))];
     }
 
     function messagesSigned(bytes32 _message) public view returns (bool) {
@@ -118,10 +118,6 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
 
     function messages(bytes32 _hash) internal view returns (bytes) {
         return bytesStorage[keccak256(abi.encodePacked("messages", _hash))];
-    }
-
-    function signatures(bytes32 _hash) internal view returns (bytes) {
-        return bytesStorage[keccak256(abi.encodePacked("signatures", _hash))];
     }
 
     function setSignatures(bytes32 _hash, bytes _signature) internal {

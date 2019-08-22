@@ -6,10 +6,6 @@ contract HomeAMB is BasicHomeAMB {
     event UserRequestForSignature(bytes encodedData);
     event AffirmationCompleted(address sender, address executor, bytes32 transactionHash, bool status);
 
-    function getMaxGasPerTx() internal returns (uint256) {
-        return maxGasPerTx();
-    }
-
     function isMessageDeliverySubsidizedMode() internal returns (bool) {
         return homeToForeignMode() == SUBSIDIZED_MODE;
     }

@@ -15,8 +15,6 @@ contract HomeBridgeErcToErc is
     OverdrawManagement,
     RewardableHomeBridgeErcToErc
 {
-    event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
-
     function initialize(
         address _validatorContract,
         uint256 _dailyLimit,

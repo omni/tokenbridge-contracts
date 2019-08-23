@@ -16,8 +16,6 @@ contract HomeBridgeErcToNative is
     RewardableHomeBridgeErcToNative,
     BlockRewardBridge
 {
-    event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
-
     bytes32 internal constant TOTAL_BURNT_COINS = keccak256(abi.encodePacked("totalBurntCoins"));
 
     function() public payable {

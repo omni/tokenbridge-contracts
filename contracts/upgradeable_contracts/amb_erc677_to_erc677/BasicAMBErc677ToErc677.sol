@@ -5,8 +5,9 @@ import "../Ownable.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../Initializable.sol";
 import "../ERC677Bridge.sol";
+import "../BaseOverdrawManagement.sol";
 
-contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
+contract BasicAMBErc677ToErc677 is Initializable, Ownable, Upgradeable, BaseOverdrawManagement, ERC677Bridge {
     bytes32 internal constant BRIDGE_CONTRACT = keccak256(abi.encodePacked("bridgeContract"));
     bytes32 internal constant MEDIATOR_CONTRACT = keccak256(abi.encodePacked("mediatorContract"));
     bytes32 internal constant REQUEST_GAS_LIMIT = keccak256(abi.encodePacked("requestGasLimit"));
@@ -52,14 +53,6 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value);
         bridgeContract().requireToPassMessage(mediatorContract(), data, requestGasLimit());
-    }
-
-    function validBridgedTokens(uint256 _value) internal {
-        require(msg.sender == address(bridgeContract()));
-        require(messageSender() == mediatorContract());
-        require(withinExecutionLimit(_value));
-
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
     }
 
     function relayTokens(uint256 _value) external {
@@ -121,10 +114,54 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, ERC677Bridge {
         return bridgeContract().messageSender();
     }
 
+    function transactionHash() internal view returns (bytes32) {
+        return bridgeContract().transactionHash();
+    }
+
     function maxGasPerTx() internal view returns (uint256) {
         return bridgeContract().maxGasPerTx();
     }
 
+    function handleBridgedTokens(address _recipient, uint256 _value) external {
+        require(msg.sender == address(bridgeContract()));
+        require(messageSender() == mediatorContract());
+        if (withinExecutionLimit(_value)) {
+            setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+            executeActionOnBridgedTokens(_recipient, _value);
+        } else {
+            bytes32 txHash = transactionHash();
+            address recipient;
+            uint256 value;
+            (recipient, value) = txAboveLimits(txHash);
+            require(recipient == address(0) && value == 0);
+            setOutOfLimitAmount(outOfLimitAmount().add(_value));
+            setTxAboveLimits(_recipient, _value, txHash);
+            emit AmountLimitExceeded(_recipient, _value, txHash);
+        }
+    }
+
     /* solcov ignore next */
-    function handleBridgedTokens(address _recipient, uint256 _value) external;
+    function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal;
+
+    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
+        external
+        onlyIfUpgradeabilityOwner
+    {
+        require(!fixedAssets(txHash));
+        require(valueToUnlock <= maxPerTx());
+        address recipient;
+        uint256 value;
+        (recipient, value) = txAboveLimits(txHash);
+        require(recipient != address(0) && value > 0 && value >= valueToUnlock);
+        setOutOfLimitAmount(outOfLimitAmount().sub(valueToUnlock));
+        uint256 pendingValue = value.sub(valueToUnlock);
+        setTxAboveLimitsValue(pendingValue, txHash);
+        emit AssetAboveLimitsFixed(txHash, valueToUnlock, pendingValue);
+        if (pendingValue == 0) {
+            setFixedAssets(txHash);
+        }
+        if (unlockOnForeign) {
+            fireEventOnTokenTransfer(recipient, valueToUnlock);
+        }
+    }
 }

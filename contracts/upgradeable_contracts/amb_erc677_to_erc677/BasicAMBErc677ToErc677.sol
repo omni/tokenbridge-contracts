@@ -6,8 +6,16 @@ import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../Initializable.sol";
 import "../ERC677Bridge.sol";
 import "../BaseOverdrawManagement.sol";
+import "../ReentrancyGuard.sol";
 
-contract BasicAMBErc677ToErc677 is Initializable, Ownable, Upgradeable, BaseOverdrawManagement, ERC677Bridge {
+contract BasicAMBErc677ToErc677 is
+    Initializable,
+    Ownable,
+    ReentrancyGuard,
+    Upgradeable,
+    BaseOverdrawManagement,
+    ERC677Bridge
+{
     bytes32 internal constant BRIDGE_CONTRACT = keccak256(abi.encodePacked("bridgeContract"));
     bytes32 internal constant MEDIATOR_CONTRACT = keccak256(abi.encodePacked("mediatorContract"));
     bytes32 internal constant REQUEST_GAS_LIMIT = keccak256(abi.encodePacked("requestGasLimit"));
@@ -50,12 +58,18 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, Upgradeable, BaseOver
     }
 
     function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
+        require(!lock());
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value);
         bridgeContract().requireToPassMessage(mediatorContract(), data, requestGasLimit());
     }
 
     function relayTokens(uint256 _value) external {
+        // This lock is to prevent calling fireEventOnTokenTransfer twice if a ERC677 token is used.
+        // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
+        // which will call fireEventOnTokenTransfer.
+        require(!lock());
+        setLock(true);
         ERC677 token = erc677token();
         address from = msg.sender;
         address to = address(this);
@@ -64,6 +78,7 @@ contract BasicAMBErc677ToErc677 is Initializable, Ownable, Upgradeable, BaseOver
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
 
         token.transferFrom(from, to, _value);
+        setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, from, _value);
     }
 

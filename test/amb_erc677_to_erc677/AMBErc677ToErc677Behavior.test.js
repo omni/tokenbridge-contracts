@@ -1,4 +1,5 @@
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
+const ERC20Mock = artifacts.require('ERC20Mock.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 
 const { expect } = require('chai')
@@ -462,6 +463,141 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         })
         .should.be.rejectedWith(ERROR_MSG)
       await contract.fixAssetsAboveLimits(exampleTxHash, true, oneEther).should.be.fulfilled
+    })
+  })
+  describe('relayTokens', () => {
+    let contract
+    let erc20Token
+    beforeEach(async function() {
+      bridgeContract = await AMBMock.new()
+      await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+      mediatorContract = await otherSideMediatorContract.new()
+      erc20Token = await ERC20Mock.new('test', 'TST', 18)
+      await erc20Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+
+      contract = this.bridge
+    })
+    it('should allow to bridge tokens using approve and transferFrom', async () => {
+      // Given
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc20Token.address,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        executionDailyLimit,
+        executionMaxPerTx,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.relayTokens(value, { from: user }).should.be.fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+    })
+    it('should fail if user did not approve the transfer', async () => {
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc20Token.address,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        executionDailyLimit,
+        executionMaxPerTx,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+
+      await contract.relayTokens(oneEther, { from: user }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('should fail if value is not within limits', async () => {
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc20Token.address,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        executionDailyLimit,
+        executionMaxPerTx,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+
+      const value = twoEthers
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      await contract.relayTokens(value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is owned by token manager', async function() {
+      // Given
+      const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      await erc677Token.setBridgeContract(contract.address, { from: owner }).should.be.fulfilled
+      await erc677Token.transferOwnership(contract.address, { from: owner }).should.be.fulfilled
+
+      contract = this.bridge
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        executionDailyLimit,
+        executionMaxPerTx,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+
+      const value = oneEther
+      await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.relayTokens(value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is not owned by token manager', async function() {
+      // Given
+      const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+
+      contract = this.bridge
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        dailyLimit,
+        maxPerTx,
+        minPerTx,
+        executionDailyLimit,
+        executionMaxPerTx,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+
+      const value = oneEther
+      await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.relayTokens(value, { from: user }).should.be.fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
     })
   })
 }

@@ -2,24 +2,18 @@ pragma solidity 0.4.24;
 
 import "./Upgradeable.sol";
 import "./Initializable.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./Validatable.sol";
 import "./Ownable.sol";
 import "./Claimable.sol";
+import "./VersionableBridge.sol";
 
-contract BasicBridge is Initializable, Validatable, Ownable, Upgradeable, Claimable {
-    using SafeMath for uint256;
-
+contract BasicBridge is Initializable, Validatable, Ownable, Upgradeable, Claimable, VersionableBridge {
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
 
     bytes32 internal constant GAS_PRICE = keccak256(abi.encodePacked("gasPrice"));
     bytes32 internal constant REQUIRED_BLOCK_CONFIRMATIONS = keccak256(abi.encodePacked("requiredBlockConfirmations"));
-
-    function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (2, 3, 0);
-    }
 
     function setGasPrice(uint256 _gasPrice) external onlyOwner {
         require(_gasPrice > 0);

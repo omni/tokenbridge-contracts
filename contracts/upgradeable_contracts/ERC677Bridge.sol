@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./BasicTokenBridge.sol";
 import "../interfaces/ERC677.sol";
 import "../interfaces/ERC677Receiver.sol";

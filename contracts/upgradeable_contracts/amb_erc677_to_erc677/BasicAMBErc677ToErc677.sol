@@ -7,12 +7,17 @@ import "../Initializable.sol";
 import "../ERC677Bridge.sol";
 import "../BaseOverdrawManagement.sol";
 import "../ReentrancyGuard.sol";
+import "../Upgradeable.sol";
+import "../Claimable.sol";
+import "../VersionableBridge.sol";
 
 contract BasicAMBErc677ToErc677 is
     Initializable,
     Ownable,
     ReentrancyGuard,
     Upgradeable,
+    Claimable,
+    VersionableBridge,
     BaseOverdrawManagement,
     ERC677Bridge
 {
@@ -178,5 +183,9 @@ contract BasicAMBErc677ToErc677 is
         if (unlockOnForeign) {
             fireEventOnTokenTransfer(recipient, valueToUnlock);
         }
+    }
+
+    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
+        claimValues(_token, _to);
     }
 }

@@ -4,10 +4,11 @@ import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
+import "./BasicBridge.sol";
 import "./BasicTokenBridge.sol";
 import "./MessageRelay.sol";
 
-contract BasicForeignBridge is EternalStorage, Validatable, BasicTokenBridge, MessageRelay {
+contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge, MessageRelay {
     /// triggered when relay of deposit from HomeBridge is complete
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
     function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {

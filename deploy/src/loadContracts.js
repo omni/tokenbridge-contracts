@@ -33,7 +33,9 @@ function getContracts(evmVersion) {
       : require(`../../build/${buildPath}/HomeBridgeNativeToErc.json`),
     BlockReward: require(`../../build/${buildPath}/BlockReward.json`),
     HomeAMB: require(`../../build/${buildPath}/HomeAMB.json`),
-    ForeignAMB: require(`../../build/${buildPath}/ForeignAMB`)
+    ForeignAMB: require(`../../build/${buildPath}/ForeignAMB`),
+    HomeAMBErc677ToErc677: require(`../../build/${buildPath}/HomeAMBErc677ToErc677.json`),
+    ForeignAMBErc677ToErc677: require(`../../build/${buildPath}/ForeignAMBErc677ToErc677.json`)
   }
 }
 

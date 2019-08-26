@@ -38,8 +38,6 @@ contract BasicAMBErc677ToErc677 is
         address _owner
     ) external returns (bool) {
         require(!isInitialized());
-        require(AddressUtils.isContract(_bridgeContract));
-        require(AddressUtils.isContract(_mediatorContract));
         require(_minPerTx > 0 && _maxPerTx > _minPerTx && _dailyLimit > _maxPerTx);
         require(_executionMaxPerTx < _executionDailyLimit);
 
@@ -109,7 +107,6 @@ contract BasicAMBErc677ToErc677 is
     }
 
     function _setMediatorContract(address _mediatorContract) internal {
-        require(AddressUtils.isContract(_mediatorContract));
         addressStorage[MEDIATOR_CONTRACT] = _mediatorContract;
     }
 

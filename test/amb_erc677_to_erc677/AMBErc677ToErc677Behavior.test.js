@@ -62,22 +62,6 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         )
         .should.be.rejectedWith(ERROR_MSG)
 
-      // not valid mediator contract
-      await contract
-        .initialize(
-          bridgeContract.address,
-          ZERO_ADDRESS,
-          erc677Token.address,
-          dailyLimit,
-          maxPerTx,
-          minPerTx,
-          executionDailyLimit,
-          executionMaxPerTx,
-          maxGasPerTx,
-          owner
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
       // not valid erc677 contract
       await contract
         .initialize(
@@ -254,7 +238,6 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       const newMediatorContract = await otherSideMediatorContract.new()
 
       await contract.setMediatorContract(newMediatorContract.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
-      await contract.setMediatorContract(notAContractAddress, { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
       await contract.setMediatorContract(newMediatorContract.address, { from: owner }).should.be.fulfilled
       expect(await contract.mediatorContract()).to.be.equal(newMediatorContract.address)

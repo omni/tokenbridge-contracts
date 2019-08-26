@@ -290,6 +290,77 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(newMaxGasPerTx)
     })
   })
+  describe('set limits', () => {
+    let contract
+    beforeEach(async function() {
+      bridgeContract = await AMBMock.new()
+      await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+      mediatorContract = await otherSideMediatorContract.new()
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+
+      contract = this.bridge
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        3,
+        2,
+        1,
+        3,
+        2,
+        maxGasPerTx,
+        owner
+      ).should.be.fulfilled
+    })
+    it('setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
+      await contract.setMaxPerTx(2, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.setMaxPerTx(2, { from: owner }).should.be.fulfilled
+      expect(await contract.maxPerTx()).to.be.bignumber.equal('2')
+
+      await contract.setMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('setMinPerTx allows to set only to owner and cannot be more than daily limit and should be less than maxPerTx', async () => {
+      await contract.setMinPerTx(1, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.setMinPerTx(1, { from: owner }).should.be.fulfilled
+      expect(await contract.minPerTx()).to.be.bignumber.equal('1')
+
+      await contract.setMinPerTx(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('setDailyLimit allow to set by owner and should be greater than maxPerTx or zero', async () => {
+      await contract.setDailyLimit(4, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.setDailyLimit(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await contract.setDailyLimit(4, { from: owner }).should.be.fulfilled
+      expect(await contract.dailyLimit()).to.be.bignumber.equal('4')
+
+      await contract.setDailyLimit(0, { from: owner }).should.be.fulfilled
+      expect(await contract.dailyLimit()).to.be.bignumber.equal(ZERO)
+
+      await contract.setDailyLimit(4, { from: owner }).should.be.fulfilled
+      expect(await contract.dailyLimit()).to.be.bignumber.equal('4')
+    })
+    it('setExecutionMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
+      await contract.setExecutionMaxPerTx(2, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.setExecutionMaxPerTx(2, { from: owner }).should.be.fulfilled
+      expect(await contract.executionMaxPerTx()).to.be.bignumber.equal('2')
+
+      await contract.setExecutionMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('setExecutionDailyLimit allow to set by owner and should be greater than maxPerTx or zero', async () => {
+      await contract.setExecutionDailyLimit(4, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.setExecutionDailyLimit(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      await contract.setExecutionDailyLimit(4, { from: owner }).should.be.fulfilled
+      expect(await contract.executionDailyLimit()).to.be.bignumber.equal('4')
+
+      await contract.setExecutionDailyLimit(0, { from: owner }).should.be.fulfilled
+      expect(await contract.executionDailyLimit()).to.be.bignumber.equal(ZERO)
+
+      await contract.setExecutionDailyLimit(4, { from: owner }).should.be.fulfilled
+      expect(await contract.executionDailyLimit()).to.be.bignumber.equal('4')
+    })
+  })
   describe('getBridgeMode', () => {
     it('should return arbitrary message bridging mode and interface', async function() {
       const contract = this.bridge

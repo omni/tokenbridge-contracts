@@ -218,7 +218,6 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
     it('only owner can set mediator contract', async function() {
       const contract = this.bridge
       const user = accounts[1]
-      const notAContractAddress = accounts[2]
 
       await contract.initialize(
         bridgeContract.address,

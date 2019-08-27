@@ -1,21 +1,32 @@
+const assert = require('assert')
 const Web3Utils = require('web3-utils')
-const { web3Home, HOME_RPC_URL } = require('../web3')
+const { web3Home, HOME_RPC_URL, deploymentPrivateKey } = require('../web3')
 const {
   deployContract,
   privateKeyToAddress,
   upgradeProxy,
   setBridgeContract,
-  transferOwnership
+  transferOwnership,
+  sendRawTxHome,
+  assertStateWithRetry
 } = require('../deploymentUtils')
 const {
   BRIDGEABLE_TOKEN_NAME,
   BRIDGEABLE_TOKEN_SYMBOL,
   BRIDGEABLE_TOKEN_DECIMALS,
-  DEPLOYMENT_ACCOUNT_PRIVATE_KEY
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
+  DEPLOY_REWARDABLE_TOKEN,
+  BLOCK_REWARD_ADDRESS,
+  DPOS_STAKING_ADDRESS
 } = require('../loadEnv')
 
 const {
-  homeContracts: { EternalStorageProxy, HomeAMBErc677ToErc677: HomeBridge, ERC677BridgeToken }
+  homeContracts: {
+    EternalStorageProxy,
+    HomeAMBErc677ToErc677: HomeBridge,
+    ERC677BridgeToken,
+    ERC677BridgeTokenRewardable
+  }
 } = require('../loadContracts')
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -50,8 +61,9 @@ async function deployHome() {
   nonce++
 
   console.log('\n[Home] deploying Bridgeble token')
+  const erc677Contract = DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken
   const erc677token = await deployContract(
-    ERC677BridgeToken,
+    erc677Contract,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce }
   )
@@ -66,6 +78,42 @@ async function deployHome() {
     url: HOME_RPC_URL
   })
   nonce++
+
+  if (DEPLOY_REWARDABLE_TOKEN) {
+    console.log('\n[Home] Set BlockReward contract on ERC677BridgeTokenRewardable')
+    const setBlockRewardContractData = await erc677token.methods
+      .setBlockRewardContract(BLOCK_REWARD_ADDRESS)
+      .encodeABI()
+    const setBlockRewardContract = await sendRawTxHome({
+      data: setBlockRewardContractData,
+      nonce,
+      to: erc677token.options.address,
+      privateKey: deploymentPrivateKey,
+      url: HOME_RPC_URL
+    })
+    if (setBlockRewardContract.status) {
+      assert.strictEqual(Web3Utils.hexToNumber(setBlockRewardContract.status), 1, 'Transaction Failed')
+    } else {
+      await assertStateWithRetry(erc677token.methods.blockRewardContract().call, BLOCK_REWARD_ADDRESS)
+    }
+    nonce++
+
+    console.log('\n[Home] Set Staking contract on ERC677BridgeTokenRewardable')
+    const setStakingContractData = await erc677token.methods.setStakingContract(DPOS_STAKING_ADDRESS).encodeABI()
+    const setStakingContract = await sendRawTxHome({
+      data: setStakingContractData,
+      nonce,
+      to: erc677token.options.address,
+      privateKey: deploymentPrivateKey,
+      url: HOME_RPC_URL
+    })
+    if (setStakingContract.status) {
+      assert.strictEqual(Web3Utils.hexToNumber(setStakingContract.status), 1, 'Transaction Failed')
+    } else {
+      await assertStateWithRetry(erc677token.methods.stakingContract().call, DPOS_STAKING_ADDRESS)
+    }
+    nonce++
+  }
 
   console.log('[Home] Transferring ownership of Bridgeable token to homeBridge contract')
   await transferOwnership({

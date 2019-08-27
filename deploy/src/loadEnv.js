@@ -126,7 +126,16 @@ if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    FOREIGN_DAILY_LIMIT: bigNumValidator()
+    FOREIGN_DAILY_LIMIT: bigNumValidator(),
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool()
+  }
+
+  if (DEPLOY_REWARDABLE_TOKEN === 'true') {
+    validations = {
+      ...validations,
+      DPOS_STAKING_ADDRESS: addressValidator(),
+      BLOCK_REWARD_ADDRESS: addressValidator()
+    }
   }
 } else {
   validations = {

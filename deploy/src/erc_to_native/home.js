@@ -102,18 +102,14 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     initializeHomeBridgeData = await bridge.methods
       .rewardableInitialize(
         validatorsBridge.options.address,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        HOME_MIN_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         BLOCK_REWARD_ADDRESS,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
-        homeFeeInWei,
-        foreignFeeInWei,
+        [homeFeeInWei, foreignFeeInWei],
         foreignToHomeDecimalShift
       )
       .encodeABI()
@@ -141,14 +137,11 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     initializeHomeBridgeData = await bridge.methods
       .initialize(
         validatorsBridge.options.address,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        HOME_MIN_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         BLOCK_REWARD_ADDRESS,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         foreignToHomeDecimalShift
       )

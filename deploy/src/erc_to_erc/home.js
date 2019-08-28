@@ -127,14 +127,11 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     initializeHomeBridgeData = await bridge.methods
       .initialize(
         validatorsBridge.options.address,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        HOME_MIN_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         erc677token.options.address,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         foreignToHomeDecimalShift
       )

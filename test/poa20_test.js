@@ -238,14 +238,11 @@ async function testERC677BridgeToken(accounts, rewardable) {
       homeErcToErcContract = await HomeErcToErcBridge.new()
       await homeErcToErcContract.initialize(
         validatorContract.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        executionDailyLimit,
-        executionMaxPerTx,
+        [executionDailyLimit, executionMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -253,13 +250,10 @@ async function testERC677BridgeToken(accounts, rewardable) {
       await foreignNativeToErcBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        executionDailyLimit,
-        executionMaxPerTx,
+        [executionDailyLimit, executionMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -399,14 +393,11 @@ async function testERC677BridgeToken(accounts, rewardable) {
       homeErcToErcContract = await HomeErcToErcBridge.new()
       await homeErcToErcContract.initialize(
         validatorContract.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        executionDailyLimit,
-        executionMaxPerTx,
+        [executionDailyLimit, executionMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -414,13 +405,10 @@ async function testERC677BridgeToken(accounts, rewardable) {
       await foreignNativeToErcBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        executionDailyLimit,
-        executionMaxPerTx,
+        [executionDailyLimit, executionMaxPerTx],
         owner,
         decimalShiftZero
       )

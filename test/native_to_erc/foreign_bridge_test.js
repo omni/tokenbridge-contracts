@@ -50,13 +50,10 @@ contract('ForeignBridge', async accounts => {
         .initialize(
           ZERO_ADDRESS,
           token.address,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           gasPrice,
           requireBlockConfirmations,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -65,13 +62,10 @@ contract('ForeignBridge', async accounts => {
         .initialize(
           validatorContract.address,
           ZERO_ADDRESS,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           gasPrice,
           requireBlockConfirmations,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -80,13 +74,10 @@ contract('ForeignBridge', async accounts => {
         .initialize(
           validatorContract.address,
           token.address,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           0,
           requireBlockConfirmations,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -95,13 +86,10 @@ contract('ForeignBridge', async accounts => {
         .initialize(
           owner,
           token.address,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           requireBlockConfirmations,
           gasPrice,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -110,13 +98,10 @@ contract('ForeignBridge', async accounts => {
         .initialize(
           validatorContract.address,
           owner,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           requireBlockConfirmations,
           gasPrice,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -125,13 +110,10 @@ contract('ForeignBridge', async accounts => {
         .initialize(
           validatorContract.address,
           token.address,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           gasPrice,
           0,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -139,13 +121,10 @@ contract('ForeignBridge', async accounts => {
       const { logs } = await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         '9'
       )
@@ -185,13 +164,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -333,13 +309,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
         { from: ownerOfValidatorContract }
@@ -400,13 +373,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
         erc20Token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -451,13 +421,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
         erc20Token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -502,13 +469,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -529,13 +493,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -567,13 +528,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -609,13 +567,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -644,13 +599,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -700,13 +652,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridgeProxy.initialize(
         validatorsProxy.address,
         token.address,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
-        FOREIGN_MIN_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -733,13 +682,10 @@ contract('ForeignBridge', async accounts => {
         .initialize(
           validatorsAddress,
           tokenAddress,
-          FOREIGN_DAILY_LIMIT,
-          FOREIGN_MAX_AMOUNT_PER_TX,
-          FOREIGN_MIN_AMOUNT_PER_TX,
+          [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
           gasPrice,
           requireBlockConfirmations,
-          '3',
-          '2',
+          ['3', '2'],
           owner,
           decimalShiftZero
         )
@@ -761,13 +707,10 @@ contract('ForeignBridge', async accounts => {
         .initialize(
           validatorContract.address,
           token.address,
-          '3',
-          '2',
-          '1',
+          ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          '3',
-          '2',
+          ['3', '2'],
           owner,
           decimalShiftZero
         )
@@ -788,13 +731,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -823,13 +763,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -858,13 +795,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -913,13 +847,10 @@ contract('ForeignBridge', async accounts => {
         .rewardableInitialize(
           ZERO_ADDRESS,
           token.address,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           gasPrice,
           requireBlockConfirmations,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           feeManager.address,
           homeFee,
@@ -930,13 +861,10 @@ contract('ForeignBridge', async accounts => {
         .rewardableInitialize(
           rewardableValidators.address,
           ZERO_ADDRESS,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           gasPrice,
           requireBlockConfirmations,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           feeManager.address,
           homeFee,
@@ -947,13 +875,10 @@ contract('ForeignBridge', async accounts => {
         .rewardableInitialize(
           rewardableValidators.address,
           token.address,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           0,
           requireBlockConfirmations,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           feeManager.address,
           homeFee,
@@ -964,13 +889,10 @@ contract('ForeignBridge', async accounts => {
         .rewardableInitialize(
           owner,
           token.address,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           requireBlockConfirmations,
           gasPrice,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           feeManager.address,
           homeFee,
@@ -981,13 +903,10 @@ contract('ForeignBridge', async accounts => {
         .rewardableInitialize(
           rewardableValidators.address,
           owner,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           requireBlockConfirmations,
           gasPrice,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           feeManager.address,
           homeFee,
@@ -998,13 +917,10 @@ contract('ForeignBridge', async accounts => {
         .rewardableInitialize(
           rewardableValidators.address,
           owner,
-          oneEther,
-          halfEther,
-          minPerTx,
+          [oneEther, halfEther, minPerTx],
           requireBlockConfirmations,
           gasPrice,
-          homeDailyLimit,
-          homeMaxPerTx,
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           ZERO_ADDRESS,
           homeFee,
@@ -1014,13 +930,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.rewardableInitialize(
         rewardableValidators.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         feeManager.address,
         homeFee,
@@ -1054,13 +967,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.rewardableInitialize(
         rewardableValidators.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         feeManager.address,
         homeFee,
@@ -1082,13 +992,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.rewardableInitialize(
         rewardableValidators.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         feeManager.address,
         homeFee,
@@ -1109,13 +1016,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.rewardableInitialize(
         rewardableValidators.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         feeManager.address,
         homeFee,
@@ -1145,13 +1049,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.rewardableInitialize(
         rewardableValidators.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         feeManager.address,
         homeFee,
@@ -1190,13 +1091,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.rewardableInitialize(
         rewardableValidators.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         feeManager.address,
         feeInWei,
@@ -1251,13 +1149,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.rewardableInitialize(
         rewardableValidators.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         feeManager.address,
         feeInWei,
@@ -1340,13 +1235,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.rewardableInitialize(
         rewardableValidators.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         feeManager.address,
         feeInWei,
@@ -1425,13 +1317,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
         erc20Token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftTwo
       )
@@ -1477,13 +1366,10 @@ contract('ForeignBridge', async accounts => {
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        oneEther,
-        halfEther,
-        minPerTx,
+        [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        homeDailyLimit,
-        homeMaxPerTx,
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftTwo
       )

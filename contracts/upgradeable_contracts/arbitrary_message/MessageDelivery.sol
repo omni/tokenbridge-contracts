@@ -17,5 +17,6 @@ contract MessageDelivery is BasicAMB {
         return _data.length.mul(68);
     }
 
+    /* solcov ignore next */
     function emitEventOnMessageRequest(bytes encodedData) internal;
 }

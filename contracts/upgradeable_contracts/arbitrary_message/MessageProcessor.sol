@@ -54,5 +54,6 @@ contract MessageProcessor is EternalStorage {
         return status;
     }
 
+    /* solcov ignore next */
     function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal;
 }

@@ -151,13 +151,7 @@ if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
   }
 }
 
-if (BRIDGE_MODE === 'ARBITRARY_MESSAGE') {
-  validations = {
-    ...validations,
-    HOME_AMB_SUBSIDIZED_MODE: envalid.bool(),
-    FOREIGN_AMB_SUBSIDIZED_MODE: envalid.bool()
-  }
-} else {
+if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
   validations = {
     ...validations,
     HOME_DAILY_LIMIT: bigNumValidator(),

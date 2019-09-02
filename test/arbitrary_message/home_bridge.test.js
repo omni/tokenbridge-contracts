@@ -462,31 +462,6 @@ contract('HomeAMB', async accounts => {
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)
     })
-    it('status of AffirmationCompleted should be false if invalid dataType', async () => {
-      const user = accounts[8]
-
-      const boxInitialValue = await box.value()
-      boxInitialValue.should.be.bignumber.equal(ZERO)
-
-      // Use these calls to simulate foreign bridge on Foreign network
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 221254, {
-        from: user
-      })
-
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
-      const updatedMessage = `${message.slice(0, 210)}06${message.slice(212, message.length)}`
-
-      const { logs } = await homeBridge.executeAffirmation(updatedMessage, { from: authorities[0] }).should.be.fulfilled
-      logs[0].event.should.be.equal('SignedForAffirmation')
-      expectEventInLogs(logs, 'AffirmationCompleted', {
-        sender: user,
-        executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
-        status: false
-      })
-    })
   })
   describe('submitSignature', () => {
     let homeBridge

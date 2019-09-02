@@ -466,35 +466,5 @@ contract('ForeignAMB', async accounts => {
         .executeSignatures(message, signatures, { from: authorities[1], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
     })
-    it('status of RelayedMessage should be false if invalid dataType', async () => {
-      const user = accounts[8]
-
-      const boxInitialValue = await box.value()
-      boxInitialValue.should.be.bignumber.equal(ZERO)
-
-      // Use these calls to simulate home bridge on Home network
-      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
-        from: user
-      })
-
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
-      const updatedMessage = `${message.slice(0, 210)}06${message.slice(212, message.length)}`
-
-      const signature = await sign(authorities[0], updatedMessage)
-      const vrs = signatureToVRSAMB(signature)
-      const signatures = packSignatures([vrs])
-
-      const { logs } = await foreignBridge.executeSignatures(updatedMessage, signatures, {
-        from: authorities[0]
-      }).should.be.fulfilled
-      expectEventInLogs(logs, 'RelayedMessage', {
-        sender: user,
-        executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
-        status: false
-      })
-    })
   })
 })

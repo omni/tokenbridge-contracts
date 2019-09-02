@@ -6,16 +6,8 @@ contract HomeAMB is BasicHomeAMB {
     event UserRequestForSignature(bytes encodedData);
     event AffirmationCompleted(address sender, address executor, bytes32 transactionHash, bool status);
 
-    function isMessageDeliverySubsidizedMode() internal returns (bool) {
-        return homeToForeignMode() == SUBSIDIZED_MODE;
-    }
-
     function emitEventOnMessageRequest(bytes encodedData) internal {
         emit UserRequestForSignature(encodedData);
-    }
-
-    function isMessageProcessorSubsidizedMode() internal returns (bool) {
-        return foreignToHomeMode() == SUBSIDIZED_MODE;
     }
 
     function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal {

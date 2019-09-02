@@ -476,9 +476,6 @@ HOME_REQUIRED_BLOCK_CONFIRMATIONS=1
 # transactions for deposit or withdrawal confirmations. This price is used if
 # the Gas price oracle is unreachable.
 HOME_GAS_PRICE=1000000000
-# The mode of economic compensation for Home bridge operations. 
-# If set to true, messages bridged from Foreign Network to Home Network will not pay fees.  
-HOME_AMB_SUBSIDIZED_MODE=false
 
 # The RPC channel to a Foreign node able to handle deployment/configuration
 # transactions.
@@ -501,9 +498,6 @@ FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS=8
 # finalizing asset deposits. This price is used if the Gas price oracle is
 # unreachable.
 FOREIGN_GAS_PRICE=10000000000
-# The mode of economic compensation for Foreign bridge operations. 
-# If set to true, messages bridged from Home Network to Foreign Network will not pay fees.  
-FOREIGN_AMB_SUBSIDIZED_MODE=false
 
 # The minimum number of validators required to send their signatures confirming
 # the relay of assets. The same number of validators is expected on both sides

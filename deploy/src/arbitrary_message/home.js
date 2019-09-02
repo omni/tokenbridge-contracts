@@ -27,9 +27,7 @@ const {
   HOME_VALIDATORS_OWNER,
   HOME_UPGRADEABLE_ADMIN,
   HOME_MAX_AMOUNT_PER_TX,
-  HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-  HOME_AMB_SUBSIDIZED_MODE,
-  FOREIGN_AMB_SUBSIDIZED_MODE
+  HOME_REQUIRED_BLOCK_CONFIRMATIONS
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -69,60 +67,6 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }
   nonce++
-
-  if (!HOME_AMB_SUBSIDIZED_MODE) {
-    console.log('setting defrayal mode for home side')
-    const homeBridgeDefrayalModeData = await bridge.methods
-      .setDefrayalModeForForeignToHome()
-      .encodeABI()
-    const txHomeBridgeDefrayalModeData = await sendRawTxHome({
-      data: homeBridgeDefrayalModeData,
-      nonce,
-      to: bridge.options.address,
-      privateKey: deploymentPrivateKey,
-      url: HOME_RPC_URL
-    })
-    if (txHomeBridgeDefrayalModeData.status) {
-      assert.strictEqual(
-        Web3Utils.hexToNumber(txHomeBridgeDefrayalModeData.status),
-        1,
-        'Transaction Failed'
-      )
-    } else {
-      await assertStateWithRetry(
-        bridge.methods.foreignToHomeMode().call,
-        '1'
-      )
-    }
-    nonce++
-  }
-
-  if (!FOREIGN_AMB_SUBSIDIZED_MODE) {
-    console.log('setting defrayal mode for foreign side')
-    const foreignBridgeDefrayalModeData = await bridge.methods
-      .setDefrayalModeForHomeToForeign()
-      .encodeABI()
-    const txForeignBridgeDefrayalModeData = await sendRawTxHome({
-      data: foreignBridgeDefrayalModeData,
-      nonce,
-      to: bridge.options.address,
-      privateKey: deploymentPrivateKey,
-      url: HOME_RPC_URL
-    })
-    if (txForeignBridgeDefrayalModeData.status) {
-      assert.strictEqual(
-        Web3Utils.hexToNumber(txForeignBridgeDefrayalModeData.status),
-        1,
-        'Transaction Failed'
-      )
-    } else {
-      await assertStateWithRetry(
-        bridge.methods.homeToForeignMode().call,
-        '1'
-      )
-    }
-    nonce++
-  }
 
   return nonce
 }

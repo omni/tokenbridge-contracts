@@ -9,20 +9,18 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
-        uint256 _maxPerTx,
-        uint256 _homeDailyLimit,
-        uint256 _homeMaxPerTx,
-        address _owner
+        uint256[] _maxPerTxHomeDailyLimitHomeMaxPerTxArray, // [ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx ]
+        address _owner,
+        uint256 _decimalShift
     ) external returns (bool) {
         _initialize(
             _validatorContract,
             _erc20token,
             _requiredBlockConfirmations,
             _gasPrice,
-            _maxPerTx,
-            _homeDailyLimit,
-            _homeMaxPerTx,
-            _owner
+            _maxPerTxHomeDailyLimitHomeMaxPerTxArray,
+            _owner,
+            _decimalShift
         );
         return isInitialized();
     }

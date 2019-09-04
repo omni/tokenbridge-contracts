@@ -52,10 +52,13 @@ const {
   DPOS_STAKING_ADDRESS,
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
-  FOREIGN_TRANSACTIONS_FEE
+  FOREIGN_TRANSACTIONS_FEE,
+  FOREIGN_TO_HOME_DECIMAL_SHIFT
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
+
+const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
 
 const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
 
@@ -97,19 +100,16 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     initializeHomeBridgeData = await bridge.methods
       .rewardableInitialize(
         validatorsBridge.options.address,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        HOME_MIN_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         erc677token.options.address,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
-        homeFeeInWei,
-        foreignFeeInWei,
-        BLOCK_REWARD_ADDRESS
+        [homeFeeInWei, foreignFeeInWei],
+        BLOCK_REWARD_ADDRESS,
+        foreignToHomeDecimalShift
       )
       .encodeABI()
   } else {
@@ -121,20 +121,19 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       HOME_MIN_AMOUNT_PER_TX
     )} in eth,
-    HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}
+    HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
+    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
     `)
     initializeHomeBridgeData = await bridge.methods
       .initialize(
         validatorsBridge.options.address,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        HOME_MIN_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         erc677token.options.address,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
-        HOME_BRIDGE_OWNER
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
+        HOME_BRIDGE_OWNER,
+        foreignToHomeDecimalShift
       )
       .encodeABI()
   }

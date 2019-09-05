@@ -35,7 +35,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       const contract = this.bridge
       expect(await contract.isInitialized()).to.be.equal(false)
       expect(await contract.bridgeContract()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.mediatorContract()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.mediatorContractOnOtherSide()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.erc677token()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.dailyLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.maxPerTx()).to.be.bignumber.equal(ZERO)
@@ -173,7 +173,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
 
       expect(await contract.isInitialized()).to.be.equal(true)
       expect(await contract.bridgeContract()).to.be.equal(bridgeContract.address)
-      expect(await contract.mediatorContract()).to.be.equal(mediatorContract.address)
+      expect(await contract.mediatorContractOnOtherSide()).to.be.equal(mediatorContract.address)
       expect(await contract.erc677token()).to.be.equal(erc677Token.address)
       expect(await contract.dailyLimit()).to.be.bignumber.equal(dailyLimit)
       expect(await contract.maxPerTx()).to.be.bignumber.equal(maxPerTx)
@@ -236,10 +236,12 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
 
       const newMediatorContract = await otherSideMediatorContract.new()
 
-      await contract.setMediatorContract(newMediatorContract.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract
+        .setMediatorContractOnOtherSide(newMediatorContract.address, { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
 
-      await contract.setMediatorContract(newMediatorContract.address, { from: owner }).should.be.fulfilled
-      expect(await contract.mediatorContract()).to.be.equal(newMediatorContract.address)
+      await contract.setMediatorContractOnOtherSide(newMediatorContract.address, { from: owner }).should.be.fulfilled
+      expect(await contract.mediatorContractOnOtherSide()).to.be.equal(newMediatorContract.address)
     })
     it('only owner can set request Gas Limit', async function() {
       const contract = this.bridge

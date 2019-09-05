@@ -43,7 +43,7 @@ contract BasicAMBErc677ToErc677 is
 
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         _setBridgeContract(_bridgeContract);
-        _setMediatorContract(_mediatorContract);
+        _setMediatorContractOnOtherSide(_mediatorContract);
         setErc677token(_erc677token);
         uintStorage[DAILY_LIMIT] = _dailyLimit;
         uintStorage[MAX_PER_TX] = _maxPerTx;
@@ -64,7 +64,7 @@ contract BasicAMBErc677ToErc677 is
         require(!lock());
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value);
-        bridgeContract().requireToPassMessage(mediatorContract(), data, requestGasLimit());
+        bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
     }
 
     function relayTokens(uint256 _value) external {
@@ -102,15 +102,15 @@ contract BasicAMBErc677ToErc677 is
         return IAMB(addressStorage[BRIDGE_CONTRACT]);
     }
 
-    function setMediatorContract(address _mediatorContract) external onlyOwner {
-        _setMediatorContract(_mediatorContract);
+    function setMediatorContractOnOtherSide(address _mediatorContract) external onlyOwner {
+        _setMediatorContractOnOtherSide(_mediatorContract);
     }
 
-    function _setMediatorContract(address _mediatorContract) internal {
+    function _setMediatorContractOnOtherSide(address _mediatorContract) internal {
         addressStorage[MEDIATOR_CONTRACT] = _mediatorContract;
     }
 
-    function mediatorContract() public view returns (address) {
+    function mediatorContractOnOtherSide() public view returns (address) {
         return addressStorage[MEDIATOR_CONTRACT];
     }
 
@@ -141,7 +141,7 @@ contract BasicAMBErc677ToErc677 is
 
     function handleBridgedTokens(address _recipient, uint256 _value) external {
         require(msg.sender == address(bridgeContract()));
-        require(messageSender() == mediatorContract());
+        require(messageSender() == mediatorContractOnOtherSide());
         if (withinExecutionLimit(_value)) {
             setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
             executeActionOnBridgedTokens(_recipient, _value);

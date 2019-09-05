@@ -196,6 +196,55 @@ if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
   }
 }
 
+if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
+  validations = {
+    ...validations,
+    HOME_DAILY_LIMIT: bigNumValidator(),
+    HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
+    FOREIGN_DAILY_LIMIT: bigNumValidator()
+  }
+
+  if (!validRewardModes.includes(HOME_REWARDABLE)) {
+    throw new Error(
+      `Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`
+    )
+  }
+
+  if (!validRewardModes.includes(FOREIGN_REWARDABLE)) {
+    throw new Error(
+      `Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`
+    )
+  }
+
+  if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
+    validations = {
+      ...validations,
+      HOME_TRANSACTIONS_FEE: envalid.num(),
+      FOREIGN_TRANSACTIONS_FEE: envalid.num(),
+    }
+    if (
+      (BRIDGE_MODE === 'ERC_TO_NATIVE' &&
+        HOME_REWARDABLE === 'BOTH_DIRECTIONS' &&
+        HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD') ||
+      (BRIDGE_MODE === 'ERC_TO_ERC' &&
+        HOME_REWARDABLE === 'BOTH_DIRECTIONS')
+    ) {
+      validations = {
+        ...validations,
+        BLOCK_REWARD_ADDRESS: addressValidator({
+          default: ZERO_ADDRESS
+        })
+      }
+    } else {
+      validations = {
+        ...validations,
+        VALIDATORS_REWARD_ACCOUNTS: addressesValidator()
+      }
+      validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
+    }
+  }
+}
+
 if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
   validations = {
     ...validations,

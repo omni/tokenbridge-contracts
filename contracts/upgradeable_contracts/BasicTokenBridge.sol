@@ -15,6 +15,7 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     bytes32 internal constant DAILY_LIMIT = keccak256(abi.encodePacked("dailyLimit"));
     bytes32 internal constant EXECUTION_MAX_PER_TX = keccak256(abi.encodePacked("executionMaxPerTx"));
     bytes32 internal constant EXECUTION_DAILY_LIMIT = keccak256(abi.encodePacked("executionDailyLimit"));
+    bytes32 internal constant DECIMAL_SHIFT = keccak256(abi.encodePacked("decimalShift"));
 
     function totalSpentPerDay(uint256 _day) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
@@ -42,6 +43,10 @@ contract BasicTokenBridge is EternalStorage, Ownable {
 
     function minPerTx() public view returns (uint256) {
         return uintStorage[MIN_PER_TX];
+    }
+
+    function decimalShift() public view returns (uint256) {
+        return uintStorage[DECIMAL_SHIFT];
     }
 
     function withinLimit(uint256 _amount) public view returns (bool) {

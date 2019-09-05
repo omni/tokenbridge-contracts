@@ -4,7 +4,8 @@ import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
-import "./BasicBridge.sol";
+import "./BasicTokenBridge.sol";
+import "./MessageRelay.sol";
 import "./BasicTokenBridge.sol";
 import "./MessageRelay.sol";
 

@@ -4,9 +4,9 @@ import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Upgradeable.sol";
 import "./RewardableBridge.sol";
-import "./BasicBridge.sol";
+import "./BasicTokenBridge.sol";
 
-contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, BasicBridge {
+contract OverdrawManagement is EternalStorage, RewardableBridge, Upgradeable, BasicTokenBridge {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);

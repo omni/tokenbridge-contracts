@@ -23,11 +23,11 @@ The POA Bridge allows users to transfer assets between two chains in the Ethereu
 
 ### Operations
 
-Currently, the contracts support two types of relay operations:
+Currently, the contracts support four types of relay operations:
 * Tokenize the native coin in one blockchain network (Home) into an ERC20 token in another network (Foreign).
 * Swap a token presented by an existing ERC20 contract in a Foreign network into an ERC20 token in the Home network, where one pair of bridge contracts corresponds to one pair of ERC20 tokens.
 * to mint new native coins in Home blockchain network from a token presented by an existing ERC20 contract in a Foreign network.
-
+* Transfer arbitrary data between two blockchain networks as so the data could be interpreted as an arbitrary contract method invocation.
 
 ### Components
 
@@ -60,6 +60,7 @@ Responsibilities and roles of the bridge:
     - in `NATIVE-TO-ERC` mode: send native coins to the Home Bridge to receive ERC20 tokens from the Foreign Bridge, send ERC20 tokens to the Foreign Bridge to unlock native coins from the Home Bridge;
     - in `ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Bridge to unlock ERC20 tokens on Foreign networks; 
     - in `ERC-TO-NATIVE` mode: send ERC20 tokens to the Foreign Bridge to receive native coins from the Home Bridge, send native coins to the Home Bridge to unlock ERC20 tokens from the Foreign Bridge.
+    - in `ARBITRARY-MESSAGE` mode: Invoke Home/Foreign Bridge to send a message that will be executed on the other Network as an arbitrary contract method invocation.
 
 ## Usage
 

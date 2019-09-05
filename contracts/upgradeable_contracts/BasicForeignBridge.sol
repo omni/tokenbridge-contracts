@@ -6,6 +6,7 @@ import "./Validatable.sol";
 import "../libraries/Message.sol";
 import "./BasicTokenBridge.sol";
 import "./MessageRelay.sol";
+import "./BasicBridge.sol";
 import "./BasicTokenBridge.sol";
 import "./MessageRelay.sol";
 

@@ -6,6 +6,4 @@ interface IAMB {
     function transactionHash() external view returns (bytes32);
     function withdrawFromDeposit(address _recipient) external;
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) external;
-    function requireToPassMessage(address _contract, bytes _data, uint256 _gas, uint256 _gasPrice) external;
-    function requireToPassMessage(address _contract, bytes _data, uint256 _gas, bytes1 _oracleGasPriceSpeed) external;
 }

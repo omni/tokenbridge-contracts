@@ -76,7 +76,6 @@ contract BasicAMBErc677ToErc677 is
         ERC677 token = erc677token();
         address from = msg.sender;
         address to = address(this);
-        require(_value <= token.allowance(from, to));
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
 

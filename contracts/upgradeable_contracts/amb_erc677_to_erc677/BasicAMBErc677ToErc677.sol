@@ -4,7 +4,7 @@ import "../../interfaces/IAMB.sol";
 import "../Ownable.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../Initializable.sol";
-import "../ERC677Bridge.sol";
+import "../BaseERC677Bridge.sol";
 import "../BaseOverdrawManagement.sol";
 import "../ReentrancyGuard.sol";
 import "../Upgradeable.sol";
@@ -19,7 +19,7 @@ contract BasicAMBErc677ToErc677 is
     Claimable,
     VersionableBridge,
     BaseOverdrawManagement,
-    ERC677Bridge
+    BaseERC677Bridge
 {
     bytes32 internal constant BRIDGE_CONTRACT = keccak256(abi.encodePacked("bridgeContract"));
     bytes32 internal constant MEDIATOR_CONTRACT = keccak256(abi.encodePacked("mediatorContract"));
@@ -60,7 +60,7 @@ contract BasicAMBErc677ToErc677 is
         return isInitialized();
     }
 
-    function fireEventOnTokenTransfer(address _from, uint256 _value) internal {
+    function passMessage(address _from, uint256 _value) internal {
         require(!lock());
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value);
@@ -68,9 +68,9 @@ contract BasicAMBErc677ToErc677 is
     }
 
     function relayTokens(uint256 _value) external {
-        // This lock is to prevent calling fireEventOnTokenTransfer twice if a ERC677 token is used.
+        // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
-        // which will call fireEventOnTokenTransfer.
+        // which will call passMessage.
         require(!lock());
         setLock(true);
         ERC677 token = erc677token();
@@ -182,7 +182,7 @@ contract BasicAMBErc677ToErc677 is
             setFixedAssets(txHash);
         }
         if (unlockOnForeign) {
-            fireEventOnTokenTransfer(recipient, valueToUnlock);
+            passMessage(recipient, valueToUnlock);
         }
     }
 

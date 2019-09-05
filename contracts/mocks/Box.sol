@@ -41,32 +41,4 @@ contract Box {
         bytes memory encodedData = abi.encodeWithSelector(methodSelector, _i);
         IAMB(_bridge).requireToPassMessage(_executor, encodedData, 141647);
     }
-
-    function setValueOnOtherNetworkGasPrice(uint256 _i, address _bridge, address _executor, uint256 _gasPrice) public {
-        bytes4 methodSelector = this.setValue.selector;
-        bytes memory encodedData = abi.encodeWithSelector(methodSelector, _i);
-        IAMB(_bridge).requireToPassMessage(_executor, encodedData, 821254, _gasPrice);
-    }
-
-    function setValueOnOtherNetworkGasPriceOracle(
-        uint256 _i,
-        address _bridge,
-        address _executor,
-        bytes1 _oracleGasPriceSpeed
-    ) public {
-        bytes4 methodSelector = this.setValue.selector;
-        bytes memory encodedData = abi.encodeWithSelector(methodSelector, _i);
-        IAMB(_bridge).requireToPassMessage(_executor, encodedData, 821254, _oracleGasPriceSpeed);
-    }
-
-    function withdrawFromDepositOnOtherNetworkGasPrice(
-        address _recipient,
-        address _bridge,
-        address _executor,
-        uint256 _gasPrice
-    ) public {
-        bytes4 methodSelector = IAMB(0).withdrawFromDeposit.selector;
-        bytes memory encodedData = abi.encodeWithSelector(methodSelector, _recipient);
-        IAMB(_bridge).requireToPassMessage(_executor, encodedData, 821254, _gasPrice);
-    }
 }

@@ -85,6 +85,10 @@ contract BasicAMBErc677ToErc677 is
         bridgeSpecificActionsOnTokenTransfer(token, from, _value);
     }
 
+    function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
+        return (1, 0, 0);
+    }
+
     function getBridgeMode() external pure returns (bytes4 _data) {
         return bytes4(keccak256(abi.encodePacked("erc-to-erc-amb")));
     }

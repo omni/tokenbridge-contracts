@@ -10,7 +10,9 @@ contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
     }
 
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value) internal {
-        IBurnableMintableERC677Token(_token).burn(_value);
-        passMessage(_from, _value);
+        if (!lock()) {
+            IBurnableMintableERC677Token(_token).burn(_value);
+            passMessage(_from, _value);
+        }
     }
 }

@@ -14,6 +14,8 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
         address _from,
         uint256 _value
     ) internal {
-        passMessage(_from, _value);
+        if (!lock()) {
+            passMessage(_from, _value);
+        }
     }
 }

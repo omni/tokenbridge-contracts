@@ -61,7 +61,6 @@ contract BasicAMBErc677ToErc677 is
     }
 
     function passMessage(address _from, uint256 _value) internal {
-        require(!lock());
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value);
         bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
@@ -72,13 +71,13 @@ contract BasicAMBErc677ToErc677 is
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
         require(!lock());
-        setLock(true);
         ERC677 token = erc677token();
         address from = msg.sender;
         address to = address(this);
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
 
+        setLock(true);
         token.transferFrom(from, to, _value);
         setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, from, _value);

@@ -621,7 +621,11 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
       // When
-      await contract.relayTokens(value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.relayTokens(value, { from: user }).should.be.fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
     })
     it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is not owned by token manager', async function() {
       // Given

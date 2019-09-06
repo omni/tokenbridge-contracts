@@ -17,6 +17,7 @@ const minPerTx = ether('0.01')
 const executionDailyLimit = dailyLimit
 const executionMaxPerTx = maxPerTx
 const exampleTxHash = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
+const decimalShiftZero = 0
 
 function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accounts) {
   let bridgeContract
@@ -58,6 +59,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           executionDailyLimit,
           executionMaxPerTx,
           maxGasPerTx,
+          decimalShiftZero,
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
@@ -74,6 +76,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           executionDailyLimit,
           executionMaxPerTx,
           maxGasPerTx,
+          decimalShiftZero,
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
@@ -90,6 +93,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           executionDailyLimit,
           executionMaxPerTx,
           maxGasPerTx,
+          decimalShiftZero,
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
@@ -106,6 +110,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           executionDailyLimit,
           executionMaxPerTx,
           maxGasPerTx,
+          decimalShiftZero,
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
@@ -122,6 +127,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           executionMaxPerTx,
           executionMaxPerTx,
           maxGasPerTx,
+          decimalShiftZero,
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
@@ -138,6 +144,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           executionDailyLimit,
           executionMaxPerTx,
           dailyLimit,
+          decimalShiftZero,
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
@@ -152,6 +159,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -167,6 +175,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           executionDailyLimit,
           executionMaxPerTx,
           maxGasPerTx,
+          decimalShiftZero,
           owner
         )
         .should.be.rejectedWith(ERROR_MSG)
@@ -202,6 +211,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -229,6 +239,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -257,6 +268,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -294,6 +306,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         3,
         2,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
     })
@@ -377,6 +390,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -544,6 +558,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -569,6 +584,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -585,6 +601,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -613,6 +630,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 
@@ -644,6 +662,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         executionDailyLimit,
         executionMaxPerTx,
         maxGasPerTx,
+        decimalShiftZero,
         owner
       ).should.be.fulfilled
 

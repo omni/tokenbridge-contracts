@@ -35,6 +35,7 @@ contract BasicAMBErc677ToErc677 is
         uint256 _executionDailyLimit,
         uint256 _executionMaxPerTx,
         uint256 _requestGasLimit,
+        uint256 _decimalShift,
         address _owner
     ) external returns (bool) {
         require(!isInitialized());
@@ -51,6 +52,7 @@ contract BasicAMBErc677ToErc677 is
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimit;
         uintStorage[EXECUTION_MAX_PER_TX] = _executionMaxPerTx;
         _setRequestGasLimit(_requestGasLimit);
+        uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setInitialize();
 

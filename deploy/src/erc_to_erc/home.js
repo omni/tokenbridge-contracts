@@ -58,7 +58,7 @@ const {
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
+const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
 
 const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
 
@@ -86,12 +86,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     console.log('\ninitializing Home Bridge with fee contract:\n')
     console.log(`Home Validators: ${validatorsBridge.options.address},
     HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
-    HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-      HOME_MAX_AMOUNT_PER_TX
-    )} in eth,
-    HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-      HOME_MIN_AMOUNT_PER_TX
-    )} in eth,
+    HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+    HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
     HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
     Block Reward: ${BLOCK_REWARD_ADDRESS},
     Fee Manager: ${feeManager.options.address},
@@ -115,12 +111,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
   } else {
     console.log(`Home Validators: ${validatorsBridge.options.address},
     HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
-    HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-      HOME_MAX_AMOUNT_PER_TX
-    )} in eth,
-    HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-      HOME_MIN_AMOUNT_PER_TX
-    )} in eth,
+    HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+    HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
     HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
     FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
     `)
@@ -146,11 +138,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     url: HOME_RPC_URL
   })
   if (txInitializeHomeBridge.status) {
-    assert.strictEqual(
-      Web3Utils.hexToNumber(txInitializeHomeBridge.status),
-      1,
-      'Transaction Failed'
-    )
+    assert.strictEqual(Web3Utils.hexToNumber(txInitializeHomeBridge.status), 1, 'Transaction Failed')
   } else {
     await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }
@@ -171,9 +159,7 @@ async function deployHome() {
 
   console.log('\ndeploying implementation for home validators')
   const bridgeValidatorsContract =
-    isRewardableBridge && BLOCK_REWARD_ADDRESS === ZERO_ADDRESS
-      ? RewardableValidators
-      : BridgeValidators
+    isRewardableBridge && BLOCK_REWARD_ADDRESS === ZERO_ADDRESS ? RewardableValidators : BridgeValidators
   const bridgeValidatorsHome = await deployContract(bridgeValidatorsContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
@@ -224,9 +210,7 @@ async function deployHome() {
 
   console.log('\ndeploying homeBridge implementation\n')
   const bridgeContract =
-    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS
-      ? HomeBridgeErcToErcPOSDAO
-      : HomeBridge
+    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? HomeBridgeErcToErcPOSDAO : HomeBridge
   const homeBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
@@ -278,11 +262,7 @@ async function deployHome() {
       privateKey: deploymentPrivateKey,
       url: HOME_RPC_URL
     })
-    assert.strictEqual(
-      Web3Utils.hexToNumber(setBlockRewardContract.status),
-      1,
-      'Transaction Failed'
-    )
+    assert.strictEqual(Web3Utils.hexToNumber(setBlockRewardContract.status), 1, 'Transaction Failed')
     nonce++
   }
 

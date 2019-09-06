@@ -205,29 +205,24 @@ if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
   }
 
   if (!validRewardModes.includes(HOME_REWARDABLE)) {
-    throw new Error(
-      `Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`
-    )
+    throw new Error(`Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`)
   }
 
   if (!validRewardModes.includes(FOREIGN_REWARDABLE)) {
-    throw new Error(
-      `Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`
-    )
+    throw new Error(`Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`)
   }
 
   if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
     validations = {
       ...validations,
       HOME_TRANSACTIONS_FEE: envalid.num(),
-      FOREIGN_TRANSACTIONS_FEE: envalid.num(),
+      FOREIGN_TRANSACTIONS_FEE: envalid.num()
     }
     if (
       (BRIDGE_MODE === 'ERC_TO_NATIVE' &&
         HOME_REWARDABLE === 'BOTH_DIRECTIONS' &&
         HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD') ||
-      (BRIDGE_MODE === 'ERC_TO_ERC' &&
-        HOME_REWARDABLE === 'BOTH_DIRECTIONS')
+      (BRIDGE_MODE === 'ERC_TO_ERC' && HOME_REWARDABLE === 'BOTH_DIRECTIONS')
     ) {
       validations = {
         ...validations,

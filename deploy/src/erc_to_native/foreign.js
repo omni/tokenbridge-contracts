@@ -13,11 +13,7 @@ const {
 } = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
 const {
-  foreignContracts: {
-    EternalStorageProxy,
-    BridgeValidators,
-    ForeignBridgeErcToNative: ForeignBridge
-  }
+  foreignContracts: { EternalStorageProxy, BridgeValidators, ForeignBridgeErcToNative: ForeignBridge }
 } = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
@@ -39,7 +35,7 @@ const {
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
+const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
 
 async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   console.log(`Foreign Validators: ${validatorsBridge.options.address},
@@ -49,9 +45,7 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   )} in eth,
   FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
     HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
-  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-    HOME_MAX_AMOUNT_PER_TX
-  )} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
   `)
@@ -63,7 +57,7 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
       FOREIGN_GAS_PRICE,
       [FOREIGN_MAX_AMOUNT_PER_TX, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
       FOREIGN_BRIDGE_OWNER,
-      foreignToHomeDecimalShift,
+      foreignToHomeDecimalShift
     )
     .encodeABI()
   const txInitializeBridge = await sendRawTxForeign({
@@ -105,10 +99,7 @@ async function deployForeign() {
     nonce
   })
   nonce++
-  console.log(
-    '[Foreign] BridgeValidators Implementation: ',
-    bridgeValidatorsForeign.options.address
-  )
+  console.log('[Foreign] BridgeValidators Implementation: ', bridgeValidatorsForeign.options.address)
 
   console.log('\nhooking up eternal storage to BridgeValidators')
   await upgradeProxy({
@@ -159,10 +150,7 @@ async function deployForeign() {
     nonce
   })
   nonce++
-  console.log(
-    '[Foreign] ForeignBridge Implementation: ',
-    foreignBridgeImplementation.options.address
-  )
+  console.log('[Foreign] ForeignBridge Implementation: ', foreignBridgeImplementation.options.address)
 
   console.log('\nhooking up ForeignBridge storage to ForeignBridge implementation')
   await upgradeProxy({

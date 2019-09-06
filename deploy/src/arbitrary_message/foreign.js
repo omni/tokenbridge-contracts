@@ -90,10 +90,7 @@ async function deployForeign() {
     nonce
   })
   nonce++
-  console.log(
-    '[Foreign] BridgeValidators Implementation: ',
-    bridgeValidatorsForeign.options.address
-  )
+  console.log('[Foreign] BridgeValidators Implementation: ', bridgeValidatorsForeign.options.address)
 
   console.log('\nhooking up eternal storage to BridgeValidators')
   await upgradeProxy({
@@ -144,10 +141,7 @@ async function deployForeign() {
     nonce
   })
   nonce++
-  console.log(
-    '[Foreign] ForeignBridge Implementation: ',
-    foreignBridgeImplementation.options.address
-  )
+  console.log('[Foreign] ForeignBridge Implementation: ', foreignBridgeImplementation.options.address)
 
   console.log('\nhooking up ForeignBridge storage to ForeignBridge implementation')
   await upgradeProxy({

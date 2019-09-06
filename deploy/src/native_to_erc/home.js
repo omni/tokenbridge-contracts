@@ -46,7 +46,7 @@ const {
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
+const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
 
 const isBothDirectionsFeeManager = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
 const isRewardableBridge = HOME_REWARDABLE === 'ONE_DIRECTION' || isBothDirectionsFeeManager
@@ -63,9 +63,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
 
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
-    const feeManagerContract = isBothDirectionsFeeManager
-      ? FeeManagerNativeToErcBothDirections
-      : FeeManagerNativeToErc
+    const feeManagerContract = isBothDirectionsFeeManager ? FeeManagerNativeToErcBothDirections : FeeManagerNativeToErc
     const feeManager = await deployContract(feeManagerContract, [], {
       from: DEPLOYMENT_ACCOUNT_ADDRESS,
       nonce
@@ -80,16 +78,10 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     console.log('\ninitializing Home Bridge with fee contract:\n')
     console.log(`Home Validators: ${validatorsBridge.options.address},
   HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
-  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-      HOME_MAX_AMOUNT_PER_TX
-    )} in eth,
-  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-      HOME_MIN_AMOUNT_PER_TX
-    )} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
-    FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(
-      FOREIGN_DAILY_LIMIT
-    )} in eth,
+    FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
@@ -116,16 +108,10 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     console.log('\ninitializing Home Bridge with following parameters:\n')
     console.log(`Home Validators: ${validatorsBridge.options.address},
   HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
-  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-      HOME_MAX_AMOUNT_PER_TX
-    )} in eth,
-  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-      HOME_MIN_AMOUNT_PER_TX
-    )} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
-    FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(
-      FOREIGN_DAILY_LIMIT
-    )} in eth,
+    FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
@@ -153,11 +139,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     url: HOME_RPC_URL
   })
   if (txInitializeHomeBridge.status) {
-    assert.strictEqual(
-      Web3Utils.hexToNumber(txInitializeHomeBridge.status),
-      1,
-      'Transaction Failed'
-    )
+    assert.strictEqual(Web3Utils.hexToNumber(txInitializeHomeBridge.status), 1, 'Transaction Failed')
   } else {
     await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }

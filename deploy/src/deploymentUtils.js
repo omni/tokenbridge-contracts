@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 const BigNumber = require('bignumber.js')
 const Web3 = require('web3')
 const Tx = require('ethereumjs-tx')
@@ -106,11 +107,7 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) 
     const tx = new Tx(rawTx)
     tx.sign(privateKey)
     const serializedTx = tx.serialize()
-    const txHash = await sendNodeRequest(
-      url,
-      'eth_sendRawTransaction',
-      `0x${serializedTx.toString('hex')}`
-    )
+    const txHash = await sendNodeRequest(url, 'eth_sendRawTransaction', `0x${serializedTx.toString('hex')}`)
     console.log('pending txHash', txHash)
     return await getReceipt(txHash, url)
   } catch (e) {
@@ -259,9 +256,7 @@ async function initializeValidators({
   if (isRewardableBridge) {
     console.log(`REQUIRED_NUMBER_OF_VALIDATORS: ${requiredNumber}, VALIDATORS_OWNER: ${owner}`)
     logValidatorsAndRewardAccounts(validators, rewardAccounts)
-    data = await contract.methods
-      .initialize(requiredNumber, validators, rewardAccounts, owner)
-      .encodeABI()
+    data = await contract.methods.initialize(requiredNumber, validators, rewardAccounts, owner).encodeABI()
   } else {
     console.log(
       `REQUIRED_NUMBER_OF_VALIDATORS: ${requiredNumber}, VALIDATORS: ${validators}, VALIDATORS_OWNER: ${owner}`

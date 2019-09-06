@@ -29,7 +29,8 @@ const {
   FOREIGN_AMB_BRIDGE,
   FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
   ERC20_TOKEN_ADDRESS,
-  DEPLOYMENT_ACCOUNT_PRIVATE_KEY
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
+  FOREIGN_TO_HOME_DECIMAL_SHIFT
 } = require('../loadEnv')
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -50,6 +51,7 @@ async function initialize({
     executionDailyLimit,
     executionMaxPerTx,
     requestGasLimit,
+    foreignToHomeDecimalShift,
     owner
   },
   upgradeableAdmin,
@@ -68,6 +70,7 @@ async function initialize({
     EXECUTION_DAILY_LIMIT : ${executionDailyLimit} which is ${Web3Utils.fromWei(executionDailyLimit)} in eth,
     EXECUTION_MAX_AMOUNT_PER_TX: ${executionMaxPerTx} which is ${Web3Utils.fromWei(executionMaxPerTx)} in eth,
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit}, 
+    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
     OWNER: ${owner}
   `)
 
@@ -76,12 +79,10 @@ async function initialize({
       bridgeContract,
       mediatorContract,
       erc677token,
-      dailyLimit,
-      maxPerTx,
-      minPerTx,
-      executionDailyLimit,
-      executionMaxPerTx,
+      [dailyLimit, maxPerTx, minPerTx],
+      [executionDailyLimit, executionMaxPerTx],
       requestGasLimit,
+      foreignToHomeDecimalShift,
       owner
     )
     .encodeABI()
@@ -111,6 +112,8 @@ async function initialize({
 }
 
 async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
+  const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
+
   console.log('\n[Home] Initializing Home Bridge with following parameters:\n')
   await initialize({
     web3: web3Home,
@@ -128,6 +131,7 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
       executionDailyLimit: FOREIGN_DAILY_LIMIT,
       executionMaxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
       requestGasLimit: HOME_MEDIATOR_REQUEST_GAS_LIMIT,
+      foreignToHomeDecimalShift,
       owner: HOME_BRIDGE_OWNER
     },
     upgradeableAdmin: HOME_UPGRADEABLE_ADMIN,
@@ -151,6 +155,7 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
       executionDailyLimit: HOME_DAILY_LIMIT,
       executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX,
       requestGasLimit: FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
+      foreignToHomeDecimalShift,
       owner: FOREIGN_BRIDGE_OWNER
     },
     upgradeableAdmin: FOREIGN_UPGRADEABLE_ADMIN,

@@ -12,12 +12,9 @@ const {
   assertStateWithRetry
 } = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
+
 const {
-  foreignContracts: {
-    EternalStorageProxy,
-    BridgeValidators,
-    ForeignBridgeErcToNative: ForeignBridge
-  }
+  foreignContracts: { EternalStorageProxy, BridgeValidators, ForeignAMB: ForeignBridge }
 } = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
@@ -29,43 +26,30 @@ const {
   FOREIGN_BRIDGE_OWNER,
   FOREIGN_VALIDATORS_OWNER,
   FOREIGN_UPGRADEABLE_ADMIN,
-  FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-  ERC20_TOKEN_ADDRESS,
   FOREIGN_MAX_AMOUNT_PER_TX,
-  HOME_DAILY_LIMIT,
-  HOME_MAX_AMOUNT_PER_TX,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT
+  FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
+async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
+  let nonce = initialNonce
 
-async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   console.log(`Foreign Validators: ${validatorsBridge.options.address},
-  ERC20_TOKEN_ADDRESS: ${ERC20_TOKEN_ADDRESS},
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
     FOREIGN_MAX_AMOUNT_PER_TX
   )} in eth,
-  FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
-    HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
-  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-    HOME_MAX_AMOUNT_PER_TX
-  )} in eth,
-  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+    HOME_GAS_PRICE: ${FOREIGN_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS}
   `)
   const initializeFBridgeData = await bridge.methods
     .initialize(
       validatorsBridge.options.address,
-      ERC20_TOKEN_ADDRESS,
-      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+      FOREIGN_MAX_AMOUNT_PER_TX,
       FOREIGN_GAS_PRICE,
-      [FOREIGN_MAX_AMOUNT_PER_TX, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
-      FOREIGN_BRIDGE_OWNER,
-      foreignToHomeDecimalShift,
+      FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+      FOREIGN_BRIDGE_OWNER
     )
-    .encodeABI()
+    .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txInitializeBridge = await sendRawTxForeign({
     data: initializeFBridgeData,
     nonce,
@@ -78,16 +62,17 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   } else {
     await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }
+  nonce++
+
+  return nonce
 }
 
 async function deployForeign() {
-  if (!Web3Utils.isAddress(ERC20_TOKEN_ADDRESS)) {
-    throw new Error('ERC20_TOKEN_ADDRESS env var is not defined')
-  }
-  let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
   console.log('========================================')
   console.log('deploying ForeignBridge')
   console.log('========================================\n')
+
+  let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
 
   console.log('deploying storage for foreign validators')
   const storageValidatorsForeign = await deployContract(EternalStorageProxy, [], {
@@ -176,14 +161,13 @@ async function deployForeign() {
 
   console.log('\ninitializing Foreign Bridge with following parameters:\n')
   foreignBridgeImplementation.options.address = foreignBridgeStorage.options.address
-  await initializeBridge({
+  nonce = await initializeBridge({
     validatorsBridge: storageValidatorsForeign,
     bridge: foreignBridgeImplementation,
-    nonce
+    initialNonce: nonce
   })
-  nonce++
 
-  console.log('transferring proxy ownership to multisig for foreign bridge Proxy contract')
+  console.log('transferring proxy ownership to multisig for Foreign bridge Proxy contract')
   await transferProxyOwnership({
     proxy: foreignBridgeStorage,
     newOwner: FOREIGN_UPGRADEABLE_ADMIN,
@@ -192,6 +176,7 @@ async function deployForeign() {
   })
 
   console.log('\nForeign Deployment Bridge completed\n')
+
   return {
     foreignBridge: {
       address: foreignBridgeStorage.options.address,

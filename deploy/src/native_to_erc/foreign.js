@@ -27,7 +27,6 @@ const {
 } = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 
 const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
@@ -49,12 +48,21 @@ const {
   BLOCK_REWARD_ADDRESS,
   DPOS_STAKING_ADDRESS,
   FOREIGN_REWARDABLE,
-  HOME_TRANSACTIONS_FEE
+  HOME_TRANSACTIONS_FEE,
+  FOREIGN_TO_HOME_DECIMAL_SHIFT
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
+const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
+
 const isRewardableBridge = FOREIGN_REWARDABLE === 'ONE_DIRECTION'
+
+let VALIDATORS_REWARD_ACCOUNTS = []
+
+if (isRewardableBridge) {
+  VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
+}
 
 async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, initialNonce }) {
   let nonce = initialNonce
@@ -90,22 +98,21 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
     )} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
-  Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%`)
+  Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%,
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}`)
 
     initializeFBridgeData = await bridge.methods
       .rewardableInitialize(
         validatorsBridge.options.address,
         erc677bridgeToken.options.address,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
-        FOREIGN_MIN_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         FOREIGN_GAS_PRICE,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
         FOREIGN_BRIDGE_OWNER,
         feeManager.options.address,
-        homeFeeInWei
+        homeFeeInWei,
+        foreignToHomeDecimalShift
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   } else {
@@ -125,21 +132,20 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       HOME_MAX_AMOUNT_PER_TX
     )} in eth,
-  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER}
+  FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
   `)
 
     initializeFBridgeData = await bridge.methods
       .initialize(
         validatorsBridge.options.address,
         erc677bridgeToken.options.address,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
-        FOREIGN_MIN_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         FOREIGN_GAS_PRICE,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        FOREIGN_BRIDGE_OWNER
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
+        FOREIGN_BRIDGE_OWNER,
+        foreignToHomeDecimalShift
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   }

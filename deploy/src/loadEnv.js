@@ -11,7 +11,7 @@ const foreignPrefix = 'FOREIGN'
 
 // Validations and constants
 const evmVersions = [EVM_TYPES.BYZANTIUM, EVM_TYPES.SPURIOUSDRAGON]
-const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE']
+const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE', 'ARBITRARY_MESSAGE']
 const validRewardModes = ['false', 'ONE_DIRECTION', 'BOTH_DIRECTIONS']
 const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
@@ -102,18 +102,6 @@ if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)
 }
 
-if (!validRewardModes.includes(HOME_REWARDABLE)) {
-  throw new Error(
-    `Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`
-  )
-}
-
-if (!validRewardModes.includes(FOREIGN_REWARDABLE)) {
-  throw new Error(
-    `Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`
-  )
-}
-
 let validations = {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY: envalid.str(),
   DEPLOYMENT_GAS_LIMIT_EXTRA: envalid.num(),
@@ -124,9 +112,7 @@ let validations = {
   HOME_BRIDGE_OWNER: addressValidator(),
   HOME_VALIDATORS_OWNER: addressesValidator(),
   HOME_UPGRADEABLE_ADMIN: addressValidator(),
-  HOME_DAILY_LIMIT: bigNumValidator(),
   HOME_MAX_AMOUNT_PER_TX: bigNumValidator(),
-  HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
   HOME_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   HOME_GAS_PRICE: bigNumValidator(),
   FOREIGN_RPC_URL: envalid.str(),
@@ -136,9 +122,57 @@ let validations = {
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS: envalid.num(),
   FOREIGN_GAS_PRICE: bigNumValidator(),
   FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
-  FOREIGN_DAILY_LIMIT: bigNumValidator(),
   REQUIRED_NUMBER_OF_VALIDATORS: envalid.num(),
   VALIDATORS: addressesValidator()
+}
+
+if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
+  validations = {
+    ...validations,
+    HOME_DAILY_LIMIT: bigNumValidator(),
+    HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
+    FOREIGN_DAILY_LIMIT: bigNumValidator()
+  }
+
+  if (!validRewardModes.includes(HOME_REWARDABLE)) {
+    throw new Error(
+      `Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`
+    )
+  }
+
+  if (!validRewardModes.includes(FOREIGN_REWARDABLE)) {
+    throw new Error(
+      `Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Supported values are ${validRewardModes}`
+    )
+  }
+
+  if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
+    validations = {
+      ...validations,
+      HOME_TRANSACTIONS_FEE: envalid.num(),
+      FOREIGN_TRANSACTIONS_FEE: envalid.num(),
+    }
+    if (
+      (BRIDGE_MODE === 'ERC_TO_NATIVE' &&
+        HOME_REWARDABLE === 'BOTH_DIRECTIONS' &&
+        HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD') ||
+      (BRIDGE_MODE === 'ERC_TO_ERC' &&
+        HOME_REWARDABLE === 'BOTH_DIRECTIONS')
+    ) {
+      validations = {
+        ...validations,
+        BLOCK_REWARD_ADDRESS: addressValidator({
+          default: ZERO_ADDRESS
+        })
+      }
+    } else {
+      validations = {
+        ...validations,
+        VALIDATORS_REWARD_ACCOUNTS: addressesValidator()
+      }
+      validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
+    }
+  }
 }
 
 if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
@@ -197,16 +231,6 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (HOME_REWARDABLE !== 'false' || FOREIGN_REWARDABLE !== 'false') {
-  validateRewardableAddresses(VALIDATORS, VALIDATORS_REWARD_ACCOUNTS)
-  validations = {
-    ...validations,
-    VALIDATORS_REWARD_ACCOUNTS: addressesValidator(),
-    HOME_TRANSACTIONS_FEE: envalid.num(),
-    FOREIGN_TRANSACTIONS_FEE: envalid.num()
-  }
-}
-
 const env = envalid.cleanEnv(process.env, validations)
 
 // Logic validations
@@ -214,12 +238,22 @@ checkValidators(env.VALIDATORS, env.REQUIRED_NUMBER_OF_VALIDATORS)
 checkGasPrices(env.FOREIGN_GAS_PRICE, foreignPrefix)
 checkBlockConfirmations(env.HOME_REQUIRED_BLOCK_CONFIRMATIONS, homePrefix)
 checkBlockConfirmations(env.FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS, foreignPrefix)
-checkLimits(
-  env.HOME_MIN_AMOUNT_PER_TX,
-  env.HOME_MAX_AMOUNT_PER_TX,
-  env.HOME_DAILY_LIMIT,
-  homePrefix
-)
+
+if (env.BRIDGE_MODE === 'ARBITRARY_MESSAGE') {
+  if (env.HOME_MAX_AMOUNT_PER_TX.isZero()) {
+    throw new Error(`HOME_MAX_AMOUNT_PER_TX should be greater than 0`)
+  }
+  if (env.FOREIGN_MAX_AMOUNT_PER_TX.isZero()) {
+    throw new Error(`FOREIGN_MAX_AMOUNT_PER_TX should be greater than 0`)
+  }
+} else {
+  checkLimits(
+    env.HOME_MIN_AMOUNT_PER_TX,
+    env.HOME_MAX_AMOUNT_PER_TX,
+    env.HOME_DAILY_LIMIT,
+    homePrefix
+  )
+}
 
 if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
   checkGasPrices(env.HOME_GAS_PRICE, homePrefix)

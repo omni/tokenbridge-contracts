@@ -24,7 +24,6 @@ const {
 } = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')
-const VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 
 const {
   BLOCK_REWARD_ADDRESS,
@@ -43,13 +42,22 @@ const {
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
   FOREIGN_TRANSACTIONS_FEE,
-  HOME_FEE_MANAGER_TYPE
+  HOME_FEE_MANAGER_TYPE,
+  FOREIGN_TO_HOME_DECIMAL_SHIFT
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
+const foreignToHomeDecimalShift=FOREIGN_TO_HOME_DECIMAL_SHIFT?FOREIGN_TO_HOME_DECIMAL_SHIFT:0
+
 const isRewardableBridge = HOME_REWARDABLE === 'BOTH_DIRECTIONS'
 const isFeeManagerPOSDAO = HOME_FEE_MANAGER_TYPE === 'POSDAO_REWARD'
+
+let VALIDATORS_REWARD_ACCOUNTS = []
+
+if (isRewardableBridge && !isFeeManagerPOSDAO) {
+  VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
+}
 
 async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
@@ -89,22 +97,20 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
   Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%
-  Foreign Fee: ${foreignFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%`)
+  Foreign Fee: ${foreignFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%,
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}`)
     initializeHomeBridgeData = await bridge.methods
       .rewardableInitialize(
         validatorsBridge.options.address,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        HOME_MIN_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         BLOCK_REWARD_ADDRESS,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
-        homeFeeInWei,
-        foreignFeeInWei
+        [homeFeeInWei, foreignFeeInWei],
+        foreignToHomeDecimalShift
       )
       .encodeABI()
   } else {
@@ -125,20 +131,19 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
-  HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER}
+  HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
   `)
     initializeHomeBridgeData = await bridge.methods
       .initialize(
         validatorsBridge.options.address,
-        HOME_DAILY_LIMIT,
-        HOME_MAX_AMOUNT_PER_TX,
-        HOME_MIN_AMOUNT_PER_TX,
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         BLOCK_REWARD_ADDRESS,
-        FOREIGN_DAILY_LIMIT,
-        FOREIGN_MAX_AMOUNT_PER_TX,
-        HOME_BRIDGE_OWNER
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
+        HOME_BRIDGE_OWNER,
+        foreignToHomeDecimalShift
       )
       .encodeABI()
   }
@@ -175,7 +180,7 @@ async function deployHome() {
   nonce++
 
   console.log('\ndeploying implementation for home validators')
-  const bridgeValidatorsContract = isRewardableBridge ? RewardableValidators : BridgeValidators
+  const bridgeValidatorsContract = isRewardableBridge && !isFeeManagerPOSDAO ? RewardableValidators : BridgeValidators
   const bridgeValidatorsHome = await deployContract(bridgeValidatorsContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
@@ -197,7 +202,7 @@ async function deployHome() {
   bridgeValidatorsHome.options.address = storageValidatorsHome.options.address
   await initializeValidators({
     contract: bridgeValidatorsHome,
-    isRewardableBridge,
+    isRewardableBridge: isRewardableBridge && !isFeeManagerPOSDAO,
     requiredNumber: REQUIRED_NUMBER_OF_VALIDATORS,
     validators: VALIDATORS,
     rewardAccounts: VALIDATORS_REWARD_ACCOUNTS,

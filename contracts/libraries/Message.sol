@@ -68,24 +68,32 @@ library Message {
         return 104;
     }
 
-    function recoverAddressFromSignedMessage(bytes signature, bytes message) internal pure returns (address) {
+    function recoverAddressFromSignedMessage(bytes signature, bytes message, bool isAMBMessage)
+        internal
+        pure
+        returns (address)
+    {
         require(signature.length == 65);
         bytes32 r;
         bytes32 s;
         bytes1 v;
-        // solium-disable-next-line security/no-inline-assembly
+
         assembly {
             r := mload(add(signature, 0x20))
             s := mload(add(signature, 0x40))
             v := mload(add(signature, 0x60))
         }
-        return ecrecover(hashMessage(message), uint8(v), r, s);
+        return ecrecover(hashMessage(message, isAMBMessage), uint8(v), r, s);
     }
 
-    function hashMessage(bytes message) internal pure returns (bytes32) {
+    function hashMessage(bytes message, bool isAMBMessage) internal pure returns (bytes32) {
         bytes memory prefix = "\x19Ethereum Signed Message:\n";
-        string memory msgLength = "104";
-        return keccak256(abi.encodePacked(prefix, msgLength, message));
+        if (isAMBMessage) {
+            return keccak256(abi.encodePacked(prefix, uintToString(message.length), message));
+        } else {
+            string memory msgLength = "104";
+            return keccak256(abi.encodePacked(prefix, msgLength, message));
+        }
     }
 
     function hasEnoughValidSignatures(
@@ -93,15 +101,16 @@ library Message {
         uint8[] _vs,
         bytes32[] _rs,
         bytes32[] _ss,
-        IBridgeValidators _validatorContract
+        IBridgeValidators _validatorContract,
+        bool isAMBMessage
     ) internal view {
-        require(isMessageValid(_message));
+        require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         // It is not necessary to check that arrays have the same length since it will be handled
         // during attempt to access to the corresponding elements in the loop and the call will be reverted.
         // It will save gas for the rational validators actions and still be safe enough from security point of view
         require(_vs.length >= requiredSignatures);
-        bytes32 hash = hashMessage(_message);
+        bytes32 hash = hashMessage(_message, isAMBMessage);
         address[] memory encounteredAddresses = new address[](requiredSignatures);
 
         for (uint256 i = 0; i < requiredSignatures; i++) {
@@ -110,5 +119,57 @@ library Message {
             require(!addressArrayContains(encounteredAddresses, recoveredAddress));
             encounteredAddresses[i] = recoveredAddress;
         }
+    }
+
+    function hasEnoughValidSignatures(
+        bytes _message,
+        bytes _signatures,
+        IBridgeValidators _validatorContract,
+        bool isAMBMessage
+    ) internal view {
+        require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
+        uint256 requiredSignatures = _validatorContract.requiredSignatures();
+        uint8 amount;
+        assembly {
+            amount := mload(add(_signatures, 1))
+        }
+        require(amount >= requiredSignatures);
+        bytes32 hash = hashMessage(_message, isAMBMessage);
+        address[] memory encounteredAddresses = new address[](requiredSignatures);
+
+        for (uint256 i = 0; i < requiredSignatures; i++) {
+            uint8 v;
+            bytes32 r;
+            bytes32 s;
+            uint256 posr = 33 + amount + 32 * i;
+            uint256 poss = posr + 32 * amount;
+            assembly {
+                v := mload(add(_signatures, add(2, i)))
+                r := mload(add(_signatures, posr))
+                s := mload(add(_signatures, poss))
+            }
+
+            address recoveredAddress = ecrecover(hash, v, r, s);
+            require(_validatorContract.isValidator(recoveredAddress));
+            require(!addressArrayContains(encounteredAddresses, recoveredAddress));
+            encounteredAddresses[i] = recoveredAddress;
+        }
+    }
+
+    function uintToString(uint256 i) internal pure returns (string) {
+        if (i == 0) return "0";
+        uint256 j = i;
+        uint256 length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint256 k = length - 1;
+        while (i != 0) {
+            bstr[k--] = bytes1(48 + i % 10);
+            i /= 10;
+        }
+        return string(bstr);
     }
 }

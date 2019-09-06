@@ -286,7 +286,7 @@ async function initializeValidators({
 async function assertStateWithRetry(fn, expected) {
   return promiseRetry(async retry => {
     const value = await fn()
-    if (value !== expected) {
+    if (value !== expected && value.toString() !== expected) {
       retry(`Transaction Failed. Expected: ${expected} Actual: ${value}`)
     }
   })

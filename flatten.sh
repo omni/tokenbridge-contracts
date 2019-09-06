@@ -8,6 +8,7 @@ mkdir -p flats/native_to_erc20
 mkdir -p flats/erc20_to_erc20
 mkdir -p flats/erc20_to_native
 mkdir -p flats/validators
+mkdir -p flats/arbitrary_message
 
 FLATTENER=./node_modules/.bin/truffle-flattener
 BRIDGE_CONTRACTS_DIR=contracts/upgradeable_contracts
@@ -43,4 +44,6 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/ForeignBridgeErcToNative.so
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/FeeManagerErcToNative.sol > flats/erc20_to_native/FeeManagerErcToNative_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/FeeManagerErcToNativePOSDAO.sol > flats/erc20_to_native/FeeManagerErcToNativePOSDAO_flat.sol
 
-
+echo "Flattening contracts related to arbitrary-message bridge"
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/arbitrary_message/HomeAMB.sol > flats/arbitrary_message/HomeAMB_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/arbitrary_message/ForeignAMB.sol > flats/arbitrary_message/ForeignAMB_flat.sol

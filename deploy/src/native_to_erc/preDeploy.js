@@ -1,9 +1,5 @@
 const { web3Foreign } = require('../web3')
-const {
-  DEPLOY_REWARDABLE_TOKEN,
-  DPOS_STAKING_ADDRESS,
-  BLOCK_REWARD_ADDRESS
-} = require('../loadEnv')
+const { DEPLOY_REWARDABLE_TOKEN, DPOS_STAKING_ADDRESS, BLOCK_REWARD_ADDRESS } = require('../loadEnv')
 const { isContract } = require('../deploymentUtils')
 
 async function preDeploy() {

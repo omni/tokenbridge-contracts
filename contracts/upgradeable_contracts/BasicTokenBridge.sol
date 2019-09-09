@@ -1,8 +1,12 @@
 pragma solidity 0.4.24;
 
-import "./BasicBridge.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "../upgradeability/EternalStorage.sol";
+import "./Ownable.sol";
 
-contract BasicTokenBridge is BasicBridge {
+contract BasicTokenBridge is EternalStorage, Ownable {
+    using SafeMath for uint256;
+
     event DailyLimitChanged(uint256 newLimit);
     event ExecutionDailyLimitChanged(uint256 newLimit);
 

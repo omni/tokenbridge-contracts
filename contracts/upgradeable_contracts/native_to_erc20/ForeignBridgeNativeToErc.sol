@@ -118,7 +118,7 @@ contract ForeignBridgeNativeToErc is
 
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
-        uint256 valueToMint = _amount.div(10 ** decimalShift());
+        uint256 valueToMint = _amount.div(10**decimalShift());
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, HOME_FEE);

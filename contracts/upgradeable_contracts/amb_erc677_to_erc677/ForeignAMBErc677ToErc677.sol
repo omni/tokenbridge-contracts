@@ -6,7 +6,7 @@ import "openzeppelin-solidity/contracts/AddressUtils.sol";
 
 contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
-        uint256 value = _value.div(10 ** decimalShift());
+        uint256 value = _value.div(10**decimalShift());
         erc677token().transfer(_recipient, value);
     }
 

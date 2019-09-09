@@ -167,7 +167,7 @@ library Message {
         bytes memory bstr = new bytes(length);
         uint256 k = length - 1;
         while (i != 0) {
-            bstr[k--] = bytes1(48 + i % 10);
+            bstr[k--] = bytes1(48 + (i % 10));
             i /= 10;
         }
         return string(bstr);

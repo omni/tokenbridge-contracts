@@ -161,7 +161,7 @@ contract HomeBridgeErcToNative is
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
-        uint256 valueToMint = _value.mul(10 ** decimalShift());
+        uint256 valueToMint = _value.mul(10**decimalShift());
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);

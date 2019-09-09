@@ -140,11 +140,11 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     }
 
     function markAsProcessed(uint256 _v) internal pure returns (uint256) {
-        return _v | 2 ** 255;
+        return _v | (2**255);
     }
 
     function isAlreadyProcessed(uint256 _number) public pure returns (bool) {
-        return _number & 2 ** 255 == 2 ** 255;
+        return _number & (2**255) == 2**255;
     }
 
     function numMessagesSigned(bytes32 _message) public view returns (uint256) {

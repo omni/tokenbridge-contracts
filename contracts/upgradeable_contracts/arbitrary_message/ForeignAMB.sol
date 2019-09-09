@@ -4,7 +4,12 @@ import "./BasicForeignAMB.sol";
 
 contract ForeignAMB is BasicForeignAMB {
     event UserRequestForAffirmation(bytes encodedData);
-    event RelayedMessage(address sender, address executor, bytes32 transactionHash, bool status);
+    event RelayedMessage(
+        address indexed sender,
+        address indexed executor,
+        bytes32 indexed transactionHash,
+        bool status
+    );
 
     function emitEventOnMessageRequest(bytes encodedData) internal {
         emit UserRequestForAffirmation(encodedData);

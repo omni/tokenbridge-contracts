@@ -253,6 +253,8 @@ contract('ForeignAMB', async accounts => {
         status: true
       })
 
+      expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(true)
+
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
@@ -393,11 +395,14 @@ contract('ForeignAMB', async accounts => {
         transactionHash: resultPassMessageTx.tx,
         status: true
       })
+
+      expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(true)
     })
     it('status of RelayedMessage should be false on contract failed call', async () => {
       const user = accounts[8]
 
       const methodWillFailData = box.contract.methods.methodWillFail().encodeABI()
+      const messageDataHash = web3.utils.soliditySha3(methodWillFailData)
 
       // Use these calls to simulate home bridge on home network
       const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, methodWillFailData, 821254, {
@@ -423,6 +428,9 @@ contract('ForeignAMB', async accounts => {
         status: false
       })
 
+      expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
+      expect(await foreignBridge.messageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+
       await foreignBridge
         .executeSignatures(message, signatures, { from: authorities[0], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
@@ -434,6 +442,7 @@ contract('ForeignAMB', async accounts => {
       const user = accounts[8]
 
       const methodOutOfGasData = box.contract.methods.methodOutOfGas().encodeABI()
+      const messageDataHash = web3.utils.soliditySha3(methodOutOfGasData)
 
       // Use these calls to simulate home bridge on home network
       const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, methodOutOfGasData, 1000, {
@@ -458,6 +467,9 @@ contract('ForeignAMB', async accounts => {
         transactionHash: resultPassMessageTx.tx,
         status: false
       })
+
+      expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
+      expect(await foreignBridge.messageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
 
       await foreignBridge
         .executeSignatures(message, signatures, { from: authorities[0], gasPrice })

@@ -270,6 +270,8 @@ contract('HomeAMB', async accounts => {
         status: true
       })
 
+      expect(await homeBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(true)
+
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
@@ -412,6 +414,7 @@ contract('HomeAMB', async accounts => {
       const user = accounts[8]
 
       const methodWillFailData = box.contract.methods.methodWillFail().encodeABI()
+      const messageDataHash = web3.utils.soliditySha3(methodWillFailData)
 
       // Use these calls to simulate foreign bridge on Foreign network
       const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, methodWillFailData, 141647, {
@@ -432,6 +435,9 @@ contract('HomeAMB', async accounts => {
         status: false
       })
 
+      expect(await homeBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
+      expect(await homeBridge.messageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)
     })
@@ -439,6 +445,7 @@ contract('HomeAMB', async accounts => {
       const user = accounts[8]
 
       const methodOutOfGasData = box.contract.methods.methodOutOfGas().encodeABI()
+      const messageDataHash = web3.utils.soliditySha3(methodOutOfGasData)
 
       // Use these calls to simulate foreign bridge on Foreign network
       const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, methodOutOfGasData, 1000, {
@@ -458,6 +465,9 @@ contract('HomeAMB', async accounts => {
         transactionHash: resultPassMessageTx.tx,
         status: false
       })
+
+      expect(await homeBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
+      expect(await homeBridge.messageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
 
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)

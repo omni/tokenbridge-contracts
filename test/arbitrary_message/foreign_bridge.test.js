@@ -429,7 +429,9 @@ contract('ForeignAMB', async accounts => {
       })
 
       expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
-      expect(await foreignBridge.messageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+      expect(await foreignBridge.failedMessageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+      expect(await foreignBridge.failedMessageReceiver(resultPassMessageTx.tx)).to.be.equal(box.address)
+      expect(await foreignBridge.failedMessageSender(resultPassMessageTx.tx)).to.be.equal(user)
 
       await foreignBridge
         .executeSignatures(message, signatures, { from: authorities[0], gasPrice })
@@ -469,7 +471,9 @@ contract('ForeignAMB', async accounts => {
       })
 
       expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
-      expect(await foreignBridge.messageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+      expect(await foreignBridge.failedMessageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+      expect(await foreignBridge.failedMessageReceiver(resultPassMessageTx.tx)).to.be.equal(box.address)
+      expect(await foreignBridge.failedMessageSender(resultPassMessageTx.tx)).to.be.equal(user)
 
       await foreignBridge
         .executeSignatures(message, signatures, { from: authorities[0], gasPrice })

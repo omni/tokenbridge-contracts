@@ -436,7 +436,9 @@ contract('HomeAMB', async accounts => {
       })
 
       expect(await homeBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
-      expect(await homeBridge.messageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+      expect(await homeBridge.failedMessageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+      expect(await homeBridge.failedMessageReceiver(resultPassMessageTx.tx)).to.be.equal(box.address)
+      expect(await homeBridge.failedMessageSender(resultPassMessageTx.tx)).to.be.equal(user)
 
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)
@@ -467,7 +469,9 @@ contract('HomeAMB', async accounts => {
       })
 
       expect(await homeBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
-      expect(await homeBridge.messageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+      expect(await homeBridge.failedMessageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
+      expect(await homeBridge.failedMessageReceiver(resultPassMessageTx.tx)).to.be.equal(box.address)
+      expect(await homeBridge.failedMessageSender(resultPassMessageTx.tx)).to.be.equal(user)
 
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)

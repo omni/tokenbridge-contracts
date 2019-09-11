@@ -7,19 +7,35 @@ contract MessageProcessor is EternalStorage {
     bytes32 internal constant TRANSACTION_HASH = keccak256(abi.encodePacked("transactionHash"));
 
     function messageCallStatus(bytes32 _txHash) external view returns (bool) {
-        return boolStorage[keccak256(abi.encodePacked("callStatus", _txHash))];
+        return boolStorage[keccak256(abi.encodePacked("messageCallStatus", _txHash))];
     }
 
     function setMessageCallStatus(bytes32 _txHash, bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("callStatus", _txHash))] = _status;
+        boolStorage[keccak256(abi.encodePacked("messageCallStatus", _txHash))] = _status;
     }
 
-    function messageDataHash(bytes32 _txHash) external view returns (bytes32) {
-        return bytesToBytes32(bytesStorage[keccak256(abi.encodePacked("dataHash", _txHash))]);
+    function failedMessageDataHash(bytes32 _txHash) external view returns (bytes32) {
+        return bytesToBytes32(bytesStorage[keccak256(abi.encodePacked("failedMessageDataHash", _txHash))]);
     }
 
-    function setMessageDataHash(bytes32 _txHash, bytes data) internal {
-        bytesStorage[keccak256(abi.encodePacked("dataHash", _txHash))] = abi.encodePacked(keccak256(data));
+    function setFailedMessageDataHash(bytes32 _txHash, bytes data) internal {
+        bytesStorage[keccak256(abi.encodePacked("failedMessageDataHash", _txHash))] = abi.encodePacked(keccak256(data));
+    }
+
+    function failedMessageReceiver(bytes32 _txHash) external view returns (address) {
+        return addressStorage[keccak256(abi.encodePacked("failedMessageReceiver", _txHash))];
+    }
+
+    function setFailedMessageReceiver(bytes32 _txHash, address _receiver) internal {
+        addressStorage[keccak256(abi.encodePacked("failedMessageReceiver", _txHash))] = _receiver;
+    }
+
+    function failedMessageSender(bytes32 _txHash) external view returns (address) {
+        return addressStorage[keccak256(abi.encodePacked("failedMessageSender", _txHash))];
+    }
+
+    function setFailedMessageSender(bytes32 _txHash, address _sender) internal {
+        addressStorage[keccak256(abi.encodePacked("failedMessageSender", _txHash))] = _sender;
     }
 
     function messageSender() external view returns (address) {
@@ -57,7 +73,9 @@ contract MessageProcessor is EternalStorage {
 
         setMessageCallStatus(txHash, status);
         if (!status) {
-            setMessageDataHash(txHash, data);
+            setFailedMessageDataHash(txHash, data);
+            setFailedMessageReceiver(txHash, executor);
+            setFailedMessageSender(txHash, sender);
         }
         emitEventOnMessageProcessed(sender, executor, txHash, status);
     }

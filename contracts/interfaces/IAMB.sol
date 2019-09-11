@@ -4,6 +4,9 @@ interface IAMB {
     function messageSender() external view returns (address);
     function maxGasPerTx() external view returns (uint256);
     function transactionHash() external view returns (bytes32);
-    function withdrawFromDeposit(address _recipient) external;
+    function messageCallStatus(bytes32 _txHash) external view returns (address);
+    function failedMessageDataHash(bytes32 _txHash) external view returns (bytes32);
+    function failedMessageReceiver(bytes32 _txHash) external view returns (address);
+    function failedMessageSender(bytes32 _txHash) external view returns (address);
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) external;
 }

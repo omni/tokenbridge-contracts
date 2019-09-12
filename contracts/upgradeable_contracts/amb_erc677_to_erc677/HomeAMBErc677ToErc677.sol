@@ -16,4 +16,8 @@ contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
             passMessage(_from, _value);
         }
     }
+
+    function executeActionOnFixedTokens(address _recipient, uint256 _value) internal {
+        IBurnableMintableERC677Token(erc677token()).mint(_recipient, _value);
+    }
 }

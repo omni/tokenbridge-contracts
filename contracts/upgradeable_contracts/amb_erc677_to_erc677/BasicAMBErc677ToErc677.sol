@@ -22,6 +22,8 @@ contract BasicAMBErc677ToErc677 is
     BaseOverdrawManagement,
     BaseERC677Bridge
 {
+    event FailedMessageFixed(bytes32 indexed dataHash, address recipient, uint256 value);
+
     bytes32 internal constant BRIDGE_CONTRACT = keccak256(abi.encodePacked("bridgeContract"));
     bytes32 internal constant MEDIATOR_CONTRACT = keccak256(abi.encodePacked("mediatorContract"));
     bytes32 internal constant REQUEST_GAS_LIMIT = keccak256(abi.encodePacked("requestGasLimit"));
@@ -249,6 +251,7 @@ contract BasicAMBErc677ToErc677 is
         uint256 value = messageHashValue(_dataHash);
         setMessageHashFixed(_dataHash);
         executeActionOnFixedTokens(recipient, value);
+        emit FailedMessageFixed(_dataHash, recipient, value);
     }
 
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {

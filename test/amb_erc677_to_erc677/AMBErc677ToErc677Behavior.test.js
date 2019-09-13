@@ -810,6 +810,12 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
       expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
 
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+
       const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
 
       // can only fix it one time
@@ -845,6 +851,12 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(true)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
       expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
     })
   })
 }

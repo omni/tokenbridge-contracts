@@ -181,7 +181,7 @@ contract BasicAMBErc677ToErc677 is
         boolStorage[keccak256(abi.encodePacked("messageHashFixed", _hash))] = true;
     }
 
-    function messageHashFixed(bytes32 _hash) internal view returns (bool) {
+    function messageHashFixed(bytes32 _hash) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("messageHashFixed", _hash))];
     }
 

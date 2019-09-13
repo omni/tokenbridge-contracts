@@ -790,6 +790,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       dataHash = await bridgeContract.failedMessageDataHash(transferTx.tx)
     })
     it('should fix burnt/locked tokens', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
       // When
       const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
 
@@ -805,6 +808,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
 
       const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
 
@@ -819,6 +823,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       await contract.fixFailedMessage(dataHash, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
     it('message sender should be mediator from other side', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
       // When
       const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
 
@@ -828,15 +835,16 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       // Then
       expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(false)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
 
       const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
 
-      // can only fix it one time
       await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, fixData, otherTxHash, 1000000)
         .should.be.fulfilled
 
       expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(true)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
     })
   })
 }

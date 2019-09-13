@@ -4,7 +4,7 @@ const AMBMock = artifacts.require('AMBMock.sol')
 
 const { expect } = require('chai')
 const { ZERO_ADDRESS, toBN, ERROR_MSG } = require('../setup')
-const { getEvents, expectEventInLogs, ether } = require('../helpers/helpers')
+const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
 
 const ZERO = toBN(0)
 const oneEther = ether('1')
@@ -336,6 +336,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
   })
   describe('fixAssetsAboveLimits', () => {
     let contract
+    const nonce = '0x96b6af865cdaa107ede916e237afbedffa5ed36bea84c0e77a33cc28fc2e9c01'
     beforeEach(async function() {
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
@@ -356,14 +357,15 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       ).should.be.fulfilled
 
       const outOfLimitValueData = await contract.contract.methods
-        .handleBridgedTokens(user, twoEthers.toString())
+        .handleBridgedTokens(user, twoEthers.toString(), nonce)
         .encodeABI()
 
       await bridgeContract.executeMessageCall(
         contract.address,
         mediatorContract.address,
         outOfLimitValueData,
-        exampleTxHash
+        exampleTxHash,
+        1000000
       ).should.be.fulfilled
 
       const outOfLimitEvent = await getEvents(contract, { event: 'AmountLimitExceeded' })
@@ -622,6 +624,271 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       // Then
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
+    })
+  })
+  describe('requestFailedMessageFix', () => {
+    let contract
+    const nonce = '0x96b6af865cdaa107ede916e237afbedffa5ed36bea84c0e77a33cc28fc2e9c01'
+    beforeEach(async function() {
+      bridgeContract = await AMBMock.new()
+      await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+      mediatorContract = await otherSideMediatorContract.new()
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+
+      contract = this.proxyContract
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+    })
+    it('should allow to request a failed message fix', async () => {
+      // Given
+      const data = await contract.contract.methods.handleBridgedTokens(user, oneEther.toString(), nonce).encodeABI()
+
+      await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, data, exampleTxHash, 100)
+        .should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(false)
+
+      const dataHash = await bridgeContract.failedMessageDataHash(exampleTxHash)
+
+      // When
+      await contract.requestFailedMessageFix(exampleTxHash).should.be.fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(dataHash))).to.be.equal(true)
+    })
+    it('should be a failed transaction', async () => {
+      // Given
+      const data = await contract.contract.methods.handleBridgedTokens(user, twoEthers.toString(), nonce).encodeABI()
+
+      await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, data, exampleTxHash, 1000000)
+        .should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+
+      // When
+      await contract.requestFailedMessageFix(exampleTxHash).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('should be the receiver of the failed transaction', async () => {
+      // Given
+      const data = await contract.contract.methods.handleBridgedTokens(user, oneEther.toString(), nonce).encodeABI()
+
+      await bridgeContract.executeMessageCall(
+        bridgeContract.address,
+        mediatorContract.address,
+        data,
+        exampleTxHash,
+        100000
+      ).should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(false)
+
+      // When
+      await contract.requestFailedMessageFix(exampleTxHash).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('message sender should be mediator from other side', async () => {
+      // Given
+      const data = await contract.contract.methods.handleBridgedTokens(user, oneEther.toString(), nonce).encodeABI()
+
+      await bridgeContract.executeMessageCall(contract.address, contract.address, data, exampleTxHash, 100).should.be
+        .fulfilled
+
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(false)
+
+      // When
+      await contract.requestFailedMessageFix(exampleTxHash).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('should allow to request a fix multiple times', async () => {
+      // Given
+      const data = await contract.contract.methods.handleBridgedTokens(user, oneEther.toString(), nonce).encodeABI()
+
+      await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, data, exampleTxHash, 100)
+        .should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(false)
+
+      const dataHash = await bridgeContract.failedMessageDataHash(exampleTxHash)
+
+      await contract.requestFailedMessageFix(exampleTxHash).should.be.fulfilled
+
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(dataHash))).to.be.equal(true)
+
+      // When
+      await contract.requestFailedMessageFix(exampleTxHash).should.be.fulfilled
+
+      // Then
+      const allEvents = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(allEvents.length).to.be.equal(2)
+      expect(allEvents[0].returnValues.encodedData.includes(strip0x(dataHash))).to.be.equal(true)
+      expect(allEvents[1].returnValues.encodedData.includes(strip0x(dataHash))).to.be.equal(true)
+    })
+  })
+  describe('fixFailedMessage', () => {
+    let dataHash
+    let contract
+    beforeEach(async function() {
+      bridgeContract = await AMBMock.new()
+      await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+      mediatorContract = await otherSideMediatorContract.new()
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+
+      contract = this.bridge
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+      await erc677Token.transferOwnership(contract.address)
+
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+
+      // User transfer tokens
+      const transferTx = await erc677Token.transferAndCall(contract.address, oneEther, '0x00', { from: user }).should.be
+        .fulfilled
+
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      const data = `0x${events[0].returnValues.encodedData.substr(
+        148,
+        events[0].returnValues.encodedData.length - 148
+      )}`
+
+      // Bridge calls mediator from other side
+      await bridgeContract.executeMessageCall(
+        contract.address,
+        contract.address,
+        data,
+        transferTx.tx,
+        100
+      ).should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(transferTx.tx)).to.be.equal(false)
+
+      // mediator from other side should use this dataHash to request fix the failed message
+      dataHash = await bridgeContract.failedMessageDataHash(transferTx.tx)
+    })
+    it('should fix burnt/locked tokens', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      // When
+      const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
+
+      await bridgeContract.executeMessageCall(
+        contract.address,
+        mediatorContract.address,
+        fixData,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      // Then
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+
+      const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+
+      // can only fix it one time
+      await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, fixData, otherTxHash, 1000000)
+        .should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(false)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+    })
+    it('should be called by bridge', async () => {
+      await contract.fixFailedMessage(dataHash, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('message sender should be mediator from other side', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      // When
+      const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
+
+      await bridgeContract.executeMessageCall(contract.address, contract.address, fixData, exampleTxHash, 1000000)
+        .should.be.fulfilled
+
+      // Then
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(false)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+
+      await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, fixData, otherTxHash, 1000000)
+        .should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(true)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+    })
+  })
+  describe('#claimTokens', () => {
+    it('should be able to claim tokens', async function() {
+      const contract = this.proxyContract
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      const tokenSecond = await ERC677BridgeToken.new('Test Token', 'TST', 18)
+
+      await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+      await tokenSecond.transfer(contract.address, halfEther)
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
+
+      await contract
+        .claimTokens(tokenSecond.address, accounts[3], { from: accounts[3] })
+        .should.be.rejectedWith(ERROR_MSG)
+      await contract.claimTokens(tokenSecond.address, accounts[3], { from: owner }).should.be.fulfilled
+      expect(await tokenSecond.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
   })
 }

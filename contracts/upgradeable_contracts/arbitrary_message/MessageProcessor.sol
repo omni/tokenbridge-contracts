@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../../upgradeability/EternalStorage.sol";
+import "../../libraries/Bytes.sol";
 
 contract MessageProcessor is EternalStorage {
     bytes32 internal constant MESSAGE_SENDER = keccak256(abi.encodePacked("messageSender"));
@@ -15,7 +16,7 @@ contract MessageProcessor is EternalStorage {
     }
 
     function failedMessageDataHash(bytes32 _txHash) external view returns (bytes32) {
-        return bytesToBytes32(bytesStorage[keccak256(abi.encodePacked("failedMessageDataHash", _txHash))]);
+        return Bytes.bytesToBytes32(bytesStorage[keccak256(abi.encodePacked("failedMessageDataHash", _txHash))]);
     }
 
     function setFailedMessageDataHash(bytes32 _txHash, bytes data) internal {
@@ -47,13 +48,7 @@ contract MessageProcessor is EternalStorage {
     }
 
     function transactionHash() external view returns (bytes32) {
-        return bytesToBytes32(bytesStorage[TRANSACTION_HASH]);
-    }
-
-    function bytesToBytes32(bytes _txHash) internal view returns (bytes32 result) {
-        assembly {
-            result := mload(add(_txHash, 32))
-        }
+        return Bytes.bytesToBytes32(bytesStorage[TRANSACTION_HASH]);
     }
 
     function setTransactionHash(bytes32 _txHash) internal {

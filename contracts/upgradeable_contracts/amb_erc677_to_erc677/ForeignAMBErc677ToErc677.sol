@@ -19,4 +19,8 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
             passMessage(_from, _value);
         }
     }
+
+    function executeActionOnFixedTokens(address _recipient, uint256 _value) internal {
+        erc677token().transfer(_recipient, _value);
+    }
 }

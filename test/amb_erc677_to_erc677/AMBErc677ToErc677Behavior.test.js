@@ -859,6 +859,38 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
     })
   })
+  describe('#claimTokens', () => {
+    it('should be able to claim tokens', async function() {
+      const contract = this.proxyContract
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      const tokenSecond = await ERC677BridgeToken.new('Test Token', 'TST', 18)
+
+      await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+      await tokenSecond.transfer(contract.address, halfEther)
+      expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
+
+      await contract
+        .claimTokens(tokenSecond.address, accounts[3], { from: accounts[3] })
+        .should.be.rejectedWith(ERROR_MSG)
+      await contract.claimTokens(tokenSecond.address, accounts[3], { from: owner }).should.be.fulfilled
+      expect(await tokenSecond.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+      expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+    })
+  })
 }
 
 module.exports = {

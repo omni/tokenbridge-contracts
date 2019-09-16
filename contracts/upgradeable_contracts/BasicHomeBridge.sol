@@ -5,9 +5,11 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
+import "./BasicBridge.sol";
+import "./BasicTokenBridge.sol";
 import "./BasicTokenBridge.sol";
 
-contract BasicHomeBridge is EternalStorage, Validatable, BasicTokenBridge {
+contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge {
     using SafeMath for uint256;
 
     event UserRequestForSignature(address recipient, uint256 value);
@@ -138,11 +140,11 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicTokenBridge {
     }
 
     function markAsProcessed(uint256 _v) internal pure returns (uint256) {
-        return _v | 2 ** 255;
+        return _v | (2**255);
     }
 
     function isAlreadyProcessed(uint256 _number) public pure returns (bool) {
-        return _number & 2 ** 255 == 2 ** 255;
+        return _number & (2**255) == 2**255;
     }
 
     function numMessagesSigned(bytes32 _message) public view returns (uint256) {

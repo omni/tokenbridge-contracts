@@ -52,7 +52,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         bytes32 /*_txHash*/
     ) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
-        uint256 amount = _amount.div(10 ** decimalShift());
+        uint256 amount = _amount.div(10**decimalShift());
         return erc20token().transfer(_recipient, amount);
     }
 

@@ -22,6 +22,7 @@
     "prefer-destructuring": "off",
     "no-use-before-define": ["error", { "functions": false }],
     "no-restricted-syntax": "off",
-    "node/no-unpublished-require": "off"
+    "node/no-unpublished-require": "off",
+    "func-names": "off"
   }
 }

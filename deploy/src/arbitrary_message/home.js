@@ -36,9 +36,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
   console.log('\ninitializing Home Bridge with following parameters:\n')
   console.log(`Home Validators: ${validatorsBridge.options.address},
-  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
-    HOME_MAX_AMOUNT_PER_TX
-  )} in eth,
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}
   `)
   const initializeHomeBridgeData = await bridge.methods
@@ -58,11 +56,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     url: HOME_RPC_URL
   })
   if (txInitializeHomeBridge.status) {
-    assert.strictEqual(
-      Web3Utils.hexToNumber(txInitializeHomeBridge.status),
-      1,
-      'Transaction Failed'
-    )
+    assert.strictEqual(Web3Utils.hexToNumber(txInitializeHomeBridge.status), 1, 'Transaction Failed')
   } else {
     await assertStateWithRetry(bridge.methods.isInitialized().call, true)
   }

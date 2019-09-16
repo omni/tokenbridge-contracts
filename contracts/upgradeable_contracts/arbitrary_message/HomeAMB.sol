@@ -4,7 +4,12 @@ import "./BasicHomeAMB.sol";
 
 contract HomeAMB is BasicHomeAMB {
     event UserRequestForSignature(bytes encodedData);
-    event AffirmationCompleted(address sender, address executor, bytes32 transactionHash, bool status);
+    event AffirmationCompleted(
+        address indexed sender,
+        address indexed executor,
+        bytes32 indexed transactionHash,
+        bool status
+    );
 
     function emitEventOnMessageRequest(bytes encodedData) internal {
         emit UserRequestForSignature(encodedData);

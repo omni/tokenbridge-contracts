@@ -16,8 +16,6 @@ contract HomeBridgeErcToNative is
     RewardableHomeBridgeErcToNative,
     BlockRewardBridge
 {
-    event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
-
     bytes32 internal constant TOTAL_BURNT_COINS = keccak256(abi.encodePacked("totalBurntCoins"));
 
     function() public payable {
@@ -163,7 +161,7 @@ contract HomeBridgeErcToNative is
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
-        uint256 valueToMint = _value.mul(10 ** decimalShift());
+        uint256 valueToMint = _value.mul(10**decimalShift());
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);

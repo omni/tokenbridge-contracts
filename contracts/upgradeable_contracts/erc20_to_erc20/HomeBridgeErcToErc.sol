@@ -15,8 +15,6 @@ contract HomeBridgeErcToErc is
     OverdrawManagement,
     RewardableHomeBridgeErcToErc
 {
-    event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
-
     function initialize(
         address _validatorContract,
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
@@ -148,7 +146,7 @@ contract HomeBridgeErcToErc is
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-        uint256 valueToMint = _value.mul(10 ** decimalShift());
+        uint256 valueToMint = _value.mul(10**decimalShift());
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);

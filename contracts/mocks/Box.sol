@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "./IAMB.sol";
+import "../interfaces/IAMB.sol";
 
 contract Box {
     uint256 public value;

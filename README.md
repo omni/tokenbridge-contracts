@@ -77,7 +77,7 @@ There are two ways to deploy contracts:
 npm install
 ```
 #### Deploy
-Please the [README.md](deploy/README.md) in the `deploy` folder for instructions and .env file configuration
+Please read the [README.md](deploy/README.md) in the `deploy` folder for instructions and .env file configuration
 
 #### Test
 ```bash

@@ -45,7 +45,6 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(ZERO)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.deployedAtBlock()).to.be.bignumber.equal(ZERO)
 
       // not valid bridge contract
       await contract
@@ -167,7 +166,6 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(executionMaxPerTx)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.owner()).to.be.equal(owner)
-      expect(await contract.deployedAtBlock()).to.be.bignumber.above(ZERO)
 
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })
       expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })

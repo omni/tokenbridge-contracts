@@ -2,9 +2,9 @@ pragma solidity 0.4.24;
 
 import "./Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./Initializable.sol";
+import "./InitializableBridge.sol";
 
-contract BaseBridgeValidators is Initializable, Ownable {
+contract BaseBridgeValidators is InitializableBridge, Ownable {
     using SafeMath for uint256;
 
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;

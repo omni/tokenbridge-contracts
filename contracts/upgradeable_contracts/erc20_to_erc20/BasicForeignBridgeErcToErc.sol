@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../BasicForeignBridge.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 contract BasicForeignBridgeErcToErc is BasicForeignBridge {
     function _initialize(
@@ -61,7 +61,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
     }
 
     /* solcov ignore next */
-    function erc20token() public view returns (ERC20Basic);
+    function erc20token() public view returns (ERC20);
 
     /* solcov ignore next */
     function setErc20token(address _token) internal;

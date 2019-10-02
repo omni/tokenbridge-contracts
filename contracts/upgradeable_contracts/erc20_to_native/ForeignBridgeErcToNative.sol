@@ -5,6 +5,7 @@ import "../ERC20Bridge.sol";
 
 contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
+    event UserRequestForAffirmation(address recipient, uint256 value);
 
     function initialize(
         address _validatorContract,
@@ -62,5 +63,17 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
 
     function onFailedMessage(address, uint256, bytes32) internal {
         revert();
+    }
+
+    function relayRequest(address _sender, address _receiver, uint256 _amount) public {
+        require(_receiver != address(0));
+        require(_receiver != address(this));
+        require(_amount > 0);
+        erc20token().transferFrom(_sender, address(this), _amount);
+        emit UserRequestForAffirmation(_receiver, _amount);
+    }
+
+    function relayRequest(address _receiver, uint256 _amount) external {
+        relayRequest(msg.sender, _receiver, _amount);
     }
 }

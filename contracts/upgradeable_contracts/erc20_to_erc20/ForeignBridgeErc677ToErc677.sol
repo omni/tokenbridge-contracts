@@ -43,7 +43,7 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         return isInitialized();
     }
 
-    function erc20token() public view returns (ERC20Basic) {
+    function erc20token() public view returns (ERC20) {
         return erc677token();
     }
 

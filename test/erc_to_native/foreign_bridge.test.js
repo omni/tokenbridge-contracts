@@ -29,7 +29,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
   })
-
   describe('#initialize', async () => {
     it('should initialize', async () => {
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
@@ -153,7 +152,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: homeDailyLimit })
     })
   })
-
   describe('#executeSignatures', async () => {
     const value = ether('0.25')
     let foreignBridge
@@ -288,7 +286,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await foreignBridge.executeSignatures([vrs3.v], [vrs3.r], [vrs3.s], message3).should.be.rejectedWith(ERROR_MSG)
     })
   })
-
   describe('#withdraw with 2 minimum signatures', async () => {
     let multisigValidatorContract
     let twoAuthorities
@@ -408,7 +405,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       true.should.be.equal(await foreignBridgeWithThreeSigs.relayedMessages(txHash))
     })
   })
-
   describe('#upgradeable', async () => {
     it('can be upgraded', async () => {
       const REQUIRED_NUMBER_OF_VALIDATORS = 1
@@ -473,7 +469,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       validatorsAddress.should.be.equal(await finalContract.validatorContract())
     })
   })
-
   describe('#claimTokens', async () => {
     it('can send erc20', async () => {
       const owner = accounts[0]
@@ -509,7 +504,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
   })
-
   describe('#decimalShift', async () => {
     const decimalShiftTwo = 2
     it('Home to Foreign: withdraw with 1 signature with a decimalShift of 2', async () => {
@@ -609,6 +603,73 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const balanceAfterBridge = await token.balanceOf(foreignBridgeWithMultiSignatures.address)
       balanceAfterBridge.should.be.bignumber.equal(ZERO)
       true.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(txHash))
+    })
+  })
+  describe('#relayRequest', () => {
+    const value = ether('0.25')
+    const user = accounts[7]
+    const recipient = accounts[8]
+    let foreignBridge
+    beforeEach(async () => {
+      foreignBridge = await ForeignBridge.new()
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        owner,
+        decimalShiftZero
+      )
+      await token.mint(user, value)
+    })
+    it('should allow to bridge tokens using approve tranferFrom', async () => {
+      // Given
+      await foreignBridge.relayRequest(user, recipient, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+      await token.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+      // When
+      await foreignBridge.relayRequest(user, ZERO_ADDRESS, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .relayRequest(user, foreignBridge.address, value, { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.relayRequest(user, recipient, 0, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await foreignBridge.relayRequest(user, recipient, value, { from: user }).should.be.fulfilled
+
+      // Then
+      expectEventInLogs(logs, 'UserRequestForAffirmation', {
+        recipient,
+        value
+      })
+    })
+    it('should allow to call relayRequest without specifying the sender', async () => {
+      // Given
+      await foreignBridge.methods['relayRequest(address,uint256)'](recipient, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+
+      await token.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+      // When
+      await foreignBridge.methods['relayRequest(address,uint256)'](ZERO_ADDRESS, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.methods['relayRequest(address,uint256)'](foreignBridge.address, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.methods['relayRequest(address,uint256)'](recipient, 0, { from: user }).should.be.rejectedWith(
+        ERROR_MSG
+      )
+      const { logs } = await foreignBridge.methods['relayRequest(address,uint256)'](recipient, value, { from: user })
+        .should.be.fulfilled
+
+      // Then
+      expectEventInLogs(logs, 'UserRequestForAffirmation', {
+        recipient,
+        value
+      })
     })
   })
 })

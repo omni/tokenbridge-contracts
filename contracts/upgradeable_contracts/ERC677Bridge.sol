@@ -6,7 +6,8 @@ contract ERC677Bridge is BaseERC677Bridge {
     function bridgeSpecificActionsOnTokenTransfer(
         ERC677, /*_token*/
         address _from,
-        uint256 _value
+        uint256 _value,
+        bytes /*_data*/
     ) internal {
         fireEventOnTokenTransfer(_from, _value);
     }

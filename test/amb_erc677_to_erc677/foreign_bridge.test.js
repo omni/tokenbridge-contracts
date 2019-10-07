@@ -9,7 +9,7 @@ const AMBMock = artifacts.require('AMBMock.sol')
 const { expect } = require('chai')
 const { shouldBehaveLikeBasicAMBErc677ToErc677 } = require('./AMBErc677ToErc677Behavior.test')
 const { ether } = require('../helpers/helpers')
-const { getEvents } = require('../helpers/helpers')
+const { getEvents, strip0x } = require('../helpers/helpers')
 const { ERROR_MSG, toBN } = require('../setup')
 
 const ZERO = toBN(0)
@@ -83,6 +83,32 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       // Then
       const events = await getEvents(ambBridgeContract, { event: 'UserRequestForAffirmation' })
       expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+    })
+    it('should be able to specify a different receiver', async () => {
+      // Given
+      const user2 = accounts[2]
+      const currentDay = await foreignBridge.getCurrentDay()
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const initialEvents = await getEvents(ambBridgeContract, { event: 'UserRequestForAffirmation' })
+      expect(initialEvents.length).to.be.equal(0)
+
+      // only token address can call it
+      await foreignBridge.onTokenTransfer(user, halfEther, '0x00', { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      // must be within limits
+      await erc677Token
+        .transferAndCall(foreignBridge.address, twoEthers, '0x00', { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
+
+      // When
+      await erc677Token.transferAndCall(foreignBridge.address, halfEther, user2, { from: user }).should.be.fulfilled
+
+      // Then
+      const events = await getEvents(ambBridgeContract, { event: 'UserRequestForAffirmation' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
       expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
     })
   })

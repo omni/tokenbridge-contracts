@@ -498,6 +498,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
   describe('relayTokens', () => {
     let contract
     let erc20Token
+    const user2 = accounts[2]
     beforeEach(async function() {
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
@@ -525,11 +526,91 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
       // When
-      await contract.relayTokens(value, { from: user }).should.be.fulfilled
+      await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
       // Then
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
+    })
+    it('should allow to specify a different receiver', async () => {
+      // Given
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc20Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.methods['relayTokens(address,address,uint256)'](user, user2, value, { from: user }).should.be
+        .fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
+    })
+    it('should allow to specify a different receiver without specifying sender', async () => {
+      // Given
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc20Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.relayTokens(user2, value, { from: user }).should.be.fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
+    })
+    it('should allow to complete a transfer approved by other user', async () => {
+      // Given
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc20Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.methods['relayTokens(address,address,uint256)'](user, user2, value, {
+        from: user2
+      }).should.be.rejectedWith(ERROR_MSG)
+      await contract.methods['relayTokens(address,address,uint256)'](user, user, value, { from: user2 }).should.be
+        .fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
     })
     it('should fail if user did not approve the transfer', async () => {
       await contract.initialize(
@@ -543,7 +624,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.fulfilled
 
-      await contract.relayTokens(oneEther, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.relayTokens(user, oneEther, { from: user }).should.be.rejectedWith(ERROR_MSG)
     })
     it('should fail if value is not within limits', async () => {
       await contract.initialize(
@@ -561,7 +642,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
       expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
-      await contract.relayTokens(value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.relayTokens(user, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
     })
     it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is owned by token manager', async function() {
       // Given
@@ -588,7 +669,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
       // When
-      await contract.relayTokens(value, { from: user }).should.be.fulfilled
+      await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
       // Then
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
@@ -617,7 +698,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
       // When
-      await contract.relayTokens(value, { from: user }).should.be.fulfilled
+      await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
       // Then
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })

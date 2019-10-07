@@ -10,7 +10,7 @@ const { expect } = require('chai')
 const { shouldBehaveLikeBasicAMBErc677ToErc677 } = require('./AMBErc677ToErc677Behavior.test')
 
 const { ether } = require('../helpers/helpers')
-const { getEvents, expectEventInLogs } = require('../helpers/helpers')
+const { getEvents, expectEventInLogs, strip0x } = require('../helpers/helpers')
 const { ERROR_MSG, toBN } = require('../setup')
 
 const ZERO = toBN(0)
@@ -85,6 +85,31 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       // Then
       const events = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
       expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+      expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
+      expectEventInLogs(logs, 'Burn', {
+        burner: homeBridge.address,
+        value: oneEther
+      })
+    })
+    it('should be able to specify a different receiver', async () => {
+      const user2 = accounts[2]
+      // Given
+      const currentDay = await homeBridge.getCurrentDay()
+      expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const initialEvents = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
+      expect(initialEvents.length).to.be.equal(0)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+
+      // When
+      const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, user2, { from: user }).should.be
+        .fulfilled
+
+      // Then
+      const events = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
       expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
       expectEventInLogs(logs, 'Burn', {

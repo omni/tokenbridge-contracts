@@ -6,4 +6,10 @@ library Bytes {
             result := mload(add(_bytes, 32))
         }
     }
+
+    function bytesToAddress(bytes _bytes) internal pure returns (address addr) {
+        assembly {
+            addr := mload(add(_bytes, 20))
+        }
+    }
 }

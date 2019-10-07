@@ -86,7 +86,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
         return addressStorage[BRIDGE_CONTRACT];
     }
 
-    function relayRequest(address _sender, address _receiver, uint256 _amount) public {
+    function _relayRequest(address _sender, address _receiver, uint256 _amount) internal {
         require(_receiver != address(0));
         require(_receiver != address(this));
         require(_receiver != bridgeContractOnOtherSide());
@@ -98,7 +98,12 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
         emit UserRequestForAffirmation(_receiver, _amount);
     }
 
+    function relayRequest(address _from, address _receiver, uint256 _amount) external {
+        require(_from == msg.sender || _from == _receiver);
+        _relayRequest(_from, _receiver, _amount);
+    }
+
     function relayRequest(address _receiver, uint256 _amount) external {
-        relayRequest(msg.sender, _receiver, _amount);
+        _relayRequest(msg.sender, _receiver, _amount);
     }
 }

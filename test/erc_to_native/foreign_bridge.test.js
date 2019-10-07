@@ -689,6 +689,36 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         value
       })
     })
+    it('should allow only sender to specify a different receiver', async () => {
+      // Given
+      const currentDay = await foreignBridge.getCurrentDay()
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      await foreignBridge.relayRequest(user, recipient, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+      await token.approve(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
+
+      // When
+      await foreignBridge.relayRequest(user, ZERO_ADDRESS, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .relayRequest(user, foreignBridge.address, value, { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.relayRequest(user, recipient, 0, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.relayRequest(user, recipient, value, { from: recipient }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await foreignBridge.relayRequest(user, recipient, value, { from: user }).should.be.fulfilled
+      const { logs: logsSecondTx } = await foreignBridge.relayRequest(user, user, value, { from: recipient }).should.be
+        .fulfilled
+
+      // Then
+      expectEventInLogs(logs, 'UserRequestForAffirmation', {
+        recipient,
+        value
+      })
+      expectEventInLogs(logsSecondTx, 'UserRequestForAffirmation', {
+        recipient: user,
+        value
+      })
+    })
     it('should not be able to transfer more than limit', async () => {
       // Given
       const userSupply = ether('2')

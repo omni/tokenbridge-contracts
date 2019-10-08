@@ -1,5 +1,6 @@
 const ForeignBridge = artifacts.require('ForeignBridgeNativeToErc.sol')
 const ForeignBridgeV2 = artifacts.require('ForeignBridgeV2.sol')
+const HomeBridge = artifacts.require('HomeBridgeNativeToErc.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const FeeManagerNativeToErc = artifacts.require('FeeManagerNativeToErc.sol')
@@ -26,11 +27,14 @@ contract('ForeignBridge', async accounts => {
   let authorities
   let owner
   let token
+  let otherSideBridgeAddress
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
+    const otherSideBridge = await HomeBridge.new()
+    otherSideBridgeAddress = otherSideBridge.address
   })
 
   describe('#initialize', async () => {
@@ -55,7 +59,8 @@ contract('ForeignBridge', async accounts => {
           requireBlockConfirmations,
           [homeDailyLimit, homeMaxPerTx],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -67,7 +72,8 @@ contract('ForeignBridge', async accounts => {
           requireBlockConfirmations,
           [homeDailyLimit, homeMaxPerTx],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -79,7 +85,8 @@ contract('ForeignBridge', async accounts => {
           requireBlockConfirmations,
           [homeDailyLimit, homeMaxPerTx],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -91,7 +98,8 @@ contract('ForeignBridge', async accounts => {
           gasPrice,
           [homeDailyLimit, homeMaxPerTx],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -103,7 +111,8 @@ contract('ForeignBridge', async accounts => {
           gasPrice,
           [homeDailyLimit, homeMaxPerTx],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -115,7 +124,8 @@ contract('ForeignBridge', async accounts => {
           0,
           [homeDailyLimit, homeMaxPerTx],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       const { logs } = await foreignBridge.initialize(
@@ -126,7 +136,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        '9'
+        '9',
+        otherSideBridgeAddress
       )
 
       expect(await foreignBridge.isInitialized()).to.be.equal(true)
@@ -169,7 +180,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.transferOwnership(foreignBridge.address)
     })
@@ -315,6 +327,7 @@ contract('ForeignBridge', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
+        otherSideBridgeAddress,
         { from: ownerOfValidatorContract }
       )
       await token.transferOwnership(foreignBridgeWithMultiSignatures.address)
@@ -378,7 +391,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await erc20Token.transferOwnership(foreignBridgeWithThreeSigs.address)
 
@@ -426,7 +440,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await erc20Token.transferOwnership(foreignBridgeWithThreeSigs.address)
 
@@ -474,7 +489,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.mint(user, halfEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address, { from: owner })
@@ -498,7 +514,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.mint(user, valueMoreThanLimit, { from: owner }).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address, { from: owner })
@@ -533,7 +550,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.mint(user, oneEther.add(toBN(1)), { from: owner }).should.be.fulfilled
 
@@ -571,7 +589,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address, { from: owner })
@@ -602,10 +621,14 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.mint(user, halfEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address, { from: owner })
+      await token
+        .transferAndCall(foreignBridge.address, halfEther, otherSideBridgeAddress, { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
       await token.transferAndCall(foreignBridge.address, halfEther, user2, { from: user }).should.be.fulfilled
       expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
@@ -628,7 +651,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.transferOwnership(foreignBridge.address)
     })
@@ -681,7 +705,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.transferOwnership(foreignBridgeProxy.address).should.be.fulfilled
 
@@ -711,7 +736,8 @@ contract('ForeignBridge', async accounts => {
           requireBlockConfirmations,
           ['3', '2'],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .encodeABI()
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled
@@ -736,7 +762,8 @@ contract('ForeignBridge', async accounts => {
           requireBlockConfirmations,
           ['3', '2'],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .encodeABI()
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled
@@ -760,7 +787,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.transferOwnership(foreignBridge.address)
 
@@ -792,7 +820,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
       await token.transferOwnership(foreignBridge.address)
 
@@ -824,7 +853,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       )
 
       const tokenMock = await NoReturnTransferTokenMock.new()
@@ -878,7 +908,8 @@ contract('ForeignBridge', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -892,7 +923,8 @@ contract('ForeignBridge', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -906,7 +938,8 @@ contract('ForeignBridge', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -920,7 +953,8 @@ contract('ForeignBridge', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -934,7 +968,8 @@ contract('ForeignBridge', async accounts => {
           owner,
           feeManager.address,
           homeFee,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
@@ -948,7 +983,8 @@ contract('ForeignBridge', async accounts => {
           owner,
           ZERO_ADDRESS,
           homeFee,
-          decimalShiftZero
+          decimalShiftZero,
+          otherSideBridgeAddress
         )
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge.rewardableInitialize(
@@ -961,7 +997,8 @@ contract('ForeignBridge', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        '9'
+        '9',
+        otherSideBridgeAddress
       ).should.be.fulfilled
 
       expect(await foreignBridge.isInitialized()).to.be.equal(true)
@@ -998,7 +1035,8 @@ contract('ForeignBridge', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       ).should.be.fulfilled
 
       // Given
@@ -1023,7 +1061,8 @@ contract('ForeignBridge', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       ).should.be.fulfilled
 
       // Given
@@ -1047,7 +1086,8 @@ contract('ForeignBridge', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       ).should.be.fulfilled
 
       // Given
@@ -1080,7 +1120,8 @@ contract('ForeignBridge', async accounts => {
         owner,
         feeManager.address,
         homeFee,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       ).should.be.fulfilled
 
       // Then
@@ -1122,7 +1163,8 @@ contract('ForeignBridge', async accounts => {
         owner,
         feeManager.address,
         feeInWei,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       ).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address)
 
@@ -1180,7 +1222,8 @@ contract('ForeignBridge', async accounts => {
         owner,
         feeManager.address,
         feeInWei,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       ).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address)
 
@@ -1266,7 +1309,8 @@ contract('ForeignBridge', async accounts => {
         owner,
         feeManager.address,
         feeInWei,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridgeAddress
       ).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address)
 
@@ -1346,7 +1390,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftTwo
+        decimalShiftTwo,
+        otherSideBridgeAddress
       )
       await erc20Token.transferOwnership(foreignBridgeWithThreeSigs.address)
 
@@ -1395,7 +1440,8 @@ contract('ForeignBridge', async accounts => {
         requireBlockConfirmations,
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftTwo
+        decimalShiftTwo,
+        otherSideBridgeAddress
       )
       await token.mint(user, value, { from: owner }).should.be.fulfilled
       expect(await token.balanceOf(user)).to.be.bignumber.equal(value)

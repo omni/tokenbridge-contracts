@@ -93,7 +93,7 @@ contract BasicAMBErc677ToErc677 is
         setLock(true);
         token.transferFrom(from, to, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, from, _value);
+        bridgeSpecificActionsOnTokenTransfer(token, from, _value, "");
     }
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {

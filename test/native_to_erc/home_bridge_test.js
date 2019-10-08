@@ -364,6 +364,98 @@ contract('HomeBridge', async accounts => {
     })
   })
 
+  describe('#relayRequest', async () => {
+    const user = accounts[1]
+    const user2 = accounts[2]
+    beforeEach(async () => {
+      homeContract = await HomeBridge.new()
+      await homeContract.initialize(
+        validatorContract.address,
+        ['3', '2', '1'],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        decimalShiftZero
+      )
+    })
+    it('should accept native coins and alternative receiver', async () => {
+      const currentDay = await homeContract.getCurrentDay()
+      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      const { logs } = await homeContract.relayRequest(user2, {
+        from: user,
+        value: 1
+      }).should.be.fulfilled
+      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
+
+      expectEventInLogs(logs, 'UserRequestForSignature', { recipient: user2, value: toBN(1) })
+
+      await homeContract
+        .relayRequest(user2, {
+          from: user,
+          value: 3
+        })
+        .should.be.rejectedWith(ERROR_MSG)
+
+      await homeContract.setDailyLimit(4).should.be.fulfilled
+      await homeContract.relayRequest(user2, {
+        from: user,
+        value: 1
+      }).should.be.fulfilled
+
+      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
+    })
+
+    it('doesnt let you send more than max amount per tx', async () => {
+      await homeContract.relayRequest(user2, {
+        from: user,
+        value: 1
+      }).should.be.fulfilled
+      await homeContract
+        .relayRequest(user2, {
+          from: user,
+          value: 3
+        })
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setDailyLimit(100).should.be.fulfilled
+      await homeContract.setMaxPerTx(99).should.be.fulfilled
+      // meets max per tx and daily limit
+      await homeContract.relayRequest(user2, {
+        from: user,
+        value: 99
+      }).should.be.fulfilled
+      // above daily limit
+      await homeContract
+        .relayRequest(user2, {
+          from: user,
+          value: 1
+        })
+        .should.be.rejectedWith(ERROR_MSG)
+    })
+
+    it('should not let to deposit less than minPerTx', async () => {
+      const newDailyLimit = 100
+      const newMaxPerTx = 50
+      const newMinPerTx = 20
+      await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled
+      await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled
+      await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled
+
+      await homeContract.relayRequest(user2, {
+        from: user,
+        value: newMinPerTx
+      }).should.be.fulfilled
+      await homeContract
+        .relayRequest(user2, {
+          from: user,
+          value: newMinPerTx - 1
+        })
+        .should.be.rejectedWith(ERROR_MSG)
+    })
+  })
+
   describe('#setting limits', async () => {
     let homeContract
     beforeEach(async () => {
@@ -1281,6 +1373,55 @@ contract('HomeBridge', async accounts => {
     })
   })
 
+  describe('#feeManager_OneDirection_relayRequest', () => {
+    it('should not subtract fee from value', async () => {
+      // Initialize
+      const user = accounts[0]
+      const user2 = accounts[4]
+      const owner = accounts[9]
+      const validators = [accounts[1]]
+      const rewards = [accounts[2]]
+      const requiredSignatures = 1
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridge = await HomeBridge.new()
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      const feeManager = await FeeManagerNativeToErc.new()
+
+      // Given
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = ether(fee.toString())
+      const notUsedFee = ZERO
+      const value = halfEther
+
+      await homeBridge.rewardableInitialize(
+        rewardableValidators.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        feeManager.address,
+        [notUsedFee, feeInWei],
+        decimalShiftZero
+      ).should.be.fulfilled
+
+      // When
+      const { logs } = await homeBridge.relayRequest(user2, {
+        from: user,
+        value
+      }).should.be.fulfilled
+
+      // Then
+      expectEventInLogs(logs, 'UserRequestForSignature', {
+        recipient: user2,
+        value
+      })
+    })
+  })
+
   describe('#feeManager_OneDirection_submitSignature', () => {
     it('should not distribute fee to validator', async () => {
       // Initialize
@@ -1654,6 +1795,56 @@ contract('HomeBridge', async accounts => {
       const finalValue = ether(valueCalc.toString())
       expectEventInLogs(logs, 'UserRequestForSignature', {
         recipient: user,
+        value: finalValue
+      })
+    })
+  })
+
+  describe('#feeManager_BothDirections_relayRequest', () => {
+    it('should subtract fee from value', async () => {
+      // Initialize
+      const user = accounts[0]
+      const user2 = accounts[4]
+      const owner = accounts[9]
+      const validators = [accounts[1]]
+      const rewards = [accounts[2]]
+      const requiredSignatures = 1
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridge = await HomeBridge.new()
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      const feeManager = await FeeManagerNativeToErcBothDirections.new()
+
+      // Given
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = ether(fee.toString())
+      const value = halfEther
+
+      await homeBridge.rewardableInitialize(
+        rewardableValidators.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        feeManager.address,
+        [feeInWei, feeInWei],
+        decimalShiftZero
+      ).should.be.fulfilled
+
+      // When
+      const { logs } = await homeBridge.relayRequest(user2, {
+        from: user,
+        value
+      }).should.be.fulfilled
+
+      // Then
+      const valueCalc = 0.5 * (1 - fee)
+      const finalValue = ether(valueCalc.toString())
+      expectEventInLogs(logs, 'UserRequestForSignature', {
+        recipient: user2,
         value: finalValue
       })
     })

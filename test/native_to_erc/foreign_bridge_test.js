@@ -557,7 +557,6 @@ contract('ForeignBridge', async accounts => {
       expect(await token.balanceOf(user)).to.be.bignumber.equal('1')
       await token.transferAndCall(foreignBridge.address, '1', '0x00', { from: user }).should.be.rejectedWith(ERROR_MSG)
     })
-
     it('should not let to withdraw less than minPerTx', async () => {
       const owner = accounts[3]
       const user = accounts[4]
@@ -588,6 +587,31 @@ contract('ForeignBridge', async accounts => {
 
       oneEther.sub(minPerTx).should.be.bignumber.equal(await token.totalSupply())
       oneEther.sub(minPerTx).should.be.bignumber.equal(await token.balanceOf(user))
+    })
+    it('should be able to specify a different receiver', async () => {
+      const owner = accounts[3]
+      const user = accounts[4]
+      const user2 = accounts[5]
+      token = await POA20.new('POA ERC20 Foundation', 'POA20', 18, { from: owner })
+      const foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        decimalShiftZero
+      )
+      await token.mint(user, halfEther, { from: owner }).should.be.fulfilled
+      await token.transferOwnership(foreignBridge.address, { from: owner })
+      await token.transferAndCall(foreignBridge.address, halfEther, user2, { from: user }).should.be.fulfilled
+      expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
+      const events = await getEvents(foreignBridge, { event: 'UserRequestForAffirmation' })
+      expect(events[0].returnValues.recipient).to.be.equal(user2)
+      expect(toBN(events[0].returnValues.value)).to.be.bignumber.equal(halfEther)
     })
   })
 

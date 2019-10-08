@@ -8,12 +8,12 @@ import "../Sacrifice.sol";
 
 contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
     function() public payable {
-        nativeTransfer();
+        require(msg.data.length == 0);
+        nativeTransfer(msg.sender);
     }
 
-    function nativeTransfer() internal {
+    function nativeTransfer(address _receiver) internal {
         require(msg.value > 0);
-        require(msg.data.length == 0);
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         uint256 valueToTransfer = msg.value;
@@ -22,7 +22,11 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
             uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
         }
-        emit UserRequestForSignature(msg.sender, valueToTransfer);
+        emit UserRequestForSignature(_receiver, valueToTransfer);
+    }
+
+    function relayRequest(address _receiver) external payable {
+        nativeTransfer(_receiver);
     }
 
     function initialize(

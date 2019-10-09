@@ -4,7 +4,7 @@ import "../BlockRewardFeeManager.sol";
 
 contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
     function getFeeManagerMode() external pure returns (bytes4) {
-        return bytes4(keccak256(abi.encodePacked("manages-both-directions")));
+        return 0xd7de965f; // "manages-both-directions"
     }
 
     function blockRewardContract() external view returns (address) {

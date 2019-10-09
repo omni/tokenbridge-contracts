@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "../BasicBridge.sol";
 
 contract BasicAMB is BasicBridge {
-    bytes32 internal constant MAX_GAS_PER_TX = keccak256(abi.encodePacked("maxGasPerTx"));
+    bytes32 internal constant MAX_GAS_PER_TX = 0x2670ecc91ec356e32067fd27b36614132d727b84a1e03e08f412a4f2cf075974; // "maxGasPerTx"
 
     function initialize(
         address _validatorContract,
@@ -32,7 +32,7 @@ contract BasicAMB is BasicBridge {
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("arbitrary-message-bridge-core")));
+        return 0x2544fbb9; // "arbitrary-message-bridge-core"
     }
 
     function maxGasPerTx() public view returns (uint256) {

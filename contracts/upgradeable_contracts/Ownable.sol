@@ -23,12 +23,14 @@ contract Ownable is EternalStorage {
         _;
     }
 
+    bytes32 internal constant OWNER = 0x02016836a56b71f0d02689e69e326f4f4c1b9057164ef592671cf0d37c8040c0; // "owner"
+
     /**
     * @dev Tells the address of the owner
     * @return the address of the owner
     */
     function owner() public view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("owner"))];
+        return addressStorage[OWNER];
     }
 
     /**
@@ -45,6 +47,6 @@ contract Ownable is EternalStorage {
     */
     function setOwner(address newOwner) internal {
         emit OwnershipTransferred(owner(), newOwner);
-        addressStorage[keccak256(abi.encodePacked("owner"))] = newOwner;
+        addressStorage[OWNER] = newOwner;
     }
 }

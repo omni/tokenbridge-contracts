@@ -12,8 +12,9 @@ contract BasicBridge is Initializable, Validatable, Ownable, Upgradeable, Claima
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
 
-    bytes32 internal constant GAS_PRICE = keccak256(abi.encodePacked("gasPrice"));
-    bytes32 internal constant REQUIRED_BLOCK_CONFIRMATIONS = keccak256(abi.encodePacked("requiredBlockConfirmations"));
+    bytes32 internal constant GAS_PRICE = 0x55b3774520b5993024893d303890baa4e84b1244a43c60034d1ced2d3cf2b04b; // "gasPrice"
+    bytes32 internal constant REQUIRED_BLOCK_CONFIRMATIONS =
+        0x916daedf6915000ff68ced2f0b6773fe6f2582237f92c3c95bb4d79407230071; // "requiredBlockConfirmations"
 
     function setGasPrice(uint256 _gasPrice) external onlyOwner {
         require(_gasPrice > 0);

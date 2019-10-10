@@ -42,7 +42,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return 0x18762d46; // "erc-to-native-core"
+        return 0x18762d46; // bytes4(keccak256(abi.encodePacked("erc-to-native-core")))
     }
 
     function claimTokens(address _token, address _to) public {

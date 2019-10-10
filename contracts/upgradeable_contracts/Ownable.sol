@@ -23,7 +23,7 @@ contract Ownable is EternalStorage {
         _;
     }
 
-    bytes32 internal constant OWNER = 0x02016836a56b71f0d02689e69e326f4f4c1b9057164ef592671cf0d37c8040c0; // "owner"
+    bytes32 internal constant OWNER = 0x02016836a56b71f0d02689e69e326f4f4c1b9057164ef592671cf0d37c8040c0; // keccak256(abi.encodePacked("owner"))
 
     /**
     * @dev Tells the address of the owner

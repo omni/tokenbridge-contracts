@@ -5,7 +5,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 
 contract ERC20Bridge is EternalStorage {
-    bytes32 internal constant ERC20_TOKEN = 0x15d63b18dbc21bf4438b7972d80076747e1d93c4f87552fe498c90cbde51665e; // "erc20token"
+    bytes32 internal constant ERC20_TOKEN = 0x15d63b18dbc21bf4438b7972d80076747e1d93c4f87552fe498c90cbde51665e; // keccak256(abi.encodePacked("erc20token"))
 
     function erc20token() public view returns (ERC20Basic) {
         return ERC20Basic(addressStorage[ERC20_TOKEN]);

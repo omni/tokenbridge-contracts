@@ -12,7 +12,7 @@ contract FeeManagerMock is BaseFeeManager {
     }
 
     function getFeeManagerMode() external pure returns (bytes4) {
-        return 0xf2aed8f7; // "manages-one-direction"
+        return 0xf2aed8f7; // bytes4(keccak256(abi.encodePacked("manages-one-direction")))
     }
 
     function randomTest(uint256 _count) external view returns (uint256) {

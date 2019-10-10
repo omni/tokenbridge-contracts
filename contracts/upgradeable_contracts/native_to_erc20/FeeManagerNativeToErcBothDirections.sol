@@ -5,7 +5,7 @@ import "../ValidatorsFeeManager.sol";
 
 contract FeeManagerNativeToErcBothDirections is ValidatorsFeeManager {
     function getFeeManagerMode() external pure returns (bytes4) {
-        return 0xd7de965f; // "manages-both-directions"
+        return 0xd7de965f; // bytes4(keccak256(abi.encodePacked("manages-both-directions")))
     }
 
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal {

@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../BasicForeignBridge.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 import "./RewardableForeignBridgeNativeToErc.sol";
 

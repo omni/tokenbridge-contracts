@@ -1446,6 +1446,35 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(events[0].returnValues.recipient).to.be.equal(user)
       expect(toBN(events[0].returnValues.value)).to.be.bignumber.equal(value)
     })
+    it('should be able to specify a different receiver', async () => {
+      // Given
+      const owner = accounts[0]
+      const user = accounts[4]
+      const user2 = accounts[5]
+      await homeBridge.initialize(
+        validatorContract.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        token.address,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        decimalShiftZero
+      ).should.be.fulfilled
+      const value = halfEther
+      await token.mint(user, value, { from: owner }).should.be.fulfilled
+
+      // When
+      await token
+        .transferAndCall(homeBridge.address, value, ZERO_ADDRESS, { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
+      await token.transferAndCall(homeBridge.address, value, user2, { from: user }).should.be.fulfilled
+
+      // Then
+      const events = await getEvents(homeBridge, { event: 'UserRequestForSignature' })
+      expect(events[0].returnValues.recipient).to.be.equal(user2)
+      expect(toBN(events[0].returnValues.value)).to.be.bignumber.equal(value)
+    })
     it('should trigger UserRequestForSignature with fee subtracted', async () => {
       // Given
       const homeBridge = await POSDAOHomeBridge.new()

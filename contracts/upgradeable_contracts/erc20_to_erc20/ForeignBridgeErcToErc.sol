@@ -4,6 +4,8 @@ import "./BasicForeignBridgeErcToErc.sol";
 import "../ERC20Bridge.sol";
 
 contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
+    event UserRequestForAffirmation(address recipient, uint256 value);
+
     function initialize(
         address _validatorContract,
         address _erc20token,
@@ -23,5 +25,23 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
             _decimalShift
         );
         return isInitialized();
+    }
+
+    function _relayRequest(address _sender, address _receiver, uint256 _amount) internal {
+        require(_receiver != address(0));
+        require(_receiver != address(this));
+        require(_amount > 0);
+
+        erc20token().transferFrom(_sender, address(this), _amount);
+        emit UserRequestForAffirmation(_receiver, _amount);
+    }
+
+    function relayRequest(address _from, address _receiver, uint256 _amount) external {
+        require(_from == msg.sender || _from == _receiver);
+        _relayRequest(_from, _receiver, _amount);
+    }
+
+    function relayRequest(address _receiver, uint256 _amount) external {
+        _relayRequest(msg.sender, _receiver, _amount);
     }
 }

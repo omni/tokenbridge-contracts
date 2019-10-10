@@ -11,7 +11,8 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
-        uint256[] _maxPerTxHomeDailyLimitHomeMaxPerTxArray, // [ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx ]
+        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
@@ -20,7 +21,8 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
             _erc20token,
             _requiredBlockConfirmations,
             _gasPrice,
-            _maxPerTxHomeDailyLimitHomeMaxPerTxArray,
+            _dailyLimitMaxPerTxMinPerTxArray,
+            _homeDailyLimitHomeMaxPerTxArray,
             _owner,
             _decimalShift
         );
@@ -31,6 +33,8 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
         require(_receiver != address(0));
         require(_receiver != address(this));
         require(_amount > 0);
+        require(withinLimit(_amount));
+        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_amount));
 
         erc20token().transferFrom(_sender, address(this), _amount);
         emit UserRequestForAffirmation(_receiver, _amount);

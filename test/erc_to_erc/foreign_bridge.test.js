@@ -50,7 +50,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -61,7 +62,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           ZERO_ADDRESS,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -72,7 +74,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           owner,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -83,7 +86,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           token.address,
           0,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -94,7 +98,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           token.address,
           requireBlockConfirmations,
           0,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -105,7 +110,33 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+
+      await foreignBridge
+        .initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, maxPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, dailyLimit, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -116,7 +147,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         '9'
       )
@@ -128,6 +160,9 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       expect(await foreignBridge.requiredBlockConfirmations()).to.be.bignumber.equal(
         requireBlockConfirmations.toString()
       )
+      expect(await foreignBridge.dailyLimit()).to.be.bignumber.equal(dailyLimit)
+      expect(await foreignBridge.maxPerTx()).to.be.bignumber.equal(maxPerTx)
+      expect(await foreignBridge.minPerTx()).to.be.bignumber.equal(minPerTx)
       expect(await foreignBridge.decimalShift()).to.be.bignumber.equal('9')
       expect(await foreignBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
       const bridgeMode = '0xba4690f5' // 4 bytes of keccak256('erc-to-erc-core')
@@ -141,6 +176,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         requiredBlockConfirmations: toBN(requireBlockConfirmations)
       })
       expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: homeDailyLimit })
     })
   })
@@ -155,7 +191,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -286,7 +323,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
         { from: ownerOfValidatorContract }
@@ -346,7 +384,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         erc20Token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -406,7 +445,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -434,7 +474,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           tokenAddress,
           requireBlockConfirmations,
           gasPrice,
-          ['2', '3', '2'],
+          ['3', '2', '1'],
+          ['3', '2'],
           owner,
           decimalShiftZero
         )
@@ -458,7 +499,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
@@ -686,7 +728,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftTwo
       )
@@ -729,7 +772,8 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         erc20Token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftTwo
       )
@@ -812,14 +856,17 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero
       )
-      await token.mint(user, value)
+      await token.mint(user, ether('2'))
     })
     it('should allow to bridge tokens using approve tranferFrom', async () => {
       // Given
+      const currentDay = await foreignBridge.getCurrentDay()
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
       await foreignBridge.relayRequest(user, recipient, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
 
       await token.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
@@ -833,6 +880,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const { logs } = await foreignBridge.relayRequest(user, recipient, value, { from: user }).should.be.fulfilled
 
       // Then
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
       expectEventInLogs(logs, 'UserRequestForAffirmation', {
         recipient,
         value
@@ -864,6 +912,30 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         recipient,
         value
       })
+    })
+    it('should not be able to transfer more than limit', async () => {
+      // Given
+      const userSupply = ether('2')
+      const bigValue = oneEther
+      const smallValue = ether('0.001')
+      const currentDay = await foreignBridge.getCurrentDay()
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      await token.approve(foreignBridge.address, userSupply, { from: user }).should.be.fulfilled
+
+      // When
+      // value < minPerTx
+      await foreignBridge.relayRequest(user, recipient, smallValue, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      // value > maxPerTx
+      await foreignBridge.relayRequest(user, recipient, bigValue, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+      await foreignBridge.relayRequest(user, recipient, halfEther, { from: user }).should.be.fulfilled
+      await foreignBridge.relayRequest(user, recipient, halfEther, { from: user }).should.be.fulfilled
+      // totalSpentPerDay > dailyLimit
+      await foreignBridge.relayRequest(user, recipient, halfEther, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+      // Then
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
     })
   })
 })

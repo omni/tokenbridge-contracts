@@ -21,7 +21,7 @@ contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
             _owner,
             _decimalShift
         );
-        uintStorage[keccak256(abi.encodePacked("dataSizes", bytes4(keccak256("signature(bytes32,uint256)"))))] = 132;
-        uintStorage[keccak256(abi.encodePacked("dataSizes", bytes4(keccak256("message(bytes32)"))))] = 210;
+        uintStorage[0x5e16d82565fc7ee8775cc18db290ff4010745d3fd46274a7bc7ddbebb727fa54] = 132; // keccak256(abi.encodePacked("dataSizes", bytes4(keccak256("signature(bytes32,uint256)"))))
+        uintStorage[0x3b0a1ac531be1657049cf649eca2510ce9e3ef7df1be26d5c248fe8b298f4374] = 210; // keccak256(abi.encodePacked("dataSizes", bytes4(keccak256("message(bytes32)"))))
     }
 }

@@ -16,7 +16,7 @@ contract HomeBridgeErcToNative is
     RewardableHomeBridgeErcToNative,
     BlockRewardBridge
 {
-    bytes32 internal constant TOTAL_BURNT_COINS = keccak256(abi.encodePacked("totalBurntCoins"));
+    bytes32 internal constant TOTAL_BURNT_COINS = 0x17f187b2e5d1f8770602b32c1159b85c9600859277fae1eaa9982e9bcf63384c; // keccak256(abi.encodePacked("totalBurntCoins"))
 
     function() public payable {
         require(msg.data.length == 0);
@@ -105,7 +105,7 @@ contract HomeBridgeErcToNative is
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
+        return 0x18762d46; // bytes4(keccak256(abi.encodePacked("erc-to-native-core")))
     }
 
     function blockRewardContract() public view returns (IBlockReward) {

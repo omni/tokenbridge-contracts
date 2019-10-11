@@ -8,7 +8,7 @@ contract RewardableBridge is Ownable, FeeTypes {
     event FeeDistributedFromAffirmation(uint256 feeAmount, bytes32 indexed transactionHash);
     event FeeDistributedFromSignatures(uint256 feeAmount, bytes32 indexed transactionHash);
 
-    bytes32 internal constant FEE_MANAGER_CONTRACT = keccak256(abi.encodePacked("feeManagerContract"));
+    bytes32 internal constant FEE_MANAGER_CONTRACT = 0x779a349c5bee7817f04c960f525ee3e2f2516078c38c68a3149787976ee837e5; // keccak256(abi.encodePacked("feeManagerContract"))
     bytes4 internal constant GET_HOME_FEE = 0x94da17cd; // getHomeFee()
     bytes4 internal constant GET_FOREIGN_FEE = 0xffd66196; // getForeignFee()
     bytes4 internal constant GET_FEE_MANAGER_MODE = 0xf2ba9561; // getFeeManagerMode()

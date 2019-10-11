@@ -4,8 +4,8 @@ import "../../upgradeability/EternalStorage.sol";
 import "../../libraries/Bytes.sol";
 
 contract MessageProcessor is EternalStorage {
-    bytes32 internal constant MESSAGE_SENDER = keccak256(abi.encodePacked("messageSender"));
-    bytes32 internal constant TRANSACTION_HASH = keccak256(abi.encodePacked("transactionHash"));
+    bytes32 internal constant MESSAGE_SENDER = 0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b; // keccak256(abi.encodePacked("messageSender"))
+    bytes32 internal constant TRANSACTION_HASH = 0x7bce44346b9831b0c81437a092605c6fc51612016e2c51e62f21d829e434bcf6; // keccak256(abi.encodePacked("transactionHash"))
 
     function messageCallStatus(bytes32 _txHash) external view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("messageCallStatus", _txHash))];

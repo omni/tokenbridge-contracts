@@ -72,7 +72,7 @@ contract ForeignBridgeNativeToErc is
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("native-to-erc-core")));
+        return 0x92a8d7fe; // bytes4(keccak256(abi.encodePacked("native-to-erc-core")))
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {

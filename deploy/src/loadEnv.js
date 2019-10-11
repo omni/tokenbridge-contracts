@@ -77,7 +77,8 @@ const {
   HOME_FEE_MANAGER_TYPE,
   ERC20_EXTENDED_BY_ERC677,
   HOME_EVM_VERSION,
-  FOREIGN_EVM_VERSION
+  FOREIGN_EVM_VERSION,
+  RELATIVE_DAILY_LIMIT,
 } = process.env
 
 // Types validations
@@ -111,7 +112,8 @@ let validations = {
   FOREIGN_RPC_URL: envalid.str(),
   FOREIGN_BRIDGE_OWNER: addressValidator(),
   FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
-  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator()
+  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
+  RELATIVE_DAILY_LIMIT: envalid.bool(),
 }
 
 if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {

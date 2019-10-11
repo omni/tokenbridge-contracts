@@ -7,7 +7,7 @@ import "../ERC677Storage.sol";
 
 contract FeeManagerNativeToErc is ValidatorsFeeManager, ERC677Storage {
     function getFeeManagerMode() external pure returns (bytes4) {
-        return bytes4(keccak256(abi.encodePacked("manages-one-direction")));
+        return 0xf2aed8f7; // bytes4(keccak256(abi.encodePacked("manages-one-direction")))
     }
 
     function erc677token() public view returns (IBurnableMintableERC677Token) {

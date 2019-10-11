@@ -7,7 +7,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
     event UserRequestForAffirmation(address recipient, uint256 value);
 
-    bytes32 internal constant BRIDGE_CONTRACT = keccak256(abi.encodePacked("bridgeOnOtherSide"));
+    bytes32 internal constant BRIDGE_CONTRACT = 0x71483949fe7a14d16644d63320f24d10cf1d60abecc30cc677a340e82b699dd2; // keccak256(abi.encodePacked("bridgeOnOtherSide"))
 
     function initialize(
         address _validatorContract,

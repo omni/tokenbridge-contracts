@@ -7,11 +7,12 @@ contract BlockReward {
     using SafeMath for uint256;
 
     address[] public validatorList;
+    uint256[] public validatorRewardList;
     uint256 public mintedCoins = 0;
     uint256 public feeAmount = 0;
     mapping(bytes32 => uint256) internal uintStorage;
     bytes32 internal constant MINTED_TOTALLY_BY_BRIDGE = "mintedTotallyByBridge";
-    bytes4 internal constant MINT_REWARD = 0xe2f764a3; // mintReward(address[],uint256[])
+    bytes4 internal constant MINT_REWARD = 0x91c0aabf; // mintReward(uint256)
     address public token;
 
     function() external payable {
@@ -67,8 +68,7 @@ contract BlockReward {
     }
 
     function addBridgeTokenFeeReceivers(uint256 _amount) external {
-        address[] memory receivers = new address[](validatorList.length);
-        uint256[] memory rewards = new uint256[](validatorList.length);
+        validatorRewardList = new uint256[](validatorList.length);
         feeAmount = _amount;
         uint256 feePerValidator = _amount.div(validatorList.length);
 
@@ -83,11 +83,10 @@ contract BlockReward {
             if (diff > 0 && randomValidatorIndex == i) {
                 feeToDistribute = feeToDistribute.add(diff);
             }
-            receivers[i] = validatorList[i];
-            rewards[i] = feeToDistribute;
+            validatorRewardList[i] = feeToDistribute;
         }
 
-        require(token.call(abi.encodeWithSelector(MINT_REWARD, receivers, rewards)));
+        require(token.call(abi.encodeWithSelector(MINT_REWARD, _amount)));
     }
 
     function random(uint256 _count) public view returns (uint256) {

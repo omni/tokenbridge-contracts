@@ -1541,8 +1541,8 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const message = createMessage(recipient, value, transactionHash, homeBridge.address)
       const signature = await sign(validators[0], message)
 
-      const rewardAddressBalanceBefore = await token.balanceOf(rewards[0])
-      rewardAddressBalanceBefore.should.be.bignumber.equal('0')
+      const blockRewardBalanceBefore = await token.balanceOf(blockRewardContract.address)
+      blockRewardBalanceBefore.should.be.bignumber.equal('0')
 
       // When
       const { logs } = await homeBridge.submitSignature(signature, message, { from: validators[0] }).should.be.fulfilled
@@ -1561,8 +1561,11 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeDistributed = await blockRewardContract.feeAmount()
       feeDistributed.should.be.bignumber.equal(feeAmount)
 
-      const rewardAddressBalanceAfter = await token.balanceOf(rewards[0])
+      const rewardAddressBalanceAfter = await blockRewardContract.validatorRewardList(0)
       rewardAddressBalanceAfter.should.be.bignumber.equal(feeAmount)
+
+      const blockRewardBalanceAfter = await token.balanceOf(blockRewardContract.address)
+      blockRewardBalanceAfter.should.be.bignumber.equal(feeAmount)
     })
     it('should distribute fee to 3 validators', async () => {
       // Given
@@ -1608,9 +1611,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeDistributed = await blockRewardContract.feeAmount()
       feeDistributed.should.be.bignumber.equal(feeAmount)
 
-      const balanceRewardAddress1 = await token.balanceOf(rewards[0])
-      const balanceRewardAddress2 = await token.balanceOf(rewards[1])
-      const balanceRewardAddress3 = await token.balanceOf(rewards[2])
+      const balanceRewardAddress1 = await blockRewardContract.validatorRewardList(0)
+      const balanceRewardAddress2 = await blockRewardContract.validatorRewardList(1)
+      const balanceRewardAddress3 = await blockRewardContract.validatorRewardList(2)
 
       expect(balanceRewardAddress1.eq(feePerValidator) || balanceRewardAddress1.eq(feePerValidatorPlusDiff)).to.equal(
         true
@@ -1667,11 +1670,11 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeDistributed = await blockRewardContract.feeAmount()
       feeDistributed.should.be.bignumber.equal(feeAmount)
 
-      const balanceRewardAddress1 = await token.balanceOf(rewards[0])
-      const balanceRewardAddress2 = await token.balanceOf(rewards[1])
-      const balanceRewardAddress3 = await token.balanceOf(rewards[2])
-      const balanceRewardAddress4 = await token.balanceOf(rewards[3])
-      const balanceRewardAddress5 = await token.balanceOf(rewards[4])
+      const balanceRewardAddress1 = await blockRewardContract.validatorRewardList(0)
+      const balanceRewardAddress2 = await blockRewardContract.validatorRewardList(1)
+      const balanceRewardAddress3 = await blockRewardContract.validatorRewardList(2)
+      const balanceRewardAddress4 = await blockRewardContract.validatorRewardList(3)
+      const balanceRewardAddress5 = await blockRewardContract.validatorRewardList(4)
 
       balanceRewardAddress1.should.be.bignumber.equal(feePerValidator)
       balanceRewardAddress2.should.be.bignumber.equal(feePerValidator)
@@ -1754,7 +1757,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeDistributed = await blockRewardContract.feeAmount()
       feeDistributed.should.be.bignumber.equal(feeAmount)
 
-      const rewardAddressBalanceAfter = await token.balanceOf(rewards[0])
+      const rewardAddressBalanceAfter = await blockRewardContract.validatorRewardList(0)
       rewardAddressBalanceAfter.should.be.bignumber.equal(feeAmount)
 
       const recipientBalance = await token.balanceOf(recipient)
@@ -1811,9 +1814,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const recipientBalance = await token.balanceOf(recipient)
       recipientBalance.should.be.bignumber.equal(value)
 
-      const balanceRewardAddress1 = await token.balanceOf(rewards[0])
-      const balanceRewardAddress2 = await token.balanceOf(rewards[1])
-      const balanceRewardAddress3 = await token.balanceOf(rewards[2])
+      const balanceRewardAddress1 = await blockRewardContract.validatorRewardList(0)
+      const balanceRewardAddress2 = await blockRewardContract.validatorRewardList(1)
+      const balanceRewardAddress3 = await blockRewardContract.validatorRewardList(2)
 
       expect(balanceRewardAddress1.eq(feePerValidator) || balanceRewardAddress1.eq(feePerValidatorPlusDiff)).to.equal(
         true
@@ -1878,11 +1881,11 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const recipientBalance = await token.balanceOf(recipient)
       recipientBalance.should.be.bignumber.equal(value)
 
-      const balanceRewardAddress1 = await token.balanceOf(rewards[0])
-      const balanceRewardAddress2 = await token.balanceOf(rewards[1])
-      const balanceRewardAddress3 = await token.balanceOf(rewards[2])
-      const balanceRewardAddress4 = await token.balanceOf(rewards[3])
-      const balanceRewardAddress5 = await token.balanceOf(rewards[4])
+      const balanceRewardAddress1 = await blockRewardContract.validatorRewardList(0)
+      const balanceRewardAddress2 = await blockRewardContract.validatorRewardList(1)
+      const balanceRewardAddress3 = await blockRewardContract.validatorRewardList(2)
+      const balanceRewardAddress4 = await blockRewardContract.validatorRewardList(3)
+      const balanceRewardAddress5 = await blockRewardContract.validatorRewardList(4)
 
       balanceRewardAddress1.should.be.bignumber.equal(feePerValidator)
       balanceRewardAddress2.should.be.bignumber.equal(feePerValidator)

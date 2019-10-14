@@ -23,7 +23,9 @@ const {
     RewardableValidators,
     FeeManagerErcToErcPOSDAO,
     HomeBridgeErcToErc: HomeBridge,
+    HomeBridgeErcToErcRelativeDailyLimit: HomeBridgeRelativeDailyLimit,
     HomeBridgeErcToErcPOSDAO,
+    HomeBridgeErcToErcPOSDAORelativeDailyLimit: HomeBridgeErcToErcPOSDAORelativeDailyLimit,
     ERC677BridgeToken,
     ERC677BridgeTokenRewardable
   }
@@ -53,7 +55,8 @@ const {
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
   FOREIGN_TRANSACTIONS_FEE,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT
+  FOREIGN_TO_HOME_DECIMAL_SHIFT,
+  RELATIVE_DAILY_LIMIT,
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -209,8 +212,14 @@ async function deployHome() {
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
   console.log('\ndeploying homeBridge implementation\n')
+  let HomeBridgeErcToErcPOSDAOContract = HomeBridgeErcToErcPOSDAO
+  let HomeBridgeContract = HomeBridge
+  if (RELATIVE_DAILY_LIMIT) {
+    HomeBridgeErcToErcPOSDAOContract = HomeBridgeErcToErcPOSDAORelativeDailyLimit
+    HomeBridgeContract = HomeBridgeRelativeDailyLimit
+  }
   const bridgeContract =
-    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? HomeBridgeErcToErcPOSDAO : HomeBridge
+    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? HomeBridgeErcToErcPOSDAOContract : HomeBridgeContract
   const homeBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce

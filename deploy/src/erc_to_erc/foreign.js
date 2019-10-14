@@ -17,7 +17,9 @@ const {
     EternalStorageProxy,
     BridgeValidators,
     ForeignBridgeErcToErc: ForeignBridge,
-    ForeignBridgeErc677ToErc677
+    ForeignBridgeErcToErcRelativeDailyLimit: ForeignBridgeRelativeDailyLimit,
+    ForeignBridgeErc677ToErc677,
+    ForeignBridgeErc677ToErc677: ForeignBridgeErc677ToErc677RelativeDailyLimit,
   }
 } = require('../loadContracts')
 
@@ -38,7 +40,8 @@ const {
   FOREIGN_MIN_AMOUNT_PER_TX,
   FOREIGN_DAILY_LIMIT,
   ERC20_EXTENDED_BY_ERC677,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT
+  FOREIGN_TO_HOME_DECIMAL_SHIFT,
+  RELATIVE_DAILY_LIMIT,
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -169,7 +172,13 @@ async function deployForeign() {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
-  const bridgeContract = ERC20_EXTENDED_BY_ERC677 ? ForeignBridgeErc677ToErc677 : ForeignBridge
+  let ForeignBridgeErc677ToErc677Contract = ForeignBridgeErc677ToErc677
+  let ForeignBridgeContract = ForeignBridge
+  if (RELATIVE_DAILY_LIMIT) {
+    ForeignBridgeErc677ToErc677Contract = ForeignBridgeErc677ToErc677RelativeDailyLimit
+    ForeignBridgeContract = ForeignBridgeRelativeDailyLimit
+  }
+  const bridgeContract = ERC20_EXTENDED_BY_ERC677 ? ForeignBridgeErc677ToErc677Contract : ForeignBridgeContract
   const foreignBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',

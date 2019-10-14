@@ -4,7 +4,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./ClassicHomeBridgeNativeToErc.sol";
 import "../RelativeDailyLimit.sol";
 
-contract ClassicHomeBridgeNativeToErcRelativeDailyLimit is ClassicHomeBridgeNativeToErc {
+contract ClassicHomeBridgeNativeToErcRelativeDailyLimit is ClassicHomeBridgeNativeToErc, RelativeDailyLimit {
     function _getTokenBalance() internal view returns (uint256) {
         return address(this).balance;
     }

@@ -20,6 +20,7 @@ const {
     BridgeValidators,
     RewardableValidators,
     ForeignBridgeNativeToErc: ForeignBridge,
+    ForeignBridgeNativeToErcRelativeDailyLimit: ForeignBridgeRelativeDailyLimit,
     ERC677BridgeToken,
     ERC677BridgeTokenRewardable,
     FeeManagerNativeToErc
@@ -49,7 +50,8 @@ const {
   DPOS_STAKING_ADDRESS,
   FOREIGN_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT
+  FOREIGN_TO_HOME_DECIMAL_SHIFT,
+  RELATIVE_DAILY_LIMIT,
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -236,7 +238,8 @@ async function deployForeign() {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
-  const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
+  const ForeignBridgeContract = RELATIVE_DAILY_LIMIT ? ForeignBridgeRelativeDailyLimit : ForeignBridge
+  const foreignBridgeImplementation = await deployContract(ForeignBridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce

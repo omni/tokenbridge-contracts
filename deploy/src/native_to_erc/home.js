@@ -19,6 +19,7 @@ const {
     RewardableValidators,
     FeeManagerNativeToErc,
     HomeBridgeNativeToErc: HomeBridge,
+    HomeBridgeNativeToErcRelativeDailyLimit: HomeBridgeRelativeDailyLimit,
     FeeManagerNativeToErcBothDirections
   }
 } = require('../loadContracts')
@@ -41,7 +42,8 @@ const {
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
   FOREIGN_TRANSACTIONS_FEE,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT
+  FOREIGN_TO_HOME_DECIMAL_SHIFT,
+  RELATIVE_DAILY_LIMIT,
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -210,7 +212,8 @@ async function deployHome() {
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
   console.log('\ndeploying homeBridge implementation\n')
-  const homeBridgeImplementation = await deployContract(HomeBridge, [], {
+  const HomeBridgeContract = RELATIVE_DAILY_LIMIT ? HomeBridgeRelativeDailyLimit : HomeBridge
+  const homeBridgeImplementation = await deployContract(HomeBridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
   })

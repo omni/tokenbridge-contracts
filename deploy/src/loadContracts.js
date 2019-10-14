@@ -29,10 +29,14 @@ function getContracts(evmVersion) {
     HomeBridgeErcToNativeRelativeDailyLimit: require(`../../build/${buildPath}/HomeBridgeErcToNativeRelativeDailyLimit.json`),
     FeeManagerNativeToErc: require(`../../build/${buildPath}/FeeManagerNativeToErc.json`),
     ForeignBridgeNativeToErc: require(`../../build/${buildPath}/ForeignBridgeNativeToErc.json`),
+    ForeignBridgeNativeToErcRelativeDailyLimit: require(`../../build/${buildPath}/ForeignBridgeNativeToErcRelativeDailyLimit.json`),
     FeeManagerNativeToErcBothDirections: require(`../../build/${buildPath}/FeeManagerNativeToErcBothDirections.json`),
     HomeBridgeNativeToErc: useClassicProxy
       ? require(`../../build/${buildPath}/ClassicHomeBridgeNativeToErc.json`)
       : require(`../../build/${buildPath}/HomeBridgeNativeToErc.json`),
+    HomeBridgeNativeToErcRelativeDailyLimit: useClassicProxy
+      ? require(`../../build/${buildPath}/ClassicHomeBridgeNativeToErcRelativeDailyLimit.json`)
+      : require(`../../build/${buildPath}/HomeBridgeNativeToErcRelativeDailyLimit.json`),
     BlockReward: require(`../../build/${buildPath}/BlockReward.json`),
     HomeAMB: require(`../../build/${buildPath}/HomeAMB.json`),
     ForeignAMB: require(`../../build/${buildPath}/ForeignAMB`),

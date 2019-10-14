@@ -1,14 +1,14 @@
 pragma solidity 0.4.24;
 
 import "./Upgradeable.sol";
-import "./Initializable.sol";
+import "./InitializableBridge.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./Validatable.sol";
 import "./Ownable.sol";
 import "./Claimable.sol";
 import "./VersionableBridge.sol";
 
-contract BasicBridge is Initializable, Validatable, Ownable, Upgradeable, Claimable, VersionableBridge {
+contract BasicBridge is InitializableBridge, Validatable, Ownable, Upgradeable, Claimable, VersionableBridge {
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
 

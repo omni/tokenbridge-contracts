@@ -47,7 +47,6 @@ contract BasicAMBErc677ToErc677 is
         );
         require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // _executionMaxPerTx < _executionDailyLimit
 
-        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
         setErc677token(_erc677token);

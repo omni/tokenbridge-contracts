@@ -2,9 +2,16 @@ const Web3Utils = require('web3-utils')
 const { web3Foreign, FOREIGN_RPC_URL } = require('../web3')
 const { deployContract, privateKeyToAddress, upgradeProxy } = require('../deploymentUtils')
 const {
-  foreignContracts: { EternalStorageProxy, ForeignAMBErc677ToErc677: ForeignBridge }
+  foreignContracts: {
+    EternalStorageProxy,
+    ForeignAMBErc677ToErc677: ForeignBridge,
+    ForeignAMBErc677ToErc677RelativeDailyLimit: ForeignBridgeRelativeDailyLimit,
+  }
 } = require('../loadContracts')
-const { DEPLOYMENT_ACCOUNT_PRIVATE_KEY } = require('../loadEnv')
+const {
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
+  RELATIVE_DAILY_LIMIT,
+} = require('../loadEnv')
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
@@ -21,7 +28,8 @@ async function deployForeign() {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\n[Foreign] Deploying foreignBridge implementation\n')
-  const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
+  const ForeignBridgeContract = RELATIVE_DAILY_LIMIT ? ForeignBridgeRelativeDailyLimit : ForeignBridge
+  const foreignBridgeImplementation = await deployContract(ForeignBridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce

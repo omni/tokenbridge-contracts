@@ -17,13 +17,15 @@ const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   DEPLOY_REWARDABLE_TOKEN,
   BLOCK_REWARD_ADDRESS,
-  DPOS_STAKING_ADDRESS
+  DPOS_STAKING_ADDRESS,
+  RELATIVE_DAILY_LIMIT,
 } = require('../loadEnv')
 
 const {
   homeContracts: {
     EternalStorageProxy,
     HomeAMBErc677ToErc677: HomeBridge,
+    HomeAMBErc677ToErc677RelativeDailyLimit: HomeBridgeRelativeDailyLimit,
     ERC677BridgeToken,
     ERC677BridgeTokenRewardable
   }
@@ -43,7 +45,8 @@ async function deployHome() {
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
   console.log('\n[Home] Deploying homeBridge implementation\n')
-  const homeBridgeImplementation = await deployContract(HomeBridge, [], {
+  const HomeBridgeContract = RELATIVE_DAILY_LIMIT ? HomeBridgeRelativeDailyLimit : HomeBridge
+  const homeBridgeImplementation = await deployContract(HomeBridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
   })

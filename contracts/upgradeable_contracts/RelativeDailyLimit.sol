@@ -14,16 +14,23 @@ contract RelativeDailyLimit is BasicTokenBridge {
 
     function dailyLimit() public view returns (uint256) {
         uint256 balance = _getTokenBalance();
-        uint256 minBalance = targetLimit().mul(threshold()).div(100);
-        uint256 limit;
-        if (balance < minBalance) {
-            limit = 100;
-        } else if (balance >= minBalance && balance < threshold()) {
-            limit = targetLimit().mul(threshold()).div(balance);
-        } else {
-            limit = targetLimit();
+        uint256 unlimitedBalance = minPerTx();
+        if (balance <= unlimitedBalance) {
+            return balance;
         }
-        return balance.mul(limit).div(100);
+        uint256 limit = targetLimit();
+        uint256 thresh = threshold();
+        if (balance > unlimitedBalance && balance < thresh) {
+            // to save the gas we don't need to use safe math here
+            // because we check in setters that limit is always less than 1 ether
+            // and threshold is greater than minPerTx
+            // and minPerTx is less than threshold
+            uint256 a = (1 ether - limit) / (thresh - unlimitedBalance) ** 2;
+            uint256 b = 2 * a * thresh;
+            uint256 c = limit + a * thresh ** 2;
+            limit = a * balance ** 2 - b * balance + c;
+        }
+        return balance * limit / 1 ether;
     }
 
     function targetLimit() public view returns (uint256) {
@@ -35,11 +42,13 @@ contract RelativeDailyLimit is BasicTokenBridge {
     }
 
     function setTargetLimit(uint256 _targetLimit) external onlyOwner {
+        require(_targetLimit <= 1 ether);
         uintStorage[TARGET_LIMIT] = _targetLimit;
         emit TargetLimitChanged(_targetLimit);
     }
 
     function setThreshold(uint256 _threshold) external onlyOwner {
+        require(_threshold >= minPerTx());
         uintStorage[THRESHOLD] = _threshold;
         emit ThresholdChanged(_threshold);
     }

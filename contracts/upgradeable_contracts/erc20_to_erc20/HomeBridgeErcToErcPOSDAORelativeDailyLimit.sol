@@ -4,7 +4,4 @@ import "./HomeBridgeErcToErcPOSDAO.sol";
 import "./HomeBridgeErcToErcRelativeDailyLimit.sol";
 
 // solhint-disable-next-line no-empty-blocks
-contract HomeBridgeErcToErcPOSDAORelativeDailyLimit is
-    HomeBridgeErcToErcRelativeDailyLimit,
-    HomeBridgeErcToErcPOSDAO {}
-
+contract HomeBridgeErcToErcPOSDAORelativeDailyLimit is HomeBridgeErcToErcRelativeDailyLimit, HomeBridgeErcToErcPOSDAO {}

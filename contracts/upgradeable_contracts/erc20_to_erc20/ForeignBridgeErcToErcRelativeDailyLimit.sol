@@ -6,4 +6,5 @@ import "./BasicForeignBridgeErcToErcRelativeDailyLimit.sol";
 // solhint-disable-next-line no-empty-blocks
 contract ForeignBridgeErcToErcRelativeDailyLimit is
     BasicForeignBridgeErcToErcRelativeDailyLimit,
-    ForeignBridgeErcToErc {}
+    ForeignBridgeErcToErc
+{}

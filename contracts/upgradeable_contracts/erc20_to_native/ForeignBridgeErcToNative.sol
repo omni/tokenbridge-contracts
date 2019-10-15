@@ -50,6 +50,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
+        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
         emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
 
         return isInitialized();

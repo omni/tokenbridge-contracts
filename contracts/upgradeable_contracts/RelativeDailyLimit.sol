@@ -9,8 +9,8 @@ contract RelativeDailyLimit is BasicTokenBridge {
     event TargetLimitChanged(uint256 newLimit);
     event ThresholdChanged(uint256 newThreshold);
 
-    bytes32 internal constant TARGET_LIMIT = keccak256(abi.encodePacked("targetLimit"));
-    bytes32 internal constant THRESHOLD = keccak256(abi.encodePacked("threshold"));
+    bytes32 internal constant TARGET_LIMIT = 0x192ac2d88a9de45ce541663ebe1aaf6d6b1d4a6299d3fd0abf2ba7e8b920342b; // keccak256(abi.encodePacked("targetLimit"))
+    bytes32 internal constant THRESHOLD = 0xd46c2b20c7303c2e50535d224276492e8a1eda2a3d7398e0bea254640c1154e7; // keccak256(abi.encodePacked("threshold"))
 
     function dailyLimit() public view returns (uint256) {
         uint256 balance = _getTokenBalance();

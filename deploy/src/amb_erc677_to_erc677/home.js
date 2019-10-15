@@ -24,7 +24,7 @@ const {
 const {
   homeContracts: {
     EternalStorageProxy,
-    HomeAMBErc677ToErc677: HomeBridge,
+    HomeAMBErc677ToErc677: HomeBridgeAbsoluteDailyLimit,
     HomeAMBErc677ToErc677RelativeDailyLimit: HomeBridgeRelativeDailyLimit,
     ERC677BridgeToken,
     ERC677BridgeTokenRewardable
@@ -45,7 +45,7 @@ async function deployHome() {
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
   console.log('\n[Home] Deploying homeBridge implementation\n')
-  const HomeBridgeContract = RELATIVE_DAILY_LIMIT ? HomeBridgeRelativeDailyLimit : HomeBridge
+  const HomeBridgeContract = RELATIVE_DAILY_LIMIT ? HomeBridgeRelativeDailyLimit : HomeBridgeAbsoluteDailyLimit
   const homeBridgeImplementation = await deployContract(HomeBridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce

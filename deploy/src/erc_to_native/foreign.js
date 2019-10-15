@@ -16,7 +16,7 @@ const {
   foreignContracts: {
     EternalStorageProxy,
     BridgeValidators,
-    ForeignBridgeErcToNative: ForeignBridge,
+    ForeignBridgeErcToNative: ForeignBridgeAbsoluteDailyLimit,
     ForeignBridgeErcToNativeRelativeDailyLimit: ForeignBridgeRelativeDailyLimit,
   }
 } = require('../loadContracts')
@@ -150,7 +150,7 @@ async function deployForeign() {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
-  const ForeignBridgeContract = RELATIVE_DAILY_LIMIT ? ForeignBridgeRelativeDailyLimit : ForeignBridge
+  const ForeignBridgeContract = RELATIVE_DAILY_LIMIT ? ForeignBridgeRelativeDailyLimit : ForeignBridgeAbsoluteDailyLimit
   const foreignBridgeImplementation = await deployContract(ForeignBridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',

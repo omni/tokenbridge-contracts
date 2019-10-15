@@ -22,10 +22,10 @@ const {
     BridgeValidators,
     RewardableValidators,
     FeeManagerErcToErcPOSDAO,
-    HomeBridgeErcToErc: HomeBridge,
+    HomeBridgeErcToErc: HomeBridgeAbsoluteDailyLimit,
     HomeBridgeErcToErcRelativeDailyLimit: HomeBridgeRelativeDailyLimit,
-    HomeBridgeErcToErcPOSDAO,
-    HomeBridgeErcToErcPOSDAORelativeDailyLimit: HomeBridgeErcToErcPOSDAORelativeDailyLimit,
+    HomeBridgeErcToErcPOSDAO: HomeBridgePOSDAOAbsoluteDailyLimit,
+    HomeBridgeErcToErcPOSDAORelativeDailyLimit: HomeBridgePOSDAORelativeDailyLimit,
     ERC677BridgeToken,
     ERC677BridgeTokenRewardable
   }
@@ -212,14 +212,14 @@ async function deployHome() {
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
   console.log('\ndeploying homeBridge implementation\n')
-  let HomeBridgeErcToErcPOSDAOContract = HomeBridgeErcToErcPOSDAO
-  let HomeBridgeContract = HomeBridge
+  let HomeBridgePOSDAOContract = HomeBridgePOSDAOAbsoluteDailyLimit
+  let HomeBridgeContract = HomeBridgeAbsoluteDailyLimit
   if (RELATIVE_DAILY_LIMIT) {
-    HomeBridgeErcToErcPOSDAOContract = HomeBridgeErcToErcPOSDAORelativeDailyLimit
+    HomeBridgePOSDAOContract = HomeBridgePOSDAORelativeDailyLimit
     HomeBridgeContract = HomeBridgeRelativeDailyLimit
   }
   const bridgeContract =
-    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? HomeBridgeErcToErcPOSDAOContract : HomeBridgeContract
+    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? HomeBridgePOSDAOContract : HomeBridgeContract
   const homeBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce

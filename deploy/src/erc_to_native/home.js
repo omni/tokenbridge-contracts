@@ -18,7 +18,7 @@ const {
     BridgeValidators,
     RewardableValidators,
     FeeManagerErcToNative,
-    HomeBridgeErcToNative: HomeBridge,
+    HomeBridgeErcToNative: HomeBridgeAbsoluteDailyLimit,
     HomeBridgeErcToNativeRelativeDailyLimit: HomeBridgeRelativeDailyLimit,
     FeeManagerErcToNativePOSDAO
   }
@@ -213,7 +213,7 @@ async function deployHome() {
   nonce++
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
   console.log('\ndeploying homeBridge implementation\n')
-  const HomeBridgeContract = RELATIVE_DAILY_LIMIT ? HomeBridgeRelativeDailyLimit : HomeBridge
+  const HomeBridgeContract = RELATIVE_DAILY_LIMIT ? HomeBridgeRelativeDailyLimit : HomeBridgeAbsoluteDailyLimit
   const homeBridgeImplementation = await deployContract(HomeBridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce

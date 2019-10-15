@@ -4,7 +4,7 @@ const { deployContract, privateKeyToAddress, upgradeProxy } = require('../deploy
 const {
   foreignContracts: {
     EternalStorageProxy,
-    ForeignAMBErc677ToErc677: ForeignBridge,
+    ForeignAMBErc677ToErc677: ForeignBridgeAbsoluteDailyLimit,
     ForeignAMBErc677ToErc677RelativeDailyLimit: ForeignBridgeRelativeDailyLimit,
   }
 } = require('../loadContracts')
@@ -28,7 +28,7 @@ async function deployForeign() {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\n[Foreign] Deploying foreignBridge implementation\n')
-  const ForeignBridgeContract = RELATIVE_DAILY_LIMIT ? ForeignBridgeRelativeDailyLimit : ForeignBridge
+  const ForeignBridgeContract = RELATIVE_DAILY_LIMIT ? ForeignBridgeRelativeDailyLimit : ForeignBridgeAbsoluteDailyLimit
   const foreignBridgeImplementation = await deployContract(ForeignBridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',

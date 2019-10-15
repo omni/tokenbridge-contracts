@@ -78,7 +78,6 @@ const {
   ERC20_EXTENDED_BY_ERC677,
   HOME_EVM_VERSION,
   FOREIGN_EVM_VERSION,
-  RELATIVE_DAILY_LIMIT,
 } = process.env
 
 // Types validations
@@ -113,7 +112,6 @@ let validations = {
   FOREIGN_BRIDGE_OWNER: addressValidator(),
   FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
   FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
-  RELATIVE_DAILY_LIMIT: envalid.bool(),
 }
 
 if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
@@ -129,7 +127,8 @@ if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool()
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
+    RELATIVE_DAILY_LIMIT: envalid.bool(),
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -205,7 +204,8 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool()
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
+    RELATIVE_DAILY_LIMIT: envalid.bool(),
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -225,7 +225,8 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
-    ERC20_EXTENDED_BY_ERC677: envalid.bool()
+    ERC20_EXTENDED_BY_ERC677: envalid.bool(),
+    RELATIVE_DAILY_LIMIT: envalid.bool(),
   }
 
   if (ERC20_EXTENDED_BY_ERC677 === 'true') {
@@ -250,7 +251,8 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     ERC20_TOKEN_ADDRESS: addressValidator(),
     BLOCK_REWARD_ADDRESS: addressValidator({
       default: ZERO_ADDRESS
-    })
+    }),
+    RELATIVE_DAILY_LIMIT: envalid.bool(),
   }
 }
 

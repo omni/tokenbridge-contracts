@@ -25,12 +25,12 @@ contract RelativeDailyLimit is BasicTokenBridge {
             // because we check in setters that limit is always less than 1 ether
             // and threshold is greater than minPerTx
             // and minPerTx is less than threshold
-            uint256 a = (1 ether - limit) / (thresh - unlimitedBalance) ** 2;
+            uint256 a = (1 ether - limit) / (thresh - unlimitedBalance)**2;
             uint256 b = 2 * a * thresh;
-            uint256 c = limit + a * thresh ** 2;
-            limit = a * balance ** 2 - b * balance + c;
+            uint256 c = limit + a * thresh**2;
+            limit = a * balance**2 - b * balance + c;
         }
-        return balance * limit / 1 ether;
+        return (balance * limit) / 1 ether;
     }
 
     function targetLimit() public view returns (uint256) {

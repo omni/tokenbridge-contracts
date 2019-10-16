@@ -666,7 +666,31 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       )
       await token.mint(user, ether('2'))
     })
-    it('should allow to bridge tokens using approve tranferFrom', async () => {
+    it('should allow to bridge tokens using approve and relayRequest', async () => {
+      // Given
+      const currentDay = await foreignBridge.getCurrentDay()
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      await foreignBridge.relayRequest(user, recipient, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+      await token.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+      // When
+      await foreignBridge.relayRequest(user, ZERO_ADDRESS, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .relayRequest(user, foreignBridge.address, value, { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.relayRequest(user, user, 0, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await foreignBridge.relayRequest(user, user, value, { from: user }).should.be.fulfilled
+
+      // Then
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+      expectEventInLogs(logs, 'UserRequestForAffirmation', {
+        recipient: user,
+        value
+      })
+    })
+    it('should allow to bridge tokens using approve and relayRequest with different recipient', async () => {
       // Given
       const currentDay = await foreignBridge.getCurrentDay()
       expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)

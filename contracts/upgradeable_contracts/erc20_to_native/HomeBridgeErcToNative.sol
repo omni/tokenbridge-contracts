@@ -44,7 +44,7 @@ contract HomeBridgeErcToNative is
         emit UserRequestForSignature(_receiver, valueToTransfer);
     }
 
-    function relayRequest(address _receiver) external payable {
+    function relayTokens(address _receiver) external payable {
         nativeTransfer(_receiver);
     }
 

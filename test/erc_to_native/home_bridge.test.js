@@ -675,7 +675,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       burnt.should.be.bignumber.equal('2')
     })
   })
-  describe('#relayRequest', () => {
+  describe('#relayTokens', () => {
     const recipient = accounts[7]
     beforeEach(async () => {
       homeContract = await HomeBridge.new()
@@ -698,7 +698,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       const minted = await blockRewardContract.mintedTotallyByBridge(homeContract.address)
       minted.should.be.bignumber.equal('10')
 
-      const { logs } = await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
+      const { logs } = await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
 
       expectEventInLogs(logs, 'UserRequestForSignature', { recipient, value: toBN(1) })
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
@@ -713,13 +713,13 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       const currentDay = await homeContract.getCurrentDay()
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
       expect(await homeContract.totalBurntCoins()).to.be.bignumber.equal('1')
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
       expect(await homeContract.totalBurntCoins()).to.be.bignumber.equal('2')
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
       expect(await homeContract.totalBurntCoins()).to.be.bignumber.equal('3')
 
       const homeContractBalance = toBN(await web3.eth.getBalance(homeContract.address))
@@ -731,30 +731,30 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       const currentDay = await homeContract.getCurrentDay()
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
 
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
       expect(await homeContract.totalBurntCoins()).to.be.bignumber.equal('1')
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 2 }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 2 }).should.be.rejectedWith(ERROR_MSG)
 
       await homeContract.setDailyLimit(4).should.be.fulfilled
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 2 }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 2 }).should.be.fulfilled
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('4')
       expect(await homeContract.totalBurntCoins()).to.be.bignumber.equal('4')
     })
     it('doesnt let you send more than max amount per tx', async () => {
       await blockRewardContract.addMintedTotallyByBridge(200, homeContract.address)
 
-      await homeContract.relayRequest(recipient, {
+      await homeContract.relayTokens(recipient, {
         from: accounts[1],
         value: 1
       }).should.be.fulfilled
       await homeContract
-        .relayRequest(recipient, {
+        .relayTokens(recipient, {
           from: accounts[1],
           value: 3
         })
@@ -763,13 +763,13 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       await homeContract.setDailyLimit(100).should.be.fulfilled
       await homeContract.setMaxPerTx(99).should.be.fulfilled
       // meets max per tx and daily limit
-      await homeContract.relayRequest(recipient, {
+      await homeContract.relayTokens(recipient, {
         from: accounts[1],
         value: 99
       }).should.be.fulfilled
       // above daily limit
       await homeContract
-        .relayRequest(recipient, {
+        .relayTokens(recipient, {
           from: accounts[1],
           value: 1
         })
@@ -786,24 +786,24 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled
       await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: newMinPerTx }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: newMinPerTx }).should.be.fulfilled
       await homeContract
-        .relayRequest(recipient, { from: accounts[1], value: newMinPerTx - 1 })
+        .relayTokens(recipient, { from: accounts[1], value: newMinPerTx - 1 })
         .should.be.rejectedWith(ERROR_MSG)
     })
     it('should fail if not enough bridged tokens', async () => {
       const initiallyMinted = await blockRewardContract.mintedTotallyByBridge(homeContract.address)
       initiallyMinted.should.be.bignumber.equal(ZERO)
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.rejectedWith(ERROR_MSG)
 
       await blockRewardContract.addMintedTotallyByBridge(2, homeContract.address)
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
 
-      await homeContract.relayRequest(recipient, { from: accounts[1], value: 1 }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.rejectedWith(ERROR_MSG)
 
       const minted = await blockRewardContract.mintedTotallyByBridge(homeContract.address)
       const burnt = await homeContract.totalBurntCoins()
@@ -2085,7 +2085,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(toBN(homeBridgeBalance)).to.be.bignumber.equal(value.sub(finalValue))
     })
   })
-  describe('#feeManager_relayRequest', async () => {
+  describe('#feeManager_relayTokens', async () => {
     let homeBridge
     let rewardableValidators
     const owner = accounts[9]
@@ -2127,7 +2127,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       await homeBridge.setHomeFee(feeInWei, { from: owner }).should.be.fulfilled
 
       // When
-      const { logs } = await homeBridge.relayRequest(recipient, { from: sender, value }).should.be.fulfilled
+      const { logs } = await homeBridge.relayTokens(recipient, { from: sender, value }).should.be.fulfilled
 
       // Then
       expectEventInLogs(logs, 'UserRequestForSignature', {
@@ -2774,7 +2774,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       expect(toBN(homeBridgeBalance)).to.be.bignumber.equal(ZERO)
     })
   })
-  describe('#feeManager_relayRequest_POSDAO', async () => {
+  describe('#feeManager_relayTokens_POSDAO', async () => {
     let homeBridge
     let rewardableValidators
     const owner = accounts[9]
@@ -2814,7 +2814,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       await homeBridge.setHomeFee(feeInWei, { from: owner }).should.be.fulfilled
 
       // When
-      const { logs } = await homeBridge.relayRequest(recipient, { from: sender, value }).should.be.fulfilled
+      const { logs } = await homeBridge.relayTokens(recipient, { from: sender, value }).should.be.fulfilled
 
       // Then
       const valueCalc = 0.5 * (1 - fee)

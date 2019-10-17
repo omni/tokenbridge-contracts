@@ -494,8 +494,8 @@ contract('ForeignBridge', async accounts => {
       )
       await token.mint(user, halfEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address, { from: owner })
-      await foreignBridge.onTokenTransfer(user, halfEther, '0x00', { from: owner }).should.be.rejectedWith(ERROR_MSG)
-      await token.transferAndCall(foreignBridge.address, halfEther, '0x00', { from: user }).should.be.fulfilled
+      await foreignBridge.onTokenTransfer(user, halfEther, '0x', { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
       expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
     })
@@ -521,13 +521,13 @@ contract('ForeignBridge', async accounts => {
       await token.transferOwnership(foreignBridge.address, { from: owner })
 
       await token
-        .transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x00', { from: user })
+        .transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
 
       valueMoreThanLimit.should.be.bignumber.equal(await token.totalSupply())
       valueMoreThanLimit.should.be.bignumber.equal(await token.balanceOf(user))
 
-      await token.transferAndCall(foreignBridge.address, halfEther, '0x00', { from: user }).should.be.fulfilled
+      await token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       expect(await token.totalSupply()).to.be.bignumber.equal('1')
       expect(await token.balanceOf(user)).to.be.bignumber.equal('1')
@@ -558,22 +558,22 @@ contract('ForeignBridge', async accounts => {
       await token.transferOwnership(foreignBridge.address, { from: owner })
 
       await token
-        .transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x00', { from: user })
+        .transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
 
       oneEther.add(toBN(1)).should.be.bignumber.equal(await token.totalSupply())
       oneEther.add(toBN(1)).should.be.bignumber.equal(await token.balanceOf(user))
 
-      await token.transferAndCall(foreignBridge.address, halfEther, '0x00', { from: user }).should.be.fulfilled
+      await token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       valueMoreThanLimit.should.be.bignumber.equal(await token.totalSupply())
       valueMoreThanLimit.should.be.bignumber.equal(await token.balanceOf(user))
 
-      await token.transferAndCall(foreignBridge.address, halfEther, '0x00', { from: user }).should.be.fulfilled
+      await token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       expect(await token.totalSupply()).to.be.bignumber.equal('1')
       expect(await token.balanceOf(user)).to.be.bignumber.equal('1')
-      await token.transferAndCall(foreignBridge.address, '1', '0x00', { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await token.transferAndCall(foreignBridge.address, '1', '0x', { from: user }).should.be.rejectedWith(ERROR_MSG)
     })
     it('should not let to withdraw less than minPerTx', async () => {
       const owner = accounts[3]
@@ -596,13 +596,13 @@ contract('ForeignBridge', async accounts => {
       await token.transferOwnership(foreignBridge.address, { from: owner })
 
       await token
-        .transferAndCall(foreignBridge.address, valueLessThanMinPerTx, '0x00', { from: user })
+        .transferAndCall(foreignBridge.address, valueLessThanMinPerTx, '0x', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
 
       oneEther.should.be.bignumber.equal(await token.totalSupply())
       oneEther.should.be.bignumber.equal(await token.balanceOf(user))
 
-      await token.transferAndCall(foreignBridge.address, minPerTx, '0x00', { from: user }).should.be.fulfilled
+      await token.transferAndCall(foreignBridge.address, minPerTx, '0x', { from: user }).should.be.fulfilled
 
       oneEther.sub(minPerTx).should.be.bignumber.equal(await token.totalSupply())
       oneEther.sub(minPerTx).should.be.bignumber.equal(await token.balanceOf(user))
@@ -628,6 +628,9 @@ contract('ForeignBridge', async accounts => {
       await token.transferOwnership(foreignBridge.address, { from: owner })
       await token
         .transferAndCall(foreignBridge.address, halfEther, otherSideBridgeAddress, { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
+      await token
+        .transferAndCall(foreignBridge.address, halfEther, '0x00', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
       await token.transferAndCall(foreignBridge.address, halfEther, user2, { from: user }).should.be.fulfilled
       expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
@@ -1446,7 +1449,7 @@ contract('ForeignBridge', async accounts => {
       await token.mint(user, value, { from: owner }).should.be.fulfilled
       expect(await token.balanceOf(user)).to.be.bignumber.equal(value)
       await token.transferOwnership(foreignBridge.address, { from: owner })
-      const { logs } = await token.transferAndCall(foreignBridge.address, value, '0x00', { from: user })
+      const { logs } = await token.transferAndCall(foreignBridge.address, value, '0x', { from: user })
       logs[0].event.should.be.equal('Transfer')
       logs[0].args.value.should.be.bignumber.equal(value)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)

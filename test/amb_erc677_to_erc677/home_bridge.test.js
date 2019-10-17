@@ -71,15 +71,15 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
 
       // only token address can call it
-      await homeBridge.onTokenTransfer(user, oneEther, '0x00', { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.onTokenTransfer(user, oneEther, '0x', { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
       // must be within limits
       await erc677Token
-        .transferAndCall(homeBridge.address, twoEthers, '0x00', { from: user })
+        .transferAndCall(homeBridge.address, twoEthers, '0x', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
 
       // When
-      const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, '0x00', { from: user }).should.be
+      const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, '0x', { from: user }).should.be
         .fulfilled
 
       // Then
@@ -103,6 +103,9 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
 
       // When
+      await erc677Token
+        .transferAndCall(homeBridge.address, oneEther, '0x00', { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
       const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, user2, { from: user }).should.be
         .fulfilled
 

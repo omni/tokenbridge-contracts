@@ -842,7 +842,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
 
       // User transfer tokens
-      const transferTx = await erc677Token.transferAndCall(contract.address, oneEther, '0x00', { from: user }).should.be
+      const transferTx = await erc677Token.transferAndCall(contract.address, oneEther, '0x', { from: user }).should.be
         .fulfilled
 
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)

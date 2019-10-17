@@ -70,15 +70,15 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(initialEvents.length).to.be.equal(0)
 
       // only token address can call it
-      await foreignBridge.onTokenTransfer(user, halfEther, '0x00', { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.onTokenTransfer(user, halfEther, '0x', { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
       // must be within limits
       await erc677Token
-        .transferAndCall(foreignBridge.address, twoEthers, '0x00', { from: user })
+        .transferAndCall(foreignBridge.address, twoEthers, '0x', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
 
       // When
-      await erc677Token.transferAndCall(foreignBridge.address, halfEther, '0x00', { from: user }).should.be.fulfilled
+      await erc677Token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       // Then
       const events = await getEvents(ambBridgeContract, { event: 'UserRequestForAffirmation' })
@@ -95,14 +95,17 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(initialEvents.length).to.be.equal(0)
 
       // only token address can call it
-      await foreignBridge.onTokenTransfer(user, halfEther, '0x00', { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.onTokenTransfer(user, halfEther, '0x', { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
       // must be within limits
       await erc677Token
-        .transferAndCall(foreignBridge.address, twoEthers, '0x00', { from: user })
+        .transferAndCall(foreignBridge.address, twoEthers, '0x', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
 
       // When
+      await erc677Token
+        .transferAndCall(foreignBridge.address, halfEther, '0x00', { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
       await erc677Token.transferAndCall(foreignBridge.address, halfEther, user2, { from: user }).should.be.fulfilled
 
       // Then

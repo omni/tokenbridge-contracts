@@ -17,7 +17,7 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
         bytes _data
     ) internal {
         if (!lock()) {
-            passMessage(getReceiver(_from, _data), _value);
+            passMessage(chooseReceiver(_from, _data), _value);
         }
     }
 

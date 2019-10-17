@@ -111,7 +111,7 @@ contract BasicAMBErc677ToErc677 is
     }
 
     function relayTokens(address _receiver, uint256 _value) external {
-        _relayTokens(msg.sender, _receiver, _value, "");
+        _relayTokens(msg.sender, _receiver, _value);
     }
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {

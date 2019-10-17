@@ -532,6 +532,32 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
     })
+    it('should allow user to specify a itself as receiver', async () => {
+      // Given
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc20Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.methods['relayTokens(address,address,uint256)'](user, user, value, { from: user }).should.be
+        .fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+    })
     it('should allow to specify a different receiver', async () => {
       // Given
       await contract.initialize(

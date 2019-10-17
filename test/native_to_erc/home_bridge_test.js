@@ -364,7 +364,7 @@ contract('HomeBridge', async accounts => {
     })
   })
 
-  describe('#relayRequest', async () => {
+  describe('#relayTokens', async () => {
     const user = accounts[1]
     const user2 = accounts[2]
     beforeEach(async () => {
@@ -383,7 +383,7 @@ contract('HomeBridge', async accounts => {
       const currentDay = await homeContract.getCurrentDay()
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-      const { logs } = await homeContract.relayRequest(user2, {
+      const { logs } = await homeContract.relayTokens(user2, {
         from: user,
         value: 1
       }).should.be.fulfilled
@@ -392,14 +392,14 @@ contract('HomeBridge', async accounts => {
       expectEventInLogs(logs, 'UserRequestForSignature', { recipient: user2, value: toBN(1) })
 
       await homeContract
-        .relayRequest(user2, {
+        .relayTokens(user2, {
           from: user,
           value: 3
         })
         .should.be.rejectedWith(ERROR_MSG)
 
       await homeContract.setDailyLimit(4).should.be.fulfilled
-      await homeContract.relayRequest(user2, {
+      await homeContract.relayTokens(user2, {
         from: user,
         value: 1
       }).should.be.fulfilled
@@ -408,12 +408,12 @@ contract('HomeBridge', async accounts => {
     })
 
     it('doesnt let you send more than max amount per tx', async () => {
-      await homeContract.relayRequest(user2, {
+      await homeContract.relayTokens(user2, {
         from: user,
         value: 1
       }).should.be.fulfilled
       await homeContract
-        .relayRequest(user2, {
+        .relayTokens(user2, {
           from: user,
           value: 3
         })
@@ -422,13 +422,13 @@ contract('HomeBridge', async accounts => {
       await homeContract.setDailyLimit(100).should.be.fulfilled
       await homeContract.setMaxPerTx(99).should.be.fulfilled
       // meets max per tx and daily limit
-      await homeContract.relayRequest(user2, {
+      await homeContract.relayTokens(user2, {
         from: user,
         value: 99
       }).should.be.fulfilled
       // above daily limit
       await homeContract
-        .relayRequest(user2, {
+        .relayTokens(user2, {
           from: user,
           value: 1
         })
@@ -443,12 +443,12 @@ contract('HomeBridge', async accounts => {
       await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled
       await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled
 
-      await homeContract.relayRequest(user2, {
+      await homeContract.relayTokens(user2, {
         from: user,
         value: newMinPerTx
       }).should.be.fulfilled
       await homeContract
-        .relayRequest(user2, {
+        .relayTokens(user2, {
           from: user,
           value: newMinPerTx - 1
         })
@@ -1409,7 +1409,7 @@ contract('HomeBridge', async accounts => {
       ).should.be.fulfilled
 
       // When
-      const { logs } = await homeBridge.relayRequest(user2, {
+      const { logs } = await homeBridge.relayTokens(user2, {
         from: user,
         value
       }).should.be.fulfilled
@@ -1835,7 +1835,7 @@ contract('HomeBridge', async accounts => {
       ).should.be.fulfilled
 
       // When
-      const { logs } = await homeBridge.relayRequest(user2, {
+      const { logs } = await homeBridge.relayTokens(user2, {
         from: user,
         value
       }).should.be.fulfilled

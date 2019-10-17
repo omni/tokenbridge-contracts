@@ -141,7 +141,7 @@ contract HomeBridgeErcToErc is
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
+        return 0xba4690f5; // bytes4(keccak256(abi.encodePacked("erc-to-erc-core")))
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {

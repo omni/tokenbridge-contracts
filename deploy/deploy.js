@@ -73,7 +73,7 @@ async function deployErcToNative() {
   const deployForeign = require('./src/erc_to_native/foreign')
   await preDeploy()
   const { homeBridge } = await deployHome()
-  const { foreignBridge } = await deployForeign()
+  const { foreignBridge } = await deployForeign(homeBridge.address)
   console.log('\nDeployment has been completed.\n\n')
   console.log(`[ Home ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)

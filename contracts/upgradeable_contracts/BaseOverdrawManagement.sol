@@ -6,7 +6,7 @@ contract BaseOverdrawManagement is EternalStorage {
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);
     event AssetAboveLimitsFixed(bytes32 indexed transactionHash, uint256 value, uint256 remaining);
 
-    bytes32 internal constant OUT_OF_LIMIT_AMOUNT = keccak256(abi.encodePacked("outOfLimitAmount"));
+    bytes32 internal constant OUT_OF_LIMIT_AMOUNT = 0x145286dc85799b6fb9fe322391ba2d95683077b2adf34dd576dedc437e537ba7; // keccak256(abi.encodePacked("outOfLimitAmount"))
 
     function outOfLimitAmount() public view returns (uint256) {
         return uintStorage[OUT_OF_LIMIT_AMOUNT];

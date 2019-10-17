@@ -5,13 +5,8 @@ import "../interfaces/IRewardableValidators.sol";
 import "./ValidatorStorage.sol";
 
 contract ValidatorsFeeManager is BaseFeeManager, ValidatorStorage {
-    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = keccak256(
-        abi.encodePacked("reward-transferring-from-home")
-    );
-
-    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_FOREIGN = keccak256(
-        abi.encodePacked("reward-transferring-from-foreign")
-    );
+    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_HOME = 0x2a11db67c480122765825a7e4bc5428e8b7b9eca0d4e62b91aac194f99edd0d7; // keccak256(abi.encodePacked("reward-transferring-from-home"))
+    bytes32 public constant REWARD_FOR_TRANSFERRING_FROM_FOREIGN = 0xb14796d751eb4f2570065a479f9e526eabeb2077c564c8a1c5ea559883ea2fab; // keccak256(abi.encodePacked("reward-transferring-from-foreign"))
 
     function distributeFeeFromAffirmation(uint256 _fee) external {
         distributeFeeProportionally(_fee, REWARD_FOR_TRANSFERRING_FROM_FOREIGN);

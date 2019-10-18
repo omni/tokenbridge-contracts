@@ -1439,7 +1439,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await token.mint(user, value, { from: owner }).should.be.fulfilled
 
       // When
-      await token.transferAndCall(homeBridge.address, value, '0x00', { from: user }).should.be.fulfilled
+      await token.transferAndCall(homeBridge.address, value, '0x', { from: user }).should.be.fulfilled
 
       // Then
       const events = await getEvents(homeBridge, { event: 'UserRequestForSignature' })
@@ -1510,7 +1510,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await token.mint(user, value, { from: owner }).should.be.fulfilled
 
       // When
-      await token.transferAndCall(homeBridge.address, value, '0x00', { from: user }).should.be.fulfilled
+      await token.transferAndCall(homeBridge.address, value, '0x', { from: user }).should.be.fulfilled
 
       // Then
       const events = await getEvents(homeBridge, { event: 'UserRequestForSignature' })
@@ -1998,7 +1998,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await token.mint(user, value, { from: owner }).should.be.fulfilled
 
       // When
-      await token.transferAndCall(homeBridge.address, value, '0x00', { from: user }).should.be.fulfilled
+      await token.transferAndCall(homeBridge.address, value, '0x', { from: user }).should.be.fulfilled
 
       // Then
       const events = await getEvents(homeBridge, { event: 'UserRequestForSignature' })

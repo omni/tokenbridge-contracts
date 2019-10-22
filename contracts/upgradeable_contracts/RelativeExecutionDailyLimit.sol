@@ -2,12 +2,12 @@ pragma solidity 0.4.24;
 
 import "./BaseRelativeDailyLimit.sol";
 
-contract RelativeDailyLimit is BaseRelativeDailyLimit {
+contract RelativeExecutionDailyLimit is BaseRelativeDailyLimit {
     function _minPerTx() internal view returns (uint256) {
-        return minPerTx();
+        return executionMinPerTx();
     }
 
-    function dailyLimit() public view returns (uint256) {
+    function executionDailyLimit() public view returns (uint256) {
         return _calculateLimit();
     }
 }

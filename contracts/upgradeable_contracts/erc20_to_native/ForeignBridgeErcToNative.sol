@@ -4,9 +4,6 @@ import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 
 contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
-    event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
-    event UserRequestForAffirmation(address recipient, uint256 value);
-
     bytes32 internal constant BRIDGE_CONTRACT = 0x71483949fe7a14d16644d63320f24d10cf1d60abecc30cc677a340e82b699dd2; // keccak256(abi.encodePacked("bridgeOnOtherSide"))
 
     function initialize(
@@ -88,23 +85,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
     }
 
     function _relayTokens(address _sender, address _receiver, uint256 _amount) internal {
-        require(_receiver != address(0));
-        require(_receiver != address(this));
         require(_receiver != bridgeContractOnOtherSide());
-        require(_amount > 0);
-        require(withinLimit(_amount));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_amount));
-
-        erc20token().transferFrom(_sender, address(this), _amount);
-        emit UserRequestForAffirmation(_receiver, _amount);
-    }
-
-    function relayTokens(address _from, address _receiver, uint256 _amount) external {
-        require(_from == msg.sender || _from == _receiver);
-        _relayTokens(_from, _receiver, _amount);
-    }
-
-    function relayTokens(address _receiver, uint256 _amount) external {
-        _relayTokens(msg.sender, _receiver, _amount);
+        super._relayTokens(_sender, _receiver, _amount);
     }
 }

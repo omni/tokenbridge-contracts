@@ -4,8 +4,6 @@ import "./BasicForeignBridgeErcToErc.sol";
 import "../ERC677Bridge.sol";
 
 contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc {
-    event UserRequestForAffirmation(address recipient, uint256 value);
-
     function initialize(
         address _validatorContract,
         address _erc20token,

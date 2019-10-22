@@ -11,9 +11,6 @@ contract ForeignBridgeNativeToErc is
     ERC677BridgeForBurnableMintableToken,
     RewardableForeignBridgeNativeToErc
 {
-    /// Event created on money withdraw.
-    event UserRequestForAffirmation(address recipient, uint256 value);
-
     function initialize(
         address _validatorContract,
         address _erc677token,

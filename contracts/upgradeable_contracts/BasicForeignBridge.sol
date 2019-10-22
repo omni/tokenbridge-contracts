@@ -13,6 +13,8 @@ import "./MessageRelay.sol";
 contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge, MessageRelay {
     /// triggered when relay of deposit from HomeBridge is complete
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
+    event UserRequestForAffirmation(address recipient, uint256 value);
+
     function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
         Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract(), false);
         address recipient;

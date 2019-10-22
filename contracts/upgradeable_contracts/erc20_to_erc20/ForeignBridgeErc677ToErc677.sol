@@ -12,7 +12,7 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[] _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 =  _homeMinPerTx]
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
@@ -21,16 +21,17 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
                 _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
                 _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
         );
-        uint256[] memory _maxPerTxHomeDailyLimitHomeMaxPerTxArray = new uint256[](3);
+        uint256[] memory _maxPerTxHomeDailyLimitHomeMaxPerTxArray = new uint256[](4);
         _maxPerTxHomeDailyLimitHomeMaxPerTxArray[0] = _dailyLimitMaxPerTxMinPerTxArray[1]; // _maxPerTx
-        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[1] = _homeDailyLimitHomeMaxPerTxArray[0]; // _homeDailyLimit
-        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[2] = _homeDailyLimitHomeMaxPerTxArray[1]; // _homeMaxPerTx
+        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[1] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0]; // _homeDailyLimit
+        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[2] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1]; // _homeMaxPerTx
+        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[3] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2]; // _homeMinPerTx
         _initialize(
             _validatorContract,
             _erc20token,
             _requiredBlockConfirmations,
             _gasPrice,
-            _maxPerTxHomeDailyLimitHomeMaxPerTxArray, // [ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx ]
+            _maxPerTxHomeDailyLimitHomeMaxPerTxArray, // [ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx, 3 = _homeMinPerTx ]
             _owner,
             _decimalShift
         );

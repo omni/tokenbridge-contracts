@@ -20,7 +20,7 @@ contract ForeignBridgeNativeToErc is
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[] _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
@@ -30,7 +30,7 @@ contract ForeignBridgeNativeToErc is
             _dailyLimitMaxPerTxMinPerTxArray,
             _foreignGasPrice,
             _requiredBlockConfirmations,
-            _homeDailyLimitHomeMaxPerTxArray,
+            _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray,
             _owner,
             _decimalShift
         );
@@ -44,7 +44,7 @@ contract ForeignBridgeNativeToErc is
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[] _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
         address _owner,
         address _feeManager,
         uint256 _homeFee,
@@ -56,7 +56,7 @@ contract ForeignBridgeNativeToErc is
             _dailyLimitMaxPerTxMinPerTxArray,
             _foreignGasPrice,
             _requiredBlockConfirmations,
-            _homeDailyLimitHomeMaxPerTxArray,
+            _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray,
             _owner,
             _decimalShift
         );
@@ -81,7 +81,7 @@ contract ForeignBridgeNativeToErc is
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[] _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
         address _owner,
         uint256 _decimalShift
     ) internal {
@@ -94,7 +94,11 @@ contract ForeignBridgeNativeToErc is
         );
         require(_requiredBlockConfirmations > 0);
         require(_foreignGasPrice > 0);
-        require(_homeDailyLimitHomeMaxPerTxArray[1] < _homeDailyLimitHomeMaxPerTxArray[0]); // _homeMaxPerTx < _homeDailyLimit
+        require(
+            _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] > 0 && // _homeMinPerTx > 0
+            _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1] > _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] && // _homeMaxPerTx > _homeMinPerTx
+            _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1] < _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0] // _homeMaxPerTx < _homeDailyLimit
+        );
         require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
@@ -105,15 +109,16 @@ contract ForeignBridgeNativeToErc is
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
         uintStorage[GAS_PRICE] = _foreignGasPrice;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0];
+        uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1];
+        uintStorage[EXECUTION_MIN_PER_TX] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_foreignGasPrice);
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
+        emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0]);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {

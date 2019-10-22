@@ -12,7 +12,7 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
+        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
@@ -25,7 +25,7 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
             _homeGasPrice,
             _requiredBlockConfirmations,
             _erc677token,
-            _foreignDailyLimitForeignMaxPerTxArray,
+            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray,
             _owner,
             _feeManager,
             _homeFeeForeignFeeArray,

@@ -20,6 +20,7 @@ const twoEther = ether('2')
 const halfEther = ether('0.5')
 const foreignDailyLimit = oneEther
 const foreignMaxPerTx = halfEther
+const foreignMinPerTx = minPerTx
 const ZERO = toBN(0)
 const decimalShiftZero = 0
 
@@ -52,7 +53,7 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         '9'
       ).should.be.fulfilled
@@ -87,7 +88,7 @@ contract('HomeBridge', async accounts => {
           ['1', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -98,7 +99,7 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '2'],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -112,7 +113,7 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -137,7 +138,7 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -167,7 +168,7 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          ['3', '2'],
+          ['3', '2', '1'],
           owner,
           decimalShiftZero
         )
@@ -191,7 +192,7 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           0,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -202,7 +203,7 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -213,7 +214,7 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -223,7 +224,7 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -236,7 +237,7 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -262,7 +263,7 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          ['3', '2'],
+          ['3', '2', '1'],
           owner,
           decimalShiftZero
         )
@@ -282,7 +283,7 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -373,7 +374,7 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -414,7 +415,7 @@ contract('HomeBridge', async accounts => {
         [twoEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -489,7 +490,7 @@ contract('HomeBridge', async accounts => {
         [twoEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -577,7 +578,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -651,7 +652,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -764,7 +765,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -824,7 +825,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -927,7 +928,7 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          ['3', '2'],
+          ['3', '2', '1'],
           owner,
           decimalShiftZero
         )
@@ -956,7 +957,7 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          ['3', '2'],
+          ['3', '2', '1'],
           owner,
           decimalShiftZero
         )
@@ -985,7 +986,7 @@ contract('HomeBridge', async accounts => {
           [oneEther.toString(), halfEther.toString(), '1'],
           gasPrice,
           requireBlockConfirmations,
-          [oneEther.toString(), halfEther.toString()],
+          [oneEther.toString(), halfEther.toString(), '1'],
           owner,
           decimalShiftZero
         )
@@ -1033,7 +1034,7 @@ contract('HomeBridge', async accounts => {
           [oneEther, halfEther, minPerTx],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           feeManager.address,
           [homeFee, foreignFee],
@@ -1046,7 +1047,7 @@ contract('HomeBridge', async accounts => {
           [oneEther, halfEther, minPerTx],
           0,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           feeManager.address,
           [homeFee, foreignFee],
@@ -1059,7 +1060,7 @@ contract('HomeBridge', async accounts => {
           [oneEther, halfEther, minPerTx],
           gasPrice,
           0,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           feeManager.address,
           [homeFee, foreignFee],
@@ -1072,7 +1073,7 @@ contract('HomeBridge', async accounts => {
           [oneEther, halfEther, minPerTx],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           ZERO_ADDRESS,
           [homeFee, foreignFee],
@@ -1084,7 +1085,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -1118,7 +1119,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -1143,7 +1144,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -1167,7 +1168,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -1198,7 +1199,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -1220,7 +1221,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -1260,7 +1261,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
@@ -1310,7 +1311,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
@@ -1370,7 +1371,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
@@ -1442,7 +1443,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
@@ -1537,7 +1538,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
@@ -1636,7 +1637,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
@@ -1691,7 +1692,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
@@ -1754,7 +1755,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
@@ -1838,7 +1839,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
@@ -1924,7 +1925,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
@@ -1995,7 +1996,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
@@ -2089,7 +2090,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
@@ -2176,7 +2177,7 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftTwo
       )
@@ -2226,7 +2227,7 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftTwo
       )

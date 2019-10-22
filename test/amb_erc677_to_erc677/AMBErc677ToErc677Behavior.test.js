@@ -16,6 +16,7 @@ const maxPerTx = oneEther
 const minPerTx = ether('0.01')
 const executionDailyLimit = dailyLimit
 const executionMaxPerTx = maxPerTx
+const executionMinPerTx = minPerTx
 const exampleTxHash = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const decimalShiftZero = 0
 
@@ -43,6 +44,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await contract.minPerTx()).to.be.bignumber.equal(ZERO)
       expect(await contract.executionDailyLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(ZERO)
+      expect(await contract.executionMinPerTx()).to.be.bignumber.equal(ZERO)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
 
@@ -53,7 +55,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           mediatorContract.address,
           erc677Token.address,
           [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
+          [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
           maxGasPerTx,
           decimalShiftZero,
           owner
@@ -67,7 +69,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           mediatorContract.address,
           ZERO_ADDRESS,
           [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
+          [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
           maxGasPerTx,
           decimalShiftZero,
           owner
@@ -81,7 +83,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           mediatorContract.address,
           erc677Token.address,
           [maxPerTx, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
+          [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
           maxGasPerTx,
           decimalShiftZero,
           owner
@@ -95,7 +97,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           mediatorContract.address,
           erc677Token.address,
           [dailyLimit, minPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
+          [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
           maxGasPerTx,
           decimalShiftZero,
           owner
@@ -109,7 +111,21 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           mediatorContract.address,
           erc677Token.address,
           [dailyLimit, maxPerTx, minPerTx],
-          [executionMaxPerTx, executionMaxPerTx],
+          [executionMaxPerTx, executionMaxPerTx, executionMinPerTx],
+          maxGasPerTx,
+          decimalShiftZero,
+          owner
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+
+      // executionMaxPerTx > executionMinPerTx
+      await contract
+        .initialize(
+          bridgeContract.address,
+          mediatorContract.address,
+          erc677Token.address,
+          [dailyLimit, maxPerTx, minPerTx],
+          [executionDailyLimit, executionMinPerTx, executionMinPerTx],
           maxGasPerTx,
           decimalShiftZero,
           owner
@@ -123,7 +139,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           mediatorContract.address,
           erc677Token.address,
           [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
+          [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
           dailyLimit,
           decimalShiftZero,
           owner
@@ -135,7 +151,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -148,7 +164,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
           mediatorContract.address,
           erc677Token.address,
           [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
+          [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
           maxGasPerTx,
           decimalShiftZero,
           owner
@@ -164,6 +180,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await contract.minPerTx()).to.be.bignumber.equal(minPerTx)
       expect(await contract.executionDailyLimit()).to.be.bignumber.equal(executionDailyLimit)
       expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(executionMaxPerTx)
+      expect(await contract.executionMinPerTx()).to.be.bignumber.equal(executionMinPerTx)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.owner()).to.be.equal(owner)
 
@@ -180,7 +197,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -205,7 +222,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -231,7 +248,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -266,7 +283,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [3, 2, 1],
-        [3, 2],
+        [3, 2, 1],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -305,6 +322,13 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await contract.executionMaxPerTx()).to.be.bignumber.equal('2')
 
       await contract.setExecutionMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('setExecutionMinPerTx allows to set only to owner and cannot be more than execution daily limit and should be less than executionMaxPerTx', async () => {
+      await contract.setExecutionMinPerTx(1, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.setExecutionMinPerTx(1, { from: owner }).should.be.fulfilled
+      expect(await contract.executionMinPerTx()).to.be.bignumber.equal('1')
+
+      await contract.setExecutionMinPerTx(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
     it('setExecutionDailyLimit allow to set by owner and should be greater than maxPerTx or zero', async () => {
       await contract.setExecutionDailyLimit(4, { from: user }).should.be.rejectedWith(ERROR_MSG)
@@ -348,7 +372,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -514,7 +538,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc20Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -537,7 +561,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc20Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -551,7 +575,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc20Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -577,7 +601,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -606,7 +630,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -640,7 +664,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -750,7 +774,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -866,7 +890,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner

@@ -20,6 +20,7 @@ const oneEther = ether('1')
 const halfEther = ether('0.5')
 const foreignDailyLimit = oneEther
 const foreignMaxPerTx = halfEther
+const foreignMinPerTx = quarterEther
 const ZERO = toBN(0)
 const decimalShiftZero = 0
 
@@ -56,7 +57,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         '9'
       ).should.be.fulfilled
@@ -94,7 +95,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -133,7 +134,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -145,7 +146,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -163,7 +164,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          ['3', '2'],
+          ['3', '2', '1'],
           owner,
           decimalShiftZero
         )
@@ -189,7 +190,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          ['3', '2'],
+          ['3', '2', '1'],
           homeOwner,
           decimalShiftZero
         )
@@ -225,7 +226,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           0,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -237,7 +238,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -249,7 +250,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -261,7 +262,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           owner,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -273,7 +274,19 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          [halfEther, oneEther],
+          [halfEther, oneEther, quarterEther],
+          owner,
+          decimalShiftZero
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeContract
+        .initialize(
+          validatorContract.address,
+          ['3', '2', '1'],
+          gasPrice,
+          requireBlockConfirmations,
+          blockRewardContract.address,
+          [oneEther, halfEther, halfEther],
           owner,
           decimalShiftZero
         )
@@ -284,7 +297,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -317,7 +330,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -357,7 +370,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           0,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           feeManager.address,
           [homeFee, foreignFee],
@@ -371,7 +384,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           feeManager.address,
           [homeFee, foreignFee],
@@ -385,7 +398,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           feeManager.address,
           [homeFee, foreignFee],
@@ -399,21 +412,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           owner,
-          [foreignDailyLimit, foreignMaxPerTx],
-          owner,
-          feeManager.address,
-          [homeFee, foreignFee],
-          decimalShiftZero
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-      await homeContract
-        .rewardableInitialize(
-          validatorContract.address,
-          ['3', '2', '1'],
-          gasPrice,
-          requireBlockConfirmations,
-          blockRewardContract.address,
-          [halfEther, oneEther],
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           feeManager.address,
           [homeFee, foreignFee],
@@ -427,7 +426,35 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
           gasPrice,
           requireBlockConfirmations,
           blockRewardContract.address,
-          [foreignDailyLimit, foreignMaxPerTx],
+          [halfEther, oneEther, quarterEther],
+          owner,
+          feeManager.address,
+          [homeFee, foreignFee],
+          decimalShiftZero
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeContract
+        .rewardableInitialize(
+          validatorContract.address,
+          ['3', '2', '1'],
+          gasPrice,
+          requireBlockConfirmations,
+          blockRewardContract.address,
+          [oneEther, halfEther, halfEther],
+          owner,
+          feeManager.address,
+          [homeFee, foreignFee],
+          decimalShiftZero
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeContract
+        .rewardableInitialize(
+          validatorContract.address,
+          ['3', '2', '1'],
+          gasPrice,
+          requireBlockConfirmations,
+          blockRewardContract.address,
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
           owner,
           ZERO_ADDRESS,
           [homeFee, foreignFee],
@@ -440,7 +467,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -456,7 +483,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -481,7 +508,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -509,7 +536,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         feeManager.address,
         [homeFee, foreignFee],
@@ -545,7 +572,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -689,7 +716,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -727,6 +754,16 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       executionMaxPerTx.should.be.bignumber.equal(newValue)
     })
 
+    it('setExecutionMinPerTx allows to set only to owner and cannot be more than execution daily limit and should be less than executionMaxPerTx', async () => {
+      const newValue = ether('0.1')
+      await homeContract.setExecutionMinPerTx(newValue, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
+      await homeContract.setExecutionMinPerTx(newValue, { from: owner }).should.be.fulfilled
+
+      await homeContract.setExecutionMinPerTx(ether('0.6'), { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      const minPerTx = await homeContract.executionMinPerTx()
+      minPerTx.should.be.bignumber.equal(newValue)
+    })
+
     it('executionDailyLimit allows to set only to owner', async () => {
       const newValue = ether('1.5')
 
@@ -758,7 +795,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -833,7 +870,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -897,7 +934,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         ZERO_ADDRESS,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -923,7 +960,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -1074,7 +1111,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -1142,7 +1179,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -1248,7 +1285,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -1486,7 +1523,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -1556,7 +1593,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -1640,7 +1677,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -1714,7 +1751,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -1819,7 +1856,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -1921,7 +1958,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -1977,7 +2014,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2046,7 +2083,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2140,7 +2177,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2253,7 +2290,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2330,7 +2367,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2439,7 +2476,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2554,7 +2591,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2611,7 +2648,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2687,7 +2724,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2788,7 +2825,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2902,7 +2939,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftTwo
       )
@@ -2963,7 +3000,7 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftTwo
       )

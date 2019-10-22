@@ -34,7 +34,7 @@ contract BasicAMBErc677ToErc677 is
         address _mediatorContract,
         address _erc677token,
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
+        uint256[] _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
         uint256 _requestGasLimit,
         uint256 _decimalShift,
         address _owner
@@ -45,7 +45,11 @@ contract BasicAMBErc677ToErc677 is
                 _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
                 _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
         );
-        require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // _executionMaxPerTx < _executionDailyLimit
+        require(
+            _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[2] > 0 && // _executionMinPerTx > 0
+            _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[1] > _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[2] && // _executionMaxPerTx > _executionMinPerTx
+            _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0] // _executionMaxPerTx < _executionDailyLimit
+        );
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
@@ -53,8 +57,9 @@ contract BasicAMBErc677ToErc677 is
         uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0];
+        uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[1];
+        uintStorage[EXECUTION_MIN_PER_TX] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[2];
         _setRequestGasLimit(_requestGasLimit);
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
@@ -62,7 +67,7 @@ contract BasicAMBErc677ToErc677 is
         setInitialize();
 
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxArray[0]);
+        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0]);
 
         return isInitialized();
     }

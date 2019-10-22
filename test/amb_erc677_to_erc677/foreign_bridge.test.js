@@ -22,6 +22,7 @@ const maxPerTx = oneEther
 const minPerTx = ether('0.01')
 const executionDailyLimit = dailyLimit
 const executionMaxPerTx = maxPerTx
+const executionMinPerTx = minPerTx
 const exampleTxHash = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const decimalShiftZero = 0
 
@@ -56,7 +57,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -100,7 +101,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -160,7 +161,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftTwo,
         owner

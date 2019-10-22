@@ -8,12 +8,14 @@ const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
 const { createMessage, sign, signatureToVRS, ether, expectEventInLogs } = require('../helpers/helpers')
 
+const quarterEther = ether('0.25')
 const halfEther = ether('0.5')
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
 const oneEther = ether('1')
 const homeDailyLimit = oneEther
 const homeMaxPerTx = halfEther
+const homeMinPerTx = quarterEther
 const maxPerTx = halfEther
 const ZERO = toBN(0)
 const decimalShiftZero = 0
@@ -48,7 +50,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -59,7 +61,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           ZERO_ADDRESS,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -70,7 +72,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           token.address,
           0,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -81,7 +83,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           token.address,
           requireBlockConfirmations,
           0,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -92,7 +94,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           owner,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -103,7 +105,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -114,7 +116,18 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, halfEther, homeMaxPerTx],
+          [maxPerTx, halfEther, homeMaxPerTx, homeMinPerTx],
+          owner,
+          decimalShiftZero
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -125,7 +138,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         '9'
       )
@@ -165,7 +178,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -309,7 +322,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero,
         { from: ownerOfValidatorContract }
@@ -375,7 +388,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         erc20Token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -436,7 +449,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -460,7 +473,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           tokenAddress,
           requireBlockConfirmations,
           gasPrice,
-          ['2', '3', '2'],
+          ['2', '3', '2', '1'],
           owner,
           decimalShiftZero
         )
@@ -488,7 +501,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -530,7 +543,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftTwo
       )
@@ -575,7 +588,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftTwo,
         { from: ownerOfValidatorContract }

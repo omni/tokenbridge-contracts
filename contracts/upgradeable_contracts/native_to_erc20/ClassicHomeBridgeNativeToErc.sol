@@ -8,7 +8,7 @@ contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
+        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
         uint256 _decimalShift
     ) internal {
@@ -17,7 +17,7 @@ contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
             _dailyLimitMaxPerTxMinPerTxArray,
             _homeGasPrice,
             _requiredBlockConfirmations,
-            _foreignDailyLimitForeignMaxPerTxArray,
+            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray,
             _owner,
             _decimalShift
         );

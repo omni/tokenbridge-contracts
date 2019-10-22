@@ -19,6 +19,7 @@ const oneEther = ether('1')
 const halfEther = ether('0.5')
 const executionDailyLimit = oneEther
 const executionMaxPerTx = halfEther
+const executionMinPerTx = minPerTx
 const ZERO = new BN(0)
 const decimalShiftZero = 0
 
@@ -234,7 +235,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -245,7 +246,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -411,7 +412,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -422,7 +423,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [executionDailyLimit, executionMaxPerTx],
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         owner,
         decimalShiftZero
       )

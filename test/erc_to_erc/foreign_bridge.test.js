@@ -15,6 +15,7 @@ const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
 const homeDailyLimit = oneEther
 const homeMaxPerTx = halfEther
+const homeMinPerTx = ether('0.01')
 const maxPerTx = halfEther
 const minPerTx = ether('0.01')
 const dailyLimit = oneEther
@@ -51,7 +52,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -62,7 +63,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           ZERO_ADDRESS,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -73,7 +74,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           owner,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -84,7 +85,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           token.address,
           0,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -95,7 +96,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           token.address,
           requireBlockConfirmations,
           0,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -106,7 +107,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx],
+          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
           owner,
           decimalShiftZero
         )
@@ -117,7 +118,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         '9'
       )
@@ -157,7 +158,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -288,7 +289,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero,
         { from: ownerOfValidatorContract }
@@ -348,7 +349,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         erc20Token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -408,7 +409,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -436,7 +437,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           tokenAddress,
           requireBlockConfirmations,
           gasPrice,
-          ['2', '3', '2'],
+          ['2', '3', '2', '1'],
           owner,
           decimalShiftZero
         )
@@ -460,7 +461,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -493,7 +494,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         requireBlockConfirmations,
         gasPrice,
         [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
+        [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -516,7 +517,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         requireBlockConfirmations,
         gasPrice,
         [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
+        [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -546,7 +547,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         requireBlockConfirmations,
         gasPrice,
         [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
+        [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -581,7 +582,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         requireBlockConfirmations,
         gasPrice,
         [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
+        [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -622,7 +623,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         requireBlockConfirmations,
         gasPrice,
         [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
+        [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -660,7 +661,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftTwo
       )
@@ -703,7 +704,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         erc20Token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx],
+        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftTwo
       )
@@ -754,7 +755,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         requireBlockConfirmations,
         gasPrice,
         [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
+        [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftTwo
       )

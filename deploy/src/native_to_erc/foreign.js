@@ -45,6 +45,7 @@ const {
   BRIDGEABLE_TOKEN_DECIMALS,
   HOME_DAILY_LIMIT,
   HOME_MAX_AMOUNT_PER_TX,
+  HOME_MIN_AMOUNT_PER_TX,
   DEPLOY_REWARDABLE_TOKEN,
   BLOCK_REWARD_ADDRESS,
   DPOS_STAKING_ADDRESS,
@@ -94,6 +95,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
     HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
   Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%,
@@ -106,7 +108,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
         [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         FOREIGN_GAS_PRICE,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         FOREIGN_BRIDGE_OWNER,
         feeManager.options.address,
         homeFeeInWei,
@@ -126,6 +128,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
     HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
   `)
@@ -137,7 +140,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
         [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         FOREIGN_GAS_PRICE,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         FOREIGN_BRIDGE_OWNER,
         foreignToHomeDecimalShift
       )

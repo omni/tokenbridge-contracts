@@ -50,6 +50,7 @@ async function initialize({
     minPerTx,
     executionDailyLimit,
     executionMaxPerTx,
+    executionMinPerTx,
     requestGasLimit,
     foreignToHomeDecimalShift,
     owner
@@ -61,15 +62,16 @@ async function initialize({
 
   const contract = new web3.eth.Contract(abi, address)
   console.log(`
-    AMB contract: ${bridgeContract}, 
-    Mediator contract: ${mediatorContract}, 
+    AMB contract: ${bridgeContract},
+    Mediator contract: ${mediatorContract},
     Token contract: ${erc677token},
     DAILY_LIMIT : ${dailyLimit} which is ${Web3Utils.fromWei(dailyLimit)} in eth,
     MAX_AMOUNT_PER_TX: ${maxPerTx} which is ${Web3Utils.fromWei(maxPerTx)} in eth,
     MIN_AMOUNT_PER_TX: ${minPerTx} which is ${Web3Utils.fromWei(minPerTx)} in eth,
     EXECUTION_DAILY_LIMIT : ${executionDailyLimit} which is ${Web3Utils.fromWei(executionDailyLimit)} in eth,
     EXECUTION_MAX_AMOUNT_PER_TX: ${executionMaxPerTx} which is ${Web3Utils.fromWei(executionMaxPerTx)} in eth,
-    MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit}, 
+    EXECUTION_MIN_AMOUNT_PER_TX: ${executionMinPerTx} which is ${Web3Utils.fromWei(executionMinPerTx)} in eth,
+    MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
     FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
     OWNER: ${owner}
   `)
@@ -80,7 +82,7 @@ async function initialize({
       mediatorContract,
       erc677token,
       [dailyLimit, maxPerTx, minPerTx],
-      [executionDailyLimit, executionMaxPerTx],
+      [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
       requestGasLimit,
       foreignToHomeDecimalShift,
       owner
@@ -130,6 +132,7 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
       minPerTx: HOME_MIN_AMOUNT_PER_TX,
       executionDailyLimit: FOREIGN_DAILY_LIMIT,
       executionMaxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
+      executionMinPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
       requestGasLimit: HOME_MEDIATOR_REQUEST_GAS_LIMIT,
       foreignToHomeDecimalShift,
       owner: HOME_BRIDGE_OWNER
@@ -154,6 +157,7 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
       minPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
       executionDailyLimit: HOME_DAILY_LIMIT,
       executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX,
+      executionMinPerTx: HOME_MIN_AMOUNT_PER_TX,
       requestGasLimit: FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
       foreignToHomeDecimalShift,
       owner: FOREIGN_BRIDGE_OWNER

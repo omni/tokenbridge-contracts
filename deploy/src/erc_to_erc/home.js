@@ -49,6 +49,7 @@ const {
   BRIDGEABLE_TOKEN_DECIMALS,
   FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
+  FOREIGN_MIN_AMOUNT_PER_TX,
   DEPLOY_REWARDABLE_TOKEN,
   BLOCK_REWARD_ADDRESS,
   DPOS_STAKING_ADDRESS,
@@ -103,7 +104,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         erc677token.options.address,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
         [homeFeeInWei, foreignFeeInWei],
@@ -126,7 +127,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         erc677token.options.address,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         foreignToHomeDecimalShift
       )

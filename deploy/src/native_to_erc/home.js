@@ -39,6 +39,7 @@ const {
   HOME_REQUIRED_BLOCK_CONFIRMATIONS,
   FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
+  FOREIGN_MIN_AMOUNT_PER_TX,
   HOME_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
   FOREIGN_TRANSACTIONS_FEE,
@@ -87,6 +88,9 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
+  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MIN_AMOUNT_PER_TX
+    )} in eth,
   HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
   Home Fee: ${homeFeeInWei} which is ${homeFee * 100}%
@@ -99,7 +103,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
         [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
         [homeFeeInWei, foreignFeeInWei],
@@ -117,6 +121,9 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
+  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+      FOREIGN_MIN_AMOUNT_PER_TX
+    )} in eth,
   HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
   FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
   `)
@@ -126,7 +133,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
         [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX],
+        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
         foreignToHomeDecimalShift
       )

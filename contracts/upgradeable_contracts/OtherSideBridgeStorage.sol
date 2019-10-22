@@ -9,7 +9,7 @@ contract OtherSideBridgeStorage is EternalStorage {
         addressStorage[BRIDGE_CONTRACT] = _bridgeContract;
     }
 
-    function bridgeContractOnOtherSide() public view returns (address) {
+    function bridgeContractOnOtherSide() internal view returns (address) {
         return addressStorage[BRIDGE_CONTRACT];
     }
 }

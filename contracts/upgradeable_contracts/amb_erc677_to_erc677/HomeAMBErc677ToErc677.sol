@@ -2,7 +2,6 @@ pragma solidity 0.4.24;
 
 import "./BasicAMBErc677ToErc677.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
-import "openzeppelin-solidity/contracts/AddressUtils.sol";
 
 contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {

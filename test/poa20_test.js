@@ -247,7 +247,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         requireBlockConfirmations,
         [executionDailyLimit, executionMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        homeErcToErcContract.address
       )
     })
     it('sends tokens to recipient', async () => {
@@ -424,7 +425,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         requireBlockConfirmations,
         [executionDailyLimit, executionMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        homeErcToErcContract.address
       )
     })
     it('calls contractFallback', async () => {

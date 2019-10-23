@@ -64,7 +64,7 @@ if (isRewardableBridge) {
   VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 }
 
-async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, initialNonce }) {
+async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, initialNonce, homeBridgeAddress }) {
   let nonce = initialNonce
   let initializeFBridgeData
 
@@ -95,7 +95,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
   Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}`)
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+  Home bridge Address: ${homeBridgeAddress}`)
 
     initializeFBridgeData = await bridge.methods
       .rewardableInitialize(
@@ -108,7 +109,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
         FOREIGN_BRIDGE_OWNER,
         feeManager.options.address,
         homeFeeInWei,
-        foreignToHomeDecimalShift
+        foreignToHomeDecimalShift,
+        homeBridgeAddress
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   } else {
@@ -126,6 +128,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+  Home bridge Address: ${homeBridgeAddress}
   `)
 
     initializeFBridgeData = await bridge.methods
@@ -137,7 +140,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
         [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
         FOREIGN_BRIDGE_OWNER,
-        foreignToHomeDecimalShift
+        foreignToHomeDecimalShift,
+        homeBridgeAddress
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   }
@@ -159,7 +163,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   return nonce
 }
 
-async function deployForeign() {
+async function deployForeign(homeBridgeAddress) {
   let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
   console.log('========================================')
   console.log('deploying ForeignBridge')
@@ -259,7 +263,8 @@ async function deployForeign() {
     validatorsBridge: storageValidatorsForeign,
     bridge: foreignBridgeImplementation,
     erc677bridgeToken,
-    initialNonce: nonce
+    initialNonce: nonce,
+    homeBridgeAddress
   })
 
   console.log('\nset bridge contract on ERC677BridgeToken')

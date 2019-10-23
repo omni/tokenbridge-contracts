@@ -67,14 +67,8 @@ contract BasicAMBErc677ToErc677 is
         return isInitialized();
     }
 
-    function chooseReceiver(address _from, bytes _data) internal view returns (address recipient) {
-        recipient = _from;
-        if (_data.length > 0) {
-            require(_data.length == 20);
-            recipient = Bytes.bytesToAddress(_data);
-            require(recipient != address(0));
-            require(recipient != mediatorContractOnOtherSide());
-        }
+    function bridgeContractOnOtherSide() internal view returns (address) {
+        return mediatorContractOnOtherSide();
     }
 
     function passMessage(address _from, uint256 _value) internal {

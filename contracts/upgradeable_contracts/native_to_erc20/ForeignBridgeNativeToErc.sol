@@ -19,7 +19,8 @@ contract ForeignBridgeNativeToErc is
         uint256 _requiredBlockConfirmations,
         uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) external returns (bool) {
         _initialize(
             _validatorContract,
@@ -29,7 +30,8 @@ contract ForeignBridgeNativeToErc is
             _requiredBlockConfirmations,
             _homeDailyLimitHomeMaxPerTxArray,
             _owner,
-            _decimalShift
+            _decimalShift,
+            _bridgeOnOtherSide
         );
         setInitialize();
         return isInitialized();
@@ -45,7 +47,8 @@ contract ForeignBridgeNativeToErc is
         address _owner,
         address _feeManager,
         uint256 _homeFee,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) external returns (bool) {
         _initialize(
             _validatorContract,
@@ -55,7 +58,8 @@ contract ForeignBridgeNativeToErc is
             _requiredBlockConfirmations,
             _homeDailyLimitHomeMaxPerTxArray,
             _owner,
-            _decimalShift
+            _decimalShift,
+            _bridgeOnOtherSide
         );
         require(AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
@@ -80,7 +84,8 @@ contract ForeignBridgeNativeToErc is
         uint256 _requiredBlockConfirmations,
         uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
@@ -106,6 +111,7 @@ contract ForeignBridgeNativeToErc is
         uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
+        _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_foreignGasPrice);

@@ -2,12 +2,11 @@ pragma solidity 0.4.24;
 
 import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
+import "../OtherSideBridgeStorage.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
+contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage {
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
     event UserRequestForAffirmation(address recipient, uint256 value);
-
-    bytes32 internal constant BRIDGE_CONTRACT = 0x71483949fe7a14d16644d63320f24d10cf1d60abecc30cc677a340e82b699dd2; // keccak256(abi.encodePacked("bridgeOnOtherSide"))
 
     function initialize(
         address _validatorContract,
@@ -77,14 +76,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
 
     function onFailedMessage(address, uint256, bytes32) internal {
         revert();
-    }
-
-    function _setBridgeContractOnOtherSide(address _bridgeContract) internal {
-        addressStorage[BRIDGE_CONTRACT] = _bridgeContract;
-    }
-
-    function bridgeContractOnOtherSide() public view returns (address) {
-        return addressStorage[BRIDGE_CONTRACT];
     }
 
     function _relayTokens(address _sender, address _receiver, uint256 _amount) internal {

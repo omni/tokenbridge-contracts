@@ -21,17 +21,17 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
                 _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
                 _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
         );
-        uint256[] memory _maxPerTxHomeDailyLimitHomeMaxPerTxArray = new uint256[](4);
-        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[0] = _dailyLimitMaxPerTxMinPerTxArray[1]; // _maxPerTx
-        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[1] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0]; // _homeDailyLimit
-        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[2] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1]; // _homeMaxPerTx
-        _maxPerTxHomeDailyLimitHomeMaxPerTxArray[3] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2]; // _homeMinPerTx
+        uint256[] memory _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray = new uint256[](4);
+        _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0] = _dailyLimitMaxPerTxMinPerTxArray[1]; // _maxPerTx
+        _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0]; // _homeDailyLimit
+        _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1]; // _homeMaxPerTx
+        _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2]; // _homeMinPerTx
         _initialize(
             _validatorContract,
             _erc20token,
             _requiredBlockConfirmations,
             _gasPrice,
-            _maxPerTxHomeDailyLimitHomeMaxPerTxArray, // [ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx, 3 = _homeMinPerTx ]
+            _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray, // [ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx, 3 = _homeMinPerTx ]
             _owner,
             _decimalShift
         );

@@ -48,7 +48,7 @@ contract BaseRelativeDailyLimit is BasicTokenBridge {
     }
 
     function setThreshold(uint256 _threshold) external onlyOwner {
-        require(_threshold >= minPerTx());
+        require(_threshold >= _minPerTx());
         uintStorage[THRESHOLD] = _threshold;
         emit ThresholdChanged(_threshold);
     }

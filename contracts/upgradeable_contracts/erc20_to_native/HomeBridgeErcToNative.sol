@@ -46,17 +46,17 @@ contract HomeBridgeErcToNative is
 
     function initialize(
         address _validatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _blockReward,
-        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
         _setLimits(
-            _dailyLimitMaxPerTxMinPerTxArray,
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray
+            _requestLimitsArray,
+            _executionLimitsArray
         );
         _initialize(
             _validatorContract,
@@ -73,19 +73,19 @@ contract HomeBridgeErcToNative is
 
     function rewardableInitialize(
         address _validatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _blockReward,
-        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         uint256 _decimalShift
     ) external returns (bool) {
         _setLimits(
-            _dailyLimitMaxPerTxMinPerTxArray,
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray
+            _requestLimitsArray,
+            _executionLimitsArray
         );
         _initialize(
             _validatorContract,
@@ -121,29 +121,29 @@ contract HomeBridgeErcToNative is
     }
 
     function _setLimits(
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _executionLimitsArray // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
     ) internal {
         require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
+            _requestLimitsArray[2] > 0 && // _minPerTx > 0
+                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
+                _requestLimitsArray[0] > _requestLimitsArray[1] // _dailyLimit > _maxPerTx
         );
         require(
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[2] > 0 && // _foreignMinPerTx > 0
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[1] > _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[1] < _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[0] // _foreignMaxPerTx < _foreignDailyLimit
+            _executionLimitsArray[2] > 0 && // _foreignMinPerTx > 0
+            _executionLimitsArray[1] > _executionLimitsArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
+            _executionLimitsArray[1] < _executionLimitsArray[0] // _foreignMaxPerTx < _foreignDailyLimit
         );
 
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[1];
-        uintStorage[EXECUTION_MIN_PER_TX] = _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[2];
+        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
+        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
+        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
+        uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
+        uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
 
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[0]);
+        emit DailyLimitChanged(_requestLimitsArray[0]);
+        emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
     }
 
     function _initialize(

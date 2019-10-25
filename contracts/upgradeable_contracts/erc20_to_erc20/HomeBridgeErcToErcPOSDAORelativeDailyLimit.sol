@@ -7,11 +7,11 @@ import "./HomeBridgeErcToErcRelativeDailyLimit.sol";
 contract HomeBridgeErcToErcPOSDAORelativeDailyLimit is HomeBridgeErcToErcRelativeDailyLimit, HomeBridgeErcToErcPOSDAO {
     function rewardableInitialize(
         address _validatorContract,
-        uint256[] _targetLimitThresholdMaxPerTxMinPerTxArray, // [ 0 = _targetLimit, 1 = _threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray, // [ 0 = _targetLimit, 1 = _threshold, 2 = _maxPerTx, 3 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
@@ -19,8 +19,8 @@ contract HomeBridgeErcToErcPOSDAORelativeDailyLimit is HomeBridgeErcToErcRelativ
         uint256 _decimalShift
     ) external returns (bool) {
         _setLimits(
-            _targetLimitThresholdMaxPerTxMinPerTxArray,
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray
+            _requestLimitsArray,
+            _executionLimitsArray
         );
         _rewardableInitialize(
             _validatorContract,

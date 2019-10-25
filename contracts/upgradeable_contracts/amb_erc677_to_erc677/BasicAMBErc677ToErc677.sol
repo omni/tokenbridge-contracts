@@ -33,32 +33,32 @@ contract BasicAMBErc677ToErc677 is
         address _bridgeContract,
         address _mediatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
         uint256 _requestGasLimit,
         uint256 _decimalShift,
         address _owner
     ) external returns (bool) {
         require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
+            _requestLimitsArray[2] > 0 && // _minPerTx > 0
+                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
+                _requestLimitsArray[0] > _requestLimitsArray[1] // _dailyLimit > _maxPerTx
         );
         require(
-            _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[2] > 0 && // _executionMinPerTx > 0
-            _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[1] > _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[2] && // _executionMaxPerTx > _executionMinPerTx
-            _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0] // _executionMaxPerTx < _executionDailyLimit
+            _executionLimitsArray[2] > 0 && // _executionMinPerTx > 0
+            _executionLimitsArray[1] > _executionLimitsArray[2] && // _executionMaxPerTx > _executionMinPerTx
+            _executionLimitsArray[1] < _executionLimitsArray[0] // _executionMaxPerTx < _executionDailyLimit
         );
 
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[1];
-        uintStorage[EXECUTION_MIN_PER_TX] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[2];
+        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
+        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
+        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
+        uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
+        uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
 
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0]);
+        emit DailyLimitChanged(_requestLimitsArray[0]);
+        emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
 
         return _initialize(
             _bridgeContract,

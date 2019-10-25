@@ -15,15 +15,41 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
-        require(!isInitialized());
-        require(AddressUtils.isContract(_validatorContract));
-        require(_requiredBlockConfirmations != 0);
-        require(_gasPrice > 0);
         require(
             _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3] > 0 && // _homeMinPerTx > 0
             _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] > _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3] && // _homeMaxPerTx > _homeMinPerTx
             _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] < _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1] // _homeMaxPerTx < _homeDailyLimit
         );
+
+        uintStorage[MAX_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1];
+        uintStorage[EXECUTION_MAX_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2];
+        uintStorage[EXECUTION_MIN_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3];
+
+        emit ExecutionDailyLimitChanged(_maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1]);
+
+        return _initialize(
+            _validatorContract,
+            _erc20token,
+            _requiredBlockConfirmations,
+            _gasPrice,
+            _owner,
+            _decimalShift
+        );
+    }
+
+    function _initialize(
+        address _validatorContract,
+        address _erc20token,
+        uint256 _requiredBlockConfirmations,
+        uint256 _gasPrice,
+        address _owner,
+        uint256 _decimalShift
+    ) internal returns (bool) {
+        require(!isInitialized());
+        require(AddressUtils.isContract(_validatorContract));
+        require(_requiredBlockConfirmations != 0);
+        require(_gasPrice > 0);
         require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
@@ -31,17 +57,12 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
-        uintStorage[MAX_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1];
-        uintStorage[EXECUTION_MAX_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2];
-        uintStorage[EXECUTION_MIN_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setInitialize();
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
-        emit ExecutionDailyLimitChanged(_maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1]);
 
         return isInitialized();
     }

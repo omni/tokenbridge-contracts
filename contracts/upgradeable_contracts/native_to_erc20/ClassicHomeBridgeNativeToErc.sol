@@ -14,10 +14,8 @@ contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
     ) internal {
         super._initialize(
             _validatorContract,
-            _dailyLimitMaxPerTxMinPerTxArray,
             _homeGasPrice,
             _requiredBlockConfirmations,
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray,
             _owner,
             _decimalShift
         );

@@ -25,13 +25,15 @@ contract HomeBridgeErcToErc is
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
+        _setLimits(
+            _dailyLimitMaxPerTxMinPerTxArray,
+            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray
+        );
         _initialize(
             _validatorContract,
-            _dailyLimitMaxPerTxMinPerTxArray,
             _homeGasPrice,
             _requiredBlockConfirmations,
             _erc677token,
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray,
             _owner,
             _decimalShift
         );
@@ -52,13 +54,15 @@ contract HomeBridgeErcToErc is
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         uint256 _decimalShift
     ) external returns (bool) {
+        _setLimits(
+            _dailyLimitMaxPerTxMinPerTxArray,
+            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray
+        );
         _rewardableInitialize(
             _validatorContract,
-            _dailyLimitMaxPerTxMinPerTxArray,
             _homeGasPrice,
             _requiredBlockConfirmations,
             _erc677token,
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray,
             _owner,
             _feeManager,
             _homeFeeForeignFeeArray,
@@ -71,11 +75,9 @@ contract HomeBridgeErcToErc is
 
     function _rewardableInitialize(
         address _validatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
@@ -83,11 +85,9 @@ contract HomeBridgeErcToErc is
     ) internal {
         _initialize(
             _validatorContract,
-            _dailyLimitMaxPerTxMinPerTxArray,
             _homeGasPrice,
             _requiredBlockConfirmations,
             _erc677token,
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray,
             _owner,
             _decimalShift
         );
@@ -97,19 +97,10 @@ contract HomeBridgeErcToErc is
         _setFee(_feeManager, _homeFeeForeignFeeArray[1], FOREIGN_FEE);
     }
 
-    function _initialize(
-        address _validatorContract,
+    function _setLimits(
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256 _homeGasPrice,
-        uint256 _requiredBlockConfirmations,
-        address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
-        address _owner,
-        uint256 _decimalShift
+        uint256[] _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
     ) internal {
-        require(!isInitialized());
-        require(AddressUtils.isContract(_validatorContract));
-        require(_requiredBlockConfirmations > 0);
         require(
             _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
                 _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
@@ -120,25 +111,40 @@ contract HomeBridgeErcToErc is
             _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[1] > _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
             _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[1] < _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[0] // _foreignMaxPerTx < _foreignDailyLimit
         );
-        require(_owner != address(0));
-        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
-        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+
         uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[GAS_PRICE] = _homeGasPrice;
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[1];
         uintStorage[EXECUTION_MIN_PER_TX] = _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[2];
+
+        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
+        emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[0]);
+    }
+
+    function _initialize(
+        address _validatorContract,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations,
+        address _erc677token,
+        address _owner,
+        uint256 _decimalShift
+    ) internal {
+        require(!isInitialized());
+        require(AddressUtils.isContract(_validatorContract));
+        require(_requiredBlockConfirmations > 0);
+        require(_owner != address(0));
+        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+        uintStorage[GAS_PRICE] = _homeGasPrice;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setErc677token(_erc677token);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_homeGasPrice);
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray[0]);
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {

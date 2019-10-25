@@ -13,15 +13,28 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
+        require(
+            _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3] > 0 && // _homeMinPerTx > 0
+            _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] > _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3] && // _homeMaxPerTx > _homeMinPerTx
+            _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] < _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1] // _homeMaxPerTx < _homeDailyLimit
+        );
+
+        uintStorage[MAX_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1];
+        uintStorage[EXECUTION_MAX_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2];
+        uintStorage[EXECUTION_MIN_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3];
+
         _initialize(
             _validatorContract,
             _erc20token,
             _requiredBlockConfirmations,
             _gasPrice,
-            _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray,
             _owner,
             _decimalShift
         );
+
+        emit ExecutionDailyLimitChanged(_maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1]);
+
         return isInitialized();
     }
 }

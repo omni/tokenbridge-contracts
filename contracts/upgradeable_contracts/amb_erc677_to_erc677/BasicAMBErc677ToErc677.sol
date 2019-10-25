@@ -39,7 +39,6 @@ contract BasicAMBErc677ToErc677 is
         uint256 _decimalShift,
         address _owner
     ) external returns (bool) {
-        require(!isInitialized());
         require(
             _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
                 _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
@@ -51,23 +50,44 @@ contract BasicAMBErc677ToErc677 is
             _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0] // _executionMaxPerTx < _executionDailyLimit
         );
 
-        _setBridgeContract(_bridgeContract);
-        _setMediatorContractOnOtherSide(_mediatorContract);
-        setErc677token(_erc677token);
         uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[1];
         uintStorage[EXECUTION_MIN_PER_TX] = _executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[2];
+
+        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
+        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0]);
+
+        return _initialize(
+            _bridgeContract,
+            _mediatorContract,
+            _erc677token,
+            _requestGasLimit,
+            _decimalShift,
+            _owner
+        );
+    }
+
+    function _initialize(
+        address _bridgeContract,
+        address _mediatorContract,
+        address _erc677token,
+        uint256 _requestGasLimit,
+        uint256 _decimalShift,
+        address _owner
+    ) internal returns (bool) {
+        require(!isInitialized());
+
+        _setBridgeContract(_bridgeContract);
+        _setMediatorContractOnOtherSide(_mediatorContract);
+        setErc677token(_erc677token);
         _setRequestGasLimit(_requestGasLimit);
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setNonce(keccak256(abi.encodePacked(address(this))));
         setInitialize();
-
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxExecutionMinPerTxArray[0]);
 
         return isInitialized();
     }

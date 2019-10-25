@@ -12,7 +12,7 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
         uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 =  _homeMinPerTx]
+        uint256[] _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx]
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
@@ -21,25 +21,30 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
                 _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
                 _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
         );
-        uint256[] memory _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray = new uint256[](4);
-        _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0] = _dailyLimitMaxPerTxMinPerTxArray[1]; // _maxPerTx
-        _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0]; // _homeDailyLimit
-        _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1]; // _homeMaxPerTx
-        _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray[3] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2]; // _homeMinPerTx
+        require(
+            _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] > 0 && // _homeMinPerTx > 0
+            _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1] > _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2] && // _homeMaxPerTx > _homeMinPerTx
+            _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1] < _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0] // _homeMaxPerTx < _homeDailyLimit
+        );
+
+        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
+        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
+        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0];
+        uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[1];
+        uintStorage[EXECUTION_MIN_PER_TX] = _homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[2];
+
         _initialize(
             _validatorContract,
             _erc20token,
             _requiredBlockConfirmations,
             _gasPrice,
-            _maxPerTxHomeDailyLimitHomeMaxPerTxHomeMinPerTxArray, // [ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx, 3 = _homeMinPerTx ]
             _owner,
             _decimalShift
         );
 
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
+        emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxHomeMinPerTxArray[0]);
 
         return isInitialized();
     }

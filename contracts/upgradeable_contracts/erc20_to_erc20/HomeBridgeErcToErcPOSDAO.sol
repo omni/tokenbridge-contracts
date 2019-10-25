@@ -19,13 +19,15 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         address _blockReward,
         uint256 _decimalShift
     ) external returns (bool) {
+        _setLimits(
+            _dailyLimitMaxPerTxMinPerTxArray,
+            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray
+        );
         _rewardableInitialize(
             _validatorContract,
-            _dailyLimitMaxPerTxMinPerTxArray,
             _homeGasPrice,
             _requiredBlockConfirmations,
             _erc677token,
-            _foreignDailyLimitForeignMaxPerTxForeignMinPerTxArray,
             _owner,
             _feeManager,
             _homeFeeForeignFeeArray,

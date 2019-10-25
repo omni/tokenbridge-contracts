@@ -8,9 +8,9 @@ contract ERC677Bridge is BaseERC677Bridge, OtherSideBridgeStorage {
         ERC677, /*_token*/
         address _from,
         uint256 _value,
-        bytes /*_data*/
+        bytes _data
     ) internal {
-        fireEventOnTokenTransfer(_from, _value);
+        fireEventOnTokenTransfer(chooseReceiver(_from, _data), _value);
     }
 
     /* solcov ignore next */

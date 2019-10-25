@@ -18,10 +18,7 @@ contract HomeBridgeErcToErcPOSDAORelativeDailyLimit is HomeBridgeErcToErcRelativ
         address _blockReward,
         uint256 _decimalShift
     ) external returns (bool) {
-        _setLimits(
-            _requestLimitsArray,
-            _executionLimitsArray
-        );
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
         _rewardableInitialize(
             _validatorContract,
             _homeGasPrice,

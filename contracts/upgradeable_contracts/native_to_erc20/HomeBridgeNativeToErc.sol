@@ -34,17 +34,8 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
-        _setLimits(
-            _requestLimitsArray,
-            _executionLimitsArray
-        );
-        _initialize(
-            _validatorContract,
-            _homeGasPrice,
-            _requiredBlockConfirmations,
-            _owner,
-            _decimalShift
-        );
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
+        _initialize(_validatorContract, _homeGasPrice, _requiredBlockConfirmations, _owner, _decimalShift);
         setInitialize();
         return isInitialized();
     }
@@ -60,17 +51,8 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         uint256 _decimalShift
     ) external returns (bool) {
-        _setLimits(
-            _requestLimitsArray,
-            _executionLimitsArray
-        );
-        _initialize(
-            _validatorContract,
-            _homeGasPrice,
-            _requiredBlockConfirmations,
-            _owner,
-            _decimalShift
-        );
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
+        _initialize(_validatorContract, _homeGasPrice, _requiredBlockConfirmations, _owner, _decimalShift);
         require(AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
         _setFee(_feeManager, _homeFeeForeignFeeArray[0], HOME_FEE);
@@ -94,8 +76,8 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         );
         require(
             _executionLimitsArray[2] > 0 && // _foreignMinPerTx > 0
-            _executionLimitsArray[1] > _executionLimitsArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
-            _executionLimitsArray[1] < _executionLimitsArray[0] // _foreignMaxPerTx < _foreignDailyLimit
+                _executionLimitsArray[1] > _executionLimitsArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
+                _executionLimitsArray[1] < _executionLimitsArray[0] // _foreignMaxPerTx < _foreignDailyLimit
         );
 
         uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];

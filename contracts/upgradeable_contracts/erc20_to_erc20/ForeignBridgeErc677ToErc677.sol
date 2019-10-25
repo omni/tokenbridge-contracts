@@ -23,8 +23,8 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         );
         require(
             _executionLimitsArray[2] > 0 && // _homeMinPerTx > 0
-            _executionLimitsArray[1] > _executionLimitsArray[2] && // _homeMaxPerTx > _homeMinPerTx
-            _executionLimitsArray[1] < _executionLimitsArray[0] // _homeMaxPerTx < _homeDailyLimit
+                _executionLimitsArray[1] > _executionLimitsArray[2] && // _homeMaxPerTx > _homeMinPerTx
+                _executionLimitsArray[1] < _executionLimitsArray[0] // _homeMaxPerTx < _homeDailyLimit
         );
 
         uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
@@ -34,14 +34,7 @@ contract ForeignBridgeErc677ToErc677 is ERC677Bridge, BasicForeignBridgeErcToErc
         uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
         uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
 
-        _initialize(
-            _validatorContract,
-            _erc20token,
-            _requiredBlockConfirmations,
-            _gasPrice,
-            _owner,
-            _decimalShift
-        );
+        _initialize(_validatorContract, _erc20token, _requiredBlockConfirmations, _gasPrice, _owner, _decimalShift);
 
         emit DailyLimitChanged(_requestLimitsArray[0]);
         emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);

@@ -25,10 +25,7 @@ contract HomeBridgeErcToErc is
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
-        _setLimits(
-            _requestLimitsArray,
-            _executionLimitsArray
-        );
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
             _validatorContract,
             _homeGasPrice,
@@ -54,10 +51,7 @@ contract HomeBridgeErcToErc is
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         uint256 _decimalShift
     ) external returns (bool) {
-        _setLimits(
-            _requestLimitsArray,
-            _executionLimitsArray
-        );
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
         _rewardableInitialize(
             _validatorContract,
             _homeGasPrice,
@@ -108,8 +102,8 @@ contract HomeBridgeErcToErc is
         );
         require(
             _executionLimitsArray[2] > 0 && // _foreignMinPerTx > 0
-            _executionLimitsArray[1] > _executionLimitsArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
-            _executionLimitsArray[1] < _executionLimitsArray[0] // _foreignMaxPerTx < _foreignDailyLimit
+                _executionLimitsArray[1] > _executionLimitsArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
+                _executionLimitsArray[1] < _executionLimitsArray[0] // _foreignMaxPerTx < _foreignDailyLimit
         );
 
         uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];

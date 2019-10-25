@@ -46,8 +46,8 @@ contract BasicAMBErc677ToErc677 is
         );
         require(
             _executionLimitsArray[2] > 0 && // _executionMinPerTx > 0
-            _executionLimitsArray[1] > _executionLimitsArray[2] && // _executionMaxPerTx > _executionMinPerTx
-            _executionLimitsArray[1] < _executionLimitsArray[0] // _executionMaxPerTx < _executionDailyLimit
+                _executionLimitsArray[1] > _executionLimitsArray[2] && // _executionMaxPerTx > _executionMinPerTx
+                _executionLimitsArray[1] < _executionLimitsArray[0] // _executionMaxPerTx < _executionDailyLimit
         );
 
         uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
@@ -60,14 +60,7 @@ contract BasicAMBErc677ToErc677 is
         emit DailyLimitChanged(_requestLimitsArray[0]);
         emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
 
-        return _initialize(
-            _bridgeContract,
-            _mediatorContract,
-            _erc677token,
-            _requestGasLimit,
-            _decimalShift,
-            _owner
-        );
+        return _initialize(_bridgeContract, _mediatorContract, _erc677token, _requestGasLimit, _decimalShift, _owner);
     }
 
     function _initialize(

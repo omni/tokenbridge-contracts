@@ -19,8 +19,8 @@ contract ForeignBridgeErcToErcRelativeDailyLimit is
     ) external returns (bool) {
         require(
             _limitsArray[4] > 0 && // _homeMinPerTx > 0
-            _limitsArray[3] > _limitsArray[4] && // _homeMaxPerTx > _homeMinPerTx
-            _limitsArray[3] < _limitsArray[2] // _homeMaxPerTx < _homeDailyLimit
+                _limitsArray[3] > _limitsArray[4] && // _homeMaxPerTx > _homeMinPerTx
+                _limitsArray[3] < _limitsArray[2] // _homeMaxPerTx < _homeDailyLimit
         );
         require(_limitsArray[1] <= 1 ether); // _targetLimit <= 1 ether
         require(_limitsArray[2] >= _limitsArray[4]); // _threshold >= _homeMinPerTx
@@ -31,14 +31,7 @@ contract ForeignBridgeErcToErcRelativeDailyLimit is
         uintStorage[EXECUTION_MAX_PER_TX] = _limitsArray[3];
         uintStorage[EXECUTION_MIN_PER_TX] = _limitsArray[4];
 
-        _initialize(
-            _validatorContract,
-            _erc20token,
-            _requiredBlockConfirmations,
-            _gasPrice,
-            _owner,
-            _decimalShift
-        );
+        _initialize(_validatorContract, _erc20token, _requiredBlockConfirmations, _gasPrice, _owner, _decimalShift);
 
         return isInitialized();
     }

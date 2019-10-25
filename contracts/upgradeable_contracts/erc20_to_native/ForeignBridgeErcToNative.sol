@@ -17,8 +17,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
     ) external returns (bool) {
         require(
             _limitsArray[3] > 0 && // _homeMinPerTx > 0
-            _limitsArray[2] > _limitsArray[3] && // _homeMaxPerTx > _homeMinPerTx
-            _limitsArray[2] < _limitsArray[1] // _homeMaxPerTx < _homeDailyLimit
+                _limitsArray[2] > _limitsArray[3] && // _homeMaxPerTx > _homeMinPerTx
+                _limitsArray[2] < _limitsArray[1] // _homeMaxPerTx < _homeDailyLimit
         );
 
         uintStorage[MAX_PER_TX] = _limitsArray[0];
@@ -28,14 +28,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
 
         emit ExecutionDailyLimitChanged(_limitsArray[1]);
 
-        return _initialize(
-            _validatorContract,
-            _erc20token,
-            _requiredBlockConfirmations,
-            _gasPrice,
-            _owner,
-            _decimalShift
-        );
+        return
+            _initialize(_validatorContract, _erc20token, _requiredBlockConfirmations, _gasPrice, _owner, _decimalShift);
     }
 
     function _initialize(

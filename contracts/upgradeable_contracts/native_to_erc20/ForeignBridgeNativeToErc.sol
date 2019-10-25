@@ -24,10 +24,7 @@ contract ForeignBridgeNativeToErc is
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
-        _setLimits(
-            _requestLimitsArray,
-            _executionLimitsArray
-        );
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
             _validatorContract,
             _erc677token,
@@ -52,10 +49,7 @@ contract ForeignBridgeNativeToErc is
         uint256 _homeFee,
         uint256 _decimalShift
     ) external returns (bool) {
-        _setLimits(
-            _requestLimitsArray,
-            _executionLimitsArray
-        );
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
             _validatorContract,
             _erc677token,
@@ -90,8 +84,8 @@ contract ForeignBridgeNativeToErc is
         );
         require(
             _executionLimitsArray[2] > 0 && // _homeMinPerTx > 0
-            _executionLimitsArray[1] > _executionLimitsArray[2] && // _homeMaxPerTx > _homeMinPerTx
-            _executionLimitsArray[1] < _executionLimitsArray[0] // _homeMaxPerTx < _homeDailyLimit
+                _executionLimitsArray[1] > _executionLimitsArray[2] && // _homeMaxPerTx > _homeMinPerTx
+                _executionLimitsArray[1] < _executionLimitsArray[0] // _homeMaxPerTx < _homeDailyLimit
         );
 
         uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];

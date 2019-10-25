@@ -20,8 +20,8 @@ contract HomeAMBErc677ToErc677RelativeDailyLimit is HomeAMBErc677ToErc677, Relat
         );
         require(
             _executionLimitsArray[2] > 0 && // _executionMinPerTx > 0
-            _executionLimitsArray[1] > _executionLimitsArray[2] && // _executionMaxPerTx > _executionMinPerTx
-            _executionLimitsArray[1] < _executionLimitsArray[0] // _executionMaxPerTx < _executionDailyLimit
+                _executionLimitsArray[1] > _executionLimitsArray[2] && // _executionMaxPerTx > _executionMinPerTx
+                _executionLimitsArray[1] < _executionLimitsArray[0] // _executionMaxPerTx < _executionDailyLimit
         );
         require(_requestLimitsArray[0] <= 1 ether); // _targetLimit <= 1 ether
         require(_requestLimitsArray[1] >= _requestLimitsArray[3]); // _threshold >= _executionMinPerTx
@@ -36,14 +36,7 @@ contract HomeAMBErc677ToErc677RelativeDailyLimit is HomeAMBErc677ToErc677, Relat
 
         emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
 
-        return _initialize(
-            _bridgeContract,
-            _mediatorContract,
-            _erc677token,
-            _requestGasLimit,
-            _decimalShift,
-            _owner
-        );
+        return _initialize(_bridgeContract, _mediatorContract, _erc677token, _requestGasLimit, _decimalShift, _owner);
     }
 
     function _getTokenBalance() internal view returns (uint256) {

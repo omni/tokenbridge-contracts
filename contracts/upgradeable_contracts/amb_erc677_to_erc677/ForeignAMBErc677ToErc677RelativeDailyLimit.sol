@@ -21,7 +21,7 @@ contract ForeignAMBErc677ToErc677RelativeDailyLimit is ForeignAMBErc677ToErc677,
         );
         require(
             _executionLimitsArray[3] > 0 && // _executionMinPerTx > 0
-            _executionLimitsArray[2] > _executionLimitsArray[3] // _executionMaxPerTx > _executionMinPerTx
+                _executionLimitsArray[2] > _executionLimitsArray[3] // _executionMaxPerTx > _executionMinPerTx
         );
         require(_executionLimitsArray[0] <= 1 ether); // _targetLimit <= 1 ether
         require(_executionLimitsArray[1] >= _executionLimitsArray[3]); // _threshold >= _executionMinPerTx
@@ -36,14 +36,7 @@ contract ForeignAMBErc677ToErc677RelativeDailyLimit is ForeignAMBErc677ToErc677,
 
         emit DailyLimitChanged(_requestLimitsArray[0]);
 
-        return _initialize(
-            _bridgeContract,
-            _mediatorContract,
-            _erc677token,
-            _requestGasLimit,
-            _decimalShift,
-            _owner
-        );
+        return _initialize(_bridgeContract, _mediatorContract, _erc677token, _requestGasLimit, _decimalShift, _owner);
     }
 
     function _getTokenBalance() internal view returns (uint256) {

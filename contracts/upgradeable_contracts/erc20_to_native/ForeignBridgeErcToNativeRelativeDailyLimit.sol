@@ -15,7 +15,7 @@ contract ForeignBridgeErcToNativeRelativeDailyLimit is ForeignBridgeErcToNative,
     ) external returns (bool) {
         require(
             _limitsArray[4] > 0 && // _homeMinPerTx > 0
-            _limitsArray[3] > _limitsArray[2] // _homeMaxPerTx > _homeMinPerTx
+                _limitsArray[3] > _limitsArray[2] // _homeMaxPerTx > _homeMinPerTx
         );
 
         uintStorage[MAX_PER_TX] = _limitsArray[0];
@@ -24,14 +24,8 @@ contract ForeignBridgeErcToNativeRelativeDailyLimit is ForeignBridgeErcToNative,
         uintStorage[EXECUTION_MAX_PER_TX] = _limitsArray[3];
         uintStorage[EXECUTION_MIN_PER_TX] = _limitsArray[4];
 
-        return _initialize(
-            _validatorContract,
-            _erc20token,
-            _requiredBlockConfirmations,
-            _gasPrice,
-            _owner,
-            _decimalShift
-        );
+        return
+            _initialize(_validatorContract, _erc20token, _requiredBlockConfirmations, _gasPrice, _owner, _decimalShift);
     }
 
     function _getTokenBalance() internal view returns (uint256) {

@@ -65,7 +65,9 @@ contract HomeBridgeErcToNativeRelativeDailyLimit is HomeBridgeErcToNative, Relat
     ) internal {
         require(
             _requestLimitsArray[3] > 0 && // _minPerTx > 0
-                _requestLimitsArray[2] > _requestLimitsArray[3] // _maxPerTx > _minPerTx
+                _requestLimitsArray[2] > _requestLimitsArray[3] && // _maxPerTx > _minPerTx
+                _requestLimitsArray[1] >= _requestLimitsArray[3] && // _threshold >= _minPerTx
+                _requestLimitsArray[0] <= 1 ether // _targetLimit <= 1 ether
         );
         require(
             _executionLimitsArray[2] > 0 && // _foreignMinPerTx > 0

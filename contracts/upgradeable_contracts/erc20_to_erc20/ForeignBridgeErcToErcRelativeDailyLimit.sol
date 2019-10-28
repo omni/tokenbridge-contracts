@@ -20,10 +20,9 @@ contract ForeignBridgeErcToErcRelativeDailyLimit is
         require(
             _limitsArray[4] > 0 && // _homeMinPerTx > 0
                 _limitsArray[3] > _limitsArray[4] && // _homeMaxPerTx > _homeMinPerTx
-                _limitsArray[3] < _limitsArray[2] // _homeMaxPerTx < _homeDailyLimit
+                _limitsArray[2] >= _limitsArray[4] && // _threshold >= _homeMinPerTx
+                _limitsArray[1] <= 1 ether // _targetLimit <= 1 ether
         );
-        require(_limitsArray[1] <= 1 ether); // _targetLimit <= 1 ether
-        require(_limitsArray[2] >= _limitsArray[4]); // _threshold >= _homeMinPerTx
 
         uintStorage[MAX_PER_TX] = _limitsArray[0];
         uintStorage[TARGET_LIMIT] = _limitsArray[1];

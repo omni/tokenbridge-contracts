@@ -16,15 +16,15 @@ contract HomeAMBErc677ToErc677RelativeDailyLimit is HomeAMBErc677ToErc677, Relat
     ) external returns (bool) {
         require(
             _requestLimitsArray[3] > 0 && // _minPerTx > 0
-                _requestLimitsArray[2] > _requestLimitsArray[3] // _maxPerTx > _minPerTx
+                _requestLimitsArray[2] > _requestLimitsArray[3] && // _maxPerTx > _minPerTx
+                _requestLimitsArray[1] >= _requestLimitsArray[3] && // _threshold >= _minPerTx
+                _requestLimitsArray[0] <= 1 ether // _targetLimit <= 1 ether
         );
         require(
             _executionLimitsArray[2] > 0 && // _executionMinPerTx > 0
                 _executionLimitsArray[1] > _executionLimitsArray[2] && // _executionMaxPerTx > _executionMinPerTx
                 _executionLimitsArray[1] < _executionLimitsArray[0] // _executionMaxPerTx < _executionDailyLimit
         );
-        require(_requestLimitsArray[0] <= 1 ether); // _targetLimit <= 1 ether
-        require(_requestLimitsArray[1] >= _requestLimitsArray[3]); // _threshold >= _executionMinPerTx
 
         uintStorage[TARGET_LIMIT] = _requestLimitsArray[0];
         uintStorage[THRESHOLD] = _requestLimitsArray[1];

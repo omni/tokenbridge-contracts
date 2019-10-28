@@ -26,10 +26,9 @@ contract ForeignBridgeErc677ToErc677RelativeDailyLimit is
         require(
             _executionLimitsArray[3] > 0 && // _homeMinPerTx > 0
                 _executionLimitsArray[2] > _executionLimitsArray[3] && // _homeMaxPerTx > _homeMinPerTx
-                _executionLimitsArray[2] < _executionLimitsArray[1] // _homeMaxPerTx < _homeDailyLimit
+                _executionLimitsArray[1] >= _executionLimitsArray[3] && // _threshold >= _homeMinPerTx
+                _executionLimitsArray[0] <= 1 ether // _targetLimit <= 1 ether
         );
-        require(_executionLimitsArray[0] <= 1 ether); // _targetLimit <= 1 ether
-        require(_executionLimitsArray[1] >= _executionLimitsArray[3]); // _threshold >= _homeMinPerTx
 
         uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
         uintStorage[MAX_PER_TX] = _requestLimitsArray[1];

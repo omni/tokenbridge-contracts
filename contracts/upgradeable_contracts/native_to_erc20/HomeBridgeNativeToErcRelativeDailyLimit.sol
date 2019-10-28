@@ -42,7 +42,7 @@ contract HomeBridgeNativeToErcRelativeDailyLimit is HomeBridgeNativeToErc, Relat
 
     function _setLimits(
         uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionLimitsArray // [ 0 = _targetLimit, 1 = _tthreshold, 2 = _foreignMaxPerTx, 3 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray // [ 0 = _targetLimit, 1 = _threshold, 2 = _foreignMaxPerTx, 3 = _foreignMinPerTx ]
     ) internal {
         require(
             _requestLimitsArray[2] > 0 && // _minPerTx > 0
@@ -51,7 +51,9 @@ contract HomeBridgeNativeToErcRelativeDailyLimit is HomeBridgeNativeToErc, Relat
         );
         require(
             _executionLimitsArray[3] > 0 && // _foreignMinPerTx > 0
-                _executionLimitsArray[2] > _executionLimitsArray[3] // _foreignMaxPerTx > _foreignMinPerTx
+                _executionLimitsArray[2] > _executionLimitsArray[3] && // _foreignMaxPerTx > _foreignMinPerTx
+                _executionLimitsArray[1] >= _executionLimitsArray[3] && // _threshold >= _foreignMinPerTx
+                _executionLimitsArray[0] <= 1 ether // _targetLimit <= 1 ether
         );
 
         uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];

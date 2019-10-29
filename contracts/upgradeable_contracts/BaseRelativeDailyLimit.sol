@@ -8,6 +8,7 @@ contract BaseRelativeDailyLimit is BasicTokenBridge {
 
     event TargetLimitChanged(uint256 newLimit);
     event ThresholdChanged(uint256 newThreshold);
+    event TodayLimitSet(uint256 limit);
 
     bytes32 internal constant TARGET_LIMIT = 0x192ac2d88a9de45ce541663ebe1aaf6d6b1d4a6299d3fd0abf2ba7e8b920342b; // keccak256(abi.encodePacked("targetLimit"))
     bytes32 internal constant THRESHOLD = 0xd46c2b20c7303c2e50535d224276492e8a1eda2a3d7398e0bea254640c1154e7; // keccak256(abi.encodePacked("threshold"))
@@ -51,6 +52,30 @@ contract BaseRelativeDailyLimit is BasicTokenBridge {
         require(_threshold >= _minPerTx());
         uintStorage[THRESHOLD] = _threshold;
         emit ThresholdChanged(_threshold);
+    }
+
+    function _updateTodayLimit() internal {
+        if (_todayLimit() == 0) {
+            uint256 limit = _calculateLimit();
+            _setTodayLimit(limit);
+            emit TodayLimitSet(limit);
+        }
+    }
+
+    function _getTodayLimit() internal view returns (uint256) {
+        uint256 limit = _todayLimit();
+        if (limit == 0) { // not set yet
+            limit = _calculateLimit();
+        }
+        return limit;
+    }
+
+    function _todayLimit() internal view returns (uint256) {
+        return uintStorage[keccak256(abi.encodePacked("todayLimit", getCurrentDay()))];
+    }
+
+    function _setTodayLimit(uint256 _value) internal {
+        uintStorage[keccak256(abi.encodePacked("todayLimit", getCurrentDay()))] = _value;
     }
 
     function _minPerTx() internal view returns (uint256);

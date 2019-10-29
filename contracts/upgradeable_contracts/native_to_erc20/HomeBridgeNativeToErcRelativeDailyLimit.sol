@@ -4,6 +4,11 @@ import "./HomeBridgeNativeToErc.sol";
 import "../RelativeExecutionDailyLimit.sol";
 
 contract HomeBridgeNativeToErcRelativeDailyLimit is HomeBridgeNativeToErc, RelativeExecutionDailyLimit {
+    function nativeTransfer() internal {
+        _updateTodayLimit();
+        super.nativeTransfer();
+    }
+
     function initialize(
         address _validatorContract,
         uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]

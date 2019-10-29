@@ -4,6 +4,16 @@ import "./ForeignBridgeNativeToErc.sol";
 import "../RelativeDailyLimit.sol";
 
 contract ForeignBridgeNativeToErcRelativeDailyLimit is ForeignBridgeNativeToErc, RelativeDailyLimit {
+    function executeSignatures(
+        uint8[] vs,
+        bytes32[] rs,
+        bytes32[] ss,
+        bytes message
+    ) public {
+        _updateTodayLimit();
+        super.executeSignatures(vs, rs, ss, message);
+    }
+
     function initialize(
         address _validatorContract,
         address _erc677token,

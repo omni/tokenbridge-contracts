@@ -4,6 +4,29 @@ import "./ForeignAMBErc677ToErc677.sol";
 import "../RelativeExecutionDailyLimit.sol";
 
 contract ForeignAMBErc677ToErc677RelativeDailyLimit is ForeignAMBErc677ToErc677, RelativeExecutionDailyLimit {
+    function relayTokens(uint256 _value) public {
+        _updateTodayLimit();
+        super.relayTokens(_value);
+    }
+
+    function onTokenTransfer(
+        address _from,
+        uint256 _value,
+        bytes _data
+    ) public returns (bool) {
+        _updateTodayLimit();
+        return super.onTokenTransfer(_from, _value, _data);
+    }
+
+    function handleBridgedTokens(
+        address _recipient,
+        uint256 _value,
+        bytes32 _nonce
+    ) public {
+        _updateTodayLimit();
+        super.handleBridgedTokens(_recipient, _value, _nonce);
+    }
+
     function initialize(
         address _bridgeContract,
         address _mediatorContract,

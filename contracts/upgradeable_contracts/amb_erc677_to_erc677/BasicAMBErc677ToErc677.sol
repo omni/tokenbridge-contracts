@@ -97,7 +97,7 @@ contract BasicAMBErc677ToErc677 is
         bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
     }
 
-    function relayTokens(uint256 _value) external {
+    function relayTokens(uint256 _value) public {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
@@ -208,7 +208,7 @@ contract BasicAMBErc677ToErc677 is
         address _recipient,
         uint256 _value,
         bytes32 /* nonce */
-    ) external {
+    ) public {
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
         if (withinExecutionLimit(_value)) {

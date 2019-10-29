@@ -8,6 +8,6 @@ contract RelativeDailyLimit is BaseRelativeDailyLimit {
     }
 
     function dailyLimit() public view returns (uint256) {
-        return _calculateLimit();
+        return _getTodayLimit();
     }
 }

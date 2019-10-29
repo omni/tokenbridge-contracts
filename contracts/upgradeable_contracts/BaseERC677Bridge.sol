@@ -20,7 +20,7 @@ contract BaseERC677Bridge is BasicTokenBridge, ERC677Receiver, ERC677Storage {
         address _from,
         uint256 _value,
         bytes /*_data*/
-    ) external returns (bool) {
+    ) public returns (bool) {
         ERC677 token = erc677token();
         require(msg.sender == address(token));
         require(withinLimit(_value));

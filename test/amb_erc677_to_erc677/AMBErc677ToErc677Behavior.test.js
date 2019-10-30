@@ -521,6 +521,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.fulfilled
 
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
       const value = oneEther
       await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
       expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
@@ -531,6 +534,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       // Then
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
     })
     it('should allow user to specify a itself as receiver', async () => {
       // Given
@@ -545,6 +549,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.fulfilled
 
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
       const value = oneEther
       await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
       expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
@@ -557,6 +564,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
       expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
     })
     it('should allow to specify a different receiver', async () => {
       // Given
@@ -571,6 +579,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.fulfilled
 
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
       const value = oneEther
       await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
       expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
@@ -583,6 +594,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
       expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
     })
     it('should allow to specify a different receiver without specifying sender', async () => {
       // Given
@@ -597,6 +609,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.fulfilled
 
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
       const value = oneEther
       await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
       expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
@@ -608,6 +623,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
       expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
     })
     it('should allow to complete a transfer approved by other user', async () => {
       // Given
@@ -621,6 +637,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         decimalShiftZero,
         owner
       ).should.be.fulfilled
+
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
       const value = oneEther
       await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
@@ -637,6 +656,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
       expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
     })
     it('should fail if user did not approve the transfer', async () => {
       await contract.initialize(
@@ -690,6 +710,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.fulfilled
 
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
       const value = oneEther
       await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
       expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
@@ -700,6 +723,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       // Then
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
     })
     it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is not owned by token manager', async function() {
       // Given
@@ -719,6 +743,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.fulfilled
 
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
       const value = oneEther
       await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
       expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
@@ -729,6 +756,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       // Then
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
     })
   })
   describe('requestFailedMessageFix', () => {

@@ -1,6 +1,8 @@
 const ForeignAMBErc677ToErc677 = artifacts.require('ForeignAMBErc677ToErc677.sol')
+const ForeignAMBErc677ToErc677RelativeDailyLimit = artifacts.require('ForeignAMBErc677ToErc677RelativeDailyLimit.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const HomeAMBErc677ToErc677 = artifacts.require('HomeAMBErc677ToErc677.sol')
+const HomeAMBErc677ToErc677RelativeDailyLimit = artifacts.require('HomeAMBErc677ToErc677RelativeDailyLimit.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const ForeignAMB = artifacts.require('ForeignAMB.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
@@ -25,21 +27,31 @@ const executionMaxPerTx = maxPerTx
 const executionMinPerTx = minPerTx
 const exampleTxHash = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const decimalShiftZero = 0
+const targetLimit = ether('0.05')
+const threshold = ether('10000')
 
-contract('ForeignAMBErc677ToErc677', async accounts => {
+function test(accounts, isRelativeDailyLimit) {
+  const ForeignContract = isRelativeDailyLimit ? ForeignAMBErc677ToErc677RelativeDailyLimit : ForeignAMBErc677ToErc677
+  const HomeContract = isRelativeDailyLimit ? HomeAMBErc677ToErc677RelativeDailyLimit : HomeAMBErc677ToErc677
   const owner = accounts[0]
   const user = accounts[1]
   let ambBridgeContract
   let mediatorContract
   let erc677Token
   let foreignBridge
+
+  let limitsArray = [executionDailyLimit, executionMaxPerTx, executionMinPerTx]
+  if (isRelativeDailyLimit) {
+    limitsArray = [targetLimit, threshold, executionMaxPerTx, executionMinPerTx]
+  }
+
   beforeEach(async function() {
-    this.bridge = await ForeignAMBErc677ToErc677.new()
+    this.bridge = await ForeignContract.new()
     const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
     await storageProxy.upgradeTo('1', this.bridge.address).should.be.fulfilled
-    this.proxyContract = await ForeignAMBErc677ToErc677.at(storageProxy.address)
+    this.proxyContract = await ForeignContract.at(storageProxy.address)
   })
-  shouldBehaveLikeBasicAMBErc677ToErc677(HomeAMBErc677ToErc677, accounts)
+  shouldBehaveLikeBasicAMBErc677ToErc677(HomeContract, accounts, isRelativeDailyLimit, false)
   describe('onTokenTransfer', () => {
     beforeEach(async () => {
       const validatorContract = await BridgeValidators.new()
@@ -47,17 +59,17 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       await validatorContract.initialize(1, authorities, owner)
       ambBridgeContract = await ForeignAMB.new()
       await ambBridgeContract.initialize(validatorContract.address, maxGasPerTx, '1', '1', owner)
-      mediatorContract = await HomeAMBErc677ToErc677.new()
+      mediatorContract = await HomeContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
-      foreignBridge = await ForeignAMBErc677ToErc677.new()
+      foreignBridge = await ForeignContract.new()
       await foreignBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
+        limitsArray,
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -92,16 +104,16 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
     beforeEach(async () => {
       ambBridgeContract = await AMBMock.new()
       await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
-      mediatorContract = await HomeAMBErc677ToErc677.new()
+      mediatorContract = await HomeContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
 
-      foreignBridge = await ForeignAMBErc677ToErc677.new()
+      foreignBridge = await ForeignContract.new()
       await foreignBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
+        limitsArray,
         maxGasPerTx,
         decimalShiftZero,
         owner
@@ -110,6 +122,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       await erc677Token.transferOwnership(foreignBridge.address)
     })
     it('should transfer locked tokens on message from amb', async () => {
+      if (isRelativeDailyLimit) return
       // Given
       const currentDay = await foreignBridge.getCurrentDay()
       expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
@@ -155,13 +168,13 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       const decimalShiftTwo = 2
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 16)
 
-      foreignBridge = await ForeignAMBErc677ToErc677.new()
+      foreignBridge = await ForeignContract.new()
       await foreignBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
         erc677Token.address,
         [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
+        limitsArray,
         maxGasPerTx,
         decimalShiftTwo,
         owner
@@ -242,4 +255,12 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(outOfLimitEvent[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
     })
   })
+}
+
+contract('ForeignAMBErc677ToErc677', async accounts => {
+  test(accounts, false)
+})
+
+contract('ForeignAMBErc677ToErc677RelativeDailyLimit', async accounts => {
+  test(accounts, true)
 })

@@ -1,5 +1,7 @@
 const HomeBridge = artifacts.require('HomeBridgeErcToErc.sol')
+const HomeBridgeRelativeDailyLimit = artifacts.require('HomeBridgeErcToErcRelativeDailyLimit.sol')
 const POSDAOHomeBridge = artifacts.require('HomeBridgeErcToErcPOSDAO.sol')
+const POSDAOHomeBridgeRelativeDailyLimit = artifacts.require('HomeBridgeErcToErcPOSDAORelativeDailyLimit.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
@@ -27,8 +29,17 @@ const decimalShiftZero = 0
 const markedAsProcessed = toBN(2)
   .pow(toBN(255))
   .add(toBN(1))
+const targetLimit = ether('0.05')
+const threshold = ether('10000')
 
-contract('HomeBridge_ERC20_to_ERC20', async accounts => {
+function test(accounts, isRelativeDailyLimit) {
+  const HomeBridgeContract = isRelativeDailyLimit ? HomeBridgeRelativeDailyLimit : HomeBridge
+  const POSDAOHomeBridgeContract = isRelativeDailyLimit ? POSDAOHomeBridgeRelativeDailyLimit : POSDAOHomeBridge
+
+  const limitsArray = isRelativeDailyLimit
+    ? [targetLimit, threshold, halfEther, minPerTx]
+    : [oneEther, halfEther, minPerTx]
+
   let homeContract
   let validatorContract
   let authorities
@@ -41,21 +52,26 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
     await validatorContract.initialize(1, authorities, owner)
   })
   describe('#initialize', async () => {
+    const limitsArray = isRelativeDailyLimit ? ['1', '3', '2', '1'] : ['3', '2', '1']
+
     beforeEach(async () => {
-      homeContract = await HomeBridge.new()
+      homeContract = await HomeBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
     })
     it('sets variables', async () => {
       expect(await homeContract.validatorContract()).to.be.equal(ZERO_ADDRESS)
       expect(await homeContract.deployedAtBlock()).to.be.bignumber.equal(ZERO)
-      expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.maxPerTx()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await homeContract.isInitialized()).to.be.equal(false)
 
+      if (!isRelativeDailyLimit) {
+        expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
+      }
+
       const { logs } = await homeContract.initialize(
         validatorContract.address,
-        ['3', '2', '1'],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -67,7 +83,6 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(await homeContract.isInitialized()).to.be.equal(true)
       expect(await homeContract.validatorContract()).to.be.equal(validatorContract.address)
       expect(await homeContract.deployedAtBlock()).to.be.bignumber.above(ZERO)
-      expect(await homeContract.dailyLimit()).to.be.bignumber.equal('3')
       expect(await homeContract.maxPerTx()).to.be.bignumber.equal('2')
       expect(await homeContract.minPerTx()).to.be.bignumber.equal('1')
       expect(await homeContract.decimalShift()).to.be.bignumber.equal('9')
@@ -77,21 +92,42 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(major).to.be.bignumber.gte(ZERO)
       expect(minor).to.be.bignumber.gte(ZERO)
       expect(patch).to.be.bignumber.gte(ZERO)
+      if (!isRelativeDailyLimit) {
+        expect(await homeContract.dailyLimit()).to.be.bignumber.equal('3')
+      }
 
       expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
         requiredBlockConfirmations: toBN(requireBlockConfirmations)
       })
       expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
-      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: '3' })
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: foreignDailyLimit })
+      if (!isRelativeDailyLimit) {
+        expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: '3' })
+      }
     })
-    it('cant set maxPerTx > dailyLimit', async () => {
+    it('cant set wrong values', async () => {
       expect(await homeContract.isInitialized()).to.be.equal(false)
 
+      if (!isRelativeDailyLimit) {
+        // dailyLimit > maxPerTx
+        await homeContract
+          .initialize(
+            validatorContract.address,
+            ['1', '2', '1'],
+            gasPrice,
+            requireBlockConfirmations,
+            token.address,
+            [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
+            owner,
+            decimalShiftZero
+          )
+          .should.be.rejectedWith(ERROR_MSG)
+      }
+      // maxPerTx > minPerTx
       await homeContract
         .initialize(
           validatorContract.address,
-          ['1', '2', '1'],
+          isRelativeDailyLimit ? ['1', '3', '2', '2'] : ['3', '2', '2'],
           gasPrice,
           requireBlockConfirmations,
           token.address,
@@ -100,18 +136,36 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
           decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
-      await homeContract
-        .initialize(
-          validatorContract.address,
-          ['3', '2', '2'],
-          gasPrice,
-          requireBlockConfirmations,
-          token.address,
-          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
-          owner,
-          decimalShiftZero
-        )
-        .should.be.rejectedWith(ERROR_MSG)
+
+      if (isRelativeDailyLimit) {
+        // threshold >= minPerTx
+        await homeContract
+          .initialize(
+            validatorContract.address,
+            ['1', '1', '3', '2'],
+            gasPrice,
+            requireBlockConfirmations,
+            token.address,
+            [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
+            owner,
+            decimalShiftZero
+          )
+          .should.be.rejectedWith(ERROR_MSG)
+
+        // targetLimit <= 1 ether
+        await homeContract
+          .initialize(
+            validatorContract.address,
+            [ether('2'), '3', '2', '1'],
+            gasPrice,
+            requireBlockConfirmations,
+            token.address,
+            [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
+            owner,
+            decimalShiftZero
+          )
+          .should.be.rejectedWith(ERROR_MSG)
+      }
 
       expect(await homeContract.isInitialized()).to.be.equal(false)
     })
@@ -121,7 +175,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const data = homeContract.contract.methods
         .initialize(
           validatorContract.address,
-          ['3', '2', '1'],
+          limitsArray,
           gasPrice,
           requireBlockConfirmations,
           token.address,
@@ -131,13 +185,15 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         )
         .encodeABI()
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
-      const finalContract = await HomeBridge.at(storageProxy.address)
+      const finalContract = await HomeBridgeContract.at(storageProxy.address)
 
       expect(await finalContract.isInitialized()).to.be.equal(true)
       expect(await finalContract.validatorContract()).to.be.equal(validatorContract.address)
-      expect(await finalContract.dailyLimit()).to.be.bignumber.equal('3')
       expect(await finalContract.maxPerTx()).to.be.bignumber.equal('2')
       expect(await finalContract.minPerTx()).to.be.bignumber.equal('1')
+      if (!isRelativeDailyLimit) {
+        expect(await finalContract.dailyLimit()).to.be.bignumber.equal('3')
+      }
     })
 
     it('cant initialize with invalid arguments', async () => {
@@ -146,7 +202,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeContract
         .initialize(
           validatorContract.address,
-          ['3', '2', '1'],
+          limitsArray,
           gasPrice,
           0,
           token.address,
@@ -158,7 +214,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeContract
         .initialize(
           owner,
-          ['3', '2', '1'],
+          limitsArray,
           gasPrice,
           requireBlockConfirmations,
           token.address,
@@ -170,7 +226,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeContract
         .initialize(
           ZERO_ADDRESS,
-          ['3', '2', '1'],
+          limitsArray,
           gasPrice,
           requireBlockConfirmations,
           token.address,
@@ -182,7 +238,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeContract
         .initialize(
           validatorContract.address,
-          ['3', '2', '1'],
+          limitsArray,
           gasPrice,
           requireBlockConfirmations,
           ZERO_ADDRESS,
@@ -194,7 +250,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeContract
         .initialize(
           validatorContract.address,
-          ['3', '2', '1'],
+          limitsArray,
           gasPrice,
           requireBlockConfirmations,
           owner,
@@ -206,7 +262,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeContract
         .initialize(
           validatorContract.address,
-          ['3', '2', '1'],
+          limitsArray,
           gasPrice,
           requireBlockConfirmations,
           token.address,
@@ -218,7 +274,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeContract
         .initialize(
           validatorContract.address,
-          ['3', '2', '1'],
+          limitsArray,
           gasPrice,
           requireBlockConfirmations,
           token.address,
@@ -229,7 +285,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract.initialize(
         validatorContract.address,
-        ['3', '2', '1'],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -247,7 +303,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       // When
       await homeContract.initialize(
         validatorContract.address,
-        ['3', '2', '1'],
+        limitsArray,
         0,
         requireBlockConfirmations,
         token.address,
@@ -263,11 +319,11 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
   describe('#fallback', async () => {
     beforeEach(async () => {
-      homeContract = await HomeBridge.new()
+      homeContract = await HomeBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await homeContract.initialize(
         validatorContract.address,
-        ['3', '2', '1'],
+        isRelativeDailyLimit ? ['1', '3', '2', '1'] : ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -289,11 +345,11 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
   describe('#setting limits', async () => {
     let homeContract
     beforeEach(async () => {
-      homeContract = await HomeBridge.new()
+      homeContract = await HomeBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await homeContract.initialize(
         validatorContract.address,
-        ['3', '2', '1'],
+        isRelativeDailyLimit ? ['1', '3', '2', '1'] : ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -306,7 +362,10 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await homeContract.setMaxPerTx(2, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
       await homeContract.setMaxPerTx(2, { from: owner }).should.be.fulfilled
 
-      await homeContract.setMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      // in implementation with relative daily limit, maxPerTx can be more than current dailyLimit
+      if (!isRelativeDailyLimit) {
+        await homeContract.setMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      }
     })
 
     it('#setMinPerTx allows to set only to owner and cannot be more than daily limit and should be less than maxPerTx', async () => {
@@ -320,11 +379,11 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
   describe('#executeAffirmation', async () => {
     let homeBridge
     beforeEach(async () => {
-      homeBridge = await HomeBridge.new()
+      homeBridge = await HomeBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await homeBridge.initialize(
         validatorContract.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -406,10 +465,10 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const authoritiesThreeAccs = [accounts[1], accounts[2], accounts[3]]
       const ownerOfValidators = accounts[0]
       await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, ownerOfValidators)
-      const homeBridgeWithTwoSigs = await HomeBridge.new()
+      const homeBridgeWithTwoSigs = await HomeBridgeContract.new()
       await homeBridgeWithTwoSigs.initialize(
         validatorContractWith2Signatures.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token2sig.address,
@@ -491,10 +550,10 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const authoritiesThreeAccs = [accounts[1], accounts[2], accounts[3]]
       const ownerOfValidators = accounts[0]
       await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, ownerOfValidators)
-      const homeBridgeWithTwoSigs = await HomeBridge.new()
+      const homeBridgeWithTwoSigs = await HomeBridgeContract.new()
       await homeBridgeWithTwoSigs.initialize(
         validatorContractWith2Signatures.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token2sig.address,
@@ -533,10 +592,10 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
 
-      const homeBridgeWithThreeSigs = await HomeBridge.new()
+      const homeBridgeWithThreeSigs = await HomeBridgeContract.new()
       await homeBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -669,7 +728,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
   })
   describe('#isAlreadyProcessed', async () => {
     it('returns ', async () => {
-      const homeBridge = await HomeBridge.new()
+      const homeBridge = await HomeBridgeContract.new()
       const bn = toBN(2).pow(toBN(255))
       const processedNumbers = [bn.add(toBN(1)).toString(10), bn.add(toBN(100)).toString(10)]
       true.should.be.equal(await homeBridge.isAlreadyProcessed(processedNumbers[0]))
@@ -689,10 +748,10 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       authoritiesThreeAccs = [accounts[1], accounts[2], accounts[3]]
       ownerOfValidators = accounts[0]
       await validatorContractWith2Signatures.initialize(2, authoritiesThreeAccs, ownerOfValidators)
-      homeBridgeWithTwoSigs = await HomeBridge.new()
+      homeBridgeWithTwoSigs = await HomeBridgeContract.new()
       await homeBridgeWithTwoSigs.initialize(
         validatorContractWith2Signatures.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token2sig.address,
@@ -759,10 +818,10 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
 
-      const homeBridgeWithThreeSigs = await HomeBridge.new()
+      const homeBridgeWithThreeSigs = await HomeBridgeContract.new()
       await homeBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -851,7 +910,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
   describe('#requiredMessageLength', async () => {
     beforeEach(async () => {
-      homeContract = await HomeBridge.new()
+      homeContract = await HomeBridgeContract.new()
     })
 
     it('should return the required message length', async () => {
@@ -863,13 +922,13 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
   describe('#fixAssetsAboveLimits', async () => {
     let homeBridge
     beforeEach(async () => {
-      const homeBridgeImpl = await HomeBridge.new()
+      const homeBridgeImpl = await HomeBridgeContract.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
-      homeBridge = await HomeBridge.at(storageProxy.address)
+      homeBridge = await HomeBridgeContract.at(storageProxy.address)
       await homeBridge.initialize(
         validatorContract.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1135,13 +1194,13 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
     it('should be able to call claimTokens on tokenAddress', async () => {
       const token = await ERC677BridgeToken.new('Bridge Token', 'BT20', 18)
 
-      const homeBridgeImpl = await HomeBridge.new()
+      const homeBridgeImpl = await HomeBridgeContract.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
-      const homeBridge = await HomeBridge.at(storageProxy.address)
+      const homeBridge = await HomeBridgeContract.at(storageProxy.address)
       await homeBridge.initialize(
         validatorContract.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1182,7 +1241,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       rewardableValidators = await RewardableValidators.new()
       await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
-      homeBridge = await POSDAOHomeBridge.new()
+      homeBridge = await POSDAOHomeBridgeContract.new()
       homeFee = ether('0.002')
       foreignFee = ether('0.002')
       blockRewardContract = await BlockReward.new()
@@ -1191,13 +1250,15 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeManager = await FeeManagerErcToErcPOSDAO.new()
       expect(await homeBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
       expect(await homeBridge.deployedAtBlock()).to.be.bignumber.equal(ZERO)
-      expect(await homeBridge.dailyLimit()).to.be.bignumber.equal(ZERO)
       expect(await homeBridge.maxPerTx()).to.be.bignumber.equal(ZERO)
       expect(await homeBridge.isInitialized()).to.be.equal(false)
+      if (!isRelativeDailyLimit) {
+        expect(await homeBridge.dailyLimit()).to.be.bignumber.equal(ZERO)
+      }
 
       await homeBridge.rewardableInitialize(
         ZERO_ADDRESS,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1210,7 +1271,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       ).should.be.rejected
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         [0, foreignDailyLimit],
         token.address,
@@ -1223,7 +1284,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       ).should.be.rejected
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1236,7 +1297,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       ).should.be.rejected
       const { logs } = await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1251,7 +1312,6 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(await homeBridge.isInitialized()).to.be.equal(true)
       expect(await homeBridge.validatorContract()).to.be.equal(rewardableValidators.address)
       expect(await homeBridge.deployedAtBlock()).to.be.bignumber.above(ZERO)
-      expect(await homeBridge.dailyLimit()).to.be.bignumber.equal(oneEther)
       expect(await homeBridge.maxPerTx()).to.be.bignumber.equal(halfEther)
       expect(await homeBridge.minPerTx()).to.be.bignumber.equal(minPerTx)
       expect(await homeBridge.decimalShift()).to.be.bignumber.equal('9')
@@ -1261,6 +1321,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(major).to.be.bignumber.gte(ZERO)
       expect(minor).to.be.bignumber.gte(ZERO)
       expect(patch).to.be.bignumber.gte(ZERO)
+      if (!isRelativeDailyLimit) {
+        expect(await homeBridge.dailyLimit()).to.be.bignumber.equal(oneEther)
+      }
 
       const feeManagerContract = await homeBridge.feeManagerContract()
       feeManagerContract.should.be.equals(feeManager.address)
@@ -1275,14 +1338,16 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         requiredBlockConfirmations: toBN(requireBlockConfirmations)
       })
       expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
-      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: oneEther })
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: foreignDailyLimit })
+      if (!isRelativeDailyLimit) {
+        expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: oneEther })
+      }
     })
     it('can update fee contract', async () => {
       const feeManager = await FeeManagerErcToErcPOSDAO.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1308,7 +1373,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeManager = await FeeManagerErcToErcPOSDAO.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1338,7 +1403,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const feeManager = await FeeManagerErcToErcPOSDAO.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1378,7 +1443,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       // When
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1400,7 +1465,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1431,7 +1496,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
   describe('#onTokenTransfer', async () => {
     let homeBridge
     beforeEach(async () => {
-      homeBridge = await HomeBridge.new()
+      homeBridge = await HomeBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'TEST', 18)
     })
     it('should trigger UserRequestForSignature with transfer value', async () => {
@@ -1440,7 +1505,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const user = accounts[4]
       await homeBridge.initialize(
         validatorContract.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1449,6 +1514,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         decimalShiftZero
       ).should.be.fulfilled
       const value = halfEther
+      await token.mint(homeBridge.address, oneEther, { from: owner }).should.be.fulfilled
       await token.mint(user, value, { from: owner }).should.be.fulfilled
 
       // When
@@ -1461,7 +1527,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
     })
     it('should trigger UserRequestForSignature with fee subtracted', async () => {
       // Given
-      const homeBridge = await POSDAOHomeBridge.new()
+      const homeBridge = await POSDAOHomeBridgeContract.new()
       const owner = accounts[0]
       const user = accounts[4]
       const validators = [accounts[1]]
@@ -1477,7 +1543,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
 
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1491,6 +1557,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       const value = halfEther
       const finalValueCalc = 0.5 * (1 - fee)
       const finalValue = ether(finalValueCalc.toString())
+      await token.mint(homeBridge.address, oneEther, { from: owner }).should.be.fulfilled
       await token.mint(user, value, { from: owner }).should.be.fulfilled
 
       // When
@@ -1514,14 +1581,14 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       token = await ERC677BridgeTokenRewardable.new('Some ERC20', 'RSZT', 18)
       rewardableValidators = await RewardableValidators.new()
       feeManager = await FeeManagerErcToErcPOSDAO.new()
-      homeBridge = await POSDAOHomeBridge.new()
+      homeBridge = await POSDAOHomeBridgeContract.new()
       fee = 0.001
       homeFee = ether(fee.toString())
       foreignFee = ether(fee.toString())
       blockRewardContract = await BlockReward.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1708,14 +1775,14 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       token = await ERC677BridgeTokenRewardable.new('Some ERC20', 'RSZT', 18)
       rewardableValidators = await RewardableValidators.new()
       feeManager = await FeeManagerErcToErcPOSDAO.new()
-      homeBridge = await POSDAOHomeBridge.new()
+      homeBridge = await POSDAOHomeBridgeContract.new()
       fee = 0.001
       homeFee = ether(fee.toString())
       foreignFee = ether(fee.toString())
       blockRewardContract = await BlockReward.new()
       await homeBridge.rewardableInitialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1917,10 +1984,10 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
 
-      const homeBridgeWithThreeSigs = await HomeBridge.new()
+      const homeBridgeWithThreeSigs = await HomeBridgeContract.new()
       await homeBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1964,13 +2031,13 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
     })
     it('Foreign to Home: test decimal shift 2, no impact on UserRequestForSignature value', async () => {
       // Given
-      const homeBridge = await HomeBridge.new()
+      const homeBridge = await HomeBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'TEST', 16)
       const owner = accounts[0]
       const user = accounts[4]
       await homeBridge.initialize(
         validatorContract.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
@@ -1979,6 +2046,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
         decimalShiftTwo
       ).should.be.fulfilled
       const value = halfEther
+      await token.mint(homeBridge.address, oneEther, { from: owner }).should.be.fulfilled
       await token.mint(user, value, { from: owner }).should.be.fulfilled
 
       // When
@@ -1990,4 +2058,12 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       expect(toBN(events[0].returnValues.value)).to.be.bignumber.equal(value)
     })
   })
+}
+
+contract('HomeBridge_ERC20_to_ERC20', async accounts => {
+  test(accounts, false)
+})
+
+contract('HomeBridge_ERC20_to_ERC20_RelativeDailyLimit', async accounts => {
+  test(accounts, true)
 })

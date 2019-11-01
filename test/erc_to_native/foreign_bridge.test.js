@@ -1,4 +1,5 @@
 const ForeignBridge = artifacts.require('ForeignBridgeErcToNative.sol')
+const ForeignBridgeRelativeDailyLimit = artifacts.require('ForeignBridgeErcToNativeRelativeDailyLimit.sol')
 const ForeignBridgeV2 = artifacts.require('ForeignBridgeV2.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
@@ -19,8 +20,16 @@ const homeMinPerTx = quarterEther
 const maxPerTx = halfEther
 const ZERO = toBN(0)
 const decimalShiftZero = 0
+const targetLimit = ether('0.05')
+const threshold = ether('10000')
 
-contract('ForeignBridge_ERC20_to_Native', async accounts => {
+function test(accounts, isRelativeDailyLimit) {
+  const ForeignBridgeContract = isRelativeDailyLimit ? ForeignBridgeRelativeDailyLimit : ForeignBridge
+
+  const limitsArray = isRelativeDailyLimit
+    ? [maxPerTx, targetLimit, threshold, homeMaxPerTx, homeMinPerTx]
+    : [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx]
+
   let validatorContract
   let authorities
   let owner
@@ -35,7 +44,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   describe('#initialize', async () => {
     it('should initialize', async () => {
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      const foreignBridge = await ForeignBridge.new()
+      const foreignBridge = await ForeignBridgeContract.new()
 
       expect(await foreignBridge.erc20token()).to.be.equal(ZERO_ADDRESS)
       expect(await foreignBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
@@ -50,7 +59,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          limitsArray,
           owner,
           decimalShiftZero
         )
@@ -61,18 +70,18 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           ZERO_ADDRESS,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          limitsArray,
           owner,
           decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge
+      await foreignBridge // eslint-disable-next-line
         .initialize(
           validatorContract.address,
           token.address,
           0,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          limitsArray,
           owner,
           decimalShiftZero
         )
@@ -83,7 +92,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           token.address,
           requireBlockConfirmations,
           0,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          limitsArray,
           owner,
           decimalShiftZero
         )
@@ -94,40 +103,67 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           owner,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          limitsArray,
           owner,
           decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge
+      await foreignBridge // eslint-disable-next-line
         .initialize(
           owner,
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          limitsArray,
           owner,
           decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
+      if (isRelativeDailyLimit) {
+        await foreignBridge
+          .initialize(
+            validatorContract.address,
+            token.address,
+            requireBlockConfirmations,
+            gasPrice,
+            [maxPerTx, ether('2'), threshold, homeMaxPerTx, homeMinPerTx],
+            owner,
+            decimalShiftZero
+          )
+          .should.be.rejectedWith(ERROR_MSG)
+        await foreignBridge
+          .initialize(
+            validatorContract.address,
+            token.address,
+            requireBlockConfirmations,
+            gasPrice,
+            [maxPerTx, targetLimit, ether('0.001'), homeMaxPerTx, homeMinPerTx],
+            owner,
+            decimalShiftZero
+          )
+          .should.be.rejectedWith(ERROR_MSG)
+      } else {
+        await foreignBridge
+          .initialize(
+            validatorContract.address,
+            token.address,
+            requireBlockConfirmations,
+            gasPrice,
+            [maxPerTx, halfEther, homeMaxPerTx, homeMinPerTx],
+            owner,
+            decimalShiftZero
+          )
+          .should.be.rejectedWith(ERROR_MSG)
+      }
       await foreignBridge
         .initialize(
           validatorContract.address,
           token.address,
           requireBlockConfirmations,
           gasPrice,
-          [maxPerTx, halfEther, homeMaxPerTx, homeMinPerTx],
-          owner,
-          decimalShiftZero
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge
-        .initialize(
-          validatorContract.address,
-          token.address,
-          requireBlockConfirmations,
-          gasPrice,
-          [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMaxPerTx],
+          isRelativeDailyLimit
+            ? [maxPerTx, targetLimit, threshold, homeMaxPerTx, homeMaxPerTx]
+            : [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMaxPerTx],
           owner,
           decimalShiftZero
         )
@@ -138,7 +174,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+        limitsArray,
         owner,
         '9'
       )
@@ -163,7 +199,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         requiredBlockConfirmations: toBN(requireBlockConfirmations)
       })
       expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
-      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: homeDailyLimit })
+      if (!isRelativeDailyLimit) {
+        expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: homeDailyLimit })
+      }
     })
   })
 
@@ -171,14 +209,14 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     const value = ether('0.25')
     let foreignBridge
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await ForeignBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+        limitsArray,
         owner,
         decimalShiftZero
       )
@@ -196,10 +234,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
       const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-
-      logs[0].event.should.be.equal('RelayedMessage')
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(value)
+      const event = logs.find(item => item.event === 'RelayedMessage')
+      event.args.recipient.should.be.equal(recipientAccount)
+      event.args.value.should.be.bignumber.equal(value)
       const balanceAfter = await token.balanceOf(recipientAccount)
       const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
@@ -210,6 +247,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     it('should allow second withdrawal with different transactionHash but same recipient and value', async () => {
       const recipientAccount = accounts[3]
       const balanceBefore = await token.balanceOf(recipientAccount)
+      await token.mint(foreignBridge.address, oneEther)
 
       // tx 1
       const value = ether('0.25')
@@ -222,7 +260,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
 
       // tx 2
-      await token.mint(foreignBridge.address, value)
       const transactionHash2 = '0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee'
       const message2 = createMessage(recipientAccount, value, transactionHash2, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)
@@ -277,7 +314,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     it('should not allow withdraw over daily home limit', async () => {
       const recipientAccount = accounts[3]
-      await token.mint(foreignBridge.address, ether('5'))
+      await token.mint(foreignBridge.address, ether('1.25'))
 
       const transactionHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
       const message = createMessage(recipientAccount, halfEther, transactionHash, foreignBridge.address)
@@ -316,18 +353,18 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
         from: ownerOfValidatorContract
       })
-      foreignBridgeWithMultiSignatures = await ForeignBridge.new()
+      foreignBridgeWithMultiSignatures = await ForeignBridgeContract.new()
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+        limitsArray,
         owner,
         decimalShiftZero,
         { from: ownerOfValidatorContract }
       )
-      await token.mint(foreignBridgeWithMultiSignatures.address, value)
+      await token.mint(foreignBridgeWithMultiSignatures.address, oneEther)
     })
 
     it('withdraw should fail if not enough signatures are provided', async () => {
@@ -354,10 +391,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [vrs.s, vrs2.s],
         message
       ).should.be.fulfilled
-
-      logs[0].event.should.be.equal('RelayedMessage')
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(value)
+      const event = logs.find(item => item.event === 'RelayedMessage')
+      event.args.recipient.should.be.equal(recipientAccount)
+      event.args.value.should.be.bignumber.equal(value)
       true.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
     })
 
@@ -381,18 +417,18 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const value = halfEther
-      const foreignBridgeWithThreeSigs = await ForeignBridge.new()
+      const foreignBridgeWithThreeSigs = await ForeignBridgeContract.new()
 
       await foreignBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
         erc20Token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+        limitsArray,
         owner,
         decimalShiftZero
       )
-      await erc20Token.mint(foreignBridgeWithThreeSigs.address, value)
+      await erc20Token.mint(foreignBridgeWithThreeSigs.address, oneEther)
 
       const txHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
       const message = createMessage(recipient, value, txHash, foreignBridgeWithThreeSigs.address)
@@ -415,9 +451,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [vrs.s, vrs2.s, vrs3.s],
         message
       ).should.be.fulfilled
-      logs[0].event.should.be.equal('RelayedMessage')
-      logs[0].args.recipient.should.be.equal(recipient)
-      logs[0].args.value.should.be.bignumber.equal(value)
+      const event = logs.find(item => item.event === 'RelayedMessage')
+      event.args.recipient.should.be.equal(recipient)
+      event.args.value.should.be.bignumber.equal(value)
       true.should.be.equal(await foreignBridgeWithThreeSigs.relayedMessages(txHash))
     })
   })
@@ -440,16 +476,16 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       // ForeignBridge V1 Contract
 
       let foreignBridgeProxy = await EternalStorageProxy.new().should.be.fulfilled
-      const foreignBridgeImpl = await ForeignBridge.new().should.be.fulfilled
+      const foreignBridgeImpl = await ForeignBridgeContract.new().should.be.fulfilled
       await foreignBridgeProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
 
-      foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address)
+      foreignBridgeProxy = await ForeignBridgeContract.at(foreignBridgeProxy.address)
       await foreignBridgeProxy.initialize(
         validatorsProxy.address,
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+        limitsArray,
         owner,
         decimalShiftZero
       )
@@ -466,14 +502,14 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const validatorsAddress = validatorContract.address
 
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      const foreignBridge = await ForeignBridge.new()
+      const foreignBridge = await ForeignBridgeContract.new()
       const data = foreignBridge.contract.methods
         .initialize(
           validatorsAddress,
           tokenAddress,
           requireBlockConfirmations,
           gasPrice,
-          ['2', '3', '2', '1'],
+          isRelativeDailyLimit ? ['2', '1', '3', '2', '1'] : ['2', '3', '2', '1'],
           owner,
           decimalShiftZero
         )
@@ -481,7 +517,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled
 
-      const finalContract = await ForeignBridge.at(storageProxy.address)
+      const finalContract = await ForeignBridgeContract.at(storageProxy.address)
       true.should.be.equal(await finalContract.isInitialized())
       validatorsAddress.should.be.equal(await finalContract.validatorContract())
     })
@@ -491,17 +527,17 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     it('can send erc20', async () => {
       const owner = accounts[0]
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      const foreignBridgeImpl = await ForeignBridge.new()
+      const foreignBridgeImpl = await ForeignBridgeContract.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
-      const foreignBridge = await ForeignBridge.at(storageProxy.address)
+      const foreignBridge = await ForeignBridgeContract.at(storageProxy.address)
 
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+        limitsArray,
         owner,
         decimalShiftZero
       )
@@ -533,24 +569,25 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
 
       const owner = accounts[0]
-      const foreignBridgeImpl = await ForeignBridge.new()
+      const foreignBridgeImpl = await ForeignBridgeContract.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
-      const foreignBridge = await ForeignBridge.at(storageProxy.address)
+      const foreignBridge = await ForeignBridgeContract.at(storageProxy.address)
 
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+        limitsArray,
         owner,
         decimalShiftTwo
       )
-      await token.mint(foreignBridge.address, valueOnForeign)
+      await token.mint(foreignBridge.address, valueOnHome.mul(toBN('2')))
 
       const recipientAccount = accounts[3]
       const balanceBefore = await token.balanceOf(recipientAccount)
+      const balanceBridgeBefore = await token.balanceOf(foreignBridge.address)
 
       const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
       const message = createMessage(recipientAccount, valueOnHome, transactionHash, foreignBridge.address)
@@ -559,14 +596,13 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
       const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-
-      logs[0].event.should.be.equal('RelayedMessage')
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(valueOnHome)
+      const event = logs.find(item => item.event === 'RelayedMessage')
+      event.args.recipient.should.be.equal(recipientAccount)
+      event.args.value.should.be.bignumber.equal(valueOnHome)
       const balanceAfter = await token.balanceOf(recipientAccount)
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(valueOnForeign))
-      const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
-      balanceAfterBridge.should.be.bignumber.equal(ZERO)
+      const balanceBridgeAfter = await token.balanceOf(foreignBridge.address)
+      balanceBridgeAfter.should.be.bignumber.equal(balanceBridgeBefore.sub(valueOnForeign))
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
     })
 
@@ -582,20 +618,21 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
         from: ownerOfValidatorContract
       })
-      const foreignBridgeWithMultiSignatures = await ForeignBridge.new()
+      const foreignBridgeWithMultiSignatures = await ForeignBridgeContract.new()
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [maxPerTx, homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+        limitsArray,
         owner,
         decimalShiftTwo,
         { from: ownerOfValidatorContract }
       )
-      await token.mint(foreignBridgeWithMultiSignatures.address, valueOnForeign)
+      await token.mint(foreignBridgeWithMultiSignatures.address, valueOnHome.mul(toBN('2')))
 
       const balanceBefore = await token.balanceOf(recipient)
+      const balanceBridgeBefore = await token.balanceOf(foreignBridgeWithMultiSignatures.address)
 
       const txHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
       const message = createMessage(recipient, valueOnHome, txHash, foreignBridgeWithMultiSignatures.address)
@@ -614,14 +651,23 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [vrs.s, vrs2.s],
         message
       ).should.be.fulfilled
-      logs[0].event.should.be.equal('RelayedMessage')
-      logs[0].args.recipient.should.be.equal(recipient)
-      logs[0].args.value.should.be.bignumber.equal(valueOnHome)
+      const event = logs.find(item => item.event === 'RelayedMessage')
+      event.event.should.be.equal('RelayedMessage')
+      event.args.recipient.should.be.equal(recipient)
+      event.args.value.should.be.bignumber.equal(valueOnHome)
       const balanceAfter = await token.balanceOf(recipient)
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(valueOnForeign))
-      const balanceAfterBridge = await token.balanceOf(foreignBridgeWithMultiSignatures.address)
-      balanceAfterBridge.should.be.bignumber.equal(ZERO)
+      const balanceBridgeAfter = await token.balanceOf(foreignBridgeWithMultiSignatures.address)
+      balanceBridgeAfter.should.be.bignumber.equal(balanceBridgeBefore.sub(valueOnForeign))
       true.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(txHash))
     })
   })
+}
+
+contract('ForeignBridge_ERC20_to_Native', async accounts => {
+  test(accounts, false)
+})
+
+contract('ForeignBridge_ERC20_to_Native_RelativeDailyLimit', async accounts => {
+  test(accounts, true)
 })

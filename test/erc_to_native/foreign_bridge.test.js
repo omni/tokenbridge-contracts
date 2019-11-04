@@ -5,6 +5,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const ERC20Mock = artifacts.require('ERC20Mock.sol')
 const ScdMcdMigrationMock = artifacts.require('ScdMcdMigrationMock.sol')
+const DaiAdapterMock = artifacts.require('DaiAdapterMock.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -845,7 +846,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       foreignBridge = await ForeignBridge.new()
       sai = await ERC20Mock.new('sai', 'SAI', 18)
       dai = await ERC20Mock.new('dai', 'DAI', 18)
-      migrationContract = await ScdMcdMigrationMock.new(sai.address, dai.address)
+      const daiAdapterMock = await DaiAdapterMock.new(dai.address)
+      migrationContract = await ScdMcdMigrationMock.new(sai.address, daiAdapterMock.address)
 
       await foreignBridge.initialize(
         validatorContract.address,
@@ -874,25 +876,17 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       // When
 
       // migration address should be a contract
-      await foreignBridge.migrateToMCD(accounts[3], dai.address, { from: owner }).should.be.rejectedWith(ERROR_MSG)
-
-      // dai address should be a contract
-      await foreignBridge
-        .migrateToMCD(migrationContract.address, accounts[4], { from: owner })
-        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.migrateToMCD(accounts[3], { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
       // should be called by owner
       await foreignBridge
-        .migrateToMCD(migrationContract.address, dai.address, { from: accounts[5] })
+        .migrateToMCD(migrationContract.address, { from: accounts[5] })
         .should.be.rejectedWith(ERROR_MSG)
 
-      const { logs } = await foreignBridge.migrateToMCD(migrationContract.address, dai.address, { from: owner }).should
-        .be.fulfilled
+      const { logs } = await foreignBridge.migrateToMCD(migrationContract.address, { from: owner }).should.be.fulfilled
 
       // can't migrate token again
-      await foreignBridge
-        .migrateToMCD(migrationContract.address, dai.address, { from: owner })
-        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.migrateToMCD(migrationContract.address, { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
       // Then
       expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)

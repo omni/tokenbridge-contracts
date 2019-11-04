@@ -18,15 +18,6 @@ contract HomeAMBErc677ToErc677RelativeDailyLimit is HomeAMBErc677ToErc677, Relat
         return super.onTokenTransfer(_from, _value, _data);
     }
 
-    function handleBridgedTokens(
-        address _recipient,
-        uint256 _value,
-        bytes32 _nonce
-    ) public {
-        _updateTodayLimit();
-        super.handleBridgedTokens(_recipient, _value, _nonce);
-    }
-
     function initialize(
         address _bridgeContract,
         address _mediatorContract,

@@ -32,7 +32,9 @@ const {
   FOREIGN_UPGRADEABLE_ADMIN,
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
   ERC20_TOKEN_ADDRESS,
+  FOREIGN_DAILY_LIMIT,
   FOREIGN_MAX_AMOUNT_PER_TX,
+  FOREIGN_MIN_AMOUNT_PER_TX,
   HOME_DAILY_LIMIT,
   HOME_MAX_AMOUNT_PER_TX,
   HOME_MIN_AMOUNT_PER_TX,
@@ -44,18 +46,23 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 
 const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
 
-async function initializeBridge({ validatorsBridge, bridge, nonce }) {
+async function initializeBridge({ validatorsBridge, bridge, nonce, homeBridgeAddress }) {
   console.log(`Foreign Validators: ${validatorsBridge.options.address},
   ERC20_TOKEN_ADDRESS: ${ERC20_TOKEN_ADDRESS},
+  FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
     FOREIGN_MAX_AMOUNT_PER_TX
   )} in eth,
+  FOREIGN_MIN_AMOUNT_PER_TX: ${FOREIGN_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+    FOREIGN_MIN_AMOUNT_PER_TX
+  )} in eth,
   FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
-    HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+  Home bridge Address: ${homeBridgeAddress}
   `)
   const initializeFBridgeData = await bridge.methods
     .initialize(
@@ -63,9 +70,11 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
       ERC20_TOKEN_ADDRESS,
       FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
       FOREIGN_GAS_PRICE,
-      [FOREIGN_MAX_AMOUNT_PER_TX, HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
+      [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
+      [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
       FOREIGN_BRIDGE_OWNER,
-      foreignToHomeDecimalShift
+      foreignToHomeDecimalShift,
+      homeBridgeAddress
     )
     .encodeABI()
   const txInitializeBridge = await sendRawTxForeign({
@@ -82,7 +91,7 @@ async function initializeBridge({ validatorsBridge, bridge, nonce }) {
   }
 }
 
-async function deployForeign() {
+async function deployForeign(homeBridgeAddress) {
   if (!Web3Utils.isAddress(ERC20_TOKEN_ADDRESS)) {
     throw new Error('ERC20_TOKEN_ADDRESS env var is not defined')
   }
@@ -176,7 +185,8 @@ async function deployForeign() {
   await initializeBridge({
     validatorsBridge: storageValidatorsForeign,
     bridge: foreignBridgeImplementation,
-    nonce
+    nonce,
+    homeBridgeAddress
   })
   nonce++
 

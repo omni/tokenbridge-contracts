@@ -2,34 +2,45 @@ pragma solidity 0.4.24;
 
 import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
+import "../OtherSideBridgeStorage.sol";
+import "../../interfaces/IScdMcdMigration.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
-    event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
+contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage {
+    event TokensSwapped(address indexed from, address indexed to, uint256 value);
 
     function initialize(
         address _validatorContract,
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
-        uint256[] _limitsArray, //[ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx, 3 = _homeMinPerTx ]
+        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _executionLimitsArray, //[ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) external returns (bool) {
         require(
-            _limitsArray[3] > 0 && // _homeMinPerTx > 0
-                _limitsArray[2] > _limitsArray[3] && // _homeMaxPerTx > _homeMinPerTx
-                _limitsArray[2] < _limitsArray[1] // _homeMaxPerTx < _homeDailyLimit
+            _executionLimitsArray[2] > 0 && // _homeMinPerTx > 0
+                _executionLimitsArray[1] > _executionLimitsArray[2] && // _homeMaxPerTx > _homeMinPerTx
+                _executionLimitsArray[1] < _executionLimitsArray[0] // _homeMaxPerTx < _homeDailyLimit
         );
 
-        uintStorage[MAX_PER_TX] = _limitsArray[0];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _limitsArray[1];
-        uintStorage[EXECUTION_MAX_PER_TX] = _limitsArray[2];
-        uintStorage[EXECUTION_MIN_PER_TX] = _limitsArray[3];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
+        uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
+        uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
 
-        emit ExecutionDailyLimitChanged(_limitsArray[1]);
+        emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
 
-        return
-            _initialize(_validatorContract, _erc20token, _requiredBlockConfirmations, _gasPrice, _owner, _decimalShift);
+        return _initialize(
+            _validatorContract,
+            _erc20token,
+            _requiredBlockConfirmations,
+            _gasPrice,
+            _requestLimitsArray,
+            _owner,
+            _decimalShift,
+            _bridgeOnOtherSide
+        );
     }
 
     function _initialize(
@@ -37,26 +48,39 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
+        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) internal returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
+        require(
+            _requestLimitsArray[2] > 0 && // _minPerTx > 0
+                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
+                _requestLimitsArray[0] > _requestLimitsArray[1] // _dailyLimit > _maxPerTx
+        );
         require(_owner != address(0));
+        require(_bridgeOnOtherSide != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
+        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
+        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
+        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
+        _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
         setInitialize();
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
+        emit DailyLimitChanged(_requestLimitsArray[0]);
 
         return isInitialized();
     }
@@ -82,5 +106,30 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge {
 
     function onFailedMessage(address, uint256, bytes32) internal {
         revert();
+    }
+
+    function _relayTokens(address _sender, address _receiver, uint256 _amount) internal {
+        require(_receiver != bridgeContractOnOtherSide());
+        super._relayTokens(_sender, _receiver, _amount);
+    }
+
+    function migrateToMCD(address _migrationContract) external onlyOwner {
+        bytes32 storageAddress = 0x3378953eb16363e06fd9ea9701d36ed7285d206d9de7df55b778462d74596a89; // keccak256(abi.encodePacked("migrationToMcdCompleted"))
+
+        require(!boolStorage[storageAddress]);
+        require(AddressUtils.isContract(_migrationContract));
+
+        uint256 curBalance = erc20token().balanceOf(address(this));
+        require(erc20token().approve(_migrationContract, curBalance));
+        //It is important to note that this action will cause appearing of `Transfer`
+        //event as part of the tokens minting
+        IScdMcdMigration(_migrationContract).swapSaiToDai(curBalance);
+        address saiContract = erc20token();
+        address mcdContract = IDaiAdapter(IScdMcdMigration(_migrationContract).daiJoin()).dai();
+        setErc20token(mcdContract);
+        require(erc20token().balanceOf(address(this)) == curBalance);
+
+        emit TokensSwapped(saiContract, erc20token(), curBalance);
+        boolStorage[storageAddress] = true;
     }
 }

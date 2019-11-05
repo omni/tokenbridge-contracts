@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../BasicForeignBridge.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 import "./RewardableForeignBridgeNativeToErc.sol";
 
@@ -11,9 +11,6 @@ contract ForeignBridgeNativeToErc is
     ERC677BridgeForBurnableMintableToken,
     RewardableForeignBridgeNativeToErc
 {
-    /// Event created on money withdraw.
-    event UserRequestForAffirmation(address recipient, uint256 value);
-
     function initialize(
         address _validatorContract,
         address _erc677token,
@@ -22,7 +19,8 @@ contract ForeignBridgeNativeToErc is
         uint256 _requiredBlockConfirmations,
         uint256[] _executionLimitsArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) external returns (bool) {
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
@@ -31,7 +29,8 @@ contract ForeignBridgeNativeToErc is
             _foreignGasPrice,
             _requiredBlockConfirmations,
             _owner,
-            _decimalShift
+            _decimalShift,
+            _bridgeOnOtherSide
         );
         setInitialize();
         return isInitialized();
@@ -47,7 +46,8 @@ contract ForeignBridgeNativeToErc is
         address _owner,
         address _feeManager,
         uint256 _homeFee,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) external returns (bool) {
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
@@ -56,7 +56,8 @@ contract ForeignBridgeNativeToErc is
             _foreignGasPrice,
             _requiredBlockConfirmations,
             _owner,
-            _decimalShift
+            _decimalShift,
+            _bridgeOnOtherSide
         );
         require(AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
@@ -105,7 +106,8 @@ contract ForeignBridgeNativeToErc is
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
@@ -120,6 +122,7 @@ contract ForeignBridgeNativeToErc is
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
+        _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_foreignGasPrice);

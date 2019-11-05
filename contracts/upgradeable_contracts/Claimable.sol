@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./Sacrifice.sol";
 
 contract Claimable {

@@ -85,6 +85,10 @@ contract BasicAMBErc677ToErc677 is
         return isInitialized();
     }
 
+    function bridgeContractOnOtherSide() internal view returns (address) {
+        return mediatorContractOnOtherSide();
+    }
+
     function passMessage(address _from, uint256 _value) internal {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value, nonce());
@@ -97,21 +101,40 @@ contract BasicAMBErc677ToErc677 is
         bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
     }
 
-    function relayTokens(uint256 _value) public {
+    function relayTokens(address _from, address _receiver, uint256 _value) external {
+        require(_from == msg.sender || _from == _receiver);
+        _relayTokens(_from, _receiver, _value);
+    }
+
+    function _relayTokens(address _from, address _receiver, uint256 _value) internal {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
         require(!lock());
         ERC677 token = erc677token();
-        address from = msg.sender;
         address to = address(this);
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
 
         setLock(true);
-        token.transferFrom(from, to, _value);
+        token.transferFrom(_from, to, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, from, _value);
+        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
+    }
+
+    function relayTokens(address _receiver, uint256 _value) external {
+        _relayTokens(msg.sender, _receiver, _value);
+    }
+
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
+        ERC677 token = erc677token();
+        require(msg.sender == address(token));
+        if (!lock()) {
+            require(withinLimit(_value));
+            setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        }
+        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
+        return true;
     }
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {

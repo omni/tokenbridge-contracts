@@ -590,6 +590,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
   })
   describe('relayTokens', () => {
     let erc20Token
+    const user2 = accounts[2]
     beforeEach(async function() {
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
@@ -604,22 +605,112 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
         // Given
         await initialize(erc20Token.address)
 
+        const currentDay = await contract.getCurrentDay()
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
         const value = oneEther
         await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
         expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
         // When
-        await contract.relayTokens(value, { from: user }).should.be.fulfilled
+        await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
         // Then
         const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
       })
     }
+    it('should allow user to specify a itself as receiver', async () => {
+      // Given
+      await initialize(erc20Token.address)
+
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.methods['relayTokens(address,address,uint256)'](user, user, value, { from: user }).should.be
+        .fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+    })
+    it('should allow to specify a different receiver', async () => {
+      // Given
+      await initialize(erc20Token.address)
+
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.methods['relayTokens(address,address,uint256)'](user, user2, value, { from: user }).should.be
+        .fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+    })
+    it('should allow to specify a different receiver without specifying sender', async () => {
+      // Given
+      await initialize(erc20Token.address)
+
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.relayTokens(user2, value, { from: user }).should.be.fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+    })
+    it('should allow to complete a transfer approved by other user', async () => {
+      // Given
+      await initialize(erc20Token.address)
+
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+
+      // When
+      await contract.methods['relayTokens(address,address,uint256)'](user, user2, value, {
+        from: user2
+      }).should.be.rejectedWith(ERROR_MSG)
+      await contract.methods['relayTokens(address,address,uint256)'](user, user, value, { from: user2 }).should.be
+        .fulfilled
+
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+    })
     it('should fail if user did not approve the transfer', async () => {
       await initialize(erc20Token.address)
 
-      await contract.relayTokens(oneEther, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.relayTokens(user, oneEther, { from: user }).should.be.rejectedWith(ERROR_MSG)
     })
     it('should fail if value is not within limits', async () => {
       await initialize(erc20Token.address)
@@ -628,7 +719,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
       expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
-      await contract.relayTokens(value, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      await contract.relayTokens(user, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
     })
     if (!isRelativeDailyLimit || (isRelativeDailyLimit && !isRelativeDailyLimitOnBridgeSide)) {
       it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is owned by token manager', async function() {
@@ -642,36 +733,44 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
 
         await initialize(erc677Token.address)
 
+        const currentDay = await contract.getCurrentDay()
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
         const value = oneEther
         await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
         expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
         // When
-        await contract.relayTokens(value, { from: user }).should.be.fulfilled
+        await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
         // Then
         const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
       })
       it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is not owned by token manager', async function() {
         // Given
-        erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+        const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
         await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
         contract = this.bridge
 
         await initialize(erc677Token.address)
 
+        const currentDay = await contract.getCurrentDay()
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
         const value = oneEther
         await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
         expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
         // When
-        await contract.relayTokens(value, { from: user }).should.be.fulfilled
+        await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
         // Then
         const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
       })
     }
   })
@@ -777,6 +876,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
   if (!isRelativeDailyLimit || (isRelativeDailyLimit && !isRelativeDailyLimitOnBridgeSide)) {
     describe('fixFailedMessage', () => {
       let dataHash
+      let contract
       beforeEach(async function() {
         bridgeContract = await AMBMock.new()
         await bridgeContract.setMaxGasPerTx(maxGasPerTx)
@@ -793,7 +893,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
         expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
 
         // User transfer tokens
-        const transferTx = await erc677Token.transferAndCall(contract.address, oneEther, '0x00', { from: user }).should.be
+        const transferTx = await erc677Token.transferAndCall(contract.address, oneEther, '0x', { from: user }).should.be
           .fulfilled
 
         expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
@@ -849,8 +949,13 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
         const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
 
         // can only fix it one time
-        await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, fixData, otherTxHash, 1000000)
-          .should.be.fulfilled
+        await bridgeContract.executeMessageCall(
+          contract.address,
+          mediatorContract.address,
+          fixData,
+          otherTxHash,
+          1000000
+        ).should.be.fulfilled
 
         expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(false)
         expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)

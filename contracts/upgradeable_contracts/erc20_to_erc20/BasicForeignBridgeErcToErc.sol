@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../BasicForeignBridge.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 contract BasicForeignBridgeErcToErc is BasicForeignBridge {
     function _initialize(
@@ -9,6 +9,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
+        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         address _owner,
         uint256 _decimalShift
     ) internal {
@@ -16,6 +17,11 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
+        require(
+            _requestLimitsArray[2] > 0 && // _minPerTx > 0
+                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
+                _requestLimitsArray[1] < _requestLimitsArray[0] // _maxPerTx < _dailyLimit
+        );
         require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
@@ -24,11 +30,16 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
+        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
+        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
+        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
         setOwner(_owner);
         setInitialize();
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
+
+        emit DailyLimitChanged(_requestLimitsArray[0]);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -55,7 +66,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
     }
 
     /* solcov ignore next */
-    function erc20token() public view returns (ERC20Basic);
+    function erc20token() public view returns (ERC20);
 
     /* solcov ignore next */
     function setErc20token(address _token) internal;

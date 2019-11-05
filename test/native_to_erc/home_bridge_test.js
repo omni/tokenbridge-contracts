@@ -380,13 +380,13 @@ function test(accounts, isRelativeDailyLimit) {
     const user = accounts[1]
     const user2 = accounts[2]
     beforeEach(async () => {
-      homeContract = await HomeBridge.new()
+      homeContract = await HomeBridgeContract.new()
       await homeContract.initialize(
         validatorContract.address,
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         decimalShiftZero
       )
@@ -1405,7 +1405,7 @@ function test(accounts, isRelativeDailyLimit) {
       const rewards = [accounts[2]]
       const requiredSignatures = 1
       const rewardableValidators = await RewardableValidators.new()
-      const homeBridge = await HomeBridge.new()
+      const homeBridge = await HomeBridgeContract.new()
       await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
         from: owner
       }).should.be.fulfilled
@@ -1423,7 +1423,7 @@ function test(accounts, isRelativeDailyLimit) {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
@@ -1852,7 +1852,7 @@ function test(accounts, isRelativeDailyLimit) {
       const rewards = [accounts[2]]
       const requiredSignatures = 1
       const rewardableValidators = await RewardableValidators.new()
-      const homeBridge = await HomeBridge.new()
+      const homeBridge = await HomeBridgeContract.new()
       await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
         from: owner
       }).should.be.fulfilled
@@ -1869,7 +1869,7 @@ function test(accounts, isRelativeDailyLimit) {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
@@ -2518,10 +2518,10 @@ function test(accounts, isRelativeDailyLimit) {
   })
 }
 
-contract('HomeBridge', async accounts => {
+contract('HomeBridge_Native_to_ERC', async accounts => {
   test(accounts, false)
 })
 
-contract('HomeBridgeRelativeDailyLimit', async accounts => {
+contract('HomeBridge_Native_to_ERC_RelativeDailyLimit', async accounts => {
   test(accounts, true)
 })

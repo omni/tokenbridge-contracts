@@ -174,7 +174,9 @@ function test(accounts, isRelativeDailyLimit) {
       expect(await foreignBridge.dailyLimit()).to.be.bignumber.equal(dailyLimit)
       expect(await foreignBridge.maxPerTx()).to.be.bignumber.equal(maxPerTx)
       expect(await foreignBridge.minPerTx()).to.be.bignumber.equal(minPerTx)
-      expect(await foreignBridge.executionDailyLimit()).to.be.bignumber.equal(homeDailyLimit)
+      if (!isRelativeDailyLimit) {
+        expect(await foreignBridge.executionDailyLimit()).to.be.bignumber.equal(homeDailyLimit)
+      }
       expect(await foreignBridge.executionMaxPerTx()).to.be.bignumber.equal(homeMaxPerTx)
       expect(await foreignBridge.decimalShift()).to.be.bignumber.equal('9')
       expect(await foreignBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
@@ -670,7 +672,7 @@ function test(accounts, isRelativeDailyLimit) {
     const recipient = accounts[8]
     let foreignBridge
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await ForeignBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
@@ -859,7 +861,7 @@ function test(accounts, isRelativeDailyLimit) {
     let dai
     let migrationContract
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await ForeignBridgeContract.new()
       sai = await ERC20Mock.new('sai', 'SAI', 18)
       dai = await ERC20Mock.new('dai', 'DAI', 18)
       const daiAdapterMock = await DaiAdapterMock.new(dai.address)

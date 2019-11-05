@@ -134,31 +134,6 @@ function test(accounts, isRelativeDailyLimit) {
         )
         .should.be.rejectedWith(ERROR_MSG)
 
-      await foreignBridge
-        .initialize(
-          validatorContract.address,
-          token.address,
-          requireBlockConfirmations,
-          gasPrice,
-          requestLimitsArray,
-          executionLimitsArray,
-          owner,
-          decimalShiftZero
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge
-        .initialize(
-          validatorContract.address,
-          token.address,
-          requireBlockConfirmations,
-          gasPrice,
-          requestLimitsArray,
-          executionLimitsArray,
-          owner,
-          decimalShiftZero
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
       const { logs } = await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -714,14 +689,14 @@ function test(accounts, isRelativeDailyLimit) {
       const user = accounts[4]
       const user2 = accounts[5]
       token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
-      const foreignBridge = await ForeignBridgeErc677ToErc677.new()
+      const foreignBridge = await ForeignBridgeErc677ToErc677Contract.new()
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
         requireBlockConfirmations,
         gasPrice,
-        [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
+        requestLimitsArray,
+        executionLimitsArray,
         owner,
         decimalShiftZero
       )
@@ -876,7 +851,7 @@ function test(accounts, isRelativeDailyLimit) {
     const recipient = accounts[8]
     let foreignBridge
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await ForeignBridgeContract.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,

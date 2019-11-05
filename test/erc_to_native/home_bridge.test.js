@@ -777,14 +777,14 @@ function test(accounts, isRelativeDailyLimit) {
   describe('#relayTokens', () => {
     const recipient = accounts[7]
     beforeEach(async () => {
-      homeContract = await HomeBridge.new()
+      homeContract = await HomeBridgeContract.new()
       await homeContract.initialize(
         validatorContract.address,
-        ['3', '2', '1'],
+        isRelativeDailyLimit ? [targetLimit, '10000', '2', '1'] : ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       )
@@ -825,6 +825,17 @@ function test(accounts, isRelativeDailyLimit) {
       homeContractBalance.should.be.bignumber.equal(ZERO)
     })
     it('doesnt let you send more than daily limit', async () => {
+      homeContract = await HomeBridgeContract.new()
+      await homeContract.initialize(
+        validatorContract.address,
+        isRelativeDailyLimit ? [targetLimit, '20', '2', '1'] : ['3', '2', '1'],
+        gasPrice,
+        requireBlockConfirmations,
+        blockRewardContract.address,
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
+        owner,
+        decimalShiftZero
+      )
       await blockRewardContract.addMintedTotallyByBridge(10, homeContract.address)
 
       const currentDay = await homeContract.getCurrentDay()
@@ -840,13 +851,15 @@ function test(accounts, isRelativeDailyLimit) {
 
       await homeContract.relayTokens(recipient, { from: accounts[1], value: 2 }).should.be.rejectedWith(ERROR_MSG)
 
-      await homeContract.setDailyLimit(4).should.be.fulfilled
-      await homeContract.relayTokens(recipient, { from: accounts[1], value: 2 }).should.be.fulfilled
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('4')
-      expect(await homeContract.totalBurntCoins()).to.be.bignumber.equal('4')
+      if (!isRelativeDailyLimit) {
+        await homeContract.setDailyLimit(4).should.be.fulfilled
+        await homeContract.relayTokens(recipient, { from: accounts[1], value: 2 }).should.be.fulfilled
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('4')
+        expect(await homeContract.totalBurntCoins()).to.be.bignumber.equal('4')
+      }
     })
     it('doesnt let you send more than max amount per tx', async () => {
-      await blockRewardContract.addMintedTotallyByBridge(200, homeContract.address)
+      await blockRewardContract.addMintedTotallyByBridge(102, homeContract.address)
 
       await homeContract.relayTokens(recipient, {
         from: accounts[1],
@@ -858,8 +871,10 @@ function test(accounts, isRelativeDailyLimit) {
           value: 3
         })
         .should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setDailyLimit(100).should.be.fulfilled
+      if (!isRelativeDailyLimit) {
+        await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG)
+        await homeContract.setDailyLimit(100).should.be.fulfilled
+      }
       await homeContract.setMaxPerTx(99).should.be.fulfilled
       // meets max per tx and daily limit
       await homeContract.relayTokens(recipient, {
@@ -881,7 +896,9 @@ function test(accounts, isRelativeDailyLimit) {
 
       await blockRewardContract.addMintedTotallyByBridge(200, homeContract.address)
 
-      await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled
+      if (!isRelativeDailyLimit) {
+        await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled
+      }
       await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled
       await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled
 
@@ -896,7 +913,8 @@ function test(accounts, isRelativeDailyLimit) {
 
       await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.rejectedWith(ERROR_MSG)
 
-      await blockRewardContract.addMintedTotallyByBridge(2, homeContract.address)
+      const amountToMint = isRelativeDailyLimit ? '3' : '2'
+      await blockRewardContract.addMintedTotallyByBridge(amountToMint, homeContract.address)
 
       await homeContract.relayTokens(recipient, { from: accounts[1], value: 1 }).should.be.fulfilled
 
@@ -907,7 +925,7 @@ function test(accounts, isRelativeDailyLimit) {
       const minted = await blockRewardContract.mintedTotallyByBridge(homeContract.address)
       const burnt = await homeContract.totalBurntCoins()
 
-      minted.should.be.bignumber.equal('2')
+      minted.should.be.bignumber.equal(amountToMint)
       burnt.should.be.bignumber.equal('2')
     })
   })
@@ -2206,17 +2224,17 @@ function test(accounts, isRelativeDailyLimit) {
     beforeEach(async () => {
       rewardableValidators = await RewardableValidators.new()
       await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
-      const homeBridgeImpl = await HomeBridge.new()
+      const homeBridgeImpl = await HomeBridgeContract.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
-      homeBridge = await HomeBridge.at(storageProxy.address)
+      homeBridge = await HomeBridgeContract.at(storageProxy.address)
       await homeBridge.initialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
@@ -2895,17 +2913,17 @@ function test(accounts, isRelativeDailyLimit) {
     beforeEach(async () => {
       rewardableValidators = await RewardableValidators.new()
       await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
-      const homeBridgeImpl = await HomeBridge.new()
+      const homeBridgeImpl = await HomeBridgeContract.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', homeBridgeImpl.address).should.be.fulfilled
-      homeBridge = await HomeBridge.at(storageProxy.address)
+      homeBridge = await HomeBridgeContract.at(storageProxy.address)
       await homeBridge.initialize(
         rewardableValidators.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         blockRewardContract.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled

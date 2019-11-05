@@ -533,19 +533,20 @@ function test(accounts, isRelativeDailyLimit) {
         otherSideBridgeAddress
       )
       await token.mint(user, valueMoreThanLimit, { from: owner }).should.be.fulfilled
+      await token.mint(foreignBridge.address, oneEther, { from: owner }).should.be.fulfilled
 
-      valueMoreThanLimit.should.be.bignumber.equal(await token.totalSupply())
+      valueMoreThanLimit.add(oneEther).should.be.bignumber.equal(await token.totalSupply())
       valueMoreThanLimit.should.be.bignumber.equal(await token.balanceOf(user))
 
-      await token.mint(foreignBridge.address, oneEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address, { from: owner })
 
       await token
         .transferAndCall(foreignBridge.address, valueMoreThanLimit, '0x', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
 
-      valueMoreThanLimit.should.be.bignumber.equal(await token.totalSupply())
+      valueMoreThanLimit.add(oneEther).should.be.bignumber.equal(await token.totalSupply())
       valueMoreThanLimit.should.be.bignumber.equal(await token.balanceOf(user))
+
 
       await token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
@@ -634,19 +635,20 @@ function test(accounts, isRelativeDailyLimit) {
       const user = accounts[4]
       const user2 = accounts[5]
       token = await POA20.new('POA ERC20 Foundation', 'POA20', 18, { from: owner })
-      const foreignBridge = await ForeignBridge.new()
+      const foreignBridge = await ForeignBridgeContract.new()
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
-        [homeDailyLimit, homeMaxPerTx],
+        [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
         owner,
         decimalShiftZero,
         otherSideBridgeAddress
       )
       await token.mint(user, halfEther, { from: owner }).should.be.fulfilled
+      await token.mint(foreignBridge.address, oneEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(foreignBridge.address, { from: owner })
       await token
         .transferAndCall(foreignBridge.address, halfEther, otherSideBridgeAddress, { from: user })
@@ -655,7 +657,7 @@ function test(accounts, isRelativeDailyLimit) {
         .transferAndCall(foreignBridge.address, halfEther, '0x00', { from: user })
         .should.be.rejectedWith(ERROR_MSG)
       await token.transferAndCall(foreignBridge.address, halfEther, user2, { from: user }).should.be.fulfilled
-      expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
+      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
       const events = await getEvents(foreignBridge, { event: 'UserRequestForAffirmation' })
       expect(events[0].returnValues.recipient).to.be.equal(user2)
@@ -1496,10 +1498,10 @@ function test(accounts, isRelativeDailyLimit) {
   })
 }
 
-contract('ForeignBridge', async accounts => {
+contract('ForeignBridge_Native_to_ERC', async accounts => {
   test(accounts, false)
 })
 
-contract('ForeignBridgeRelativeDailyLimit', async accounts => {
+contract('ForeignBridge_Native_to_ERC_RelativeDailyLimit', async accounts => {
   test(accounts, true)
 })

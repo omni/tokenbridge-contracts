@@ -1532,15 +1532,16 @@ function test(accounts, isRelativeDailyLimit) {
       const user2 = accounts[5]
       await homeBridge.initialize(
         validatorContract.address,
-        [oneEther, halfEther, minPerTx],
+        limitsArray,
         gasPrice,
         requireBlockConfirmations,
         token.address,
-        [foreignDailyLimit, foreignMaxPerTx],
+        [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
         owner,
         decimalShiftZero
       ).should.be.fulfilled
       const value = halfEther
+      await token.mint(homeBridge.address, oneEther, { from: owner }).should.be.fulfilled
       await token.mint(user, value, { from: owner }).should.be.fulfilled
 
       // When

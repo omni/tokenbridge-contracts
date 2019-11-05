@@ -118,7 +118,7 @@ function test(accounts, isRelativeDailyLimit) {
 
         // When
         await erc677Token
-          .transferAndCall(homeBridge.address, oneEther, '0x', { from: user })
+          .transferAndCall(homeBridge.address, oneEther, '0x00', { from: user })
           .should.be.rejectedWith(ERROR_MSG)
         const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, user2, { from: user }).should.be
           .fulfilled

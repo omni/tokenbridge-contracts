@@ -876,15 +876,14 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
   if (!isRelativeDailyLimit || (isRelativeDailyLimit && !isRelativeDailyLimitOnBridgeSide)) {
     describe('fixFailedMessage', () => {
       let dataHash
-      let contract
       beforeEach(async function() {
+        contract = this.bridge
+
         bridgeContract = await AMBMock.new()
         await bridgeContract.setMaxGasPerTx(maxGasPerTx)
         mediatorContract = await otherSideMediatorContract.new()
         erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
         await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
-
-        contract = this.bridge
 
         await initialize(erc677Token.address)
         await erc677Token.transferOwnership(contract.address)

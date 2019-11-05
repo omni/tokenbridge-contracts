@@ -21,15 +21,16 @@ contract BaseRelativeDailyLimit is BasicTokenBridge {
         }
         uint256 limit = targetLimit();
         uint256 thresh = threshold();
+        uint256 multiplier = 1 ether ** 2;
         if (balance > unlimitedBalance && balance < thresh) {
             // to save the gas we don't need to use safe math here
             // because we check in setters that limit is always less than 1 ether
             // and threshold is greater than minPerTx
             // and minPerTx is less than threshold
-            uint256 a = (1 ether - limit) / (thresh - unlimitedBalance)**2;
+            uint256 a = ((1 ether - limit) * multiplier) / (thresh - unlimitedBalance)**2;
             uint256 b = 2 * a * thresh;
-            uint256 c = limit + a * thresh**2;
-            limit = a * balance**2 - b * balance + c;
+            uint256 c = (limit * multiplier) + a * thresh**2;
+            limit = (a * balance**2 - b * balance + c) / multiplier;
         }
         return (balance * limit) / 1 ether;
     }

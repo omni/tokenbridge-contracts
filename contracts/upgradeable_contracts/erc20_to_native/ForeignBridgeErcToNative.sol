@@ -3,8 +3,11 @@ pragma solidity 0.4.24;
 import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 import "../OtherSideBridgeStorage.sol";
+import "../../interfaces/IScdMcdMigration.sol";
 
 contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage {
+    event TokensSwapped(address indexed from, address indexed to, uint256 value);
+
     function initialize(
         address _validatorContract,
         address _erc20token,
@@ -78,5 +81,25 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     function _relayTokens(address _sender, address _receiver, uint256 _amount) internal {
         require(_receiver != bridgeContractOnOtherSide());
         super._relayTokens(_sender, _receiver, _amount);
+    }
+
+    function migrateToMCD(address _migrationContract) external onlyOwner {
+        bytes32 storageAddress = 0x3378953eb16363e06fd9ea9701d36ed7285d206d9de7df55b778462d74596a89; // keccak256(abi.encodePacked("migrationToMcdCompleted"))
+
+        require(!boolStorage[storageAddress]);
+        require(AddressUtils.isContract(_migrationContract));
+
+        uint256 curBalance = erc20token().balanceOf(address(this));
+        require(erc20token().approve(_migrationContract, curBalance));
+        //It is important to note that this action will cause appearing of `Transfer`
+        //event as part of the tokens minting
+        IScdMcdMigration(_migrationContract).swapSaiToDai(curBalance);
+        address saiContract = erc20token();
+        address mcdContract = IDaiAdapter(IScdMcdMigration(_migrationContract).daiJoin()).dai();
+        setErc20token(mcdContract);
+        require(erc20token().balanceOf(address(this)) == curBalance);
+
+        emit TokensSwapped(saiContract, erc20token(), curBalance);
+        boolStorage[storageAddress] = true;
     }
 }

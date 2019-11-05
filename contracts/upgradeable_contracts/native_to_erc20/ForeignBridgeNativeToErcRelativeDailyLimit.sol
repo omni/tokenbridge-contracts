@@ -21,7 +21,8 @@ contract ForeignBridgeNativeToErcRelativeDailyLimit is ForeignBridgeNativeToErc,
         uint256 _requiredBlockConfirmations,
         uint256[] _executionLimitsArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) external returns (bool) {
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
@@ -30,7 +31,8 @@ contract ForeignBridgeNativeToErcRelativeDailyLimit is ForeignBridgeNativeToErc,
             _foreignGasPrice,
             _requiredBlockConfirmations,
             _owner,
-            _decimalShift
+            _decimalShift,
+            _bridgeOnOtherSide
         );
         setInitialize();
         return isInitialized();
@@ -46,7 +48,8 @@ contract ForeignBridgeNativeToErcRelativeDailyLimit is ForeignBridgeNativeToErc,
         address _owner,
         address _feeManager,
         uint256 _homeFee,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide
     ) external returns (bool) {
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
@@ -55,7 +58,8 @@ contract ForeignBridgeNativeToErcRelativeDailyLimit is ForeignBridgeNativeToErc,
             _foreignGasPrice,
             _requiredBlockConfirmations,
             _owner,
-            _decimalShift
+            _decimalShift,
+            _bridgeOnOtherSide
         );
         require(AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;

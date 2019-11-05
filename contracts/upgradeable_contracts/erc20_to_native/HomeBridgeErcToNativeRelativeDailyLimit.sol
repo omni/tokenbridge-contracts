@@ -5,9 +5,9 @@ import "./HomeBridgeErcToNative.sol";
 import "../RelativeDailyLimit.sol";
 
 contract HomeBridgeErcToNativeRelativeDailyLimit is HomeBridgeErcToNative, RelativeDailyLimit {
-    function nativeTransfer() internal {
+    function nativeTransfer(address _receiver) internal {
         _updateTodayLimit();
-        super.nativeTransfer();
+        super.nativeTransfer(_receiver);
     }
 
     function initialize(

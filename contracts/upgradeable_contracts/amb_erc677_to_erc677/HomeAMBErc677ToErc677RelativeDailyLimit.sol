@@ -4,9 +4,9 @@ import "./HomeAMBErc677ToErc677.sol";
 import "../RelativeDailyLimit.sol";
 
 contract HomeAMBErc677ToErc677RelativeDailyLimit is HomeAMBErc677ToErc677, RelativeDailyLimit {
-    function relayTokens(uint256 _value) public {
+    function _relayTokens(address _from, address _receiver, uint256 _value) internal {
         _updateTodayLimit();
-        super.relayTokens(_value);
+        super._relayTokens(_from, _receiver, _value);
     }
 
     function onTokenTransfer(

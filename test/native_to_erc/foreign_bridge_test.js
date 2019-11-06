@@ -11,7 +11,15 @@ const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.s
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, signatureToVRS, getEvents, ether, expectEventInLogs } = require('../helpers/helpers')
+const {
+  createMessage,
+  sign,
+  signatureToVRS,
+  getEvents,
+  ether,
+  expectEventInLogs,
+  calculateDailyLimit
+} = require('../helpers/helpers')
 
 const oneEther = ether('1')
 const halfEther = ether('0.5')
@@ -1496,6 +1504,76 @@ function test(accounts, isRelativeDailyLimit) {
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
     })
   })
+  if (isRelativeDailyLimit) {
+    describe('#dailyLimit (relative)', () => {
+      let token
+      let foreignBridge
+
+      function initialize(customLimitsArray) {
+        return foreignBridge.initialize(
+          validatorContract.address,
+          token.address,
+          customLimitsArray,
+          gasPrice,
+          requireBlockConfirmations,
+          [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          owner,
+          decimalShiftZero,
+          otherSideBridgeAddress
+        ).should.be.fulfilled
+      }
+
+      beforeEach(async () => {
+        token = await POA20.new('POA ERC20 Foundation', 'POA20', 18)
+        foreignBridge = await ForeignBridgeContract.new()
+      })
+      it('should be calculated correctly - 1', async () => {
+        await initialize([targetLimit, threshold, homeMaxPerTx, homeMinPerTx])
+
+        await token.mint(accounts[0], halfEther).should.be.fulfilled
+        await token.mint(foreignBridge.address, halfEther).should.be.fulfilled
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+
+        const limit = await foreignBridge.dailyLimit()
+        const expectedLimit = calculateDailyLimit(oneEther, targetLimit, threshold, homeMinPerTx)
+        expect(limit).to.be.bignumber.equal(expectedLimit)
+      })
+      it('should be calculated correctly - 2', async function() {
+        await initialize([targetLimit, threshold, homeMaxPerTx, homeMinPerTx])
+
+        await token.mint(foreignBridge.address, homeMinPerTx).should.be.fulfilled
+        expect(await token.totalSupply()).to.be.bignumber.equal(homeMinPerTx)
+
+        const limit = await foreignBridge.dailyLimit()
+        expect(limit).to.be.bignumber.equal(homeMinPerTx)
+      })
+      it('should be calculated correctly - 3', async function() {
+        await initialize([targetLimit, threshold, homeMaxPerTx, homeMinPerTx])
+
+        await token.mint(foreignBridge.address, threshold).should.be.fulfilled
+        expect(await token.totalSupply()).to.be.bignumber.equal(threshold)
+
+        const limit = await foreignBridge.dailyLimit()
+        expect(limit).to.be.bignumber.equal(threshold.mul(targetLimit).div(oneEther))
+      })
+      it('should be calculated correctly - 4', async function() {
+        const amountToMint = ether('5')
+        const targetLimit = ether('0.06')
+        const threshold = ether('100')
+        const homeMinPerTx = ether('0.1')
+
+        await initialize([targetLimit, threshold, homeMaxPerTx, homeMinPerTx])
+
+        await token.mint(foreignBridge.address, amountToMint).should.be.fulfilled
+        expect(await token.totalSupply()).to.be.bignumber.equal(amountToMint)
+
+        const limit = await foreignBridge.dailyLimit()
+        const expectedLimit = calculateDailyLimit(amountToMint, targetLimit, threshold, homeMinPerTx)
+        expect(limit).to.be.bignumber.equal(expectedLimit)
+      })
+    })
+  }
 }
 
 contract('ForeignBridge_Native_to_ERC', async accounts => {

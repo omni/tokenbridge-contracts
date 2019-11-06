@@ -11,14 +11,15 @@ const FeeManagerMock = artifacts.require('FeeManagerMock')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, ether, expectEventInLogs } = require('../helpers/helpers')
+const { createMessage, sign, ether, expectEventInLogs, calculateDailyLimit } = require('../helpers/helpers')
 
-const minPerTx = ether('0.01')
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
 const quarterEther = ether('0.25')
 const oneEther = ether('1')
 const halfEther = ether('0.5')
+const minPerTx = ether('0.01')
+const maxPerTx = halfEther
 const foreignDailyLimit = oneEther
 const foreignMaxPerTx = halfEther
 const foreignMinPerTx = quarterEther
@@ -3370,6 +3371,67 @@ function test(accounts, isRelativeDailyLimit) {
       logsSubmitSignature[1].event.should.be.equal('CollectedSignatures')
     })
   })
+  if (isRelativeDailyLimit) {
+    describe('#dailyLimit (relative)', () => {
+      let homeBridge
+
+      function initialize(customLimitsArray) {
+        return homeBridge.initialize(
+          validatorContract.address,
+          customLimitsArray,
+          gasPrice,
+          requireBlockConfirmations,
+          blockRewardContract.address,
+          [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx],
+          owner,
+          decimalShiftZero
+        ).should.be.fulfilled
+      }
+
+      beforeEach(async () => {
+        homeBridge = await HomeBridgeContract.new()
+      })
+      it('should be calculated correctly - 1', async function() {
+        await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+        await blockRewardContract.addMintedTotallyByBridge(halfEther, homeBridge.address)
+
+        const limit = await homeBridge.dailyLimit()
+        const expectedLimit = calculateDailyLimit(halfEther, targetLimit, threshold, minPerTx)
+        expect(limit).to.be.bignumber.equal(expectedLimit)
+      })
+      it('should be calculated correctly - 2', async function() {
+        await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+        await blockRewardContract.addMintedTotallyByBridge(minPerTx, homeBridge.address)
+
+        const limit = await homeBridge.dailyLimit()
+        expect(limit).to.be.bignumber.equal(minPerTx)
+      })
+      it('should be calculated correctly - 3', async function() {
+        await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+        await blockRewardContract.addMintedTotallyByBridge(threshold, homeBridge.address)
+
+        const limit = await homeBridge.dailyLimit()
+        expect(limit).to.be.bignumber.equal(threshold.mul(targetLimit).div(oneEther))
+      })
+      it('should be calculated correctly - 4', async function() {
+        const amountToMint = ether('5')
+        const targetLimit = ether('0.06')
+        const threshold = ether('100')
+        const minPerTx = ether('0.1')
+
+        await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+        await blockRewardContract.addMintedTotallyByBridge(amountToMint, homeBridge.address)
+
+        const limit = await homeBridge.dailyLimit()
+        const expectedLimit = calculateDailyLimit(amountToMint, targetLimit, threshold, minPerTx)
+        expect(limit).to.be.bignumber.equal(expectedLimit)
+      })
+    })
+  }
 }
 
 contract('HomeBridge_ERC20_to_Native', async accounts => {

@@ -11,7 +11,7 @@ const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.s
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, ether, expectEventInLogs } = require('../helpers/helpers')
+const { createMessage, sign, ether, expectEventInLogs, calculateDailyLimit } = require('../helpers/helpers')
 
 const minPerTx = ether('0.01')
 const requireBlockConfirmations = 8
@@ -2516,6 +2516,70 @@ function test(accounts, isRelativeDailyLimit) {
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
     })
   })
+  if (isRelativeDailyLimit) {
+    describe('#executionDailyLimit (relative)', () => {
+      let homeBridge
+
+      function initialize(customExecutionLimitsArray) {
+        return homeBridge.initialize(
+          validatorContract.address,
+          [threshold.add(toBN(1)), threshold, minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          customExecutionLimitsArray,
+          owner,
+          decimalShiftZero
+        ).should.be.fulfilled
+      }
+
+      beforeEach(async () => {
+        homeBridge = await HomeBridgeContract.new()
+      })
+      it('should be calculated correctly - 1', async () => {
+        await initialize([targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx])
+
+        await homeBridge.sendTransaction({ from: accounts[4], value: halfEther }).should.be.fulfilled
+        expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(halfEther)
+
+        const limit = await homeBridge.executionDailyLimit()
+        const expectedLimit = calculateDailyLimit(halfEther, targetLimit, threshold, foreignMinPerTx)
+        expect(limit).to.be.bignumber.equal(expectedLimit)
+      })
+      it('should be calculated correctly - 2', async function() {
+        await initialize([targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx])
+
+        await homeBridge.sendTransaction({ from: accounts[4], value: foreignMinPerTx }).should.be.fulfilled
+        expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(foreignMinPerTx)
+
+        const limit = await homeBridge.executionDailyLimit()
+        expect(limit).to.be.bignumber.equal(foreignMinPerTx)
+      })
+      it('should be calculated correctly - 3', async function() {
+        await initialize([targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx])
+
+        await homeBridge.sendTransaction({ from: accounts[4], value: threshold }).should.be.fulfilled
+        expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(threshold)
+
+        const limit = await homeBridge.executionDailyLimit()
+        expect(limit).to.be.bignumber.equal(threshold.mul(targetLimit).div(oneEther))
+      })
+      it('should be calculated correctly - 4', async function() {
+        const amountToSend = ether('5')
+        const targetLimit = ether('0.06')
+        const threshold = ether('100')
+        const foreignMinPerTx = ether('0.1')
+
+        await initialize([targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx])
+
+        await homeBridge.sendTransaction({ from: accounts[4], value: amountToSend }).should.be.fulfilled
+        expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(amountToSend)
+
+        const limit = await homeBridge.executionDailyLimit()
+        const expectedLimit = calculateDailyLimit(amountToSend, targetLimit, threshold, foreignMinPerTx)
+        expect(limit).to.be.bignumber.equal(expectedLimit)
+      })
+    })
+  }
 }
 
 contract('HomeBridge_Native_to_ERC', async accounts => {

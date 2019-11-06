@@ -4,7 +4,7 @@ const AMBMock = artifacts.require('AMBMock.sol')
 
 const { expect } = require('chai')
 const { ZERO_ADDRESS, toBN, ERROR_MSG } = require('../setup')
-const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
+const { getEvents, expectEventInLogs, ether, strip0x, calculateDailyLimit } = require('../helpers/helpers')
 
 const ZERO = toBN(0)
 const oneEther = ether('1')
@@ -1017,6 +1017,152 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
   })
+  if (isRelativeDailyLimit) {
+    // eslint-disable-next-line
+    function initialize(customLimits) {
+      return contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        isRelativeDailyLimitOnBridgeSide ? customLimits : limitsArray,
+        isRelativeDailyLimitOnBridgeSide ? executionLimitsArray : customLimits,
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+    }
+    if (isRelativeDailyLimitOnBridgeSide) {
+      describe('#dailyLimit (relative)', () => {
+        beforeEach(async function() {
+          contract = this.bridge
+          bridgeContract = await AMBMock.new()
+          await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+          mediatorContract = await otherSideMediatorContract.new()
+          erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+        })
+        it('should be calculated correctly - 1', async function() {
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(accounts[0], halfEther).should.be.fulfilled
+          await erc677Token.mint(contract.address, halfEther).should.be.fulfilled
+          expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
+          expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
+
+          const limit = await contract.dailyLimit()
+          const expectedLimit = calculateDailyLimit(oneEther, targetLimit, threshold, minPerTx)
+          expect(limit).to.be.bignumber.equal(expectedLimit)
+        })
+        it('should be calculated correctly - 2', async function() {
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(contract.address, halfEther).should.be.fulfilled
+          expect(await erc677Token.totalSupply()).to.be.bignumber.equal(halfEther)
+
+          const limit = await contract.dailyLimit()
+          const expectedLimit = calculateDailyLimit(halfEther, targetLimit, threshold, minPerTx)
+          expect(limit).to.be.bignumber.equal(expectedLimit)
+        })
+        it('should be calculated correctly - 3', async function() {
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(contract.address, minPerTx).should.be.fulfilled
+          expect(await erc677Token.totalSupply()).to.be.bignumber.equal(minPerTx)
+
+          const limit = await contract.dailyLimit()
+          expect(limit).to.be.bignumber.equal(minPerTx)
+        })
+        it('should be calculated correctly - 4', async function() {
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(contract.address, threshold).should.be.fulfilled
+          expect(await erc677Token.totalSupply()).to.be.bignumber.equal(threshold)
+
+          const limit = await contract.dailyLimit()
+          expect(limit).to.be.bignumber.equal(threshold.mul(targetLimit).div(oneEther))
+        })
+        it('should be calculated correctly - 5', async function() {
+          const amountToMint = ether('5')
+          const targetLimit = ether('0.06')
+          const threshold = ether('100')
+          const minPerTx = ether('0.1')
+
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(accounts[0], amountToMint).should.be.fulfilled
+          expect(await erc677Token.totalSupply()).to.be.bignumber.equal(amountToMint)
+
+          const limit = await contract.dailyLimit()
+          const expectedLimit = calculateDailyLimit(amountToMint, targetLimit, threshold, minPerTx)
+          expect(limit).to.be.bignumber.equal(expectedLimit)
+        })
+      })
+    } else {
+      describe('#executionDailyLimit (relative)', () => {
+        beforeEach(async function() {
+          contract = this.bridge
+          bridgeContract = await AMBMock.new()
+          await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+          mediatorContract = await otherSideMediatorContract.new()
+          erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+        })
+        it('should be calculated correctly - 1', async function() {
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(accounts[0], halfEther).should.be.fulfilled
+          await erc677Token.mint(contract.address, halfEther).should.be.fulfilled
+          expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
+          expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
+
+          const limit = await contract.executionDailyLimit()
+          const expectedLimit = calculateDailyLimit(halfEther, targetLimit, threshold, minPerTx)
+          expect(limit).to.be.bignumber.equal(expectedLimit)
+        })
+        it('should be calculated correctly - 2', async function() {
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(accounts[0], halfEther).should.be.fulfilled
+          expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+          expect(await erc677Token.totalSupply()).to.be.bignumber.equal(halfEther)
+
+          const limit = await contract.executionDailyLimit()
+          expect(limit).to.be.bignumber.equal(ZERO)
+        })
+        it('should be calculated correctly - 3', async function() {
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(contract.address, minPerTx).should.be.fulfilled
+          expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(minPerTx)
+
+          const limit = await contract.executionDailyLimit()
+          expect(limit).to.be.bignumber.equal(minPerTx)
+        })
+        it('should be calculated correctly - 4', async function() {
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(contract.address, threshold).should.be.fulfilled
+          expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(threshold)
+
+          const limit = await contract.executionDailyLimit()
+          expect(limit).to.be.bignumber.equal(threshold.mul(targetLimit).div(oneEther))
+        })
+        it('should be calculated correctly - 5', async function() {
+          const amountToMint = ether('5')
+          const targetLimit = ether('0.06')
+          const threshold = ether('100')
+          const minPerTx = ether('0.1')
+
+          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+
+          await erc677Token.mint(contract.address, amountToMint).should.be.fulfilled
+          expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(amountToMint)
+
+          const limit = await contract.executionDailyLimit()
+          const expectedLimit = calculateDailyLimit(amountToMint, targetLimit, threshold, minPerTx)
+          expect(limit).to.be.bignumber.equal(expectedLimit)
+        })
+      })
+    }
+  }
 }
 
 module.exports = {

@@ -2,15 +2,15 @@ pragma solidity 0.4.24;
 
 import "./Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./Initializable.sol";
+import "./InitializableBridge.sol";
 
-contract BaseBridgeValidators is Initializable, Ownable {
+contract BaseBridgeValidators is InitializableBridge, Ownable {
     using SafeMath for uint256;
 
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
     uint256 internal constant MAX_VALIDATORS = 100;
-    bytes32 internal constant REQUIRED_SIGNATURES = keccak256(abi.encodePacked("requiredSignatures"));
-    bytes32 internal constant VALIDATOR_COUNT = keccak256(abi.encodePacked("validatorCount"));
+    bytes32 internal constant REQUIRED_SIGNATURES = 0xd18ea17c351d6834a0e568067fb71804d2a588d5e26d60f792b1c724b1bd53b1; // keccak256(abi.encodePacked("requiredSignatures"))
+    bytes32 internal constant VALIDATOR_COUNT = 0x8656d603d9f985c3483946a92789d52202f49736384ba131cb92f62c4c1aa082; // keccak256(abi.encodePacked("validatorCount"))
 
     event ValidatorAdded(address indexed validator);
     event ValidatorRemoved(address indexed validator);

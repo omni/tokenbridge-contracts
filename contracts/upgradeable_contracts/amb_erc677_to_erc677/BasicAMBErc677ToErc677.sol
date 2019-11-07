@@ -24,10 +24,10 @@ contract BasicAMBErc677ToErc677 is
 {
     event FailedMessageFixed(bytes32 indexed dataHash, address recipient, uint256 value);
 
-    bytes32 internal constant BRIDGE_CONTRACT = keccak256(abi.encodePacked("bridgeContract"));
-    bytes32 internal constant MEDIATOR_CONTRACT = keccak256(abi.encodePacked("mediatorContract"));
-    bytes32 internal constant REQUEST_GAS_LIMIT = keccak256(abi.encodePacked("requestGasLimit"));
-    bytes32 internal constant NONCE = keccak256(abi.encodePacked("nonce"));
+    bytes32 internal constant BRIDGE_CONTRACT = 0x811bbb11e8899da471f0e69a3ed55090fc90215227fc5fb1cb0d6e962ea7b74f; // keccak256(abi.encodePacked("bridgeContract"))
+    bytes32 internal constant MEDIATOR_CONTRACT = 0x98aa806e31e94a687a31c65769cb99670064dd7f5a87526da075c5fb4eab9880; // keccak256(abi.encodePacked("mediatorContract"))
+    bytes32 internal constant REQUEST_GAS_LIMIT = 0x2dfd6c9f781bb6bbb5369c114e949b69ebb440ef3d4dd6b2836225eb1dc3a2be; // keccak256(abi.encodePacked("requestGasLimit"))
+    bytes32 internal constant NONCE = 0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759; // keccak256(abi.encodePacked("nonce"))
 
     function initialize(
         address _bridgeContract,
@@ -47,7 +47,6 @@ contract BasicAMBErc677ToErc677 is
         );
         require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // _executionMaxPerTx < _executionDailyLimit
 
-        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
         setErc677token(_erc677token);
@@ -68,6 +67,10 @@ contract BasicAMBErc677ToErc677 is
         return isInitialized();
     }
 
+    function bridgeContractOnOtherSide() internal view returns (address) {
+        return mediatorContractOnOtherSide();
+    }
+
     function passMessage(address _from, uint256 _value) internal {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value, nonce());
@@ -80,29 +83,48 @@ contract BasicAMBErc677ToErc677 is
         bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
     }
 
-    function relayTokens(uint256 _value) external {
+    function relayTokens(address _from, address _receiver, uint256 _value) external {
+        require(_from == msg.sender || _from == _receiver);
+        _relayTokens(_from, _receiver, _value);
+    }
+
+    function _relayTokens(address _from, address _receiver, uint256 _value) internal {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
         require(!lock());
         ERC677 token = erc677token();
-        address from = msg.sender;
         address to = address(this);
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
 
         setLock(true);
-        token.transferFrom(from, to, _value);
+        token.transferFrom(_from, to, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, from, _value);
+        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
+    }
+
+    function relayTokens(address _receiver, uint256 _value) external {
+        _relayTokens(msg.sender, _receiver, _value);
+    }
+
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
+        ERC677 token = erc677token();
+        require(msg.sender == address(token));
+        if (!lock()) {
+            require(withinLimit(_value));
+            setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        }
+        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
+        return true;
     }
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 0, 0);
+        return (1, 1, 0);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("erc-to-erc-amb")));
+        return 0x76595b56; // bytes4(keccak256(abi.encodePacked("erc-to-erc-amb")))
     }
 
     function setBridgeContract(address _bridgeContract) external onlyOwner {

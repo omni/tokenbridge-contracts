@@ -75,7 +75,6 @@ const {
   VALIDATORS_REWARD_ACCOUNTS,
   DEPLOY_REWARDABLE_TOKEN,
   HOME_FEE_MANAGER_TYPE,
-  ERC20_EXTENDED_BY_ERC677,
   HOME_EVM_VERSION,
   FOREIGN_EVM_VERSION
 } = process.env
@@ -223,14 +222,8 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
-    ERC20_EXTENDED_BY_ERC677: envalid.bool()
-  }
-
-  if (ERC20_EXTENDED_BY_ERC677 === 'true') {
-    validations = {
-      ...validations,
-      FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
-    }
+    ERC20_EXTENDED_BY_ERC677: envalid.bool(),
+    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -248,7 +241,8 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     ERC20_TOKEN_ADDRESS: addressValidator(),
     BLOCK_REWARD_ADDRESS: addressValidator({
       default: ZERO_ADDRESS
-    })
+    }),
+    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
   }
 }
 
@@ -282,19 +276,13 @@ if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
 
   if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS' && env.FOREIGN_REWARDABLE === 'ONE_DIRECTION') {
     throw new Error(
-      `Combination of HOME_REWARDABLE: ${env.HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${
-        env.FOREIGN_REWARDABLE
-      } should be avoided on ${env.BRIDGE_MODE} bridge mode.`
+      `Combination of HOME_REWARDABLE: ${env.HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${env.FOREIGN_REWARDABLE} should be avoided on ${env.BRIDGE_MODE} bridge mode.`
     )
   }
 }
 
 if (env.BRIDGE_MODE === 'ERC_TO_ERC') {
-  if (env.ERC20_EXTENDED_BY_ERC677) {
-    checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
-  } else if (env.FOREIGN_MAX_AMOUNT_PER_TX.gte(env.FOREIGN_DAILY_LIMIT)) {
-    throw new Error(`FOREIGN_DAILY_LIMIT should be greater than FOREIGN_MAX_AMOUNT_PER_TX`)
-  }
+  checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
 
   if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS' && env.BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
     throw new Error(
@@ -308,9 +296,7 @@ if (env.BRIDGE_MODE === 'ERC_TO_ERC') {
 }
 
 if (env.BRIDGE_MODE === 'ERC_TO_NATIVE') {
-  if (env.FOREIGN_MAX_AMOUNT_PER_TX.gte(env.FOREIGN_DAILY_LIMIT)) {
-    throw new Error(`FOREIGN_DAILY_LIMIT should be greater than FOREIGN_MAX_AMOUNT_PER_TX`)
-  }
+  checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
 
   if (HOME_REWARDABLE === 'ONE_DIRECTION') {
     throw new Error(

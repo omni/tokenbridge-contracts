@@ -156,47 +156,39 @@ async function testERC677BridgeToken(accounts, rewardable) {
     describe('#mintReward', async () => {
       it('can only be called by BlockReward contract', async () => {
         await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([], [], { from: user }).should.be.rejectedWith(ERROR_MSG)
-        await token.mintReward([], [], { from: accounts[2] }).should.be.fulfilled
+        await token.mintReward(1, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await token.mintReward(1, { from: accounts[2] }).should.be.fulfilled
       })
-      it('should increase totalSupply and balances', async () => {
-        const user1 = accounts[1]
-        const user2 = accounts[2]
-        const user3 = accounts[3]
-
+      it('should increase totalSupply and balance', async () => {
         expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(user1)).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(user2)).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(user3)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
 
-        await token.setBlockRewardContractMock(accounts[4]).should.be.fulfilled
-        await token.mintReward([user1, user2, user3], [100, 200, 300], { from: accounts[4] }).should.be.fulfilled
+        await token.setBlockRewardContractMock(user).should.be.fulfilled
+        await token.mintReward(100, { from: user }).should.be.fulfilled
 
-        expect(await token.totalSupply()).to.be.bignumber.equal('600')
-        expect(await token.balanceOf(user1)).to.be.bignumber.equal('100')
-        expect(await token.balanceOf(user2)).to.be.bignumber.equal('200')
-        expect(await token.balanceOf(user3)).to.be.bignumber.equal('300')
+        expect(await token.totalSupply()).to.be.bignumber.equal('100')
+        expect(await token.balanceOf(user)).to.be.bignumber.equal('100')
       })
     })
 
     describe('#stake', async () => {
       it('can only be called by Staking contract', async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['100'], { from: accounts[2] }).should.be.fulfilled
-        await token.setStakingContractMock(accounts[3]).should.be.fulfilled
-        await token.stake(user, '100', { from: accounts[4] }).should.be.rejectedWith(ERROR_MSG)
-        await token.stake(user, '100', { from: accounts[3] }).should.be.fulfilled
+        await token.setBlockRewardContractMock(user).should.be.fulfilled
+        await token.mintReward('100', { from: user }).should.be.fulfilled
+        await token.setStakingContractMock(accounts[4]).should.be.fulfilled
+        await token.stake(user, '100', { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG)
+        await token.stake(user, '100', { from: accounts[4] }).should.be.fulfilled
       })
       it("should revert if user doesn't have enough balance", async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['99'], { from: accounts[2] }).should.be.fulfilled
+        await token.setBlockRewardContractMock(user).should.be.fulfilled
+        await token.mintReward('99', { from: user }).should.be.fulfilled
         expect(await token.balanceOf(user)).to.be.bignumber.equal('99')
         await token.setStakingContractMock(accounts[3]).should.be.fulfilled
         await token.stake(user, '100', { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG_OPCODE)
       })
       it("should decrease user's balance and increase Staking's balance", async () => {
-        await token.setBlockRewardContractMock(accounts[2]).should.be.fulfilled
-        await token.mintReward([user], ['100'], { from: accounts[2] }).should.be.fulfilled
+        await token.setBlockRewardContractMock(user).should.be.fulfilled
+        await token.mintReward('100', { from: user }).should.be.fulfilled
         expect(await token.balanceOf(user)).to.be.bignumber.equal('100')
         expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal(ZERO)
         await token.setStakingContractMock(accounts[3]).should.be.fulfilled
@@ -255,7 +247,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         requireBlockConfirmations,
         [executionDailyLimit, executionMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        homeErcToErcContract.address
       )
     })
     it('sends tokens to recipient', async () => {
@@ -324,6 +317,15 @@ async function testERC677BridgeToken(accounts, rewardable) {
     })
 
     if (rewardable) {
+      it('fail to send tokens to BlockReward contract directly', async () => {
+        const amount = ether('1')
+        const blockRewardContractAddress = accounts[2]
+        const arbitraryAccountAddress = accounts[3]
+        await token.setBlockRewardContractMock(blockRewardContractAddress, { from: owner }).should.be.fulfilled
+        await token.mint(user, amount, { from: owner }).should.be.fulfilled
+        await token.transfer(blockRewardContractAddress, amount, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await token.transfer(arbitraryAccountAddress, amount, { from: user }).should.be.fulfilled
+      })
       it('fail to send tokens to Staking contract directly', async () => {
         const amount = ether('1')
         const stakingContractAddress = accounts[2]
@@ -356,6 +358,19 @@ async function testERC677BridgeToken(accounts, rewardable) {
       expect(await receiver.data()).to.be.equal(null)
     })
     if (rewardable) {
+      it('fail to send tokens to BlockReward contract directly', async () => {
+        const amount = ether('1')
+        const user2 = accounts[2]
+        const blockRewardContractAddress = accounts[3]
+        const arbitraryAccountAddress = accounts[4]
+        await token.setBlockRewardContractMock(blockRewardContractAddress, { from: owner }).should.be.fulfilled
+        await token.mint(user, amount, { from: owner }).should.be.fulfilled
+        await token.approve(user2, amount, { from: user }).should.be.fulfilled
+        await token
+          .transferFrom(user, blockRewardContractAddress, amount, { from: user2 })
+          .should.be.rejectedWith(ERROR_MSG)
+        await token.transferFrom(user, arbitraryAccountAddress, amount, { from: user2 }).should.be.fulfilled
+      })
       it('fail to send tokens to Staking contract directly', async () => {
         const amount = ether('1')
         const user2 = accounts[2]
@@ -410,7 +425,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         requireBlockConfirmations,
         [executionDailyLimit, executionMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        homeErcToErcContract.address
       )
     })
     it('calls contractFallback', async () => {

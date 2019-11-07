@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../BasicForeignBridge.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 contract BasicForeignBridgeErcToErc is BasicForeignBridge {
     function _initialize(
@@ -9,7 +9,8 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
-        uint256[] _maxPerTxHomeDailyLimitHomeMaxPerTxArray, // [ 0 = _maxPerTx, 1 = _homeDailyLimit, 2 = _homeMaxPerTx ]
+        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
         uint256 _decimalShift
     ) internal {
@@ -17,7 +18,12 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
-        require(_maxPerTxHomeDailyLimitHomeMaxPerTxArray[2] < _maxPerTxHomeDailyLimitHomeMaxPerTxArray[1]); // _homeMaxPerTx < _homeDailyLimit
+        require(
+            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
+                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
+                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
+        );
+        require(_homeDailyLimitHomeMaxPerTxArray[1] < _homeDailyLimitHomeMaxPerTxArray[0]); // _homeMaxPerTx < _homeDailyLimit
         require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
@@ -25,20 +31,23 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
-        uintStorage[MAX_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxArray[0];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _maxPerTxHomeDailyLimitHomeMaxPerTxArray[1];
-        uintStorage[EXECUTION_MAX_PER_TX] = _maxPerTxHomeDailyLimitHomeMaxPerTxArray[2];
+        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
+        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
+        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
+        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
+        uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setInitialize();
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
-        emit ExecutionDailyLimitChanged(_maxPerTxHomeDailyLimitHomeMaxPerTxArray[1]);
+        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
+        emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("erc-to-erc-core")));
+        return 0xba4690f5; // bytes4(keccak256(abi.encodePacked("erc-to-erc-core")))
     }
 
     function claimTokens(address _token, address _to) public {
@@ -61,7 +70,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
     }
 
     /* solcov ignore next */
-    function erc20token() public view returns (ERC20Basic);
+    function erc20token() public view returns (ERC20);
 
     /* solcov ignore next */
     function setErc20token(address _token) internal;

@@ -4,7 +4,6 @@ import "../../libraries/Message.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBlockReward.sol";
 import "../BasicHomeBridge.sol";
-import "../ERC677Bridge.sol";
 import "../OverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToNative.sol";
 import "../BlockRewardBridge.sol";
@@ -16,15 +15,15 @@ contract HomeBridgeErcToNative is
     RewardableHomeBridgeErcToNative,
     BlockRewardBridge
 {
-    bytes32 internal constant TOTAL_BURNT_COINS = keccak256(abi.encodePacked("totalBurntCoins"));
+    bytes32 internal constant TOTAL_BURNT_COINS = 0x17f187b2e5d1f8770602b32c1159b85c9600859277fae1eaa9982e9bcf63384c; // keccak256(abi.encodePacked("totalBurntCoins"))
 
     function() public payable {
-        nativeTransfer();
+        require(msg.data.length == 0);
+        nativeTransfer(msg.sender);
     }
 
-    function nativeTransfer() internal {
+    function nativeTransfer(address _receiver) internal {
         require(msg.value > 0);
-        require(msg.data.length == 0);
         require(withinLimit(msg.value));
         IBlockReward blockReward = blockRewardContract();
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
@@ -41,7 +40,11 @@ contract HomeBridgeErcToNative is
         }
         setTotalBurntCoins(totalBurnt.add(valueToBurn));
         address(0).transfer(valueToBurn);
-        emit UserRequestForSignature(msg.sender, valueToTransfer);
+        emit UserRequestForSignature(_receiver, valueToTransfer);
+    }
+
+    function relayTokens(address _receiver) external payable {
+        nativeTransfer(_receiver);
     }
 
     function initialize(
@@ -101,7 +104,7 @@ contract HomeBridgeErcToNative is
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return bytes4(keccak256(abi.encodePacked("erc-to-native-core")));
+        return 0x18762d46; // bytes4(keccak256(abi.encodePacked("erc-to-native-core")))
     }
 
     function blockRewardContract() public view returns (IBlockReward) {

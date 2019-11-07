@@ -37,14 +37,20 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/FeeManagerNativeToErcBothDi
 
 echo "Flattening contracts related to erc-to-erc bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/HomeBridgeErcToErc.sol > flats/erc20_to_erc20/HomeBridgeErcToErc_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/HomeBridgeErcToErcRelativeDailyLimit.sol > flats/erc20_to_erc20/HomeBridgeErcToErcRelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/HomeBridgeErcToErcPOSDAO.sol > flats/erc20_to_erc20/HomeBridgeErcToErcPOSDAO_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/HomeBridgeErcToErcPOSDAORelativeDailyLimit.sol > flats/erc20_to_erc20/HomeBridgeErcToErcPOSDAORelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/ForeignBridgeErcToErc.sol > flats/erc20_to_erc20/ForeignBridgeErcToErc_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/ForeignBridgeErcToErcRelativeDailyLimit.sol > flats/erc20_to_erc20/ForeignBridgeErcToErcRelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/ForeignBridgeErc677ToErc677.sol > flats/erc20_to_erc20/ForeignBridgeErc677ToErc677_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/ForeignBridgeErc677ToErc677RelativeDailyLimit.sol > flats/erc20_to_erc20/ForeignBridgeErc677ToErc677RelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_erc20/FeeManagerErcToErcPOSDAO.sol > flats/erc20_to_erc20/FeeManagerErcToErcPOSDAO_flat.sol
 
 echo "Flattening contracts related to erc-to-native bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/HomeBridgeErcToNative.sol > flats/erc20_to_native/HomeBridgeErcToNative_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/HomeBridgeErcToNativeRelativeDailyLimit.sol > flats/erc20_to_native/HomeBridgeErcToNativeRelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/ForeignBridgeErcToNative.sol > flats/erc20_to_native/ForeignBridgeErcToNative_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/ForeignBridgeErcToNativeRelativeDailyLimit.sol > flats/erc20_to_native/ForeignBridgeErcToNativeRelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/FeeManagerErcToNative.sol > flats/erc20_to_native/FeeManagerErcToNative_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/FeeManagerErcToNativePOSDAO.sol > flats/erc20_to_native/FeeManagerErcToNativePOSDAO_flat.sol
 
@@ -54,4 +60,6 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/arbitrary_message/ForeignAMB.sol > flats/ar
 
 echo "Flattening contracts related to erc677 to erc677 on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/HomeAMBErc677ToErc677.sol > flats/amb_erc677_to_erc677/HomeAMBErc677ToErc677_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/HomeAMBErc677ToErc677RelativeDailyLimit.sol > flats/amb_erc677_to_erc677/HomeAMBErc677ToErc677RelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/ForeignAMBErc677ToErc677.sol > flats/amb_erc677_to_erc677/ForeignAMBErc677ToErc677_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/ForeignAMBErc677ToErc677RelativeDailyLimit.sol > flats/amb_erc677_to_erc677/ForeignAMBErc677ToErc677RelativeDailyLimit_flat.sol

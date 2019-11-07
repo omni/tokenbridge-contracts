@@ -27,8 +27,11 @@ ${FLATTENER} ${VALIDATOR_CONTRACTS_DIR}/RewardableValidators.sol > flats/validat
 
 echo "Flattening contracts related to native-to-erc bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/ForeignBridgeNativeToErc.sol > flats/native_to_erc20/ForeignBridgeNativeToErc_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/ForeignBridgeNativeToErcRelativeDailyLimit.sol > flats/native_to_erc20/ForeignBridgeNativeToErcRelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/HomeBridgeNativeToErc.sol > flats/native_to_erc20/HomeBridgeNativeToErc_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/HomeBridgeNativeToErcRelativeDailyLimit.sol > flats/native_to_erc20/HomeBridgeNativeToErcRelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/ClassicHomeBridgeNativeToErc.sol > flats/native_to_erc20/ClassicHomeBridgeNativeToErc_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/ClassicHomeBridgeNativeToErcRelativeDailyLimit.sol > flats/native_to_erc20/ClassicHomeBridgeNativeToErcRelativeDailyLimit_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/FeeManagerNativeToErc.sol > flats/native_to_erc20/FeeManagerNativeToErc_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/FeeManagerNativeToErcBothDirections.sol > flats/native_to_erc20/FeeManagerNativeToErcBothDirections_flat.sol
 

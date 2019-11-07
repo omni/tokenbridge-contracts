@@ -45,6 +45,8 @@ const {
   FOREIGN_TRANSACTIONS_FEE,
   FOREIGN_TO_HOME_DECIMAL_SHIFT,
   RELATIVE_DAILY_LIMIT,
+  TARGET_LIMIT,
+  THRESHOLD,
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -63,6 +65,15 @@ if (isRewardableBridge) {
 async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
   let initializeHomeBridgeData
+
+  const executionLimitsArray = RELATIVE_DAILY_LIMIT
+    ? [TARGET_LIMIT, THRESHOLD, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX]
+    : [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX]
+
+  const RELATIVE_DAILY_LIMIT_PARAMS = `TARGET_LIMIT: ${TARGET_LIMIT} which is ${
+    Web3Utils.fromWei(Web3Utils.toBN(TARGET_LIMIT).mul(Web3Utils.toBN(100)))
+  }%,
+  THRESHOLD: ${THRESHOLD} which is ${Web3Utils.fromWei(THRESHOLD)} in eth,`
 
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
@@ -84,7 +95,11 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
-    FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
+  ${
+    RELATIVE_DAILY_LIMIT
+      ? RELATIVE_DAILY_LIMIT_PARAMS
+      : `FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,`
+  }
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
@@ -103,7 +118,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
         [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
+        executionLimitsArray,
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
         [homeFeeInWei, foreignFeeInWei],
@@ -117,7 +132,11 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
-    FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
+  ${
+    RELATIVE_DAILY_LIMIT
+      ? RELATIVE_DAILY_LIMIT_PARAMS
+      : `FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,`
+  }
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
@@ -133,7 +152,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
         [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
+        executionLimitsArray,
         HOME_BRIDGE_OWNER,
         foreignToHomeDecimalShift
       )

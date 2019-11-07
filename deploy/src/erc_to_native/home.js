@@ -47,6 +47,8 @@ const {
   HOME_FEE_MANAGER_TYPE,
   FOREIGN_TO_HOME_DECIMAL_SHIFT,
   RELATIVE_DAILY_LIMIT,
+  TARGET_LIMIT,
+  THRESHOLD,
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -66,6 +68,15 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
   let initializeHomeBridgeData
 
+  const requestLimitsArray = RELATIVE_DAILY_LIMIT
+    ? [TARGET_LIMIT, THRESHOLD, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX]
+    : [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX]
+
+  const RELATIVE_DAILY_LIMIT_PARAMS = `TARGET_LIMIT: ${TARGET_LIMIT} which is ${
+    Web3Utils.fromWei(Web3Utils.toBN(TARGET_LIMIT).mul(Web3Utils.toBN(100)))
+  }%,
+  THRESHOLD: ${THRESHOLD} which is ${Web3Utils.fromWei(THRESHOLD)} in eth,`
+
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
     const feeManagerContract = isFeeManagerPOSDAO ? FeeManagerErcToNativePOSDAO : FeeManagerErcToNative
@@ -80,7 +91,11 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     const foreignFeeInWei = Web3Utils.toWei(FOREIGN_TRANSACTIONS_FEE.toString(), 'ether')
     console.log('\ninitializing Home Bridge with fee contract:\n')
     console.log(`Home Validators: ${validatorsBridge.options.address},
-  HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  ${
+    RELATIVE_DAILY_LIMIT
+      ? RELATIVE_DAILY_LIMIT_PARAMS
+      : `HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,`
+  }
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
@@ -100,7 +115,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     initializeHomeBridgeData = await bridge.methods
       .rewardableInitialize(
         validatorsBridge.options.address,
-        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
+        requestLimitsArray,
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         BLOCK_REWARD_ADDRESS,
@@ -114,7 +129,11 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   } else {
     console.log('\ninitializing Home Bridge with following parameters:\n')
     console.log(`Home Validators: ${validatorsBridge.options.address},
-  HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  ${
+    RELATIVE_DAILY_LIMIT
+      ? RELATIVE_DAILY_LIMIT_PARAMS
+      : `HOME_DAILY_LIMIT : ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,`
+  }
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
@@ -132,7 +151,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
     initializeHomeBridgeData = await bridge.methods
       .initialize(
         validatorsBridge.options.address,
-        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
+        requestLimitsArray,
         HOME_GAS_PRICE,
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         BLOCK_REWARD_ADDRESS,

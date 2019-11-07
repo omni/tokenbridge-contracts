@@ -1019,7 +1019,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
   })
   if (isRelativeDailyLimit) {
     // eslint-disable-next-line
-    function initialize(customLimits) {
+    function initializeWithCustomLimits(customLimits) {
       return contract.initialize(
         bridgeContract.address,
         mediatorContract.address,
@@ -1041,7 +1041,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
         })
         it('should be calculated correctly - 1', async function() {
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(accounts[0], halfEther).should.be.fulfilled
           await erc677Token.mint(contract.address, halfEther).should.be.fulfilled
@@ -1053,7 +1053,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           expect(limit).to.be.bignumber.equal(expectedLimit)
         })
         it('should be calculated correctly - 2', async function() {
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(contract.address, halfEther).should.be.fulfilled
           expect(await erc677Token.totalSupply()).to.be.bignumber.equal(halfEther)
@@ -1063,7 +1063,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           expect(limit).to.be.bignumber.equal(expectedLimit)
         })
         it('should be calculated correctly - 3', async function() {
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(contract.address, minPerTx).should.be.fulfilled
           expect(await erc677Token.totalSupply()).to.be.bignumber.equal(minPerTx)
@@ -1072,7 +1072,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           expect(limit).to.be.bignumber.equal(minPerTx)
         })
         it('should be calculated correctly - 4', async function() {
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(contract.address, threshold).should.be.fulfilled
           expect(await erc677Token.totalSupply()).to.be.bignumber.equal(threshold)
@@ -1086,7 +1086,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           const threshold = ether('100')
           const minPerTx = ether('0.1')
 
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(accounts[0], amountToMint).should.be.fulfilled
           expect(await erc677Token.totalSupply()).to.be.bignumber.equal(amountToMint)
@@ -1106,7 +1106,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
         })
         it('should be calculated correctly - 1', async function() {
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(accounts[0], halfEther).should.be.fulfilled
           await erc677Token.mint(contract.address, halfEther).should.be.fulfilled
@@ -1118,7 +1118,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           expect(limit).to.be.bignumber.equal(expectedLimit)
         })
         it('should be calculated correctly - 2', async function() {
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(accounts[0], halfEther).should.be.fulfilled
           expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
@@ -1128,7 +1128,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           expect(limit).to.be.bignumber.equal(ZERO)
         })
         it('should be calculated correctly - 3', async function() {
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(contract.address, minPerTx).should.be.fulfilled
           expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(minPerTx)
@@ -1137,7 +1137,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           expect(limit).to.be.bignumber.equal(minPerTx)
         })
         it('should be calculated correctly - 4', async function() {
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(contract.address, threshold).should.be.fulfilled
           expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(threshold)
@@ -1151,7 +1151,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           const threshold = ether('100')
           const minPerTx = ether('0.1')
 
-          await initialize([targetLimit, threshold, maxPerTx, minPerTx])
+          await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
 
           await erc677Token.mint(contract.address, amountToMint).should.be.fulfilled
           expect(await erc677Token.balanceOf(contract.address)).to.be.bignumber.equal(amountToMint)

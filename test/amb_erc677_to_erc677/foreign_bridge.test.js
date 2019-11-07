@@ -151,7 +151,6 @@ function test(accounts, isRelativeDailyLimit) {
       await erc677Token.transferOwnership(foreignBridge.address)
     })
     it('should transfer locked tokens on message from amb', async () => {
-      if (isRelativeDailyLimit) return
       // Given
       const currentDay = await foreignBridge.getCurrentDay()
       expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)

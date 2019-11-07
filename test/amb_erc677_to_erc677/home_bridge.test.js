@@ -75,66 +75,64 @@ function test(accounts, isRelativeDailyLimit) {
         owner
       ).should.be.fulfilled
     })
-    if (!isRelativeDailyLimit) {
-      it('should emit UserRequestForSignature in AMB bridge and burn transferred tokens', async () => {
-        // Given
-        const currentDay = await homeBridge.getCurrentDay()
-        expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-        const initialEvents = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
-        expect(initialEvents.length).to.be.equal(0)
-        expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+    it('should emit UserRequestForSignature in AMB bridge and burn transferred tokens', async () => {
+      // Given
+      const currentDay = await homeBridge.getCurrentDay()
+      expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const initialEvents = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
+      expect(initialEvents.length).to.be.equal(0)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
 
-        // only token address can call it
-        await homeBridge.onTokenTransfer(user, oneEther, '0x', { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      // only token address can call it
+      await homeBridge.onTokenTransfer(user, oneEther, '0x', { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
-        // must be within limits
-        await erc677Token
-          .transferAndCall(homeBridge.address, twoEthers, '0x', { from: user })
-          .should.be.rejectedWith(ERROR_MSG)
+      // must be within limits
+      await erc677Token
+        .transferAndCall(homeBridge.address, twoEthers, '0x', { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
 
-        // When
-        const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, '0x', { from: user }).should.be
-          .fulfilled
+      // When
+      const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, '0x', { from: user }).should.be
+        .fulfilled
 
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
-        expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
-        expectEventInLogs(logs, 'Burn', {
-          burner: homeBridge.address,
-          value: oneEther
-        })
+      // Then
+      const events = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+      expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
+      expectEventInLogs(logs, 'Burn', {
+        burner: homeBridge.address,
+        value: oneEther
       })
-      it('should be able to specify a different receiver', async () => {
-        const user2 = accounts[2]
-        // Given
-        const currentDay = await homeBridge.getCurrentDay()
-        expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-        const initialEvents = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
-        expect(initialEvents.length).to.be.equal(0)
-        expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+    })
+    it('should be able to specify a different receiver', async () => {
+      const user2 = accounts[2]
+      // Given
+      const currentDay = await homeBridge.getCurrentDay()
+      expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const initialEvents = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
+      expect(initialEvents.length).to.be.equal(0)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
 
-        // When
-        await erc677Token
-          .transferAndCall(homeBridge.address, oneEther, '0x00', { from: user })
-          .should.be.rejectedWith(ERROR_MSG)
-        const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, user2, { from: user }).should.be
-          .fulfilled
+      // When
+      await erc677Token
+        .transferAndCall(homeBridge.address, oneEther, '0x00', { from: user })
+        .should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await erc677Token.transferAndCall(homeBridge.address, oneEther, user2, { from: user }).should.be
+        .fulfilled
 
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
-        expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
-        expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
-        expectEventInLogs(logs, 'Burn', {
-          burner: homeBridge.address,
-          value: oneEther
-        })
+      // Then
+      const events = await getEvents(ambBridgeContract, { event: 'UserRequestForSignature' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
+      expect(await homeBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
+      expectEventInLogs(logs, 'Burn', {
+        burner: homeBridge.address,
+        value: oneEther
       })
-    }
+    })
   })
   describe('handleBridgedTokens', () => {
     const nonce = '0x96b6af865cdaa107ede916e237afbedffa5ed36bea84c0e77a33cc28fc2e9c01'

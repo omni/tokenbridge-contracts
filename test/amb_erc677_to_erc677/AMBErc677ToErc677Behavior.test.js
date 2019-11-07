@@ -600,27 +600,25 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
 
       contract = this.bridge
     })
-    if (!isRelativeDailyLimit || (isRelativeDailyLimit && !isRelativeDailyLimitOnBridgeSide)) {
-      it('should allow to bridge tokens using approve and transferFrom', async () => {
-        // Given
-        await initialize(erc20Token.address)
+    it('should allow to bridge tokens using approve and transferFrom', async () => {
+      // Given
+      await initialize(erc20Token.address)
 
-        const currentDay = await contract.getCurrentDay()
-        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-        const value = oneEther
-        await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+      const value = oneEther
+      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
-        // When
-        await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
+      // When
+      await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
-        // Then
-        const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
-      })
-    }
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+    })
     it('should allow user to specify a itself as receiver', async () => {
       // Given
       await initialize(erc20Token.address)
@@ -721,58 +719,56 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
 
       await contract.relayTokens(user, value, { from: user }).should.be.rejectedWith(ERROR_MSG)
     })
-    if (!isRelativeDailyLimit || (isRelativeDailyLimit && !isRelativeDailyLimitOnBridgeSide)) {
-      it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is owned by token manager', async function() {
-        // Given
-        erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
-        await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
-        await erc677Token.setBridgeContract(contract.address, { from: owner }).should.be.fulfilled
-        await erc677Token.transferOwnership(contract.address, { from: owner }).should.be.fulfilled
+    it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is owned by token manager', async function() {
+      // Given
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      await erc677Token.setBridgeContract(contract.address, { from: owner }).should.be.fulfilled
+      await erc677Token.transferOwnership(contract.address, { from: owner }).should.be.fulfilled
 
-        contract = this.bridge
+      contract = this.bridge
 
-        await initialize(erc677Token.address)
+      await initialize(erc677Token.address)
 
-        const currentDay = await contract.getCurrentDay()
-        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-        const value = oneEther
-        await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+      const value = oneEther
+      await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
-        // When
-        await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
+      // When
+      await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
-        // Then
-        const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
-      })
-      it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is not owned by token manager', async function() {
-        // Given
-        const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
-        await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+    })
+    it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is not owned by token manager', async function() {
+      // Given
+      const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
-        contract = this.bridge
+      contract = this.bridge
 
-        await initialize(erc677Token.address)
+      await initialize(erc677Token.address)
 
-        const currentDay = await contract.getCurrentDay()
-        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-        const value = oneEther
-        await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
+      const value = oneEther
+      await erc677Token.approve(contract.address, value, { from: user }).should.be.fulfilled
+      expect(await erc677Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
-        // When
-        await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
+      // When
+      await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
-        // Then
-        const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
-      })
-    }
+      // Then
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+    })
   })
   describe('requestFailedMessageFix', () => {
     const nonce = '0x96b6af865cdaa107ede916e237afbedffa5ed36bea84c0e77a33cc28fc2e9c01'
@@ -873,127 +869,120 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       expect(allEvents[1].returnValues.encodedData.includes(strip0x(dataHash))).to.be.equal(true)
     })
   })
-  if (!isRelativeDailyLimit || (isRelativeDailyLimit && !isRelativeDailyLimitOnBridgeSide)) {
-    describe('fixFailedMessage', () => {
-      let dataHash
-      beforeEach(async function() {
-        contract = this.bridge
+  describe('fixFailedMessage', () => {
+    let dataHash
+    beforeEach(async function() {
+      contract = this.bridge
 
-        bridgeContract = await AMBMock.new()
-        await bridgeContract.setMaxGasPerTx(maxGasPerTx)
-        mediatorContract = await otherSideMediatorContract.new()
-        erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
-        await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      bridgeContract = await AMBMock.new()
+      await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+      mediatorContract = await otherSideMediatorContract.new()
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
-        await initialize(erc677Token.address)
-        await erc677Token.transferOwnership(contract.address)
+      await initialize(erc677Token.address)
+      await erc677Token.transferOwnership(contract.address)
 
-        expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
-        expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
 
-        // User transfer tokens
-        const transferTx = await erc677Token.transferAndCall(contract.address, oneEther, '0x', { from: user }).should.be
-          .fulfilled
+      // User transfer tokens
+      const transferTx = await erc677Token.transferAndCall(contract.address, oneEther, '0x', { from: user }).should.be
+        .fulfilled
 
-        expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
 
-        const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        const data = `0x${events[0].returnValues.encodedData.substr(
-          148,
-          events[0].returnValues.encodedData.length - 148
-        )}`
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      const data = `0x${events[0].returnValues.encodedData.substr(
+        148,
+        events[0].returnValues.encodedData.length - 148
+      )}`
 
-        // Bridge calls mediator from other side
-        await bridgeContract.executeMessageCall(
-          contract.address,
-          contract.address,
-          data,
-          transferTx.tx,
-          100
-        ).should.be.fulfilled
+      // Bridge calls mediator from other side
+      await bridgeContract.executeMessageCall(
+        contract.address,
+        contract.address,
+        data,
+        transferTx.tx,
+        100
+      ).should.be.fulfilled
 
-        expect(await bridgeContract.messageCallStatus(transferTx.tx)).to.be.equal(false)
+      expect(await bridgeContract.messageCallStatus(transferTx.tx)).to.be.equal(false)
 
-        // mediator from other side should use this dataHash to request fix the failed message
-        dataHash = await bridgeContract.failedMessageDataHash(transferTx.tx)
-      })
-      it('should fix burnt/locked tokens', async () => {
-        // Given
-        expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
-
-        // When
-        const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
-
-        await bridgeContract.executeMessageCall(
-          contract.address,
-          mediatorContract.address,
-          fixData,
-          exampleTxHash,
-          1000000
-        ).should.be.fulfilled
-
-        // Then
-        expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
-        expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
-        expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
-        expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
-
-        const event = await getEvents(contract, { event: 'FailedMessageFixed' })
-        expect(event.length).to.be.equal(1)
-        expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
-        expect(event[0].returnValues.recipient).to.be.equal(user)
-        expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
-
-        const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
-
-        // can only fix it one time
-        await bridgeContract.executeMessageCall(
-          contract.address,
-          mediatorContract.address,
-          fixData,
-          otherTxHash,
-          1000000
-        ).should.be.fulfilled
-
-        expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(false)
-        expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
-      })
-      it('should be called by bridge', async () => {
-        await contract.fixFailedMessage(dataHash, { from: owner }).should.be.rejectedWith(ERROR_MSG)
-      })
-      it('message sender should be mediator from other side', async () => {
-        // Given
-        expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
-
-        // When
-        const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
-
-        await bridgeContract.executeMessageCall(contract.address, contract.address, fixData, exampleTxHash, 1000000)
-          .should.be.fulfilled
-
-        // Then
-        expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(false)
-        expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
-        expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
-
-        const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
-
-        await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, fixData, otherTxHash, 1000000)
-          .should.be.fulfilled
-
-        expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(true)
-        expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
-        expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
-
-        const event = await getEvents(contract, { event: 'FailedMessageFixed' })
-        expect(event.length).to.be.equal(1)
-        expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
-        expect(event[0].returnValues.recipient).to.be.equal(user)
-        expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
-      })
+      // mediator from other side should use this dataHash to request fix the failed message
+      dataHash = await bridgeContract.failedMessageDataHash(transferTx.tx)
     })
-  }
+    it('should fix burnt/locked tokens', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      // When
+      const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
+
+      await bridgeContract.executeMessageCall(
+        contract.address,
+        mediatorContract.address,
+        fixData,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      // Then
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+
+      const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+
+      // can only fix it one time
+      await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, fixData, otherTxHash, 1000000)
+        .should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(false)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+    })
+    it('should be called by bridge', async () => {
+      await contract.fixFailedMessage(dataHash, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+    })
+    it('message sender should be mediator from other side', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      // When
+      const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
+
+      await bridgeContract.executeMessageCall(contract.address, contract.address, fixData, exampleTxHash, 1000000)
+        .should.be.fulfilled
+
+      // Then
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(false)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+
+      await bridgeContract.executeMessageCall(contract.address, mediatorContract.address, fixData, otherTxHash, 1000000)
+        .should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(true)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+    })
+  })
   describe('#claimTokens', () => {
     it('should be able to claim tokens', async function() {
       contract = this.proxyContract

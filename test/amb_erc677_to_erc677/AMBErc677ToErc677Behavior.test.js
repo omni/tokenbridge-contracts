@@ -422,6 +422,24 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
         expect(await contract.executionDailyLimit()).to.be.bignumber.equal('4')
       })
     }
+    if (isRelativeDailyLimit) {
+      it('setThreshold allow to set by owner and should be greater than or equal to mixPerTx', async () => {
+        await contract.setThreshold('1', { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await contract.setThreshold('1', { from: owner }).should.be.fulfilled
+
+        expect(await contract.threshold()).to.be.bignumber.equal('1')
+
+        await contract.setThreshold('0', { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      })
+      it('setTargetLimit allow to set by owner and should be less than or equal to 1 ether', async () => {
+        await contract.setTargetLimit(ether('0.5'), { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await contract.setTargetLimit(ether('0.5'), { from: owner }).should.be.fulfilled
+
+        expect(await contract.targetLimit()).to.be.bignumber.equal(ether('0.5'))
+
+        await contract.setTargetLimit(ether('1.001'), { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      })
+    }
   })
   describe('getBridgeMode', () => {
     it('should return arbitrary message bridging mode and interface', async function() {

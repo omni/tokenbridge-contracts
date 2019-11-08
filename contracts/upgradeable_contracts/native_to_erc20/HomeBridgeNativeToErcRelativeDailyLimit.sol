@@ -14,7 +14,7 @@ contract HomeBridgeNativeToErcRelativeDailyLimit is HomeBridgeNativeToErc, Relat
         uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _executionLimitsArray, // [ 0 = _targetLimit, 1 = _tthreshold, 2 = _foreignMaxPerTx, 3 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _targetLimit, 1 = _threshold, 2 = _foreignMaxPerTx, 3 = _foreignMinPerTx ]
         address _owner,
         uint256 _decimalShift
     ) external returns (bool) {
@@ -29,7 +29,7 @@ contract HomeBridgeNativeToErcRelativeDailyLimit is HomeBridgeNativeToErc, Relat
         uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _executionLimitsArray, // [ 0 = _targetLimit, 1 = _tthreshold, 2 = _foreignMaxPerTx, 3 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _targetLimit, 1 = _threshold, 2 = _foreignMaxPerTx, 3 = _foreignMinPerTx ]
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]

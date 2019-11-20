@@ -102,4 +102,23 @@ contract BaseBridgeValidators is InitializableBridge, Ownable {
     function setNextValidator(address _prevValidator, address _validator) internal {
         addressStorage[keccak256(abi.encodePacked("validatorsList", _prevValidator))] = _validator;
     }
+
+    function isValidatorDuty(address _validator) external view returns (bool) {
+        uint256 counter = 0;
+        address next = getNextValidator(F_ADDR);
+        require(next != address(0));
+
+        while (next != F_ADDR) {
+            if (next == _validator) {
+                return (block.number % validatorCount() == counter);
+            }
+
+            next = getNextValidator(next);
+            counter++;
+
+            require(next != address(0));
+        }
+
+        return false;
+    }
 }

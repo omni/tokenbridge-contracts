@@ -123,7 +123,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
     function isTokenSwapAllowed(uint256 _ts) public view returns (bool) {
         uint256 esTs = saiTopContract().caged();
-        if ((esTs > 0) && (_ts > esTs)) {
+        if (esTs > 0 && _ts > esTs) {
             return false;
         }
         return true;
@@ -172,7 +172,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         require(hdToken.approve(mcdMigrationContract, curHDTokenBalance));
         mcdMigrationContract.swapSaiToDai(curHDTokenBalance);
 
-        require(tokenBalance(fdToken) - curFDTokenBalance == curHDTokenBalance);
+        require(tokenBalance(fdToken).sub(curFDTokenBalance) == curHDTokenBalance);
 
         emit TokensSwapped(hdToken, fdToken, curHDTokenBalance);
     }

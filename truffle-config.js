@@ -30,7 +30,7 @@ if (process.env.SOLIDITY_COVERAGE === 'true') {
   provider.addProvider(global.coverageSubprovider)
   const ganacheSubprovider = new GanacheSubprovider({
     default_balance_ether: '1000000000000000000000000',
-    total_accounts: 10,
+    total_accounts: 11,
     port: 8545
   })
   provider.addProvider(ganacheSubprovider)

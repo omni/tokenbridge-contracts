@@ -248,4 +248,18 @@ contract('BridgeValidators', async accounts => {
       returnedList.should.be.eql(validators)
     })
   })
+  describe('#isValidatorDuty', () => {
+    it('should return if provided valdidator is on duty', async () => {
+      // Given
+      const validators = accounts.slice(0, 5)
+      const { initialize, isValidatorDuty } = bridgeValidators
+      await initialize(1, validators, owner, { from: owner }).should.be.fulfilled
+
+      // When
+      const results = await Promise.all(validators.map(v => isValidatorDuty(v)))
+
+      // Then
+      expect(results.filter(r => r === true).length).to.be.equal(1)
+    })
+  })
 })

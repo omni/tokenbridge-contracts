@@ -1231,5 +1231,49 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(true)
       })
     })
+    describe('claimTokens', async () => {
+      it('can send erc20', async () => {
+        const foreignBridgeImpl = await ForeignBridgeErcToNativeMock.new()
+        const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
+        await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
+        const foreignBridge = await ForeignBridgeErcToNativeMock.at(storageProxy.address)
+
+        await foreignBridge.initialize(
+          validatorContract.address,
+          dai.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero,
+          otherSideBridge.address
+        )
+
+        expect(await saiTop.caged()).to.be.bignumber.equal(ZERO)
+
+        // Mint sai tokens to the bridge
+        await sai.mint(foreignBridge.address, halfEther)
+
+        await foreignBridge.claimTokens(sai.address, accounts[3], { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+        const block = await web3.eth.getBlock('latest')
+        // Trigger Emergency Shutdown
+        await saiTop.setCaged(block.number)
+
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await sai.balanceOf(accounts[3])).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge
+          .claimTokens(sai.address, accounts[3], { from: accounts[3] })
+          .should.be.rejectedWith(ERROR_MSG)
+        await foreignBridge.claimTokens(sai.address, accounts[3], { from: owner })
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await sai.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+
+        // reset the caged value
+        await saiTop.setCaged(0)
+      })
+    })
   })
 })

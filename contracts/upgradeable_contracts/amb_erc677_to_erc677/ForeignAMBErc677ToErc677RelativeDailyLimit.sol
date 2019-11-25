@@ -4,11 +4,7 @@ import "./ForeignAMBErc677ToErc677.sol";
 import "../RelativeExecutionDailyLimit.sol";
 
 contract ForeignAMBErc677ToErc677RelativeDailyLimit is ForeignAMBErc677ToErc677, RelativeExecutionDailyLimit {
-    function handleBridgedTokens(
-        address _recipient,
-        uint256 _value,
-        bytes32 _nonce
-    ) public {
+    function handleBridgedTokens(address _recipient, uint256 _value, bytes32 _nonce) public {
         _updateTodayLimit();
         super.handleBridgedTokens(_recipient, _value, _nonce);
     }

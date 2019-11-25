@@ -4,11 +4,7 @@ import "./HomeBridgeErcToErc.sol";
 import "../RelativeDailyLimit.sol";
 
 contract HomeBridgeErcToErcRelativeDailyLimit is HomeBridgeErcToErc, RelativeDailyLimit {
-    function onTokenTransfer(
-        address _from,
-        uint256 _value,
-        bytes _data
-    ) public returns (bool) {
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
         _updateTodayLimit();
         return super.onTokenTransfer(_from, _value, _data);
     }

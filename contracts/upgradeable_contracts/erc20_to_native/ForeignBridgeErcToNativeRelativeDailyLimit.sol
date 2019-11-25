@@ -4,12 +4,7 @@ import "./ForeignBridgeErcToNative.sol";
 import "../RelativeExecutionDailyLimit.sol";
 
 contract ForeignBridgeErcToNativeRelativeDailyLimit is ForeignBridgeErcToNative, RelativeExecutionDailyLimit {
-    function executeSignatures(
-        uint8[] vs,
-        bytes32[] rs,
-        bytes32[] ss,
-        bytes message
-    ) public {
+    function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
         _updateTodayLimit();
         super.executeSignatures(vs, rs, ss, message);
     }
@@ -37,16 +32,17 @@ contract ForeignBridgeErcToNativeRelativeDailyLimit is ForeignBridgeErcToNative,
         uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[2];
         uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[3];
 
-        return _initialize(
-            _validatorContract,
-            _erc20token,
-            _requiredBlockConfirmations,
-            _gasPrice,
-            _requestLimitsArray,
-            _owner,
-            _decimalShift,
-            _bridgeOnOtherSide
-        );
+        return
+            _initialize(
+                _validatorContract,
+                _erc20token,
+                _requiredBlockConfirmations,
+                _gasPrice,
+                _requestLimitsArray,
+                _owner,
+                _decimalShift,
+                _bridgeOnOtherSide
+            );
     }
 
     function _getTokenBalance() internal view returns (uint256) {

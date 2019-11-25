@@ -31,16 +31,17 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
 
-        return _initialize(
-            _validatorContract,
-            _erc20token,
-            _requiredBlockConfirmations,
-            _gasPrice,
-            _requestLimitsArray,
-            _owner,
-            _decimalShift,
-            _bridgeOnOtherSide
-        );
+        return
+            _initialize(
+                _validatorContract,
+                _erc20token,
+                _requiredBlockConfirmations,
+                _gasPrice,
+                _requestLimitsArray,
+                _owner,
+                _decimalShift,
+                _bridgeOnOtherSide
+            );
     }
 
     function _initialize(

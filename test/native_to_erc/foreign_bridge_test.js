@@ -555,7 +555,6 @@ function test(accounts, isRelativeDailyLimit) {
       valueMoreThanLimit.add(oneEther).should.be.bignumber.equal(await token.totalSupply())
       valueMoreThanLimit.should.be.bignumber.equal(await token.balanceOf(user))
 
-
       await token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       expect(await token.totalSupply()).to.be.bignumber.equal(oneEther.add(toBN(1)))

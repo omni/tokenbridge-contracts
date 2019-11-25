@@ -9,11 +9,7 @@ contract HomeAMBErc677ToErc677RelativeDailyLimit is HomeAMBErc677ToErc677, Relat
         super._relayTokens(_from, _receiver, _value);
     }
 
-    function onTokenTransfer(
-        address _from,
-        uint256 _value,
-        bytes _data
-    ) public returns (bool) {
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
         _updateTodayLimit();
         return super.onTokenTransfer(_from, _value, _data);
     }

@@ -17,7 +17,7 @@ contract RelativeDailyLimit is BaseRelativeDailyLimit {
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx > minPerTx());
+        require(_maxPerTx > minPerTx() || _maxPerTx == 0);
         uintStorage[MAX_PER_TX] = _maxPerTx;
     }
 }

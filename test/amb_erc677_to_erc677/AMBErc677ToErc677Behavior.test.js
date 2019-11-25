@@ -365,6 +365,11 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       await contract.setMaxPerTx(2, { from: owner }).should.be.fulfilled
       expect(await contract.maxPerTx()).to.be.bignumber.equal('2')
 
+      if (isRelativeDailyLimit && isRelativeDailyLimitOnBridgeSide) {
+        await contract.setMaxPerTx(0, { from: owner }).should.be.fulfilled
+        expect(await contract.maxPerTx()).to.be.bignumber.equal('0')
+      }
+
       if (!isRelativeDailyLimit || (isRelativeDailyLimit && !isRelativeDailyLimitOnBridgeSide)) {
         await contract.setMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
       }
@@ -395,6 +400,11 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       await contract.setExecutionMaxPerTx(2, { from: user }).should.be.rejectedWith(ERROR_MSG)
       await contract.setExecutionMaxPerTx(2, { from: owner }).should.be.fulfilled
       expect(await contract.executionMaxPerTx()).to.be.bignumber.equal('2')
+
+      if (isRelativeDailyLimit && !isRelativeDailyLimitOnBridgeSide) {
+        await contract.setExecutionMaxPerTx(0, { from: owner }).should.be.fulfilled
+        expect(await contract.executionMaxPerTx()).to.be.bignumber.equal('0')
+      }
 
       if (!isRelativeDailyLimit || (isRelativeDailyLimit && isRelativeDailyLimitOnBridgeSide)) {
         await contract.setExecutionMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)

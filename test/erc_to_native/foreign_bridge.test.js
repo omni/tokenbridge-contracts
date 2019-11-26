@@ -32,12 +32,31 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   let owner
   let token
   let otherSideBridge
+  let sai
+  let dai
+  let migrationContract
+  let saiTop
+  const user = accounts[7]
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
     otherSideBridge = await ForeignBridge.new()
+
+    // Used account 11 to deploy contracts. The contract addresses will be hardcoded in ForeignBridgeErcToNativeMock
+    const deployAccount = accounts[10]
+    sai = await ERC20Mock.new('sai', 'SAI', 18, { from: deployAccount })
+    saiTop = await SaiTopMock.new({ from: deployAccount })
+    dai = await ERC20Mock.new('dai', 'DAI', 18)
+    const daiAdapterMock = await DaiAdapterMock.new(dai.address)
+    migrationContract = await ScdMcdMigrationMock.new(sai.address, daiAdapterMock.address, { from: deployAccount })
+    await sai.transferOwnership(accounts[0], { from: deployAccount })
+
+    await dai.mint(user, ether('100000'))
+
+    // migration contract can mint dai
+    await dai.transferOwnership(migrationContract.address)
   })
   describe('#initialize', async () => {
     it('should initialize', async () => {
@@ -842,15 +861,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   })
   describe('migrateToMCD', () => {
     let foreignBridge
-    let sai
-    let dai
-    let migrationContract
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
-      sai = await ERC20Mock.new('sai', 'SAI', 18)
-      dai = await ERC20Mock.new('dai', 'DAI', 18)
-      const daiAdapterMock = await DaiAdapterMock.new(dai.address)
-      migrationContract = await ScdMcdMigrationMock.new(sai.address, daiAdapterMock.address)
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
 
       await foreignBridge.initialize(
         validatorContract.address,
@@ -866,9 +878,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       // Mint the bridge some sai tokens
       await sai.mint(foreignBridge.address, oneEther)
-
-      // migration contract can mint dai
-      await dai.transferOwnership(migrationContract.address)
     })
     it('should be able to swap tokens', async () => {
       // Given
@@ -878,58 +887,36 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       // When
 
-      // migration address should be a contract
-      await foreignBridge.migrateToMCD(accounts[3], { from: owner }).should.be.rejectedWith(ERROR_MSG)
-
       // should be called by owner
-      await foreignBridge
-        .migrateToMCD(migrationContract.address, { from: accounts[5] })
-        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.migrateToMCD({ from: accounts[5] }).should.be.rejectedWith(ERROR_MSG)
 
-      const { logs } = await foreignBridge.migrateToMCD(migrationContract.address, { from: owner }).should.be.fulfilled
+      const { logs } = await foreignBridge.migrateToMCD({ from: owner }).should.be.fulfilled
 
       // can't migrate token again
-      await foreignBridge.migrateToMCD(migrationContract.address, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.migrateToMCD({ from: owner }).should.be.rejectedWith(ERROR_MSG)
 
       // Then
       expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
       expect(await foreignBridge.erc20token()).to.be.equal(dai.address)
+      expect(await foreignBridge.minHDTokenBalance()).to.be.bignumber.equal(ether('10'))
       expectEventInLogs(logs, 'TokensSwapped', {
         from: sai.address,
         to: dai.address,
         value: oneEther
       })
       const transferEvent = await getEvents(dai, { event: 'Transfer' })
-      expect(transferEvent.length).to.be.equal(1)
-      expect(transferEvent[0].returnValues.from).to.be.equal(ZERO_ADDRESS)
-      expect(transferEvent[0].returnValues.to).to.be.equal(foreignBridge.address)
-      expect(transferEvent[0].returnValues.value).to.be.equal(oneEther.toString())
+
+      // first transfer event was for minting to user in the top Before section
+      expect(transferEvent.length).to.be.equal(2)
+      expect(transferEvent[1].returnValues.from).to.be.equal(ZERO_ADDRESS)
+      expect(transferEvent[1].returnValues.to).to.be.equal(foreignBridge.address)
+      expect(transferEvent[1].returnValues.value).to.be.equal(oneEther.toString())
     })
   })
   describe('support two tokens', () => {
     let foreignBridge
-    let sai
-    let dai
-    let migrationContract
-    let saiTop
-    const user = accounts[7]
     const recipient = accounts[8]
-    before(async () => {
-      // Used account 11 to deploy contracts. The contract addresses will be hardcoded in ForeignBridgeErcToNativeMock
-      const deployAccount = accounts[10]
-      sai = await ERC20Mock.new('sai', 'SAI', 18, { from: deployAccount })
-      saiTop = await SaiTopMock.new({ from: deployAccount })
-      dai = await ERC20Mock.new('dai', 'DAI', 18)
-      const daiAdapterMock = await DaiAdapterMock.new(dai.address)
-      migrationContract = await ScdMcdMigrationMock.new(sai.address, daiAdapterMock.address, { from: deployAccount })
-      await sai.transferOwnership(accounts[0], { from: deployAccount })
-
-      await dai.mint(user, ether('100'))
-
-      // migration contract can mint dai
-      await dai.transferOwnership(migrationContract.address)
-    })
     beforeEach(async () => {
       foreignBridge = await ForeignBridgeErcToNativeMock.new()
 

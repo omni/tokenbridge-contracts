@@ -97,23 +97,17 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         super._relayTokens(_sender, _receiver, _amount);
     }
 
-    function migrateToMCD(address _migrationContract) external onlyOwner {
+    function migrateToMCD() external onlyOwner {
         bytes32 storageAddress = 0x3378953eb16363e06fd9ea9701d36ed7285d206d9de7df55b778462d74596a89; // keccak256(abi.encodePacked("migrationToMcdCompleted"))
-
         require(!boolStorage[storageAddress]);
-        require(AddressUtils.isContract(_migrationContract));
 
-        uint256 curBalance = erc20token().balanceOf(address(this));
-        require(erc20token().approve(_migrationContract, curBalance));
-        //It is important to note that this action will cause appearing of `Transfer`
-        //event as part of the tokens minting
-        IScdMcdMigration(_migrationContract).swapSaiToDai(curBalance);
-        address saiContract = erc20token();
-        address mcdContract = IDaiAdapter(IScdMcdMigration(_migrationContract).daiJoin()).dai();
+        address mcdContract = IDaiAdapter(migrationContract().daiJoin()).dai();
         setErc20token(mcdContract);
-        require(erc20token().balanceOf(address(this)) == curBalance);
 
-        emit TokensSwapped(saiContract, erc20token(), curBalance);
+        uintStorage[MIN_HDTOKEN_BALANCE] = 10 ether;
+
+        swapTokens();
+
         boolStorage[storageAddress] = true;
     }
 

@@ -205,7 +205,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     const value = ether('0.25')
     let foreignBridge
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
@@ -351,7 +351,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
         from: ownerOfValidatorContract
       })
-      foreignBridgeWithMultiSignatures = await ForeignBridge.new()
+      foreignBridgeWithMultiSignatures = await ForeignBridgeErcToNativeMock.new()
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
         token.address,
@@ -418,7 +418,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const value = halfEther
-      const foreignBridgeWithThreeSigs = await ForeignBridge.new()
+      const foreignBridgeWithThreeSigs = await ForeignBridgeErcToNativeMock.new()
 
       await foreignBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
@@ -575,7 +575,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
 
       const owner = accounts[0]
-      const foreignBridgeImpl = await ForeignBridge.new()
+      const foreignBridgeImpl = await ForeignBridgeErcToNativeMock.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
       const foreignBridge = await ForeignBridge.at(storageProxy.address)
@@ -626,7 +626,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
         from: ownerOfValidatorContract
       })
-      const foreignBridgeWithMultiSignatures = await ForeignBridge.new()
+      const foreignBridgeWithMultiSignatures = await ForeignBridgeErcToNativeMock.new()
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
         token.address,

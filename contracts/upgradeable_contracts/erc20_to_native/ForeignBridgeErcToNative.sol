@@ -81,7 +81,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uint256 amount = _amount.div(10**decimalShift());
         bool res = erc20token().transfer(_recipient, amount);
 
-        if (AddressUtils.isContract(halfDuplexErc20token()) && tokenBalance(halfDuplexErc20token()) > 0) {
+        if (tokenBalance(halfDuplexErc20token()) > 0) {
             address(this).call(abi.encodeWithSelector(SWAP_TOKENS));
         }
 

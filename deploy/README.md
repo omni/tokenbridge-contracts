@@ -556,10 +556,10 @@ BRIDGEABLE_TOKEN_DECIMALS=18
 DEPLOY_REWARDABLE_TOKEN=false
 # The address of Staking contract used by ERC677BridgeTokenRewardable contract.
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
-DPOS_STAKING_ADDRESS=0x
+#DPOS_STAKING_ADDRESS=0x
 # The address of BlockReward contract used by ERC677BridgeTokenRewardable contract.
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
-BLOCK_REWARD_ADDRESS=0x
+#BLOCK_REWARD_ADDRESS=0x
 
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
@@ -587,8 +587,6 @@ FOREIGN_RPC_URL=https://mainnet.infura.io
 # Address on Foreign network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 FOREIGN_BRIDGE_OWNER=0x
-# Address on Foreign network with permissions to change parameters of bridge validator contract.
-FOREIGN_VALIDATORS_OWNER=0x
 # Address on Foreign network with permissions to upgrade the bridge contract and the 
 # bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
@@ -605,6 +603,7 @@ FOREIGN_MIN_AMOUNT_PER_TX=500000000000000000
 # The address of the existing ERC20/ERC677 compatible token in the Foreign network to
 # be exchanged to the ERC20/ERC677 token deployed on Home.
 ERC20_TOKEN_ADDRESS=0x
+
 # The address of the existing AMB bridge in the Home network that will be used to pass messages
 # to the Foreign network.
 HOME_AMB_BRIDGE=0x

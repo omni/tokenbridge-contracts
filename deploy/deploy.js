@@ -128,24 +128,24 @@ async function deployAMBErcToErc() {
   const deployForeign = require('./src/amb_erc677_to_erc677/foreign')
   const initialize = require('./src/amb_erc677_to_erc677/initialize')
   await preDeploy()
-  const { homeBridge, erc677 } = await deployHome()
-  const { foreignBridge } = await deployForeign()
-  await initialize({ homeBridge: homeBridge.address, foreignBridge: foreignBridge.address, homeErc677: erc677.address })
+  const { homeBridgeMediator, bridgeableErc677 } = await deployHome()
+  const { foreignBridgeMediator } = await deployForeign()
+  await initialize({ homeBridge: homeBridgeMediator.address, foreignBridge: foreignBridgeMediator.address, homeErc677: bridgeableErc677.address })
   console.log('\nDeployment has been completed.\n\n')
-  console.log(`[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
-  console.log(`[   Home  ] ERC677 Bridgeable Token: ${erc677.address}`)
-  console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
+  console.log(`[   Home  ] Bridge Mediator: ${homeBridgeMediator.address}`)
+  console.log(`[   Home  ] ERC677 Bridgeable Token: ${bridgeableErc677.address}`)
+  console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
   console.log(`[ Foreign ] ERC677 Token: ${ERC20_TOKEN_ADDRESS}`)
   fs.writeFileSync(
     deployResultsPath,
     JSON.stringify(
       {
         homeBridge: {
-          ...homeBridge,
-          erc677
+          homeBridgeMediator,
+          bridgeableErc677
         },
         foreignBridge: {
-          ...foreignBridge
+          foreignBridgeMediator
         }
       },
       null,

@@ -4,3 +4,4 @@ flats
 .node*
 .idea
 coverage
+*.sublime-*

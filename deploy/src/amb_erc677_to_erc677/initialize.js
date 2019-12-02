@@ -96,8 +96,8 @@ async function initialize({
     }
     EXECUTION_MAX_AMOUNT_PER_TX: ${executionMaxPerTx} which is ${Web3Utils.fromWei(executionMaxPerTx)} in eth,
     EXECUTION_MIN_AMOUNT_PER_TX: ${executionMinPerTx} which is ${Web3Utils.fromWei(executionMinPerTx)} in eth,
+    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
-    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
     OWNER: ${owner}
   `)
 
@@ -139,7 +139,7 @@ async function initialize({
   }
   nonce++
 
-  console.log('Transferring bridge proxy ownership to upgradeable admin')
+  console.log('Transferring bridge mediator proxy ownership to upgradeability admin')
   const proxy = new web3.eth.Contract(proxyAbi, address)
   await transferProxyOwnership({
     proxy,
@@ -152,7 +152,7 @@ async function initialize({
 async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
   const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
 
-  console.log('\n[Home] Initializing Home Bridge with following parameters:\n')
+  console.log('\n[Home] Initializing Bridge Mediator with following parameters:\n')
   await initialize({
     web3: web3Home,
     url: HOME_RPC_URL,
@@ -178,7 +178,7 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
     isRelativeDailyLimitOnBridgeSide: true,
   })
 
-  console.log('\n[Foreign] Initializing Foreign Bridge with following parameters:\n')
+  console.log('\n[Foreign] Initializing Bridge Mediator with following parameters:\n')
   await initialize({
     web3: web3Foreign,
     url: FOREIGN_RPC_URL,

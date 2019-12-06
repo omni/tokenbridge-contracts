@@ -97,7 +97,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         super._relayTokens(_sender, _receiver, _amount);
     }
 
-    function migrateToMCD() external onlyOwner {
+    function migrateToMCD() external {
         bytes32 storageAddress = 0x3378953eb16363e06fd9ea9701d36ed7285d206d9de7df55b778462d74596a89; // keccak256(abi.encodePacked("migrationToMcdCompleted"))
         require(!boolStorage[storageAddress]);
 

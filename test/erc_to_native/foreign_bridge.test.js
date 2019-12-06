@@ -887,9 +887,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       // When
 
-      // should be called by owner
-      await foreignBridge.migrateToMCD({ from: accounts[5] }).should.be.rejectedWith(ERROR_MSG)
-
       const { logs } = await foreignBridge.migrateToMCD({ from: owner }).should.be.fulfilled
 
       // can't migrate token again

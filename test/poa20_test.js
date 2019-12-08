@@ -394,8 +394,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
 
       await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
       await token.approve(user2, oneEther, { from: user }).should.be.fulfilled
-      await token.increaseAllowance(user2, oneEther, { from : user }).should.be.fulfilled
-    
+      await token.increaseAllowance(user2, oneEther, { from: user }).should.be.fulfilled
+
       expect(await token.allowance(user, user2)).to.be.bignumber.equal(twoEther)
     })
   })
@@ -407,8 +407,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
 
       await token.mint(user, twoEther, { from: owner }).should.be.fulfilled
       await token.approve(user2, twoEther, { from: user }).should.be.fulfilled
-      await token.decreaseAllowance(user2, oneEther, { from : user }).should.be.fulfilled
-    
+      await token.decreaseAllowance(user2, oneEther, { from: user }).should.be.fulfilled
+
       expect(await token.allowance(user, user2)).to.be.bignumber.equal(oneEther)
     })
   })

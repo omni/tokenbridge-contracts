@@ -9,7 +9,6 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         address _owner,
         uint256 _decimalShift
     ) internal {
@@ -17,11 +16,6 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
-        require(
-            _requestLimitsArray[2] > 0 && // _minPerTx > 0
-                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
-                _requestLimitsArray[1] < _requestLimitsArray[0] // _maxPerTx < _dailyLimit
-        );
         require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
@@ -30,16 +24,11 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
-        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
-        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
         setOwner(_owner);
         setInitialize();
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
-
-        emit DailyLimitChanged(_requestLimitsArray[0]);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -56,7 +45,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         uint256 _amount,
         bytes32 /*_txHash*/
     ) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
+        _increaseTotalExecutedPerDay(_amount);
         uint256 amount = _amount.div(10**decimalShift());
         return erc20token().transfer(_recipient, amount);
     }

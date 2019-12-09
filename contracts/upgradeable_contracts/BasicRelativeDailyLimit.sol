@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./BasicTokenBridge.sol";
+import "./BasicLimits.sol";
 
-contract BaseRelativeDailyLimit is BasicTokenBridge {
+contract BasicRelativeDailyLimit is BasicLimits {
     using SafeMath for uint256;
 
     event TargetLimitChanged(uint256 newLimit);
@@ -43,13 +43,13 @@ contract BaseRelativeDailyLimit is BasicTokenBridge {
         return uintStorage[THRESHOLD];
     }
 
-    function setTargetLimit(uint256 _targetLimit) external onlyOwner {
+    function setTargetLimit(uint256 _targetLimit) external {
         require(_targetLimit <= 1 ether);
         uintStorage[TARGET_LIMIT] = _targetLimit;
         emit TargetLimitChanged(_targetLimit);
     }
 
-    function setThreshold(uint256 _threshold) external onlyOwner {
+    function setThreshold(uint256 _threshold) external {
         require(_threshold >= _minPerTx());
         uintStorage[THRESHOLD] = _threshold;
         emit ThresholdChanged(_threshold);

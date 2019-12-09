@@ -7,105 +7,186 @@ import "./Ownable.sol";
 contract BasicTokenBridge is EternalStorage, Ownable {
     using SafeMath for uint256;
 
-    event DailyLimitChanged(uint256 newLimit);
-    event ExecutionDailyLimitChanged(uint256 newLimit);
-
-    bytes32 internal constant MIN_PER_TX = 0xbbb088c505d18e049d114c7c91f11724e69c55ad6c5397e2b929e68b41fa05d1; // keccak256(abi.encodePacked("minPerTx"))
-    bytes32 internal constant MAX_PER_TX = 0x0f8803acad17c63ee38bf2de71e1888bc7a079a6f73658e274b08018bea4e29c; // keccak256(abi.encodePacked("maxPerTx"))
-    bytes32 internal constant DAILY_LIMIT = 0x4a6a899679f26b73530d8cf1001e83b6f7702e04b6fdb98f3c62dc7e47e041a5; // keccak256(abi.encodePacked("dailyLimit"))
-    bytes32 internal constant EXECUTION_MIN_PER_TX = 0x0fc9356d7bc6ba08bb648a3ab811cf6e7c168745644ba25095b79e4d8a0c65ec; // keccak256(abi.encodePacked("executionMinPerTx"))
-    bytes32 internal constant EXECUTION_MAX_PER_TX = 0xc0ed44c192c86d1cc1ba51340b032c2766b4a2b0041031de13c46dd7104888d5; // keccak256(abi.encodePacked("executionMaxPerTx"))
-    bytes32 internal constant EXECUTION_DAILY_LIMIT = 0x21dbcab260e413c20dc13c28b7db95e2b423d1135f42bb8b7d5214a92270d237; // keccak256(abi.encodePacked("executionDailyLimit"))
     bytes32 internal constant DECIMAL_SHIFT = 0x1e8ecaafaddea96ed9ac6d2642dcdfe1bebe58a930b1085842d8fc122b371ee5; // keccak256(abi.encodePacked("decimalShift"))
+    bytes32 internal constant LIMITS_CONTRACT = 0xa31e93f7d43dce967fc79ad66bd710eaf96d9f4737de61bb298c289276986887; // keccak256(abi.encodePacked("limitsContract"))
 
-    function totalSpentPerDay(uint256 _day) public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))];
+    bytes4 internal constant GET_MAX_PER_TX = 0xf968adbe; // maxPerTx()
+    bytes4 internal constant GET_MIN_PER_TX = 0xdf25f3f0; // minPerTx()
+    bytes4 internal constant GET_DAILY_LIMIT = 0x67eeba0c; // dailyLimit()
+    bytes4 internal constant GET_EXECUTION_MAX_PER_TX = 0x8aa1949a; // executionMaxPerTx()
+    bytes4 internal constant GET_EXECUTION_MIN_PER_TX = 0x35b00293; // executionMinPerTx()
+    bytes4 internal constant GET_EXECUTION_DAILY_LIMIT = 0x43b37dd3; // executionDailyLimit()
+    bytes4 internal constant GET_TARGET_LIMIT = 0xa70021f3; // targetLimit()
+    bytes4 internal constant GET_THRESHOLD = 0x42cde4e8; // threshold()
+    bytes4 internal constant GET_WITHIN_LIMIT = 0xea9f4968; // withinLimit(uint256)
+    bytes4 internal constant GET_WITHIN_EXECUTION_LIMIT = 0x879ce676; // withinExecutionLimit(uint256)
+    bytes4 internal constant GET_TOTAL_SPENT_PER_DAY = 0x2bd0bb05; // totalSpentPerDay(uint256)
+    bytes4 internal constant GET_TOTAL_EXECUTED_PER_DAY = 0x4fb3fef7; // totalExecutedPerDay(uint256)
+    bytes4 internal constant INCREASE_TOTAL_SPENT_PER_DAY = 0xb47584cd; // increaseTotalSpentPerDay(uint256)
+    bytes4 internal constant INCREASE_TOTAL_EXECUTED_PER_DAY = 0x79d9623a; // increaseTotalExecutedPerDay(uint256)
+    bytes4 internal constant SET_LIMITS = 0x1558bff0; // setLimits(uint256[],uint256[])
+    bytes4 internal constant SET_MAX_PER_TX = 0xc6f6f216; // setMaxPerTx(uint256)
+    bytes4 internal constant SET_MIN_PER_TX = 0xa2a6ca27; // setMinPerTx(uint256)
+    bytes4 internal constant SET_DAILY_LIMIT = 0xb20d30a9; // setDailyLimit(uint256)
+    bytes4 internal constant SET_EXECUTION_MAX_PER_TX = 0xf20151e1; // setExecutionMaxPerTx(uint256)
+    bytes4 internal constant SET_EXECUTION_MIN_PER_TX = 0xf56d2fec; // setExecutionMinPerTx(uint256)
+    bytes4 internal constant SET_EXECUTION_DAILY_LIMIT = 0x3dd95d1b; // setExecutionDailyLimit(uint256)
+    bytes4 internal constant SET_TARGET_LIMIT = 0x8253a36a; // setTargetLimit(uint256)
+    bytes4 internal constant SET_THRESHOLD = 0x960bfe04; // setThreshold(uint256)
+    bytes4 internal constant UPDATE_TODAY_LIMIT = 0x561fe5e3; // updateTodayLimit()
+
+    function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
+        _execute(SET_MAX_PER_TX, _maxPerTx);
     }
 
-    function totalExecutedPerDay(uint256 _day) public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))];
+    function setMinPerTx(uint256 _minPerTx) external onlyOwner {
+        _execute(SET_MIN_PER_TX, _minPerTx);
     }
 
-    function dailyLimit() public view returns (uint256) {
-        return uintStorage[DAILY_LIMIT];
+    function setDailyLimit(uint256 _dailyLimit) external onlyOwner {
+        _execute(SET_DAILY_LIMIT, _dailyLimit);
     }
 
-    function executionDailyLimit() public view returns (uint256) {
-        return uintStorage[EXECUTION_DAILY_LIMIT];
+    function setExecutionMaxPerTx(uint256 _maxPerTx) external onlyOwner {
+        _execute(SET_EXECUTION_MAX_PER_TX, _maxPerTx);
     }
 
-    function maxPerTx() public view returns (uint256) {
-        return uintStorage[MAX_PER_TX];
+    function setExecutionMinPerTx(uint256 _minPerTx) external onlyOwner {
+        _execute(SET_EXECUTION_MIN_PER_TX, _minPerTx);
     }
 
-    function executionMaxPerTx() public view returns (uint256) {
-        return uintStorage[EXECUTION_MAX_PER_TX];
+    function setExecutionDailyLimit(uint256 _dailyLimit) external onlyOwner {
+        _execute(SET_EXECUTION_DAILY_LIMIT, _dailyLimit);
     }
 
-    function minPerTx() public view returns (uint256) {
-        return uintStorage[MIN_PER_TX];
+    function setTargetLimit(uint256 _targetLimit) external onlyOwner {
+        _execute(SET_EXECUTION_DAILY_LIMIT, _targetLimit);
     }
 
-    function executionMinPerTx() public view returns (uint256) {
-        return uintStorage[EXECUTION_MIN_PER_TX];
+    function setThreshold(uint256 _threshold) external onlyOwner {
+        _execute(SET_EXECUTION_DAILY_LIMIT, _threshold);
+    }
+
+    function limitsContract() public view returns (address) {
+        return addressStorage[LIMITS_CONTRACT];
     }
 
     function decimalShift() public view returns (uint256) {
         return uintStorage[DECIMAL_SHIFT];
     }
 
+    function maxPerTx() public view returns (uint256) {
+        return _getUint(GET_MAX_PER_TX);
+    }
+
+    function minPerTx() public view returns (uint256) {
+        return _getUint(GET_MIN_PER_TX);
+    }
+
+    function dailyLimit() public view returns (uint256) {
+        return _getUint(GET_DAILY_LIMIT);
+    }
+
+    function executionMaxPerTx() public view returns (uint256) {
+        return _getUint(GET_EXECUTION_MAX_PER_TX);
+    }
+
+    function executionMinPerTx() public view returns (uint256) {
+        return _getUint(GET_EXECUTION_MIN_PER_TX);
+    }
+
+    function executionDailyLimit() public view returns (uint256) {
+        return _getUint(GET_EXECUTION_DAILY_LIMIT);
+    }
+
+    function targetLimit() public view returns (uint256) {
+        return _getUint(GET_EXECUTION_DAILY_LIMIT);
+    }
+
+    function threshold() public view returns (uint256) {
+        return _getUint(GET_EXECUTION_DAILY_LIMIT);
+    }
+
     function withinLimit(uint256 _amount) public view returns (bool) {
-        uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
-        return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
+        return _getWithinLimit(GET_WITHIN_LIMIT, _amount);
     }
 
     function withinExecutionLimit(uint256 _amount) public view returns (bool) {
-        uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
-        return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
+        return _getWithinLimit(GET_WITHIN_EXECUTION_LIMIT, _amount);
     }
 
-    function getCurrentDay() public view returns (uint256) {
-        // solhint-disable-next-line not-rely-on-time
-        return now / 1 days;
+    function getTotalSpentPerDay(uint256 _day) public view returns (uint256) {
+        return _getUint(GET_TOTAL_SPENT_PER_DAY, _day);
     }
 
-    function setTotalSpentPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))] = _value;
+    function getTotalExecutedPerDay(uint256 _day) public view returns (uint256) {
+        return _getUint(GET_TOTAL_EXECUTED_PER_DAY, _day);
     }
 
-    function setTotalExecutedPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = _value;
+    function _increaseTotalSpentPerDay(uint256 _amount) internal {
+        _execute(INCREASE_TOTAL_SPENT_PER_DAY, _amount);
     }
 
-    function setDailyLimit(uint256 _dailyLimit) external onlyOwner {
-        require(_dailyLimit > maxPerTx() || _dailyLimit == 0);
-        uintStorage[DAILY_LIMIT] = _dailyLimit;
-        emit DailyLimitChanged(_dailyLimit);
+    function _increaseTotalExecutedPerDay(uint256 _amount) internal {
+        _execute(INCREASE_TOTAL_EXECUTED_PER_DAY, _amount);
     }
 
-    function setExecutionDailyLimit(uint256 _dailyLimit) external onlyOwner {
-        require(_dailyLimit > executionMaxPerTx() || _dailyLimit == 0);
-        uintStorage[EXECUTION_DAILY_LIMIT] = _dailyLimit;
-        emit ExecutionDailyLimitChanged(_dailyLimit);
+    function _updateTodayLimit() internal {
+        _execute(UPDATE_TODAY_LIMIT);
     }
 
-    function setExecutionMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < executionDailyLimit());
-        uintStorage[EXECUTION_MAX_PER_TX] = _maxPerTx;
+    function _setLimits(uint256[] _requestLimitsArray, uint256[] _executionLimitsArray) internal {
+        require(limitsContract().delegatecall(abi.encodeWithSelector(SET_LIMITS, _requestLimitsArray, _executionLimitsArray)));
     }
 
-    function setExecutionMinPerTx(uint256 _minPerTx) external onlyOwner {
-        require(_minPerTx < executionDailyLimit() && _minPerTx < executionMaxPerTx());
-        uintStorage[EXECUTION_MIN_PER_TX] = _minPerTx;
+    function _execute(bytes4 _method, uint256 _value) internal {
+        _execute(abi.encodeWithSelector(_method, _value));
     }
 
-    function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < dailyLimit());
-        uintStorage[MAX_PER_TX] = _maxPerTx;
+    function _execute(bytes4 _method) internal {
+        _execute(abi.encodeWithSelector(_method));
     }
 
-    function setMinPerTx(uint256 _minPerTx) external onlyOwner {
-        require(_minPerTx < dailyLimit() && _minPerTx < maxPerTx());
-        uintStorage[MIN_PER_TX] = _minPerTx;
+    function _execute(bytes memory _calldata) internal {
+        require(limitsContract().delegatecall(_calldata));
+    }
+
+    function _getUint(bytes4 _method) internal view returns (uint256) {
+        return _getUint(abi.encodeWithSelector(_method));
+    }
+
+    function _getUint(bytes4 _method, uint256 _param) internal view returns (uint256) {
+        return _getUint(abi.encodeWithSelector(_method, _param));
+    }
+
+    function _getUint(bytes memory _calldata) internal view returns (uint256) {
+        uint256 value;
+        address contractAddress = limitsContract();
+        assembly {
+            let result := callcode(gas, contractAddress, 0x0, add(_calldata, 0x20), mload(_calldata), 0, 32)
+            value := mload(0)
+
+            switch result
+                case 0 {
+                    revert(0, 0)
+                }
+        }
+        return value;
+    }
+
+    function _getWithinLimit(bytes4 _method, uint256 _amount) internal view returns (bool) {
+        bool value;
+        bytes memory callData = abi.encodeWithSelector(_method, _amount);
+        address contractAddress = limitsContract();
+        assembly {
+            let result := callcode(gas, contractAddress, 0x0, add(callData, 0x20), mload(callData), 0, 8)
+            value := mload(0)
+
+            switch result
+                case 0 {
+                    revert(0, 0)
+                }
+        }
+        return value;
     }
 }

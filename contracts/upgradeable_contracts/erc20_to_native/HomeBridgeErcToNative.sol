@@ -29,7 +29,7 @@ contract HomeBridgeErcToNative is
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
         uint256 totalBurnt = totalBurntCoins();
         require(msg.value <= totalMinted.sub(totalBurnt));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        _increaseTotalSpentPerDay(msg.value);
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
         uint256 valueToBurn = msg.value;
@@ -55,8 +55,11 @@ contract HomeBridgeErcToNative is
         address _blockReward,
         uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _limitsContract
     ) external returns (bool) {
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
             _validatorContract,
@@ -81,8 +84,11 @@ contract HomeBridgeErcToNative is
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _limitsContract
     ) external returns (bool) {
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
             _validatorContract,
@@ -117,32 +123,6 @@ contract HomeBridgeErcToNative is
         _setBlockRewardContract(_blockReward);
     }
 
-    function _setLimits(
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionLimitsArray // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
-    ) internal {
-        require(
-            _requestLimitsArray[2] > 0 && // _minPerTx > 0
-                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
-                _requestLimitsArray[0] > _requestLimitsArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(
-            _executionLimitsArray[2] > 0 && // _foreignMinPerTx > 0
-                _executionLimitsArray[1] > _executionLimitsArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
-                _executionLimitsArray[1] < _executionLimitsArray[0] // _foreignMaxPerTx < _foreignDailyLimit
-        );
-
-        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
-        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
-        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
-        uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
-
-        emit DailyLimitChanged(_requestLimitsArray[0]);
-        emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
-    }
-
     function _initialize(
         address _validatorContract,
         uint256 _homeGasPrice,
@@ -170,7 +150,7 @@ contract HomeBridgeErcToNative is
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+        _increaseTotalExecutedPerDay(_value);
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
         uint256 valueToMint = _value.mul(10**decimalShift());

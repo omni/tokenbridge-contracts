@@ -37,29 +37,12 @@ contract BasicAMBErc677ToErc677 is
         uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
         uint256 _requestGasLimit,
         uint256 _decimalShift,
-        address _owner
+        address _owner,
+        address _limitsContract
     ) external returns (bool) {
-        require(
-            _requestLimitsArray[2] > 0 && // _minPerTx > 0
-                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
-                _requestLimitsArray[0] > _requestLimitsArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(
-            _executionLimitsArray[2] > 0 && // _executionMinPerTx > 0
-                _executionLimitsArray[1] > _executionLimitsArray[2] && // _executionMaxPerTx > _executionMinPerTx
-                _executionLimitsArray[1] < _executionLimitsArray[0] // _executionMaxPerTx < _executionDailyLimit
-        );
-
-        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
-        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
-        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
-        uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
-
-        emit DailyLimitChanged(_requestLimitsArray[0]);
-        emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
-
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
         return _initialize(_bridgeContract, _mediatorContract, _erc677token, _requestGasLimit, _decimalShift, _owner);
     }
 
@@ -114,7 +97,7 @@ contract BasicAMBErc677ToErc677 is
         ERC677 token = erc677token();
         address to = address(this);
         require(withinLimit(_value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        _increaseTotalSpentPerDay(_value);
 
         setLock(true);
         token.transferFrom(_from, to, _value);
@@ -131,7 +114,7 @@ contract BasicAMBErc677ToErc677 is
         require(msg.sender == address(token));
         if (!lock()) {
             require(withinLimit(_value));
-            setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+            _increaseTotalSpentPerDay(_value);
         }
         bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
         return true;
@@ -235,7 +218,7 @@ contract BasicAMBErc677ToErc677 is
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
         if (withinExecutionLimit(_value)) {
-            setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+            _increaseTotalExecutedPerDay(_value);
             executeActionOnBridgedTokens(_recipient, _value);
         } else {
             bytes32 txHash = transactionHash();

@@ -7,30 +7,27 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
     bytes4 internal constant SET_BLOCK_REWARD_CONTRACT = 0x27a3e16b; // setBlockRewardContract(address)
 
     function rewardableInitialize(
-        address _validatorContract,
+        address[] _contracts, // [ 0 = _validatorContract, 1 = _erc677token, 2 = _feeManager, 3 = _limitsContract, 4 = _blockReward ]
         uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        address _erc677token,
         uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
-        address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        address _blockReward,
         uint256 _decimalShift
     ) external returns (bool) {
+        require(AddressUtils.isContract(_contracts[3]));
+        addressStorage[LIMITS_CONTRACT] = _contracts[3];
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _rewardableInitialize(
-            _validatorContract,
+            _contracts,
             _homeGasPrice,
             _requiredBlockConfirmations,
-            _erc677token,
             _owner,
-            _feeManager,
             _homeFeeForeignFeeArray,
             _decimalShift
         );
-        _setBlockRewardContract(_feeManager, _blockReward);
+        _setBlockRewardContract(_contracts[2], _contracts[4]);
         setInitialize();
 
         return isInitialized();

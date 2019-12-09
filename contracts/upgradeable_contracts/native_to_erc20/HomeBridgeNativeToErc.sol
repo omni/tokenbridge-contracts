@@ -15,7 +15,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     function nativeTransfer(address _receiver) internal {
         require(msg.value > 0);
         require(withinLimit(msg.value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        _increaseTotalSpentPerDay(msg.value);
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
@@ -36,8 +36,11 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uint256 _requiredBlockConfirmations,
         uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
         address _owner,
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _limitsContract
     ) external returns (bool) {
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(_validatorContract, _homeGasPrice, _requiredBlockConfirmations, _owner, _decimalShift);
         setInitialize();
@@ -53,8 +56,11 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        uint256 _decimalShift
+        uint256 _decimalShift,
+        address _limitsContract
     ) external returns (bool) {
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(_validatorContract, _homeGasPrice, _requiredBlockConfirmations, _owner, _decimalShift);
         require(AddressUtils.isContract(_feeManager));
@@ -67,32 +73,6 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
 
     function getBridgeMode() external pure returns (bytes4 _data) {
         return 0x92a8d7fe; // bytes4(keccak256(abi.encodePacked("native-to-erc-core")))
-    }
-
-    function _setLimits(
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionLimitsArray // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
-    ) internal {
-        require(
-            _requestLimitsArray[2] > 0 && // _minPerTx > 0
-                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
-                _requestLimitsArray[0] > _requestLimitsArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(
-            _executionLimitsArray[2] > 0 && // _foreignMinPerTx > 0
-                _executionLimitsArray[1] > _executionLimitsArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
-                _executionLimitsArray[1] < _executionLimitsArray[0] // _foreignMaxPerTx < _foreignDailyLimit
-        );
-
-        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
-        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
-        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
-        uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
-
-        emit DailyLimitChanged(_requestLimitsArray[0]);
-        emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
     }
 
     function _initialize(
@@ -135,7 +115,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+        _increaseTotalExecutedPerDay(_value);
         uint256 valueToTransfer = _value.mul(10**decimalShift());
 
         address feeManager = feeManagerContract();

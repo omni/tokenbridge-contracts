@@ -20,8 +20,11 @@ contract ForeignBridgeNativeToErc is
         uint256[] _executionLimitsArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
         address _owner,
         uint256 _decimalShift,
-        address _bridgeOnOtherSide
+        address _bridgeOnOtherSide,
+        address _limitsContract
     ) external returns (bool) {
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
             _validatorContract,
@@ -47,8 +50,11 @@ contract ForeignBridgeNativeToErc is
         address _feeManager,
         uint256 _homeFee,
         uint256 _decimalShift,
-        address _bridgeOnOtherSide
+        address _bridgeOnOtherSide,
+        address _limitsContract
     ) external returns (bool) {
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
         _setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(
             _validatorContract,
@@ -72,32 +78,6 @@ contract ForeignBridgeNativeToErc is
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
         IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
-    }
-
-    function _setLimits(
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionLimitsArray // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
-    ) internal {
-        require(
-            _requestLimitsArray[2] > 0 && // _minPerTx > 0
-                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
-                _requestLimitsArray[0] > _requestLimitsArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(
-            _executionLimitsArray[2] > 0 && // _homeMinPerTx > 0
-                _executionLimitsArray[1] > _executionLimitsArray[2] && // _homeMaxPerTx > _homeMinPerTx
-                _executionLimitsArray[1] < _executionLimitsArray[0] // _homeMaxPerTx < _homeDailyLimit
-        );
-
-        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
-        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
-        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
-        uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
-
-        emit DailyLimitChanged(_requestLimitsArray[0]);
-        emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
     }
 
     function _initialize(
@@ -129,7 +109,7 @@ contract ForeignBridgeNativeToErc is
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
+        _increaseTotalExecutedPerDay(_amount);
         uint256 valueToMint = _amount.div(10**decimalShift());
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {

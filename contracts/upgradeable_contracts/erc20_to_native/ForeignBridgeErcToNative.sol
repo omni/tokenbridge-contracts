@@ -14,30 +14,21 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
         uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionLimitsArray, //[ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
         address _owner,
         uint256 _decimalShift,
-        address _bridgeOnOtherSide
+        address _bridgeOnOtherSide,
+        address _limitsContract
     ) external returns (bool) {
-        require(
-            _executionLimitsArray[2] > 0 && // _homeMinPerTx > 0
-                _executionLimitsArray[1] > _executionLimitsArray[2] && // _homeMaxPerTx > _homeMinPerTx
-                _executionLimitsArray[1] < _executionLimitsArray[0] // _homeMaxPerTx < _homeDailyLimit
-        );
-
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
-        uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
-
-        emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
-
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
         return
             _initialize(
                 _validatorContract,
                 _erc20token,
                 _requiredBlockConfirmations,
                 _gasPrice,
-                _requestLimitsArray,
                 _owner,
                 _decimalShift,
                 _bridgeOnOtherSide
@@ -49,7 +40,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         address _owner,
         uint256 _decimalShift,
         address _bridgeOnOtherSide
@@ -58,11 +48,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
-        require(
-            _requestLimitsArray[2] > 0 && // _minPerTx > 0
-                _requestLimitsArray[1] > _requestLimitsArray[2] && // _maxPerTx > _minPerTx
-                _requestLimitsArray[0] > _requestLimitsArray[1] // _dailyLimit > _maxPerTx
-        );
         require(_owner != address(0));
         require(_bridgeOnOtherSide != address(0));
 
@@ -71,9 +56,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
-        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
-        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
-        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
@@ -81,7 +63,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
-        emit DailyLimitChanged(_requestLimitsArray[0]);
 
         return isInitialized();
     }
@@ -100,7 +81,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uint256 _amount,
         bytes32 /*_txHash*/
     ) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
+        _increaseTotalExecutedPerDay(_amount);
         uint256 amount = _amount.div(10**decimalShift());
         return erc20token().transfer(_recipient, amount);
     }

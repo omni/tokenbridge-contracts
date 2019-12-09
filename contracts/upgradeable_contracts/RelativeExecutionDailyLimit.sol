@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 
-import "./BaseRelativeDailyLimit.sol";
+import "./BasicRelativeDailyLimit.sol";
 
-contract RelativeExecutionDailyLimit is BaseRelativeDailyLimit {
+contract RelativeExecutionDailyLimit is BasicRelativeDailyLimit {
     function _minPerTx() internal view returns (uint256) {
         return executionMinPerTx();
     }
@@ -11,12 +11,12 @@ contract RelativeExecutionDailyLimit is BaseRelativeDailyLimit {
         return _getTodayLimit();
     }
 
-    function setExecutionMinPerTx(uint256 _minPerTx) external onlyOwner {
+    function setExecutionMinPerTx(uint256 _minPerTx) external {
         require(_minPerTx < executionMaxPerTx());
         uintStorage[EXECUTION_MIN_PER_TX] = _minPerTx;
     }
 
-    function setExecutionMaxPerTx(uint256 _maxPerTx) external onlyOwner {
+    function setExecutionMaxPerTx(uint256 _maxPerTx) external {
         require(_maxPerTx > executionMinPerTx() || _maxPerTx == 0);
         uintStorage[EXECUTION_MAX_PER_TX] = _maxPerTx;
     }

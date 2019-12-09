@@ -284,6 +284,9 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # correctly to the Foreign network.
 VALIDATORS=0x 0x 0x
 
+HOME_REWARDABLE=false
+FOREIGN_REWARDABLE=false
+
 # The flag defining whether to use ERC677BridgeTokenRewardable contract instead of
 # ERC677BridgeToken.
 DEPLOY_REWARDABLE_TOKEN=false

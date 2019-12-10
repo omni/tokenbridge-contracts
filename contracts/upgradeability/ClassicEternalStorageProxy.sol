@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
-import "./EternalStorage.sol";
-import "./OwnedUpgradeabilityProxy.sol";
+import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
+import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/OwnedUpgradeabilityProxy.sol";
 
 contract ClassicEternalStorageProxy is EternalStorage, OwnedUpgradeabilityProxy {
     // solhint-disable-next-line no-complex-fallback

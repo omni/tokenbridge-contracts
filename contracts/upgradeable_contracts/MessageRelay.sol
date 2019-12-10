@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../upgradeability/EternalStorage.sol";
+import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
 
 contract MessageRelay is EternalStorage {
     function relayedMessages(bytes32 _txHash) public view returns (bool) {

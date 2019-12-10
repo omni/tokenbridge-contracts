@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../upgradeability/EternalStorage.sol";
+import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";

@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../upgradeability/EternalStorage.sol";
+import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
 import "./Ownable.sol";
 
 contract BasicTokenBridge is EternalStorage, Ownable {

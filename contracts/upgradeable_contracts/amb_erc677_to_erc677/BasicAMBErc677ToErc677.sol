@@ -89,6 +89,7 @@ contract BasicAMBErc677ToErc677 is
         require(!lock());
         ERC677 token = erc677token();
         address to = address(this);
+        _updateTodayLimit();
         require(withinLimit(_value));
         _increaseTotalSpentPerDay(_value);
 
@@ -106,6 +107,7 @@ contract BasicAMBErc677ToErc677 is
         ERC677 token = erc677token();
         require(msg.sender == address(token));
         if (!lock()) {
+            _updateTodayLimit();
             require(withinLimit(_value));
             _increaseTotalSpentPerDay(_value);
         }
@@ -210,6 +212,7 @@ contract BasicAMBErc677ToErc677 is
     ) public {
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
+        _updateTodayLimit();
         if (withinExecutionLimit(_value)) {
             _increaseTotalExecutedPerDay(_value);
             executeActionOnBridgedTokens(_recipient, _value);

@@ -23,11 +23,6 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
         erc677token().transfer(_recipient, _value);
     }
 
-    function handleBridgedTokens(address _recipient, uint256 _value, bytes32 _nonce) public {
-        _updateTodayLimit();
-        super.handleBridgedTokens(_recipient, _value, _nonce);
-    }
-
     function _getTokenBalance() internal view returns (uint256) {
         return erc677token().balanceOf(address(this));
     }

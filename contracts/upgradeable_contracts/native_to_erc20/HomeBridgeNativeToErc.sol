@@ -148,11 +148,6 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         revert();
     }
 
-    function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) public onlyValidator {
-        _updateTodayLimit();
-        super.executeAffirmation(recipient, value, transactionHash);
-    }
-
     function _getTokenBalance() internal view returns (uint256) {
         return address(this).balance;
     }

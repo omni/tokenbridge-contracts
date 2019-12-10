@@ -114,11 +114,6 @@ contract ForeignBridgeNativeToErc is
         revert();
     }
 
-    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
-        _updateTodayLimit();
-        return super.onTokenTransfer(_from, _value, _data);
-    }
-
     function _getTokenBalance() internal view returns (uint256) {
         return erc677token().totalSupply();
     }

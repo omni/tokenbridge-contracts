@@ -845,6 +845,13 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       minPerTx.should.be.bignumber.equal(toBN(1))
     })
 
+    it('setMaxPerTx allows to set limit to zero', async () => {
+      await homeContract.setMaxPerTx(0, { from: owner }).should.be.fulfilled
+
+      const maxPerTx = await homeContract.maxPerTx()
+      maxPerTx.should.be.bignumber.equal(ZERO)
+    })
+
     it('setExecutionMaxPerTx allows to set only to owner and cannot be more than execution daily limit', async () => {
       const newValue = ether('0.3')
 

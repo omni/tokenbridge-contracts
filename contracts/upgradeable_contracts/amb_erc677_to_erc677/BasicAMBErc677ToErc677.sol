@@ -103,7 +103,7 @@ contract BasicAMBErc677ToErc677 is
         _relayTokens(msg.sender, _receiver, _value);
     }
 
-    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
         ERC677 token = erc677token();
         require(msg.sender == address(token));
         if (!lock()) {
@@ -209,7 +209,7 @@ contract BasicAMBErc677ToErc677 is
         address _recipient,
         uint256 _value,
         bytes32 /* nonce */
-    ) public {
+    ) external {
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
         _updateTodayLimit();

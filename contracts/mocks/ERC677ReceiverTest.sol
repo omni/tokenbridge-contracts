@@ -8,7 +8,7 @@ contract ERC677ReceiverTest is ERC677Receiver {
     bytes public data;
     uint256 public someVar = 0;
 
-    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
         from = _from;
         value = _value;
         data = _data;

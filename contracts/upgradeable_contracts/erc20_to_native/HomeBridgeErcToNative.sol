@@ -24,6 +24,7 @@ contract HomeBridgeErcToNative is
 
     function nativeTransfer(address _receiver) internal {
         require(msg.value > 0);
+        _updateTodayLimit();
         require(withinLimit(msg.value));
         IBlockReward blockReward = blockRewardContract();
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
@@ -49,62 +50,72 @@ contract HomeBridgeErcToNative is
 
     function initialize(
         address _validatorContract,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // absolute: [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray,
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _blockReward,
-        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
         address _owner,
         uint256 _decimalShift,
         address _limitsContract
-    ) external returns (bool) {
+    ) public returns (bool) {
+        require(!isInitialized());
+        require(AddressUtils.isContract(_validatorContract));
+        require(_requiredBlockConfirmations > 0);
+        require(_blockReward == address(0) || AddressUtils.isContract(_blockReward));
+        require(_owner != address(0));
         require(AddressUtils.isContract(_limitsContract));
+
+        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+        uintStorage[GAS_PRICE] = _homeGasPrice;
+        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        addressStorage[BLOCK_REWARD_CONTRACT] = _blockReward;
+        uintStorage[DECIMAL_SHIFT] = _decimalShift;
+        setOwner(_owner);
         addressStorage[LIMITS_CONTRACT] = _limitsContract;
         _setLimits(_requestLimitsArray, _executionLimitsArray);
-        _initialize(
-            _validatorContract,
-            _homeGasPrice,
-            _requiredBlockConfirmations,
-            _blockReward,
-            _owner,
-            _decimalShift
-        );
-        setInitialize();
 
+        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
+        emit GasPriceChanged(_homeGasPrice);
+
+        setInitialize();
         return isInitialized();
     }
 
     function rewardableInitialize(
         address _validatorContract,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // absolute: [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray,
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _blockReward,
-        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         uint256 _decimalShift,
         address _limitsContract
     ) external returns (bool) {
-        require(AddressUtils.isContract(_limitsContract));
-        addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
-        _initialize(
-            _validatorContract,
-            _homeGasPrice,
-            _requiredBlockConfirmations,
-            _blockReward,
-            _owner,
-            _decimalShift
-        );
         require(AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
         _setFee(_feeManager, _homeFeeForeignFeeArray[0], HOME_FEE);
         _setFee(_feeManager, _homeFeeForeignFeeArray[1], FOREIGN_FEE);
-        setInitialize();
-
-        return isInitialized();
+        return
+            initialize(
+                _validatorContract,
+                _requestLimitsArray,
+                _homeGasPrice,
+                _requiredBlockConfirmations,
+                _blockReward,
+                _executionLimitsArray,
+                _owner,
+                _decimalShift,
+                _limitsContract
+            );
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -121,32 +132,6 @@ contract HomeBridgeErcToNative is
 
     function setBlockRewardContract(address _blockReward) external onlyOwner {
         _setBlockRewardContract(_blockReward);
-    }
-
-    function _initialize(
-        address _validatorContract,
-        uint256 _homeGasPrice,
-        uint256 _requiredBlockConfirmations,
-        address _blockReward,
-        address _owner,
-        uint256 _decimalShift
-    ) internal {
-        require(!isInitialized());
-        require(AddressUtils.isContract(_validatorContract));
-        require(_requiredBlockConfirmations > 0);
-        require(_blockReward == address(0) || AddressUtils.isContract(_blockReward));
-        require(_owner != address(0));
-
-        addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
-        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
-        uintStorage[GAS_PRICE] = _homeGasPrice;
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        addressStorage[BLOCK_REWARD_CONTRACT] = _blockReward;
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        setOwner(_owner);
-
-        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit GasPriceChanged(_homeGasPrice);
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
@@ -189,5 +174,11 @@ contract HomeBridgeErcToNative is
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _txHash);
         emit AmountLimitExceeded(_recipient, _value, _txHash);
+    }
+
+    function _getTokenBalance() internal view returns (uint256) {
+        uint256 totalMinted = blockRewardContract().mintedTotallyByBridge(address(this));
+        uint256 totalBurnt = totalBurntCoins();
+        return totalMinted.sub(totalBurnt);
     }
 }

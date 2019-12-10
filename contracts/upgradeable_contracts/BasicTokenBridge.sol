@@ -12,15 +12,15 @@ contract BasicTokenBridge is EternalStorage, Ownable {
 
     bytes4 internal constant GET_MAX_PER_TX = 0xf968adbe; // maxPerTx()
     bytes4 internal constant GET_MIN_PER_TX = 0xdf25f3f0; // minPerTx()
-    bytes4 internal constant GET_DAILY_LIMIT = 0x67eeba0c; // dailyLimit()
+    bytes4 internal constant GET_DAILY_LIMIT = 0x56ee0405; // dailyLimit(uint256)
     bytes4 internal constant GET_EXECUTION_MAX_PER_TX = 0x8aa1949a; // executionMaxPerTx()
     bytes4 internal constant GET_EXECUTION_MIN_PER_TX = 0x35b00293; // executionMinPerTx()
-    bytes4 internal constant GET_EXECUTION_DAILY_LIMIT = 0x43b37dd3; // executionDailyLimit()
+    bytes4 internal constant GET_EXECUTION_DAILY_LIMIT = 0x5cd79c3a; // executionDailyLimit(uint256)
     bytes4 internal constant GET_TARGET_LIMIT = 0xa70021f3; // targetLimit()
     bytes4 internal constant GET_THRESHOLD = 0x42cde4e8; // threshold()
-    bytes4 internal constant GET_WITHIN_LIMIT = 0xea9f4968; // withinLimit(uint256)
-    bytes4 internal constant GET_WITHIN_EXECUTION_LIMIT = 0x879ce676; // withinExecutionLimit(uint256)
-    bytes4 internal constant GET_TOTAL_SPENT_PER_DAY = 0x2bd0bb05; // totalSpentPerDay(uint256)
+    bytes4 internal constant GET_WITHIN_LIMIT = 0x894d5ea8; // withinLimit(uint256)
+    bytes4 internal constant GET_WITHIN_EXECUTION_LIMIT = 0x879ce676; // withinExecutionLimit(uint256,uint256)
+    bytes4 internal constant GET_TOTAL_SPENT_PER_DAY = 0x84e43616; // totalSpentPerDay(uint256,uint256)
     bytes4 internal constant GET_TOTAL_EXECUTED_PER_DAY = 0x4fb3fef7; // totalExecutedPerDay(uint256)
     bytes4 internal constant INCREASE_TOTAL_SPENT_PER_DAY = 0xb47584cd; // increaseTotalSpentPerDay(uint256)
     bytes4 internal constant INCREASE_TOTAL_EXECUTED_PER_DAY = 0x79d9623a; // increaseTotalExecutedPerDay(uint256)
@@ -33,7 +33,7 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     bytes4 internal constant SET_EXECUTION_DAILY_LIMIT = 0x3dd95d1b; // setExecutionDailyLimit(uint256)
     bytes4 internal constant SET_TARGET_LIMIT = 0x8253a36a; // setTargetLimit(uint256)
     bytes4 internal constant SET_THRESHOLD = 0x960bfe04; // setThreshold(uint256)
-    bytes4 internal constant UPDATE_TODAY_LIMIT = 0x561fe5e3; // updateTodayLimit()
+    bytes4 internal constant UPDATE_TODAY_LIMIT = 0x0097eff6; // updateTodayLimit(uint256)
 
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
         _execute(SET_MAX_PER_TX, _maxPerTx);
@@ -84,7 +84,7 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     }
 
     function dailyLimit() public view returns (uint256) {
-        return _getUint(GET_DAILY_LIMIT);
+        return _getUint(GET_DAILY_LIMIT, _getTokenBalance());
     }
 
     function executionMaxPerTx() public view returns (uint256) {
@@ -96,7 +96,7 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     }
 
     function executionDailyLimit() public view returns (uint256) {
-        return _getUint(GET_EXECUTION_DAILY_LIMIT);
+        return _getUint(GET_EXECUTION_DAILY_LIMIT, _getTokenBalance());
     }
 
     function targetLimit() public view returns (uint256) {
@@ -108,11 +108,11 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     }
 
     function withinLimit(uint256 _amount) public view returns (bool) {
-        return _getWithinLimit(GET_WITHIN_LIMIT, _amount);
+        return _getWithinLimit(GET_WITHIN_LIMIT, _amount, _getTokenBalance());
     }
 
     function withinExecutionLimit(uint256 _amount) public view returns (bool) {
-        return _getWithinLimit(GET_WITHIN_EXECUTION_LIMIT, _amount);
+        return _getWithinLimit(GET_WITHIN_EXECUTION_LIMIT, _amount, _getTokenBalance());
     }
 
     function getTotalSpentPerDay(uint256 _day) public view returns (uint256) {
@@ -132,7 +132,7 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     }
 
     function _updateTodayLimit() internal {
-        _execute(UPDATE_TODAY_LIMIT);
+        _execute(UPDATE_TODAY_LIMIT, _getTokenBalance());
     }
 
     function _setLimits(uint256[] _requestLimitsArray, uint256[] _executionLimitsArray) internal {
@@ -140,16 +140,10 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     }
 
     function _execute(bytes4 _method, uint256 _value) internal {
-        _execute(abi.encodeWithSelector(_method, _value));
+        require(limitsContract().delegatecall(abi.encodeWithSelector(_method, _value)));
     }
 
-    function _execute(bytes4 _method) internal {
-        _execute(abi.encodeWithSelector(_method));
-    }
-
-    function _execute(bytes memory _calldata) internal {
-        require(limitsContract().delegatecall(_calldata));
-    }
+    function _getTokenBalance() internal view returns (uint256) {}
 
     function _getUint(bytes4 _method) internal view returns (uint256) {
         return _getUint(abi.encodeWithSelector(_method));
@@ -174,9 +168,9 @@ contract BasicTokenBridge is EternalStorage, Ownable {
         return value;
     }
 
-    function _getWithinLimit(bytes4 _method, uint256 _amount) internal view returns (bool) {
+    function _getWithinLimit(bytes4 _method, uint256 _amount, uint256 _tokenBalance) internal view returns (bool) {
         bool value;
-        bytes memory callData = abi.encodeWithSelector(_method, _amount);
+        bytes memory callData = abi.encodeWithSelector(_method, _amount, _tokenBalance);
         address contractAddress = limitsContract();
         assembly {
             let result := callcode(gas, contractAddress, 0x0, add(callData, 0x20), mload(callData), 0, 8)

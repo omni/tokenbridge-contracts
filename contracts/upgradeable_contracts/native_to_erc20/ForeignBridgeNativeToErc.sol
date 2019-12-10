@@ -14,86 +14,23 @@ contract ForeignBridgeNativeToErc is
     function initialize(
         address _validatorContract,
         address _erc677token,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // absolute: [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray,
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _executionLimitsArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
         address _owner,
         uint256 _decimalShift,
         address _bridgeOnOtherSide,
         address _limitsContract
-    ) external returns (bool) {
-        require(AddressUtils.isContract(_limitsContract));
-        addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
-        _initialize(
-            _validatorContract,
-            _erc677token,
-            _foreignGasPrice,
-            _requiredBlockConfirmations,
-            _owner,
-            _decimalShift,
-            _bridgeOnOtherSide
-        );
-        setInitialize();
-        return isInitialized();
-    }
-
-    function rewardableInitialize(
-        address _validatorContract,
-        address _erc677token,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256 _foreignGasPrice,
-        uint256 _requiredBlockConfirmations,
-        uint256[] _executionLimitsArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
-        address _owner,
-        address _feeManager,
-        uint256 _homeFee,
-        uint256 _decimalShift,
-        address _bridgeOnOtherSide,
-        address _limitsContract
-    ) external returns (bool) {
-        require(AddressUtils.isContract(_limitsContract));
-        addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
-        _initialize(
-            _validatorContract,
-            _erc677token,
-            _foreignGasPrice,
-            _requiredBlockConfirmations,
-            _owner,
-            _decimalShift,
-            _bridgeOnOtherSide
-        );
-        require(AddressUtils.isContract(_feeManager));
-        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
-        _setFee(_feeManager, _homeFee, HOME_FEE);
-        setInitialize();
-        return isInitialized();
-    }
-
-    function getBridgeMode() external pure returns (bytes4 _data) {
-        return 0x92a8d7fe; // bytes4(keccak256(abi.encodePacked("native-to-erc-core")))
-    }
-
-    function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
-        IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
-    }
-
-    function _initialize(
-        address _validatorContract,
-        address _erc677token,
-        uint256 _foreignGasPrice,
-        uint256 _requiredBlockConfirmations,
-        address _owner,
-        uint256 _decimalShift,
-        address _bridgeOnOtherSide
-    ) internal {
+    ) public returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);
         require(_foreignGasPrice > 0);
         require(_owner != address(0));
+        require(AddressUtils.isContract(_limitsContract));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc677token(_erc677token);
@@ -103,9 +40,56 @@ contract ForeignBridgeNativeToErc is
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_foreignGasPrice);
+
+        setInitialize();
+        return isInitialized();
+    }
+
+    function rewardableInitialize(
+        address _validatorContract,
+        address _erc677token,
+        // absolute: [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray,
+        uint256 _foreignGasPrice,
+        uint256 _requiredBlockConfirmations,
+        uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        address _owner,
+        address _feeManager,
+        uint256 _homeFee,
+        uint256 _decimalShift,
+        address _bridgeOnOtherSide,
+        address _limitsContract
+    ) external returns (bool) {
+        require(AddressUtils.isContract(_feeManager));
+        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
+        _setFee(_feeManager, _homeFee, HOME_FEE);
+        return
+            initialize(
+                _validatorContract,
+                _erc677token,
+                _requestLimitsArray,
+                _foreignGasPrice,
+                _requiredBlockConfirmations,
+                _executionLimitsArray,
+                _owner,
+                _decimalShift,
+                _bridgeOnOtherSide,
+                _limitsContract
+            );
+    }
+
+    function getBridgeMode() external pure returns (bytes4 _data) {
+        return 0x92a8d7fe; // bytes4(keccak256(abi.encodePacked("native-to-erc-core")))
+    }
+
+    function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {
@@ -128,5 +112,14 @@ contract ForeignBridgeNativeToErc is
 
     function onFailedMessage(address, uint256, bytes32) internal {
         revert();
+    }
+
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
+        _updateTodayLimit();
+        return super.onTokenTransfer(_from, _value, _data);
+    }
+
+    function _getTokenBalance() internal view returns (uint256) {
+        return erc677token().totalSupply();
     }
 }

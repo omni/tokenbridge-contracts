@@ -13,16 +13,15 @@ contract BasicRelativeDailyLimit is BasicLimits {
     bytes32 internal constant TARGET_LIMIT = 0x192ac2d88a9de45ce541663ebe1aaf6d6b1d4a6299d3fd0abf2ba7e8b920342b; // keccak256(abi.encodePacked("targetLimit"))
     bytes32 internal constant THRESHOLD = 0xd46c2b20c7303c2e50535d224276492e8a1eda2a3d7398e0bea254640c1154e7; // keccak256(abi.encodePacked("threshold"))
 
-    function _calculateLimit() internal view returns (uint256) {
-        uint256 balance = _getTokenBalance();
+    function _calculateLimit(uint256 _balance) internal view returns (uint256) {
         uint256 unlimitedBalance = _minPerTx();
-        if (balance <= unlimitedBalance) {
-            return balance;
+        if (_balance <= unlimitedBalance) {
+            return _balance;
         }
         uint256 limit = targetLimit();
         uint256 thresh = threshold();
         uint256 multiplier = 1 ether**2;
-        if (balance < thresh) {
+        if (_balance < thresh) {
             // to save the gas we don't need to use safe math here
             // because we check in setters that limit is always less than 1 ether
             // and threshold is greater than minPerTx
@@ -30,9 +29,9 @@ contract BasicRelativeDailyLimit is BasicLimits {
             uint256 a = ((1 ether - limit) * multiplier) / (thresh - unlimitedBalance)**2;
             uint256 b = 2 * a * thresh;
             uint256 c = (limit * multiplier) + a * thresh**2;
-            limit = (a * balance**2 - b * balance + c) / multiplier;
+            limit = (a * _balance**2 - b * _balance + c) / multiplier;
         }
-        return (balance * limit) / 1 ether;
+        return (_balance * limit) / 1 ether;
     }
 
     function targetLimit() public view returns (uint256) {
@@ -55,19 +54,19 @@ contract BasicRelativeDailyLimit is BasicLimits {
         emit ThresholdChanged(_threshold);
     }
 
-    function _updateTodayLimit() internal {
+    function updateTodayLimit(uint256 _balance) public {
         if (_todayLimit() == 0) {
-            uint256 limit = _calculateLimit();
+            uint256 limit = _calculateLimit(_balance);
             _setTodayLimit(limit);
             emit TodayLimitSet(limit);
         }
     }
 
-    function _getTodayLimit() internal view returns (uint256) {
+    function _getTodayLimit(uint256 _tokenBalance) internal view returns (uint256) {
         uint256 limit = _todayLimit();
         if (limit == 0) {
             // not set yet
-            limit = _calculateLimit();
+            limit = _calculateLimit(_tokenBalance);
         }
         return limit;
     }

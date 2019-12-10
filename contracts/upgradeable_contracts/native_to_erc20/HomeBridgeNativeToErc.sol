@@ -34,11 +34,13 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        // absolute: [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _executionMaxPerTx, 3 = _executionMinPerTx ]
+        uint256[] _executionLimitsArray,
         address _owner,
         uint256 _decimalShift,
         address _limitsContract
-    ) external returns (bool) {
+    ) public returns (bool) {
         require(AddressUtils.isContract(_limitsContract));
         addressStorage[LIMITS_CONTRACT] = _limitsContract;
         _setLimits(_requestLimitsArray, _executionLimitsArray);
@@ -52,23 +54,30 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        // absolute: [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _executionMaxPerTx, 3 = _executionMinPerTx ]
+        uint256[] _executionLimitsArray,
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         uint256 _decimalShift,
         address _limitsContract
     ) external returns (bool) {
-        require(AddressUtils.isContract(_limitsContract));
-        addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
-        _initialize(_validatorContract, _homeGasPrice, _requiredBlockConfirmations, _owner, _decimalShift);
         require(AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
         _setFee(_feeManager, _homeFeeForeignFeeArray[0], HOME_FEE);
         _setFee(_feeManager, _homeFeeForeignFeeArray[1], FOREIGN_FEE);
-        setInitialize();
-        return isInitialized();
+        return
+            initialize(
+                _validatorContract,
+                _requestLimitsArray,
+                _homeGasPrice,
+                _requiredBlockConfirmations,
+                _executionLimitsArray,
+                _owner,
+                _decimalShift,
+                _limitsContract
+            );
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -137,5 +146,14 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         bytes32 /*_txHash*/
     ) internal {
         revert();
+    }
+
+    function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) public onlyValidator {
+        _updateTodayLimit();
+        super.executeAffirmation(recipient, value, transactionHash);
+    }
+
+    function _getTokenBalance() internal view returns (uint256) {
+        return address(this).balance;
     }
 }

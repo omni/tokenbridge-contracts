@@ -16,31 +16,37 @@ contract BasicLimits is EternalStorage {
     bytes32 internal constant EXECUTION_MAX_PER_TX = 0xc0ed44c192c86d1cc1ba51340b032c2766b4a2b0041031de13c46dd7104888d5; // keccak256(abi.encodePacked("executionMaxPerTx"))
     bytes32 internal constant EXECUTION_DAILY_LIMIT = 0x21dbcab260e413c20dc13c28b7db95e2b423d1135f42bb8b7d5214a92270d237; // keccak256(abi.encodePacked("executionDailyLimit"))
 
-    function setLimits(
-        uint256[] _requestLimitsArray, // [ 0 = _requestDailyLimit, 1 = _requestMaxPerTx, 2 = _requestMinPerTx ]
-        uint256[] _executionLimitsArray // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
-    ) external {
+    function setLimits(uint256[] _requestLimitsArray, uint256[] _executionLimitsArray) external {
+        _setRequestLimits(_requestLimitsArray);
+        _setExecutionLimits(_executionLimitsArray);
+    }
+
+    function _setRequestLimits(
+        uint256[] _requestLimitsArray // [ 0 = _requestDailyLimit, 1 = _requestMaxPerTx, 2 = _requestMinPerTx ]
+    ) internal {
         require(
             _requestLimitsArray[2] > 0 && // _requestMinPerTx > 0
                 _requestLimitsArray[1] > _requestLimitsArray[2] && // _requestMaxPerTx > _requestMinPerTx
                 _requestLimitsArray[0] > _requestLimitsArray[1] // _requestDailyLimit > _requestMaxPerTx
         );
+        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
+        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
+        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
+        emit DailyLimitChanged(_requestLimitsArray[0]);
+    }
+
+    function _setExecutionLimits(
+        uint256[] _executionLimitsArray // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+    ) internal {
         require(
             _executionLimitsArray[2] > 0 && // _foreignMinPerTx > 0
                 _executionLimitsArray[1] > _executionLimitsArray[2] && // _foreignMaxPerTx > _foreignMinPerTx
                 _executionLimitsArray[0] > _executionLimitsArray[1] // _foreignDailyLimit > _foreignMaxPerTx
         );
-
-        uintStorage[DAILY_LIMIT] = _requestLimitsArray[0];
-        uintStorage[MAX_PER_TX] = _requestLimitsArray[1];
-        uintStorage[MIN_PER_TX] = _requestLimitsArray[2];
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionLimitsArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _executionLimitsArray[1];
         uintStorage[EXECUTION_MIN_PER_TX] = _executionLimitsArray[2];
-
-        emit DailyLimitChanged(_requestLimitsArray[0]);
         emit ExecutionDailyLimitChanged(_executionLimitsArray[0]);
-
     }
 
     function totalSpentPerDay(uint256 _day) public view returns (uint256) {
@@ -52,10 +58,18 @@ contract BasicLimits is EternalStorage {
     }
 
     function dailyLimit() public view returns (uint256) {
+        return dailyLimit(0);
+    }
+
+    function dailyLimit(uint256) public view returns (uint256) {
         return uintStorage[DAILY_LIMIT];
     }
 
     function executionDailyLimit() public view returns (uint256) {
+        return executionDailyLimit(0);
+    }
+
+    function executionDailyLimit(uint256) public view returns (uint256) {
         return uintStorage[EXECUTION_DAILY_LIMIT];
     }
 
@@ -75,14 +89,14 @@ contract BasicLimits is EternalStorage {
         return uintStorage[EXECUTION_MIN_PER_TX];
     }
 
-    function withinLimit(uint256 _amount) public view returns (bool) {
+    function withinLimit(uint256 _amount, uint256 _tokenBalance) public view returns (bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
-        return dailyLimit() >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
+        return dailyLimit(_tokenBalance) >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
     }
 
-    function withinExecutionLimit(uint256 _amount) public view returns (bool) {
+    function withinExecutionLimit(uint256 _amount, uint256 _tokenBalance) public view returns (bool) {
         uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
-        return executionDailyLimit() >= nextLimit && _amount <= executionMaxPerTx();
+        return executionDailyLimit(_tokenBalance) >= nextLimit && _amount <= executionMaxPerTx();
     }
 
     function getCurrentDay() public view returns (uint256) {
@@ -132,5 +146,5 @@ contract BasicLimits is EternalStorage {
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 
-    function updateTodayLimit() external {}
+    function updateTodayLimit(uint256) public {}
 }

@@ -13,43 +13,23 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionLimitsArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx, 2 = _homeMinPerTx ]
+        // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _requestLimitsArray,
+        // absolute: [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _executionMaxPerTx, 3 = _executionMinPerTx ]
+        uint256[] _executionLimitsArray,
         address _owner,
         uint256 _decimalShift,
         address _bridgeOnOtherSide,
         address _limitsContract
     ) external returns (bool) {
-        require(AddressUtils.isContract(_limitsContract));
-        addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
-        return
-            _initialize(
-                _validatorContract,
-                _erc20token,
-                _requiredBlockConfirmations,
-                _gasPrice,
-                _owner,
-                _decimalShift,
-                _bridgeOnOtherSide
-            );
-    }
-
-    function _initialize(
-        address _validatorContract,
-        address _erc20token,
-        uint256 _requiredBlockConfirmations,
-        uint256 _gasPrice,
-        address _owner,
-        uint256 _decimalShift,
-        address _bridgeOnOtherSide
-    ) internal returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
         require(_owner != address(0));
         require(_bridgeOnOtherSide != address(0));
+        require(AddressUtils.isContract(_limitsContract));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
@@ -59,11 +39,13 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
-        setInitialize();
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
 
+        setInitialize();
         return isInitialized();
     }
 
@@ -113,5 +95,14 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         emit TokensSwapped(saiContract, erc20token(), curBalance);
         boolStorage[storageAddress] = true;
+    }
+
+    function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) public {
+        _updateTodayLimit();
+        super.executeSignatures(vs, rs, ss, message);
+    }
+
+    function _getTokenBalance() internal view returns (uint256) {
+        return erc20token().balanceOf(address(this));
     }
 }

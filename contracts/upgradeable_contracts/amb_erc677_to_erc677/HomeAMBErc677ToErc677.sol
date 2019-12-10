@@ -19,4 +19,18 @@ contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
     function executeActionOnFixedTokens(address _recipient, uint256 _value) internal {
         IBurnableMintableERC677Token(erc677token()).mint(_recipient, _value);
     }
+
+    function _relayTokens(address _from, address _receiver, uint256 _value) internal {
+        _updateTodayLimit();
+        super._relayTokens(_from, _receiver, _value);
+    }
+
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
+        _updateTodayLimit();
+        return super.onTokenTransfer(_from, _value, _data);
+    }
+
+    function _getTokenBalance() internal view returns (uint256) {
+        return erc677token().totalSupply();
+    }
 }

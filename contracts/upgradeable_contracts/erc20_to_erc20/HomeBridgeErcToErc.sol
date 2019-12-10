@@ -17,91 +17,23 @@ contract HomeBridgeErcToErc is
 {
     function initialize(
         address _validatorContract,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // absolute: [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray,
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
+        uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
         address _owner,
         uint256 _decimalShift,
         address _limitsContract
-    ) external returns (bool) {
-        require(AddressUtils.isContract(_limitsContract));
-        addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
-        _initialize(
-            _validatorContract,
-            _homeGasPrice,
-            _requiredBlockConfirmations,
-            _erc677token,
-            _owner,
-            _decimalShift
-        );
-        setInitialize();
-
-        return isInitialized();
-    }
-
-    function rewardableInitialize(
-        address[] _contracts, // [ 0 = _validatorContract, 1 = _erc677token, 2 = _feeManager, 3 = _limitsContract ]
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256 _homeGasPrice,
-        uint256 _requiredBlockConfirmations,
-        uint256[] _executionLimitsArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx, 2 = _foreignMinPerTx ]
-        address _owner,
-        uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        uint256 _decimalShift
-    ) external returns (bool) {
-        require(AddressUtils.isContract(_contracts[3]));
-        addressStorage[LIMITS_CONTRACT] = _contracts[3];
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
-        _rewardableInitialize(
-            _contracts,
-            _homeGasPrice,
-            _requiredBlockConfirmations,
-            _owner,
-            _homeFeeForeignFeeArray,
-            _decimalShift
-        );
-        setInitialize();
-
-        return isInitialized();
-    }
-
-    function _rewardableInitialize(
-        address[] _contracts, // [ 0 = _validatorContract, 1 = _erc677token, 2 = _feeManager, 3 = _limitsContract, 4 = _blockReward ]
-        uint256 _homeGasPrice,
-        uint256 _requiredBlockConfirmations,
-        address _owner,
-        uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        uint256 _decimalShift
-    ) internal {
-        _initialize(
-            _contracts[0],
-            _homeGasPrice,
-            _requiredBlockConfirmations,
-            _contracts[1],
-            _owner,
-            _decimalShift
-        );
-        require(AddressUtils.isContract(_contracts[2]));
-        addressStorage[FEE_MANAGER_CONTRACT] = _contracts[2];
-        _setFee(_contracts[2], _homeFeeForeignFeeArray[0], HOME_FEE);
-        _setFee(_contracts[2], _homeFeeForeignFeeArray[1], FOREIGN_FEE);
-    }
-
-    function _initialize(
-        address _validatorContract,
-        uint256 _homeGasPrice,
-        uint256 _requiredBlockConfirmations,
-        address _erc677token,
-        address _owner,
-        uint256 _decimalShift
-    ) internal {
+    ) public returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);
         require(_owner != address(0));
+        require(AddressUtils.isContract(_limitsContract));
+
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[GAS_PRICE] = _homeGasPrice;
@@ -109,9 +41,48 @@ contract HomeBridgeErcToErc is
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setErc677token(_erc677token);
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_homeGasPrice);
+
+        setInitialize();
+        return isInitialized();
+    }
+
+    function rewardableInitialize(
+        address _validatorContract,
+        // absolute: [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray,
+        uint256 _homeGasPrice,
+        uint256 _requiredBlockConfirmations,
+        address _erc677token,
+        uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        address _owner,
+        address _feeManager,
+        uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
+        uint256 _decimalShift,
+        address _limitsContract
+    ) public returns (bool) {
+        require(AddressUtils.isContract(_feeManager));
+        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
+        _setFee(_feeManager, _homeFeeForeignFeeArray[0], HOME_FEE);
+        _setFee(_feeManager, _homeFeeForeignFeeArray[1], FOREIGN_FEE);
+
+        return
+            initialize(
+                _validatorContract,
+                _requestLimitsArray,
+                _homeGasPrice,
+                _requiredBlockConfirmations,
+                _erc677token,
+                _executionLimitsArray,
+                _owner,
+                _decimalShift,
+                _limitsContract
+            );
     }
 
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
@@ -165,5 +136,14 @@ contract HomeBridgeErcToErc is
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _txHash);
         emit AmountLimitExceeded(_recipient, _value, _txHash);
+    }
+
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
+        _updateTodayLimit();
+        return super.onTokenTransfer(_from, _value, _data);
+    }
+
+    function _getTokenBalance() internal view returns (uint256) {
+        return erc677token().totalSupply();
     }
 }

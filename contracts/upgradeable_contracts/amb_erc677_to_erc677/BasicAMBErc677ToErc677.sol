@@ -33,28 +33,19 @@ contract BasicAMBErc677ToErc677 is
         address _bridgeContract,
         address _mediatorContract,
         address _erc677token,
-        uint256[] _requestLimitsArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionLimitsArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        // absolute: [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray,
+        // absolute: [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _executionMaxPerTx, 3 = _executionMinPerTx ]
+        uint256[] _executionLimitsArray,
         uint256 _requestGasLimit,
         uint256 _decimalShift,
         address _owner,
         address _limitsContract
     ) external returns (bool) {
-        require(AddressUtils.isContract(_limitsContract));
-        addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
-        return _initialize(_bridgeContract, _mediatorContract, _erc677token, _requestGasLimit, _decimalShift, _owner);
-    }
-
-    function _initialize(
-        address _bridgeContract,
-        address _mediatorContract,
-        address _erc677token,
-        uint256 _requestGasLimit,
-        uint256 _decimalShift,
-        address _owner
-    ) internal returns (bool) {
         require(!isInitialized());
+        require(AddressUtils.isContract(_limitsContract));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
@@ -63,8 +54,10 @@ contract BasicAMBErc677ToErc677 is
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setNonce(keccak256(abi.encodePacked(address(this))));
-        setInitialize();
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
 
+        setInitialize();
         return isInitialized();
     }
 

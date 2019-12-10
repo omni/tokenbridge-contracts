@@ -270,7 +270,7 @@ contract('HomeBridge', async accounts => {
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
       await storageProxy.transferProxyOwnership(owner).should.be.fulfilled
 
-      expect(await storageProxy.version()).to.be.bignumber.equal(toBN('1'))
+      expect(await storageProxy.version()).to.be.equal('1')
     })
   })
 

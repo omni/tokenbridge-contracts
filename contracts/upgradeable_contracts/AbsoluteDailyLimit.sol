@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../upgradeability/EternalStorage.sol";
 
-contract BasicLimits is EternalStorage {
+contract AbsoluteDailyLimit is EternalStorage {
     using SafeMath for uint256;
 
     event DailyLimitChanged(uint256 newLimit);

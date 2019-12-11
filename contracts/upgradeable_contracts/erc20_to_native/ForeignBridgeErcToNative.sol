@@ -40,7 +40,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
         addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
+        setLimits(_requestLimitsArray, _executionLimitsArray);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);

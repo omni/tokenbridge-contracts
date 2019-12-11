@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../upgradeability/EternalStorage.sol";
 import "./Ownable.sol";
 
@@ -18,10 +19,11 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     bytes4 internal constant GET_EXECUTION_DAILY_LIMIT = 0x5cd79c3a; // executionDailyLimit(uint256)
     bytes4 internal constant GET_TARGET_LIMIT = 0xa70021f3; // targetLimit()
     bytes4 internal constant GET_THRESHOLD = 0x42cde4e8; // threshold()
-    bytes4 internal constant GET_WITHIN_LIMIT = 0x894d5ea8; // withinLimit(uint256)
-    bytes4 internal constant GET_WITHIN_EXECUTION_LIMIT = 0x879ce676; // withinExecutionLimit(uint256,uint256)
-    bytes4 internal constant GET_TOTAL_SPENT_PER_DAY = 0x84e43616; // totalSpentPerDay(uint256,uint256)
+    bytes4 internal constant GET_WITHIN_LIMIT = 0x894d5ea8; // withinLimit(uint256,uint256)
+    bytes4 internal constant GET_WITHIN_EXECUTION_LIMIT = 0x84e43616; // withinExecutionLimit(uint256,uint256)
+    bytes4 internal constant GET_TOTAL_SPENT_PER_DAY = 0x2bd0bb05; // totalSpentPerDay(uint256)
     bytes4 internal constant GET_TOTAL_EXECUTED_PER_DAY = 0x4fb3fef7; // totalExecutedPerDay(uint256)
+    bytes4 internal constant GET_CURRENT_DAY = 0x3e6968b6; // getCurrentDay()
     bytes4 internal constant INCREASE_TOTAL_SPENT_PER_DAY = 0xb47584cd; // increaseTotalSpentPerDay(uint256)
     bytes4 internal constant INCREASE_TOTAL_EXECUTED_PER_DAY = 0x79d9623a; // increaseTotalExecutedPerDay(uint256)
     bytes4 internal constant SET_LIMITS = 0x1558bff0; // setLimits(uint256[],uint256[])
@@ -34,6 +36,15 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     bytes4 internal constant SET_TARGET_LIMIT = 0x8253a36a; // setTargetLimit(uint256)
     bytes4 internal constant SET_THRESHOLD = 0x960bfe04; // setThreshold(uint256)
     bytes4 internal constant UPDATE_TODAY_LIMIT = 0x0097eff6; // updateTodayLimit(uint256)
+
+    function setLimitsContract(address _limitsContract) external onlyOwner {
+        require(AddressUtils.isContract(_limitsContract));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+    }
+
+    function setLimits(uint256[] _requestLimitsArray, uint256[] _executionLimitsArray) public onlyOwner {
+        require(limitsContract().delegatecall(abi.encodeWithSelector(SET_LIMITS, _requestLimitsArray, _executionLimitsArray)));
+    }
 
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
         _execute(SET_MAX_PER_TX, _maxPerTx);
@@ -60,11 +71,11 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     }
 
     function setTargetLimit(uint256 _targetLimit) external onlyOwner {
-        _execute(SET_EXECUTION_DAILY_LIMIT, _targetLimit);
+        _execute(SET_TARGET_LIMIT, _targetLimit);
     }
 
     function setThreshold(uint256 _threshold) external onlyOwner {
-        _execute(SET_EXECUTION_DAILY_LIMIT, _threshold);
+        _execute(SET_THRESHOLD, _threshold);
     }
 
     function limitsContract() public view returns (address) {
@@ -100,11 +111,11 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     }
 
     function targetLimit() public view returns (uint256) {
-        return _getUint(GET_EXECUTION_DAILY_LIMIT);
+        return _getUint(GET_TARGET_LIMIT);
     }
 
     function threshold() public view returns (uint256) {
-        return _getUint(GET_EXECUTION_DAILY_LIMIT);
+        return _getUint(GET_THRESHOLD);
     }
 
     function withinLimit(uint256 _amount) public view returns (bool) {
@@ -115,12 +126,16 @@ contract BasicTokenBridge is EternalStorage, Ownable {
         return _getWithinLimit(GET_WITHIN_EXECUTION_LIMIT, _amount, _getTokenBalance());
     }
 
-    function getTotalSpentPerDay(uint256 _day) public view returns (uint256) {
+    function totalSpentPerDay(uint256 _day) public view returns (uint256) {
         return _getUint(GET_TOTAL_SPENT_PER_DAY, _day);
     }
 
-    function getTotalExecutedPerDay(uint256 _day) public view returns (uint256) {
+    function totalExecutedPerDay(uint256 _day) public view returns (uint256) {
         return _getUint(GET_TOTAL_EXECUTED_PER_DAY, _day);
+    }
+
+    function getCurrentDay() public view returns (uint256) {
+        return _getUint(GET_CURRENT_DAY);
     }
 
     function _increaseTotalSpentPerDay(uint256 _amount) internal {
@@ -133,10 +148,6 @@ contract BasicTokenBridge is EternalStorage, Ownable {
 
     function _updateTodayLimit() internal {
         _execute(UPDATE_TODAY_LIMIT, _getTokenBalance());
-    }
-
-    function _setLimits(uint256[] _requestLimitsArray, uint256[] _executionLimitsArray) internal {
-        require(limitsContract().delegatecall(abi.encodeWithSelector(SET_LIMITS, _requestLimitsArray, _executionLimitsArray)));
     }
 
     function _execute(bytes4 _method, uint256 _value) internal {
@@ -173,7 +184,7 @@ contract BasicTokenBridge is EternalStorage, Ownable {
         bytes memory callData = abi.encodeWithSelector(_method, _amount, _tokenBalance);
         address contractAddress = limitsContract();
         assembly {
-            let result := callcode(gas, contractAddress, 0x0, add(callData, 0x20), mload(callData), 0, 8)
+            let result := callcode(gas, contractAddress, 0x0, add(callData, 0x20), mload(callData), 0, 32)
             value := mload(0)
 
             switch result

@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./BasicLimits.sol";
+import "./AbsoluteDailyLimit.sol";
 
-contract BasicRelativeDailyLimit is BasicLimits {
+contract BasicRelativeDailyLimit is AbsoluteDailyLimit {
     using SafeMath for uint256;
 
     event TargetLimitChanged(uint256 newLimit);
@@ -80,6 +80,4 @@ contract BasicRelativeDailyLimit is BasicLimits {
     }
 
     function _minPerTx() internal view returns (uint256);
-
-    function _getTokenBalance() internal view returns (uint256);
 }

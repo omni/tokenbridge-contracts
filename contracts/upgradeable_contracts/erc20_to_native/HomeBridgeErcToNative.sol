@@ -76,7 +76,7 @@ contract HomeBridgeErcToNative is
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
+        setLimits(_requestLimitsArray, _executionLimitsArray);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_homeGasPrice);

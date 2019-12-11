@@ -57,16 +57,8 @@ contract AbsoluteDailyLimit is EternalStorage {
         return uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))];
     }
 
-    function dailyLimit() public view returns (uint256) {
-        return dailyLimit(0);
-    }
-
     function dailyLimit(uint256) public view returns (uint256) {
         return uintStorage[DAILY_LIMIT];
-    }
-
-    function executionDailyLimit() public view returns (uint256) {
-        return executionDailyLimit(0);
     }
 
     function executionDailyLimit(uint256) public view returns (uint256) {
@@ -127,22 +119,22 @@ contract AbsoluteDailyLimit is EternalStorage {
     }
 
     function setExecutionMaxPerTx(uint256 _maxPerTx) external {
-        require(_maxPerTx < executionDailyLimit());
+        require(_maxPerTx < executionDailyLimit(0));
         uintStorage[EXECUTION_MAX_PER_TX] = _maxPerTx;
     }
 
     function setExecutionMinPerTx(uint256 _minPerTx) external {
-        require(_minPerTx < executionDailyLimit() && _minPerTx < executionMaxPerTx());
+        require(_minPerTx < executionDailyLimit(0) && _minPerTx < executionMaxPerTx());
         uintStorage[EXECUTION_MIN_PER_TX] = _minPerTx;
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external {
-        require(_maxPerTx < dailyLimit());
+        require(_maxPerTx < dailyLimit(0));
         uintStorage[MAX_PER_TX] = _maxPerTx;
     }
 
     function setMinPerTx(uint256 _minPerTx) external {
-        require(_minPerTx < dailyLimit() && _minPerTx < maxPerTx());
+        require(_minPerTx < dailyLimit(0) && _minPerTx < maxPerTx());
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 

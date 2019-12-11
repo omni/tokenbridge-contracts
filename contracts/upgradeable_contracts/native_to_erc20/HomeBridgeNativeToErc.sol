@@ -43,7 +43,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     ) public returns (bool) {
         require(AddressUtils.isContract(_limitsContract));
         addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        _setLimits(_requestLimitsArray, _executionLimitsArray);
+        setLimits(_requestLimitsArray, _executionLimitsArray);
         _initialize(_validatorContract, _homeGasPrice, _requiredBlockConfirmations, _owner, _decimalShift);
         setInitialize();
         return isInitialized();

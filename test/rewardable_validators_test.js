@@ -267,7 +267,7 @@ contract('RewardableValidators', async accounts => {
         await proxy.upgradeTo('1', bridgeValidatorsImpl.address)
         bridgeValidators = await BridgeValidators.at(proxy.address)
         const { initialize, isInitialized, removeValidator } = bridgeValidators
-        await initialize(1, accounts.slice(0, 5), accounts.slice(5), owner, { from: owner }).should.be.fulfilled
+        await initialize(1, accounts.slice(0, 5), accounts.slice(5, 10), owner, { from: owner }).should.be.fulfilled
         true.should.be.equal(await isInitialized())
 
         // When
@@ -283,7 +283,7 @@ contract('RewardableValidators', async accounts => {
     it(`reward address is properly assigned`, async () => {
       // Given
       const { initialize, isInitialized, getValidatorRewardAddress } = bridgeValidators
-      await initialize(1, accounts.slice(0, 5), accounts.slice(5), owner, { from: owner }).should.be.fulfilled
+      await initialize(1, accounts.slice(0, 5), accounts.slice(5, 10), owner, { from: owner }).should.be.fulfilled
 
       // When
       expect(await isInitialized()).to.be.equal(true)
@@ -302,7 +302,7 @@ contract('RewardableValidators', async accounts => {
       const { initialize, validatorList } = bridgeValidators
 
       // When
-      await initialize(1, validators, accounts.slice(5), owner, { from: owner }).should.be.fulfilled
+      await initialize(1, validators, accounts.slice(5, 10), owner, { from: owner }).should.be.fulfilled
 
       // Then
       expect(await validatorList()).to.be.eql(validators)

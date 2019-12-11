@@ -24,7 +24,7 @@ contract BaseBridgeValidators is InitializableBridge, Ownable {
     }
 
     function getBridgeValidatorsInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (2, 2, 0);
+        return (2, 3, 0);
     }
 
     function validatorList() external view returns (address[]) {
@@ -101,5 +101,24 @@ contract BaseBridgeValidators is InitializableBridge, Ownable {
 
     function setNextValidator(address _prevValidator, address _validator) internal {
         addressStorage[keccak256(abi.encodePacked("validatorsList", _prevValidator))] = _validator;
+    }
+
+    function isValidatorDuty(address _validator) external view returns (bool) {
+        uint256 counter = 0;
+        address next = getNextValidator(F_ADDR);
+        require(next != address(0));
+
+        while (next != F_ADDR) {
+            if (next == _validator) {
+                return (block.number % validatorCount() == counter);
+            }
+
+            next = getNextValidator(next);
+            counter++;
+
+            require(next != address(0));
+        }
+
+        return false;
     }
 }

@@ -66,7 +66,9 @@ contract('BridgeValidators', async accounts => {
       const validators = createAccounts(web3, MAX_VALIDATORS)
 
       // When
-      const { receipt } = await bridgeValidators.initialize(MAX_VALIDATORS - 1, validators, accounts[2], { from: accounts[2] }).should.be.fulfilled
+      const { receipt } = await bridgeValidators.initialize(MAX_VALIDATORS - 1, validators, accounts[2], {
+        from: accounts[2]
+      }).should.be.fulfilled
 
       expect(receipt.gasUsed).to.be.lte(MAX_GAS)
       expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS}`)
@@ -288,13 +290,23 @@ contract('RewardableValidators', async accounts => {
       const validators = createAccounts(web3, MAX_VALIDATORS)
 
       // When
-      const { receipt } = await rewardableValidators.initialize(MAX_VALIDATORS - 1, validators, validators, accounts[2], { from: accounts[2] }).should.be.fulfilled
+      const { receipt } = await rewardableValidators.initialize(
+        MAX_VALIDATORS - 1,
+        validators,
+        validators,
+        accounts[2],
+        {
+          from: accounts[2]
+        }
+      ).should.be.fulfilled
 
       expect(receipt.gasUsed).to.be.lte(MAX_GAS)
       expect(await rewardableValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS}`)
 
       // removing last validator from list (the highest gas consumption)
-      await rewardableValidators.removeValidator(validators[MAX_VALIDATORS - 1], { from: accounts[2] }).should.be.fulfilled
+      await rewardableValidators.removeValidator(validators[MAX_VALIDATORS - 1], {
+        from: accounts[2]
+      }).should.be.fulfilled
 
       expect(await rewardableValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS - 1}`)
     })

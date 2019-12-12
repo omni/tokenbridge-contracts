@@ -1737,7 +1737,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       blockRewardBalanceBefore.should.be.bignumber.equal('0')
 
       // When
-      const { receipt } = await homeBridge.submitSignature(signature, message, { from: validators[0] }).should.be.fulfilled
+      const { receipt } = await homeBridge.submitSignature(signature, message, {
+        from: validators[0]
+      }).should.be.fulfilled
       expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
   })
@@ -1960,7 +1962,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       validators[0] = accounts[2]
       const rewards = createAccounts(web3, MAX_VALIDATORS)
       const requiredSignatures = 1
-      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {from: owner}).should.be.fulfilled
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
       await blockRewardContract.setValidatorsRewards(rewards)
       await blockRewardContract.setToken(token.address)
       await token.setBlockRewardContract(blockRewardContract.address)

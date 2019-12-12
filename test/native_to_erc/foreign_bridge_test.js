@@ -10,7 +10,15 @@ const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.s
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, signatureToVRS, getEvents, ether, expectEventInLogs } = require('../helpers/helpers')
+const {
+  createMessage,
+  sign,
+  signatureToVRS,
+  getEvents,
+  ether,
+  expectEventInLogs,
+  createAccounts
+} = require('../helpers/helpers')
 
 const oneEther = ether('1')
 const halfEther = ether('0.5')
@@ -20,6 +28,8 @@ const gasPrice = web3.utils.toWei('1', 'gwei')
 const homeDailyLimit = oneEther
 const homeMaxPerTx = halfEther
 const ZERO = toBN(0)
+const MAX_GAS = 8000000
+const MAX_VALIDATORS = 156
 const decimalShiftZero = 0
 
 contract('ForeignBridge', async accounts => {
@@ -1370,6 +1380,43 @@ contract('ForeignBridge', async accounts => {
       updatedBalanceRewardAddress3.should.be.bignumber.equal(initialBalanceRewardAddress3.add(feePerValidator))
       updatedBalanceRewardAddress4.should.be.bignumber.equal(initialBalanceRewardAddress4.add(feePerValidator))
       updatedBalanceRewardAddress5.should.be.bignumber.equal(initialBalanceRewardAddress5.add(feePerValidator))
+    })
+    it('should distribute fee to max allowed number of validators', async () => {
+      // Given
+      const fee = 0.001
+      const feeInWei = ether(fee.toString())
+      const value = halfEther
+
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+      validators[0] = accounts[2]
+      const rewards = createAccounts(web3, MAX_VALIDATORS)
+      const requiredSignatures = 1
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
+      await foreignBridge.rewardableInitialize(
+        rewardableValidators.address,
+        token.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        feeManager.address,
+        feeInWei,
+        decimalShiftZero,
+        otherSideBridgeAddress
+      ).should.be.fulfilled
+      await token.transferOwnership(foreignBridge.address)
+
+      const recipientAccount = accounts[0]
+
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+      const signature = await sign(validators[0], message)
+      const vrs = signatureToVRS(signature)
+
+      // When
+      const { receipt } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
   })
   describe('#decimalShift', async () => {

@@ -3,6 +3,8 @@ pragma solidity 0.4.24;
 import "./BaseBridgeValidators.sol";
 
 contract BridgeValidators is BaseBridgeValidators {
+    uint256 internal constant MAX_VALIDATORS = 287;
+
     function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
         external
         returns (bool)
@@ -12,7 +14,6 @@ contract BridgeValidators is BaseBridgeValidators {
         setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
-        require(_initialValidators.length <= MAX_VALIDATORS);
 
         for (uint256 i = 0; i < _initialValidators.length; i++) {
             require(_initialValidators[i] != address(0) && _initialValidators[i] != F_ADDR);
@@ -50,5 +51,10 @@ contract BridgeValidators is BaseBridgeValidators {
     function removeValidator(address _validator) external onlyOwner {
         _removeValidator(_validator);
         emit ValidatorRemoved(_validator);
+    }
+
+    function setValidatorCount(uint256 _validatorCount) internal {
+        require(_validatorCount <= MAX_VALIDATORS);
+        super.setValidatorCount(_validatorCount);
     }
 }

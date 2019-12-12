@@ -1,12 +1,12 @@
 const HomeAMBErc677ToErc677 = artifacts.require('HomeAMBErc677ToErc677.sol')
-const HomeAMBErc677ToErc677RelativeDailyLimit = artifacts.require('HomeAMBErc677ToErc677RelativeDailyLimit.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const ForeignAMBErc677ToErc677 = artifacts.require('ForeignAMBErc677ToErc677.sol')
-const ForeignAMBErc677ToErc677RelativeDailyLimit = artifacts.require('ForeignAMBErc677ToErc677RelativeDailyLimit.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const HomeAMB = artifacts.require('HomeAMB.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
+const AbsoluteDailyLimit = artifacts.require('AbsoluteDailyLimit.sol')
+const RelativeDailyLimit = artifacts.require('RelativeDailyLimit.sol')
 
 const { expect } = require('chai')
 const { shouldBehaveLikeBasicAMBErc677ToErc677 } = require('./AMBErc677ToErc677Behavior.test')
@@ -31,27 +31,27 @@ const targetLimit = ether('0.05')
 const threshold = ether('10000')
 
 function test(accounts, isRelativeDailyLimit) {
-  const ForeignContract = isRelativeDailyLimit ? ForeignAMBErc677ToErc677RelativeDailyLimit : ForeignAMBErc677ToErc677
-  const HomeContract = isRelativeDailyLimit ? HomeAMBErc677ToErc677RelativeDailyLimit : HomeAMBErc677ToErc677
   const owner = accounts[0]
   const user = accounts[1]
   let ambBridgeContract
   let mediatorContract
   let erc677Token
   let homeBridge
+  let limitsContract
 
   let limitsArray = [dailyLimit, maxPerTx, minPerTx]
   if (isRelativeDailyLimit) {
     limitsArray = [targetLimit, threshold, maxPerTx, minPerTx]
   }
+  const LimitsContract = isRelativeDailyLimit ? RelativeDailyLimit : AbsoluteDailyLimit
 
   beforeEach(async function() {
-    this.bridge = await HomeContract.new()
+    this.bridge = await HomeAMBErc677ToErc677.new()
     const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
     await storageProxy.upgradeTo('1', this.bridge.address).should.be.fulfilled
-    this.proxyContract = await HomeContract.at(storageProxy.address)
+    this.proxyContract = await HomeAMBErc677ToErc677.at(storageProxy.address)
   })
-  shouldBehaveLikeBasicAMBErc677ToErc677(HomeContract, accounts, isRelativeDailyLimit, true)
+  shouldBehaveLikeBasicAMBErc677ToErc677(HomeAMBErc677ToErc677, accounts, isRelativeDailyLimit, true)
   describe('onTokenTransfer', () => {
     beforeEach(async () => {
       const validatorContract = await BridgeValidators.new()
@@ -59,11 +59,12 @@ function test(accounts, isRelativeDailyLimit) {
       await validatorContract.initialize(1, authorities, owner)
       ambBridgeContract = await HomeAMB.new()
       await ambBridgeContract.initialize(validatorContract.address, maxGasPerTx, '1', '1', owner)
-      mediatorContract = await ForeignContract.new()
+      mediatorContract = await ForeignAMBErc677ToErc677.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      limitsContract = await LimitsContract.new()
 
-      homeBridge = await HomeContract.new()
+      homeBridge = await HomeAMBErc677ToErc677.new()
       await homeBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
@@ -72,7 +73,8 @@ function test(accounts, isRelativeDailyLimit) {
         [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
-        owner
+        owner,
+        limitsContract.address
       ).should.be.fulfilled
     })
     it('should emit UserRequestForSignature in AMB bridge and burn transferred tokens', async () => {
@@ -139,10 +141,11 @@ function test(accounts, isRelativeDailyLimit) {
     beforeEach(async () => {
       ambBridgeContract = await AMBMock.new()
       await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
-      mediatorContract = await ForeignContract.new()
+      mediatorContract = await ForeignAMBErc677ToErc677.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      limitsContract = await LimitsContract.new()
 
-      homeBridge = await HomeContract.new()
+      homeBridge = await HomeAMBErc677ToErc677.new()
       await homeBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
@@ -151,7 +154,8 @@ function test(accounts, isRelativeDailyLimit) {
         [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
-        owner
+        owner,
+        limitsContract.address
       ).should.be.fulfilled
       await erc677Token.transferOwnership(homeBridge.address)
     })
@@ -201,8 +205,9 @@ function test(accounts, isRelativeDailyLimit) {
       // Given
       const decimalShiftTwo = 2
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      limitsContract = await LimitsContract.new()
 
-      homeBridge = await HomeContract.new()
+      homeBridge = await HomeAMBErc677ToErc677.new()
       await homeBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
@@ -211,7 +216,8 @@ function test(accounts, isRelativeDailyLimit) {
         [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftTwo,
-        owner
+        owner,
+        limitsContract.address
       ).should.be.fulfilled
       await erc677Token.transferOwnership(homeBridge.address)
 
@@ -295,10 +301,10 @@ function test(accounts, isRelativeDailyLimit) {
   })
 }
 
-contract('HomeAMBErc677ToErc677', async accounts => {
+contract.only('HomeAMBErc677ToErc677', async accounts => {
   test(accounts, false)
 })
 
-contract('HomeAMBErc677ToErc677RelativeDailyLimit', async accounts => {
+contract.only('HomeAMBErc677ToErc677RelativeDailyLimit', async accounts => {
   test(accounts, true)
 })

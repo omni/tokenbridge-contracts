@@ -1,8 +1,12 @@
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const ERC20Mock = artifacts.require('ERC20Mock.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
+const AbsoluteDailyLimit = artifacts.require('AbsoluteDailyLimit.sol')
+const RelativeDailyLimit = artifacts.require('RelativeDailyLimit.sol')
+const RelativeExecutionDailyLimit = artifacts.require('RelativeExecutionDailyLimit.sol')
 
 const { expect } = require('chai')
+const { expectEvent } = require('@openzeppelin/test-helpers')
 const { ZERO_ADDRESS, toBN, ERROR_MSG } = require('../setup')
 const { getEvents, expectEventInLogs, ether, strip0x, calculateDailyLimit } = require('../helpers/helpers')
 
@@ -32,17 +36,21 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
   let mediatorContract
   let erc677Token
   let contract
+  let limitsContract
   const owner = accounts[0]
   const user = accounts[1]
 
   let limitsArray = [dailyLimit, maxPerTx, minPerTx]
   let executionLimitsArray = [executionDailyLimit, executionMaxPerTx, executionMinPerTx]
+  let LimitsContract = AbsoluteDailyLimit
 
   if (isRelativeDailyLimit) {
     if (isRelativeDailyLimitOnBridgeSide) {
       limitsArray = [targetLimit, threshold, maxPerTx, minPerTx]
+      LimitsContract = RelativeDailyLimit
     } else {
       executionLimitsArray = [targetLimit, threshold, executionMaxPerTx, executionMinPerTx]
+      LimitsContract = RelativeExecutionDailyLimit
     }
   }
 
@@ -55,7 +63,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       executionLimitsArray,
       maxGasPerTx,
       decimalShiftZero,
-      owner
+      owner,
+      limitsContract.address
     ).should.be.fulfilled
   }
 
@@ -65,6 +74,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      limitsContract = await LimitsContract.new()
     })
     it('should initialize', async function() {
       contract = this.bridge
@@ -72,25 +82,9 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       expect(await contract.bridgeContract()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.mediatorContractOnOtherSide()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.erc677token()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.maxPerTx()).to.be.bignumber.equal(ZERO)
-      expect(await contract.minPerTx()).to.be.bignumber.equal(ZERO)
-      expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(ZERO)
-      expect(await contract.executionMinPerTx()).to.be.bignumber.equal(ZERO)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
-
-      if (isRelativeDailyLimit) {
-        expect(await contract.targetLimit()).to.be.bignumber.equal(ZERO)
-        expect(await contract.threshold()).to.be.bignumber.equal(ZERO)
-        if (isRelativeDailyLimitOnBridgeSide) {
-          expect(await contract.executionDailyLimit()).to.be.bignumber.equal(ZERO)
-        } else {
-          expect(await contract.dailyLimit()).to.be.bignumber.equal(ZERO)
-        }
-      } else {
-        expect(await contract.executionDailyLimit()).to.be.bignumber.equal(ZERO)
-        expect(await contract.dailyLimit()).to.be.bignumber.equal(ZERO)
-      }
+      expect(await contract.limitsContract()).to.be.equal(ZERO_ADDRESS)
 
       // not valid bridge contract
       await contract
@@ -102,7 +96,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           executionLimitsArray,
           maxGasPerTx,
           decimalShiftZero,
-          owner
+          owner,
+          limitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -116,7 +111,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           executionLimitsArray,
           maxGasPerTx,
           decimalShiftZero,
-          owner
+          owner,
+          limitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -137,7 +133,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           executionLimits,
           maxGasPerTx,
           decimalShiftZero,
-          owner
+          owner,
+          limitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -158,7 +155,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           executionLimits,
           maxGasPerTx,
           decimalShiftZero,
-          owner
+          owner,
+          limitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -175,7 +173,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
             isRelativeDailyLimitOnBridgeSide ? limits : relativeDailyLimit,
             maxGasPerTx,
             decimalShiftZero,
-            owner
+            owner,
+            limitsContract.address
           )
           .should.be.rejectedWith(ERROR_MSG)
 
@@ -191,7 +190,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
             isRelativeDailyLimitOnBridgeSide ? limits : relativeDailyLimit,
             maxGasPerTx,
             decimalShiftZero,
-            owner
+            owner,
+            limitsContract.address
           )
           .should.be.rejectedWith(ERROR_MSG)
       }
@@ -213,7 +213,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           executionLimits,
           maxGasPerTx,
           decimalShiftZero,
-          owner
+          owner,
+          limitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -227,11 +228,12 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           executionLimitsArray,
           dailyLimit,
           decimalShiftZero,
-          owner
+          owner,
+          limitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
-      const { logs } = await initialize(erc677Token.address)
+      const { tx } = await initialize(erc677Token.address)
 
       // already initialized
       await contract
@@ -243,7 +245,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           executionLimitsArray,
           maxGasPerTx,
           decimalShiftZero,
-          owner
+          owner,
+          limitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -263,16 +266,20 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
         expect(await contract.threshold()).to.be.bignumber.equal(threshold)
         if (isRelativeDailyLimitOnBridgeSide) {
           expect(await contract.executionDailyLimit()).to.be.bignumber.equal(executionDailyLimit)
-          expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })
+          await expectEvent.inTransaction(tx, limitsContract, 'ExecutionDailyLimitChanged', {
+            newLimit: executionDailyLimit.toString()
+          })
         } else {
           expect(await contract.dailyLimit()).to.be.bignumber.equal(dailyLimit)
-          expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })
+          await expectEvent.inTransaction(tx, limitsContract, 'DailyLimitChanged', { newLimit: dailyLimit.toString() })
         }
       } else {
         expect(await contract.executionDailyLimit()).to.be.bignumber.equal(executionDailyLimit)
         expect(await contract.dailyLimit()).to.be.bignumber.equal(dailyLimit)
-        expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })
-        expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })
+        await expectEvent.inTransaction(tx, limitsContract, 'ExecutionDailyLimitChanged', {
+          newLimit: executionDailyLimit.toString()
+        })
+        await expectEvent.inTransaction(tx, limitsContract, 'DailyLimitChanged', { newLimit: dailyLimit.toString() })
       }
     })
     it('only owner can set bridge contract', async function() {
@@ -335,6 +342,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      limitsContract = await LimitsContract.new()
 
       contract = this.bridge
 
@@ -357,7 +365,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
         executionLimits,
         maxGasPerTx,
         decimalShiftZero,
-        owner
+        owner,
+        limitsContract.address
       ).should.be.fulfilled
     })
     it('setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
@@ -470,6 +479,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      limitsContract = await LimitsContract.new()
 
       contract = this.proxyContract
 
@@ -625,6 +635,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       mediatorContract = await otherSideMediatorContract.new()
       erc20Token = await ERC20Mock.new('test', 'TST', 18)
       await erc20Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      limitsContract = await LimitsContract.new()
 
       contract = this.bridge
     })
@@ -805,6 +816,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      limitsContract = await LimitsContract.new()
 
       contract = this.proxyContract
 
@@ -907,6 +919,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
       mediatorContract = await otherSideMediatorContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      limitsContract = await LimitsContract.new()
 
       await initialize(erc677Token.address)
       await erc677Token.transferOwnership(contract.address)
@@ -1013,6 +1026,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
   })
   describe('#claimTokens', () => {
     it('should be able to claim tokens', async function() {
+      limitsContract = await LimitsContract.new()
       contract = this.proxyContract
 
       await initialize(erc677Token.address)
@@ -1045,7 +1059,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
         isRelativeDailyLimitOnBridgeSide ? executionLimitsArray : customLimits,
         maxGasPerTx,
         decimalShiftZero,
-        owner
+        owner,
+        limitsContract.address
       ).should.be.fulfilled
     }
     if (isRelativeDailyLimitOnBridgeSide) {
@@ -1056,6 +1071,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           await bridgeContract.setMaxGasPerTx(maxGasPerTx)
           mediatorContract = await otherSideMediatorContract.new()
           erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+          limitsContract = await LimitsContract.new()
         })
         it('should be calculated correctly - 1', async function() {
           await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])
@@ -1121,6 +1137,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(
           await bridgeContract.setMaxGasPerTx(maxGasPerTx)
           mediatorContract = await otherSideMediatorContract.new()
           erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+          limitsContract = await LimitsContract.new()
         })
         it('should be calculated correctly - 1', async function() {
           await initializeWithCustomLimits([targetLimit, threshold, maxPerTx, minPerTx])

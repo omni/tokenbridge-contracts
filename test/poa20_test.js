@@ -387,6 +387,32 @@ async function testERC677BridgeToken(accounts, rewardable) {
     }
   })
 
+  describe('#increaseAllowance', async () => {
+    it('can increase allowance', async () => {
+      const twoEther = ether('2')
+      const user2 = accounts[2]
+
+      await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
+      await token.approve(user2, oneEther, { from: user }).should.be.fulfilled
+      await token.increaseAllowance(user2, oneEther, { from: user }).should.be.fulfilled
+
+      expect(await token.allowance(user, user2)).to.be.bignumber.equal(twoEther)
+    })
+  })
+
+  describe('#decreaseAllowance', async () => {
+    it('can decrease allowance', async () => {
+      const twoEther = ether('2')
+      const user2 = accounts[2]
+
+      await token.mint(user, twoEther, { from: owner }).should.be.fulfilled
+      await token.approve(user2, twoEther, { from: user }).should.be.fulfilled
+      await token.decreaseAllowance(user2, oneEther, { from: user }).should.be.fulfilled
+
+      expect(await token.allowance(user, user2)).to.be.bignumber.equal(oneEther)
+    })
+  })
+
   describe('#burn', async () => {
     it('can burn', async () => {
       await token.burn(100, { from: owner }).should.be.rejectedWith(ERROR_MSG)

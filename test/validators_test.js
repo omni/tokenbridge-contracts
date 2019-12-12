@@ -6,7 +6,7 @@ const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS, BN } = require('./setup')
 const { expectEventInLogs, createAccounts } = require('./helpers/helpers')
 
 const MAX_GAS = 8000000
-const MAX_VALIDATORS = 287
+const MAX_VALIDATORS = 50
 const ZERO = new BN(0)
 
 contract('BridgeValidators', async accounts => {

@@ -3,8 +3,6 @@ pragma solidity 0.4.24;
 import "./BaseBridgeValidators.sol";
 
 contract RewardableValidators is BaseBridgeValidators {
-    uint256 internal constant MAX_VALIDATORS = 140;
-
     function initialize(
         uint256 _requiredSignatures,
         address[] _initialValidators,
@@ -67,10 +65,5 @@ contract RewardableValidators is BaseBridgeValidators {
 
     function setValidatorRewardAddress(address _validator, address _reward) internal {
         addressStorage[keccak256(abi.encodePacked("validatorsRewards", _validator))] = _reward;
-    }
-
-    function setValidatorCount(uint256 _validatorCount) internal {
-        require(_validatorCount <= MAX_VALIDATORS);
-        super.setValidatorCount(_validatorCount);
     }
 }

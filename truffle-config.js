@@ -47,13 +47,15 @@ module.exports = {
   networks: {
     development: {
       provider,
-      network_id: '*'
+      network_id: '*',
+      gas: 10000000
     },
     ganache: {
       host: '127.0.0.1',
       port: 8545,
       network_id: '*', // eslint-disable-line camelcase
-      gasPrice: 100000000000
+      gasPrice: 100000000000,
+      gas: 10000000
     }
   },
   compilers: {

@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "./BaseBridgeValidators.sol";
 
 contract RewardableValidators is BaseBridgeValidators {
-    uint256 internal constant MAX_VALIDATORS = 156;
+    uint256 internal constant MAX_VALIDATORS = 140;
 
     function initialize(
         uint256 _requiredSignatures,

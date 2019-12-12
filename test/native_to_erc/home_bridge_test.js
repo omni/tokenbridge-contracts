@@ -22,7 +22,7 @@ const foreignDailyLimit = oneEther
 const foreignMaxPerTx = halfEther
 const ZERO = toBN(0)
 const MAX_GAS = 8000000
-const MAX_VALIDATORS = 156
+const MAX_VALIDATORS = 140
 const decimalShiftZero = 0
 
 contract('HomeBridge', async accounts => {

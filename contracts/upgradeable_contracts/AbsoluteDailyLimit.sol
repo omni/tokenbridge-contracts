@@ -81,12 +81,12 @@ contract AbsoluteDailyLimit is EternalStorage {
         return uintStorage[EXECUTION_MIN_PER_TX];
     }
 
-    function withinLimit(uint256 _amount, uint256 _tokenBalance) public view returns (bool) {
+    function withinLimit(uint256 _amount, uint256 _tokenBalance) external view returns (bool) {
         uint256 nextLimit = totalSpentPerDay(getCurrentDay()).add(_amount);
         return dailyLimit(_tokenBalance) >= nextLimit && _amount <= maxPerTx() && _amount >= minPerTx();
     }
 
-    function withinExecutionLimit(uint256 _amount, uint256 _tokenBalance) public view returns (bool) {
+    function withinExecutionLimit(uint256 _amount, uint256 _tokenBalance) external view returns (bool) {
         uint256 nextLimit = totalExecutedPerDay(getCurrentDay()).add(_amount);
         return executionDailyLimit(_tokenBalance) >= nextLimit && _amount <= executionMaxPerTx();
     }
@@ -138,5 +138,5 @@ contract AbsoluteDailyLimit is EternalStorage {
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 
-    function updateTodayLimit(uint256) public {}
+    function updateTodayLimit(uint256) external {}
 }

@@ -154,7 +154,7 @@ contract BasicTokenBridge is EternalStorage, Ownable {
         require(limitsContract().delegatecall(abi.encodeWithSelector(_method, _value)));
     }
 
-    function _getTokenBalance() internal view returns (uint256) {}
+    function _getTokenBalance() internal view returns (uint256);
 
     function _getUint(bytes4 _method) internal view returns (uint256) {
         return _getUint(abi.encodeWithSelector(_method));

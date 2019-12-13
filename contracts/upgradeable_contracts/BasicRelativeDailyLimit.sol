@@ -54,7 +54,7 @@ contract BasicRelativeDailyLimit is AbsoluteDailyLimit {
         emit ThresholdChanged(_threshold);
     }
 
-    function updateTodayLimit(uint256 _balance) public {
+    function updateTodayLimit(uint256 _balance) external {
         if (_todayLimit() == 0) {
             uint256 limit = _calculateLimit(_balance);
             _setTodayLimit(limit);

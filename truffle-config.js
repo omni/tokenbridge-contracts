@@ -75,7 +75,8 @@ if (process.env.SOLIDITY_COVERAGE === 'true') {
         balance: '1000000000000000000000000'
       }
     ],
-    port: 8545
+    port: 8545,
+    gasLimit: 10000000
   })
   provider.addProvider(ganacheSubprovider)
   provider.start(err => {
@@ -91,13 +92,15 @@ module.exports = {
   networks: {
     development: {
       provider,
-      network_id: '*'
+      network_id: '*',
+      gas: 10000000
     },
     ganache: {
       host: '127.0.0.1',
       port: 8545,
       network_id: '*', // eslint-disable-line camelcase
-      gasPrice: 100000000000
+      gasPrice: 100000000000,
+      gas: 10000000
     }
   },
   compilers: {

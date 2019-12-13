@@ -10,7 +10,7 @@ const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.s
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, ether, expectEventInLogs } = require('../helpers/helpers')
+const { createMessage, sign, ether, expectEventInLogs, createAccounts } = require('../helpers/helpers')
 
 const minPerTx = ether('0.01')
 const requireBlockConfirmations = 8
@@ -21,6 +21,8 @@ const halfEther = ether('0.5')
 const foreignDailyLimit = oneEther
 const foreignMaxPerTx = halfEther
 const ZERO = toBN(0)
+const MAX_GAS = 8000000
+const MAX_VALIDATORS = 50
 const decimalShiftZero = 0
 
 contract('HomeBridge', async accounts => {
@@ -1749,6 +1751,52 @@ contract('HomeBridge', async accounts => {
       updatedBalanceRewardAddress4.should.be.bignumber.equal(initialBalanceRewardAddress4.add(feePerValidator))
       updatedBalanceRewardAddress5.should.be.bignumber.equal(initialBalanceRewardAddress5.add(feePerValidator))
     })
+    it('should distribute fee to max allowed number of validators', async () => {
+      // Given
+      const owner = accounts[0]
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+      validators[0] = accounts[2]
+      const rewards = createAccounts(web3, MAX_VALIDATORS)
+      const requiredSignatures = 1
+
+      const value = halfEther
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = ether(fee.toString())
+      const notUsedFee = ZERO
+
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridge = await HomeBridge.new()
+      const feeManager = await FeeManagerNativeToErc.new()
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      await homeBridge.rewardableInitialize(
+        rewardableValidators.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        feeManager.address,
+        [notUsedFee, feeInWei],
+        decimalShiftZero
+      ).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
+
+      const recipient = '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955'
+
+      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+
+      // When
+      const { receipt } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {
+        from: validators[0]
+      }).should.be.fulfilled
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
+    })
   })
 
   describe('#feeManager_BothDirections_fallback', () => {
@@ -2084,6 +2132,56 @@ contract('HomeBridge', async accounts => {
       updatedBalanceRewardAddress4.should.be.bignumber.equal(initialBalanceRewardAddress4.add(feePerValidator))
       updatedBalanceRewardAddress5.should.be.bignumber.equal(initialBalanceRewardAddress5.add(feePerValidator))
     })
+    it('should distribute fee to max allowed number of validators', async () => {
+      // Initialize
+      const user = accounts[0]
+      const owner = accounts[9]
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+      validators[0] = accounts[2]
+      const rewards = createAccounts(web3, MAX_VALIDATORS)
+      const requiredSignatures = 1
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridge = await HomeBridge.new()
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      const feeManager = await FeeManagerNativeToErcBothDirections.new()
+
+      // Given
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = ether(fee.toString())
+      const initialValue = halfEther
+      const valueCalc = 0.5 * (1 - fee)
+      const value = ether(valueCalc.toString())
+
+      await homeBridge.rewardableInitialize(
+        rewardableValidators.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        feeManager.address,
+        [feeInWei, feeInWei],
+        decimalShiftZero
+      ).should.be.fulfilled
+
+      await homeBridge.sendTransaction({
+        from: user,
+        value: initialValue
+      }).should.be.fulfilled
+
+      // When
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(user, value, transactionHash, homeBridge.address)
+      const signature = await sign(validators[0], message)
+
+      const { receipt } = await homeBridge.submitSignature(signature, message, {
+        from: validators[0]
+      }).should.be.fulfilled
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
+    })
   })
 
   describe('#feeManager_BothDirections_ExecuteAffirmation', async () => {
@@ -2350,6 +2448,50 @@ contract('HomeBridge', async accounts => {
       updatedBalanceRewardAddress3.should.be.bignumber.equal(initialBalanceRewardAddress3.add(feePerValidator))
       updatedBalanceRewardAddress4.should.be.bignumber.equal(initialBalanceRewardAddress4.add(feePerValidator))
       updatedBalanceRewardAddress5.should.be.bignumber.equal(initialBalanceRewardAddress5.add(feePerValidator))
+    })
+    it('should distribute fee to max allowed number of validators', async () => {
+      // Given
+      const owner = accounts[0]
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+      validators[0] = accounts[2]
+      const rewards = createAccounts(web3, MAX_VALIDATORS)
+      const requiredSignatures = 1
+
+      const value = halfEther
+      // 0.1% fee
+      const fee = 0.001
+      const feeInWei = ether(fee.toString())
+
+      const rewardableValidators = await RewardableValidators.new()
+      const homeBridge = await HomeBridge.new()
+      const feeManager = await FeeManagerNativeToErcBothDirections.new()
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      await homeBridge.rewardableInitialize(
+        rewardableValidators.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        feeManager.address,
+        [feeInWei, feeInWei],
+        decimalShiftZero
+      ).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
+
+      const recipient = '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955'
+
+      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+
+      const { receipt } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {
+        from: validators[0]
+      }).should.be.fulfilled
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
   })
   describe('#decimalShift', async () => {

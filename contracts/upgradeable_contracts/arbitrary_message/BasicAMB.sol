@@ -11,7 +11,7 @@ contract BasicAMB is BasicBridge {
         uint256 _gasPrice,
         uint256 _requiredBlockConfirmations,
         address _owner
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(_validatorContract != address(0) && AddressUtils.isContract(_validatorContract));
         require(_gasPrice > 0);

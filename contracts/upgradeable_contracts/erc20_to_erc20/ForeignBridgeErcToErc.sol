@@ -13,7 +13,7 @@ contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, ERC20Bridge {
         uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
         uint256 _decimalShift
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         _initialize(
             _validatorContract,
             _erc20token,

@@ -21,7 +21,7 @@ contract ForeignBridgeNativeToErc is
         address _owner,
         uint256 _decimalShift,
         address _bridgeOnOtherSide
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         _initialize(
             _validatorContract,
             _erc677token,
@@ -49,7 +49,7 @@ contract ForeignBridgeNativeToErc is
         uint256 _homeFee,
         uint256 _decimalShift,
         address _bridgeOnOtherSide
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         _initialize(
             _validatorContract,
             _erc677token,

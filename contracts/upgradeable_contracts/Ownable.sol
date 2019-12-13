@@ -23,6 +23,19 @@ contract Ownable is EternalStorage {
         _;
     }
 
+    /**
+    * @dev Throws if called by any account other than contract itself or owner.
+    */
+    modifier onlyRelevantSender() {
+        require(
+            msg.sender == address(this) || // covers calls through upgradeAndCall proxy method
+                owner() == address(0) || //   covers usage without calling through storage proxy
+                msg.sender == owner() //      covers usage through regular proxy calls
+        );
+        /* solcov ignore next */
+        _;
+    }
+
     bytes32 internal constant OWNER = 0x02016836a56b71f0d02689e69e326f4f4c1b9057164ef592671cf0d37c8040c0; // keccak256(abi.encodePacked("owner"))
 
     /**

@@ -42,7 +42,7 @@ contract HomeBridgeErcToErc is
         setOwner(_owner);
         setErc677token(_erc677token);
         addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        setLimits(_requestLimitsArray, _executionLimitsArray);
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_homeGasPrice);

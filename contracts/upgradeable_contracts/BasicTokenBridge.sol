@@ -42,8 +42,8 @@ contract BasicTokenBridge is EternalStorage, Ownable {
         addressStorage[LIMITS_CONTRACT] = _limitsContract;
     }
 
-    function setLimits(uint256[] _requestLimitsArray, uint256[] _executionLimitsArray) public onlyOwner {
-        require(limitsContract().delegatecall(abi.encodeWithSelector(SET_LIMITS, _requestLimitsArray, _executionLimitsArray)));
+    function setLimits(uint256[] _requestLimitsArray, uint256[] _executionLimitsArray) external onlyOwner {
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
@@ -136,6 +136,10 @@ contract BasicTokenBridge is EternalStorage, Ownable {
 
     function getCurrentDay() public view returns (uint256) {
         return _getUint(GET_CURRENT_DAY);
+    }
+
+    function _setLimits(uint256[] _requestLimitsArray, uint256[] _executionLimitsArray) internal {
+        require(limitsContract().delegatecall(abi.encodeWithSelector(SET_LIMITS, _requestLimitsArray, _executionLimitsArray)));
     }
 
     function _increaseTotalSpentPerDay(uint256 _amount) internal {

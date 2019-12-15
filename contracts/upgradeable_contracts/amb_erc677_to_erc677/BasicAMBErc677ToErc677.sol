@@ -55,7 +55,7 @@ contract BasicAMBErc677ToErc677 is
         setOwner(_owner);
         setNonce(keccak256(abi.encodePacked(address(this))));
         addressStorage[LIMITS_CONTRACT] = _limitsContract;
-        setLimits(_requestLimitsArray, _executionLimitsArray);
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
 
         setInitialize();
         return isInitialized();

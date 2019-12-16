@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../upgradeability/EternalStorage.sol";
+import "../interfaces/IUpgradeabilityOwnerStorage.sol";
 
 /**
  * @title Ownable
@@ -27,10 +28,11 @@ contract Ownable is EternalStorage {
     * @dev Throws if called by any account other than contract itself or owner.
     */
     modifier onlyRelevantSender() {
+        // proxy owner if used through proxy, address(0) otherwise
         require(
-            msg.sender == address(this) || // covers calls through upgradeAndCall proxy method
-                owner() == address(0) || //   covers usage without calling through storage proxy
-                msg.sender == owner() //      covers usage through regular proxy calls
+            !address(this).call(abi.encodeWithSignature("upgradeabilityOwner()")) || // covers usage without calling through storage proxy
+                msg.sender == IUpgradeabilityOwnerStorage(this).upgradeabilityOwner() || // covers usage through regular proxy calls
+                msg.sender == address(this) // covers calls through upgradeAndCall proxy method
         );
         /* solcov ignore next */
         _;

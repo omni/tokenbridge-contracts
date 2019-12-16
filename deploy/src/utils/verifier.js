@@ -6,6 +6,8 @@ const promiseRetry = require('promise-retry')
 
 const flat = async contractPath => flattener([contractPath], process.cwd())
 
+const sendRequest = (url, queries) => axios.post(url, querystring.stringify(queries))
+
 const sendVerifyRequestEtherscan = async (contractPath, options) => {
   const contract = await flat(contractPath)
   const postQueries = {
@@ -23,11 +25,7 @@ const sendVerifyRequestEtherscan = async (contractPath, options) => {
     evmversion: options.evmVersion
   }
 
-  try {
-    return axios.post(options.apiUrl, querystring.stringify(postQueries))
-  } catch (e) {
-    throw new Error(`Failed to connect to Etherscan API at url ${options.apiUrl}`)
-  }
+  return sendRequest(options.apiUrl, postQueries)
 }
 
 const sendVerifyRequestBlockscout = async (contractPath, options) => {
@@ -45,11 +43,7 @@ const sendVerifyRequestBlockscout = async (contractPath, options) => {
     evmVersion: options.evmVersion
   }
 
-  try {
-    return axios.post(options.apiUrl, querystring.stringify(postQueries))
-  } catch (e) {
-    throw new Error(`Failed to connect to Blockscout API at url ${options.apiUrl}`)
-  }
+  return sendRequest(options.apiUrl, postQueries)
 }
 
 const getExplorerType = apiUrl => {

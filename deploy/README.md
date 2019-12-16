@@ -167,11 +167,11 @@ DPOS_STAKING_ADDRESS=0x
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
 BLOCK_REWARD_ADDRESS=0x
 
-# The api url of an explorer to verify all the deployed contracts in Home network.
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
 #HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
 #HOME_EXPLORER_API_KEY=
-# The api url of an explorer to verify all the deployed contracts in Foreign network.
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
 #FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
 #FOREIGN_EXPLORER_API_KEY=
@@ -303,11 +303,11 @@ DPOS_STAKING_ADDRESS=0x
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
 BLOCK_REWARD_ADDRESS=0x
 
-# The api url of an explorer to verify all the deployed contracts in Home network.
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
 #HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
 #HOME_EXPLORER_API_KEY=
-# The api url of an explorer to verify all the deployed contracts in Foreign network.
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
 #FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
 #FOREIGN_EXPLORER_API_KEY=
@@ -447,11 +447,11 @@ HOME_TRANSACTIONS_FEE=0.001
 # e.g. 0.1% fee
 FOREIGN_TRANSACTIONS_FEE=0.001
 
-# The api url of an explorer to verify all the deployed contracts in Home network.
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
 #HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
 #HOME_EXPLORER_API_KEY=
-# The api url of an explorer to verify all the deployed contracts in Foreign network.
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
 #FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
 #FOREIGN_EXPLORER_API_KEY=
@@ -536,11 +536,11 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # correctly to the Foreign network.
 VALIDATORS="0x 0x 0x"
 
-# The api url of an explorer to verify all the deployed contracts in Home network.
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
 #HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
 #HOME_EXPLORER_API_KEY=
-# The api url of an explorer to verify all the deployed contracts in Foreign network.
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
 #FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
 #FOREIGN_EXPLORER_API_KEY=
@@ -653,11 +653,11 @@ HOME_MEDIATOR_REQUEST_GAS_LIMIT=2000000
 # in the Home network.
 FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT=2000000
 
-# The api url of an explorer to verify all the deployed contracts in Home network.
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
 #HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
 #HOME_EXPLORER_API_KEY=
-# The api url of an explorer to verify all the deployed contracts in Foreign network.
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
 #FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
 # The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
 #FOREIGN_EXPLORER_API_KEY=

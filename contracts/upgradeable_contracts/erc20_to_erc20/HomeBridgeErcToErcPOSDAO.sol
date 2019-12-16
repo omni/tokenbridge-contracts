@@ -18,8 +18,8 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         address _owner,
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        uint256 _decimalShift,
         address _blockReward,
+        uint256 _decimalShift,
         address _limitsContract
     ) public returns (bool) {
         _setBlockRewardContract(_feeManager, _blockReward);

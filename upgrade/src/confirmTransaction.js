@@ -33,7 +33,7 @@ const confirmTransaction = async ({ contract, fromBlock = 0, destination, data, 
 
   const gas = await contract.methods.confirmTransaction(transactionId).estimateGas({ from: address })
   const receipt = await contract.methods.confirmTransaction(transactionId).send({ from: address, gas, gasPrice })
-  console.log(receipt)
+  console.log(`Confirmation status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
 }
 
 module.exports = confirmTransaction

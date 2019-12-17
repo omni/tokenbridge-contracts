@@ -37,7 +37,7 @@ const migrateToMCD = async () => {
       const receipt = await multiSigWallet.methods
         .submitTransaction(FOREING_BRIDGE_ADDRESS, 0, data)
         .send({ from: address, gas, gasPrice: FOREIGN_GAS_PRICE })
-      console.log(receipt)
+      console.log(`Submission status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
     } else {
       await confirmTransaction({
         fromBlock: FOREIGN_START_BLOCK,

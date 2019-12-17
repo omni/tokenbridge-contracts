@@ -56,7 +56,7 @@ const upgradeValidatorsOnForeign = async () => {
       const receipt = await multiSigWallet.methods
         .submitTransaction(validatorsAddress, 0, data)
         .send({ from: address, gas, gasPrice: FOREIGN_GAS_PRICE })
-      console.log(receipt)
+      console.log(`Submission status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
     } else {
       await confirmTransaction({
         fromBlock: FOREIGN_START_BLOCK,

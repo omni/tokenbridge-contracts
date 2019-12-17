@@ -35,7 +35,8 @@ const upgradeBridgeOnForeign = async () => {
     await validatorState(web3, address)
 
     const proxy = new web3.eth.Contract(proxyAbi, FOREING_BRIDGE_ADDRESS)
-    const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
+    //const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
+    const ownerAddress = '0x6829Df9a24D46f8C2fa22b9c59f9cf30FF49206a'
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
 
     const bridge = new web3.eth.Contract(migrationMethodAbi, FOREING_BRIDGE_ADDRESS)
@@ -49,7 +50,7 @@ const upgradeBridgeOnForeign = async () => {
       const receipt = await multiSigWallet.methods
         .submitTransaction(FOREING_BRIDGE_ADDRESS, 0, data)
         .send({ from: address, gas, gasPrice: FOREIGN_GAS_PRICE })
-      console.log(receipt)
+      console.log(`Submission status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
     } else {
       await confirmTransaction({
         fromBlock: FOREIGN_START_BLOCK,

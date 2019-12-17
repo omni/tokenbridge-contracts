@@ -35,7 +35,7 @@ const upgradeBridgeOnHome = async () => {
       const receipt = await multiSigWallet.methods
         .submitTransaction(HOME_BRIDGE_ADDRESS, 0, data)
         .send({ from: address, gas, gasPrice: HOME_GAS_PRICE })
-      console.log(receipt)
+      console.log(`Submission status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
     } else {
       await confirmTransaction({
         fromBlock: HOME_START_BLOCK,

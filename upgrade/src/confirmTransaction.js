@@ -1,3 +1,5 @@
+const { toBN } = require('web3').utils
+
 const confirmTransaction = async ({ contract, fromBlock = 0, destination, data, address, gasPrice }) => {
   const submissions = await contract.getPastEvents('Submission', { fromBlock, toBlock: 'latest' })
 
@@ -30,10 +32,18 @@ const confirmTransaction = async ({ contract, fromBlock = 0, destination, data, 
     throw new Error('No transaction to confirm.')
   }
   const { transactionId } = filteredSubmission[0].returnValues
+  const estimatedGas = await contract.methods.confirmTransaction(transactionId).estimateGas({ from: address })
+  const gas = addExtraGas(estimatedGas)
 
-  const gas = await contract.methods.confirmTransaction(transactionId).estimateGas({ from: address })
   const receipt = await contract.methods.confirmTransaction(transactionId).send({ from: address, gas, gasPrice })
   console.log(`Confirmation status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
+}
+
+function addExtraGas(gas) {
+  gas = toBN(gas)
+  const extraPercentage = toBN(4)
+
+  return gas.mul(extraPercentage)
 }
 
 module.exports = confirmTransaction

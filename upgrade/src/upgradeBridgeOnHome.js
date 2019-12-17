@@ -1,11 +1,18 @@
 require('dotenv').config()
 const Web3 = require('web3')
-const { newImplementation } = require('./constants')
 const multiSigWalletAbi = require('../abi/multiSigwallet')
 const proxyAbi = require('../../build/contracts/EternalStorageProxy').abi
 const confirmTransaction = require('./confirmTransaction')
 
-const { HOME_PRIVKEY, HOME_RPC_URL, HOME_BRIDGE_ADDRESS, ROLE, HOME_START_BLOCK, HOME_GAS_PRICE } = process.env
+const {
+  HOME_PRIVKEY,
+  HOME_RPC_URL,
+  HOME_BRIDGE_ADDRESS,
+  ROLE,
+  HOME_START_BLOCK,
+  HOME_GAS_PRICE,
+  NEW_IMPLEMENTATION_XDAI_BRIDGE
+} = process.env
 
 const web3 = new Web3(new Web3.providers.HttpProvider(HOME_RPC_URL))
 const { address } = web3.eth.accounts.wallet.add(HOME_PRIVKEY)
@@ -16,7 +23,7 @@ const upgradeBridgeOnHome = async () => {
   try {
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
-    const data = proxy.methods.upgradeTo('3', newImplementation.xDaiBridge).encodeABI()
+    const data = proxy.methods.upgradeTo('3', NEW_IMPLEMENTATION_XDAI_BRIDGE).encodeABI()
 
     if (ROLE === 'leader') {
       const gas = await multiSigWallet.methods

@@ -1,6 +1,5 @@
 require('dotenv').config()
 const Web3 = require('web3')
-const { newImplementation } = require('./constants')
 const multiSigWalletAbi = require('../abi/multiSigwallet')
 const proxyAbi = require('../../build/contracts/EternalStorageProxy').abi
 const confirmTransaction = require('./confirmTransaction')
@@ -11,7 +10,8 @@ const {
   FOREING_BRIDGE_ADDRESS,
   ROLE,
   FOREIGN_START_BLOCK,
-  FOREIGN_GAS_PRICE
+  FOREIGN_GAS_PRICE,
+  NEW_IMPLEMENTATION_ETH_BRIDGE
 } = process.env
 
 const web3 = new Web3(new Web3.providers.HttpProvider(FOREIGN_RPC_URL))
@@ -23,7 +23,7 @@ const upgradeBridgeOnForeign = async () => {
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
     // 0x46016a67 = upgradeToV250()
-    const data = proxy.methods.upgradeToAndCall('3', newImplementation.ethBridge, '0x46016a67').encodeABI()
+    const data = proxy.methods.upgradeToAndCall('3', NEW_IMPLEMENTATION_ETH_BRIDGE, '0x46016a67').encodeABI()
 
     if (ROLE === 'leader') {
       const gas = await multiSigWallet.methods.submitTransaction(FOREING_BRIDGE_ADDRESS, 0, data).estimateGas({

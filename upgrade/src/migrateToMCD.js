@@ -20,13 +20,13 @@ const { address } = web3.eth.accounts.wallet.add(FOREIGN_PRIVKEY)
 
 const migrateToMCD = async () => {
   try {
-    await validatorState(web3, address)
-
     const proxy = new web3.eth.Contract(proxyAbi, FOREING_BRIDGE_ADDRESS)
     const bridge = new web3.eth.Contract(foreignBridgeAbi, FOREING_BRIDGE_ADDRESS)
 
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
+
+    await validatorState(web3, address, multiSigWallet)
 
     const data = bridge.methods.migrateToMCD().encodeABI()
 

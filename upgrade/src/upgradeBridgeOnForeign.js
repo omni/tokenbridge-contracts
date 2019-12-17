@@ -32,12 +32,11 @@ const { address } = web3.eth.accounts.wallet.add(FOREIGN_PRIVKEY)
 
 const upgradeBridgeOnForeign = async () => {
   try {
-    await validatorState(web3, address)
-
     const proxy = new web3.eth.Contract(proxyAbi, FOREING_BRIDGE_ADDRESS)
-    //const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
-    const ownerAddress = '0x6829Df9a24D46f8C2fa22b9c59f9cf30FF49206a'
+    const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
+
+    await validatorState(web3, address, multiSigWallet)
 
     const bridge = new web3.eth.Contract(migrationMethodAbi, FOREING_BRIDGE_ADDRESS)
     const upgradeData = bridge.methods.upgradeToV250().encodeABI()

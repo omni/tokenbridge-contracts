@@ -22,10 +22,11 @@ const proxy = new web3.eth.Contract(proxyAbi, HOME_BRIDGE_ADDRESS)
 
 const upgradeBridgeOnHome = async () => {
   try {
-    await validatorState(web3, address)
-
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
+
+    await validatorState(web3, address, multiSigWallet)
+
     const data = proxy.methods.upgradeTo('3', NEW_IMPLEMENTATION_XDAI_BRIDGE).encodeABI()
 
     if (ROLE === 'leader') {

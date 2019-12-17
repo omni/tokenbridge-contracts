@@ -35,14 +35,14 @@ const bridge = new web3.eth.Contract(foreignBridgeAbi, FOREING_BRIDGE_ADDRESS)
 
 const upgradeValidatorsOnForeign = async () => {
   try {
-    await validatorState(web3, address)
-
     const validatorsAddress = await bridge.methods.validatorContract().call()
 
     const proxy = new web3.eth.Contract(proxyAbi, validatorsAddress)
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
 
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
+
+    await validatorState(web3, address, multiSigWallet)
 
     const validatorContract = new web3.eth.Contract(migrationMethodAbi, validatorsAddress)
     const upgradeData = validatorContract.methods.upgradeToV230().encodeABI()

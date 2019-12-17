@@ -6,6 +6,18 @@ const foreignBridgeAbi = require('../../build/contracts/ForeignBridgeErcToNative
 const confirmTransaction = require('./confirmTransaction')
 const validatorState = require('./validatorState')
 
+const migrationMethodAbi = [
+  {
+    constant: false,
+    inputs: [],
+    name: 'upgradeToV230',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  }
+]
+
 const {
   FOREIGN_PRIVKEY,
   FOREIGN_RPC_URL,
@@ -23,15 +35,19 @@ const bridge = new web3.eth.Contract(foreignBridgeAbi, FOREING_BRIDGE_ADDRESS)
 
 const upgradeValidatorsOnForeign = async () => {
   try {
-    await validatorState(address)
+    await validatorState(web3, address)
 
     const validatorsAddress = await bridge.methods.validatorContract().call()
+
     const proxy = new web3.eth.Contract(proxyAbi, validatorsAddress)
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
 
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
-    // 0xc51afb1d = upgradeToV230()
-    const data = proxy.methods.upgradeToAndCall('2', NEW_IMPLEMENTATION_ETH_VALIDATORS, '0xc51afb1d').encodeABI()
+
+    const validatorContract = new web3.eth.Contract(migrationMethodAbi, validatorsAddress)
+    const upgradeData = validatorContract.methods.upgradeToV230().encodeABI()
+
+    const data = proxy.methods.upgradeToAndCall('2', NEW_IMPLEMENTATION_ETH_VALIDATORS, upgradeData).encodeABI()
 
     if (ROLE === 'leader') {
       const gas = await multiSigWallet.methods

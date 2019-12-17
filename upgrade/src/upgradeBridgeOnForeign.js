@@ -15,18 +15,32 @@ const {
   NEW_IMPLEMENTATION_ETH_BRIDGE
 } = process.env
 
+const migrationMethodAbi = [
+  {
+    constant: false,
+    inputs: [],
+    name: 'upgradeToV250',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  }
+]
+
 const web3 = new Web3(new Web3.providers.HttpProvider(FOREIGN_RPC_URL))
 const { address } = web3.eth.accounts.wallet.add(FOREIGN_PRIVKEY)
 
 const upgradeBridgeOnForeign = async () => {
   try {
-    await validatorState(address)
+    await validatorState(web3, address)
 
     const proxy = new web3.eth.Contract(proxyAbi, FOREING_BRIDGE_ADDRESS)
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
-    // 0x46016a67 = upgradeToV250()
-    const data = proxy.methods.upgradeToAndCall('3', NEW_IMPLEMENTATION_ETH_BRIDGE, '0x46016a67').encodeABI()
+
+    const bridge = new web3.eth.Contract(migrationMethodAbi, FOREING_BRIDGE_ADDRESS)
+    const upgradeData = bridge.methods.upgradeToV250().encodeABI()
+    const data = proxy.methods.upgradeToAndCall('3', NEW_IMPLEMENTATION_ETH_BRIDGE, upgradeData).encodeABI()
 
     if (ROLE === 'leader') {
       const gas = await multiSigWallet.methods.submitTransaction(FOREING_BRIDGE_ADDRESS, 0, data).estimateGas({

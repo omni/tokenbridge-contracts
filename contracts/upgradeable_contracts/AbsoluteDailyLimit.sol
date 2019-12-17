@@ -96,12 +96,12 @@ contract AbsoluteDailyLimit is EternalStorage {
         return now / 1 days;
     }
 
-    function increaseTotalSpentPerDay(uint256 _value) external {
+    function increaseTotalSpentPerDay(uint256 _value) external payable {
         uint256 totalSpent = totalSpentPerDay(getCurrentDay()).add(_value);
         uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", getCurrentDay()))] = totalSpent;
     }
 
-    function increaseTotalExecutedPerDay(uint256 _value) external {
+    function increaseTotalExecutedPerDay(uint256 _value) external payable {
         uint256 totalExecuted = totalExecutedPerDay(getCurrentDay()).add(_value);
         uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", getCurrentDay()))] = totalExecuted;
     }
@@ -138,5 +138,5 @@ contract AbsoluteDailyLimit is EternalStorage {
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 
-    function updateTodayLimit(uint256) external {}
+    function updateTodayLimit(uint256) external payable {}
 }

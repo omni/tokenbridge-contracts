@@ -3,6 +3,7 @@ const Web3 = require('web3')
 const multiSigWalletAbi = require('../abi/multiSigwallet')
 const proxyAbi = require('../../build/contracts/EternalStorageProxy').abi
 const confirmTransaction = require('./confirmTransaction')
+const validatorState = require('./validatorState')
 
 const {
   FOREIGN_PRIVKEY,
@@ -19,6 +20,8 @@ const { address } = web3.eth.accounts.wallet.add(FOREIGN_PRIVKEY)
 
 const upgradeBridgeOnForeign = async () => {
   try {
+    await validatorState(address)
+
     const proxy = new web3.eth.Contract(proxyAbi, FOREING_BRIDGE_ADDRESS)
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)

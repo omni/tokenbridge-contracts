@@ -4,6 +4,7 @@ const multiSigWalletAbi = require('../abi/multiSigwallet')
 const proxyAbi = require('../../build/contracts/EternalStorageProxy').abi
 const foreignBridgeAbi = require('../../build/contracts/ForeignBridgeErcToNative').abi
 const confirmTransaction = require('./confirmTransaction')
+const validatorState = require('./validatorState')
 
 const {
   FOREIGN_PRIVKEY,
@@ -19,6 +20,8 @@ const { address } = web3.eth.accounts.wallet.add(FOREIGN_PRIVKEY)
 
 const migrateToMCD = async () => {
   try {
+    await validatorState(address)
+
     const proxy = new web3.eth.Contract(proxyAbi, FOREING_BRIDGE_ADDRESS)
     const bridge = new web3.eth.Contract(foreignBridgeAbi, FOREING_BRIDGE_ADDRESS)
 

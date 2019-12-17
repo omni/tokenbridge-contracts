@@ -9,6 +9,7 @@ npm run compile
 
 Install dependencies from `upgrade` folder
 ```bash
+cd upgrade
 npm i
 ```
 

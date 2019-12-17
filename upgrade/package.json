@@ -2,7 +2,7 @@
     "name": "upgrade-xdai",
     "version": "1.0.0",
     "main": "index.js",
-    "license": "MIT",
+    "license": "GPLv3",
     "scripts": {
         "upgradeBridgeOnHome": "node src/upgradeBridgeOnHome.js",
         "upgradeValidatorsOnForeign": "node src/upgradeValidatorsOnForeign.js",

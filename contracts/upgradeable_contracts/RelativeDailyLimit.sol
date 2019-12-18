@@ -27,12 +27,12 @@ contract RelativeDailyLimit is BasicRelativeDailyLimit {
     }
 
     function setMinPerTx(uint256 _minPerTx) external {
-        require(_minPerTx < maxPerTx());
+        require(_minPerTx > 0 && _minPerTx < maxPerTx());
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external {
-        require(_maxPerTx > minPerTx() || _maxPerTx == 0);
+        require(_maxPerTx == 0 || _maxPerTx > minPerTx());
         uintStorage[MAX_PER_TX] = _maxPerTx;
     }
 }

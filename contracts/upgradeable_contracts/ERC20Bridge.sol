@@ -20,6 +20,7 @@ contract ERC20Bridge is BasicForeignBridge {
         require(_receiver != address(0));
         require(_receiver != address(this));
         require(_amount > 0);
+        _updateTodayLimit();
         require(withinLimit(_amount));
         _increaseTotalSpentPerDay(_amount);
 

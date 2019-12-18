@@ -14,7 +14,15 @@ const RelativeDailyLimit = artifacts.require('RelativeDailyLimit.sol')
 const { expect } = require('chai')
 const { expectEvent } = require('@openzeppelin/test-helpers')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, getEvents, ether, expectEventInLogs, calculateDailyLimit } = require('../helpers/helpers')
+const {
+  createMessage,
+  sign,
+  getEvents,
+  ether,
+  expectEventInLogs,
+  calculateDailyLimit,
+  createAccounts
+} = require('../helpers/helpers')
 
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -27,6 +35,8 @@ const foreignDailyLimit = oneEther
 const foreignMaxPerTx = halfEther
 const foreignMinPerTx = minPerTx
 const ZERO = toBN(0)
+const MAX_GAS = 8000000
+const MAX_VALIDATORS = 50
 const decimalShiftZero = 0
 const markedAsProcessed = toBN(2)
   .pow(toBN(255))
@@ -1853,6 +1863,35 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       balanceRewardAddress4.should.be.bignumber.equal(feePerValidator)
       balanceRewardAddress5.should.be.bignumber.equal(feePerValidator)
     })
+    it('should distribute fee to max allowed number of validator', async () => {
+      // Given
+      const recipient = accounts[9]
+      const owner = accounts[0]
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+      validators[0] = accounts[2]
+      const rewards = createAccounts(web3, MAX_VALIDATORS)
+      const requiredSignatures = 1
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner).should.be.fulfilled
+      await blockRewardContract.setValidatorsRewards(rewards)
+      await blockRewardContract.setToken(token.address)
+      await token.setBlockRewardContract(blockRewardContract.address, { from: owner })
+      await token.transferOwnership(homeBridge.address, { from: owner })
+
+      const valueCalc = 0.5 * (1 - fee)
+      const value = ether(valueCalc.toString())
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipient, value, transactionHash, homeBridge.address)
+      const signature = await sign(validators[0], message)
+
+      const blockRewardBalanceBefore = await token.balanceOf(blockRewardContract.address)
+      blockRewardBalanceBefore.should.be.bignumber.equal('0')
+
+      // When
+      const { receipt } = await homeBridge.submitSignature(signature, message, {
+        from: validators[0]
+      }).should.be.fulfilled
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
+    })
   })
   describe('#rewardable_executeAffirmation', () => {
     let fee
@@ -2064,6 +2103,32 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       balanceRewardAddress3.should.be.bignumber.equal(feePerValidator)
       balanceRewardAddress4.should.be.bignumber.equal(feePerValidator)
       balanceRewardAddress5.should.be.bignumber.equal(feePerValidator)
+    })
+
+    it('should distribute fee to max allowed number of validators', async () => {
+      // Given
+      const recipient = accounts[0]
+      const owner = accounts[0]
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+      validators[0] = accounts[2]
+      const rewards = createAccounts(web3, MAX_VALIDATORS)
+      const requiredSignatures = 1
+      await rewardableValidators.initialize(requiredSignatures, validators, rewards, owner, {
+        from: owner
+      }).should.be.fulfilled
+      await blockRewardContract.setValidatorsRewards(rewards)
+      await blockRewardContract.setToken(token.address)
+      await token.setBlockRewardContract(blockRewardContract.address)
+      await token.transferOwnership(homeBridge.address)
+
+      const initialValue = halfEther
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+
+      // When
+      const { receipt } = await homeBridge.executeAffirmation(recipient, initialValue, transactionHash, {
+        from: validators[0]
+      }).should.be.fulfilled
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
   })
   describe('#decimals Shift', async () => {

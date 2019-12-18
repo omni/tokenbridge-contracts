@@ -8,6 +8,8 @@ const ScdMcdMigrationMock = artifacts.require('ScdMcdMigrationMock.sol')
 const DaiAdapterMock = artifacts.require('DaiAdapterMock.sol')
 const AbsoluteDailyLimit = artifacts.require('AbsoluteDailyLimit.sol')
 const RelativeExecutionDailyLimit = artifacts.require('RelativeExecutionDailyLimit.sol')
+const SaiTopMock = artifacts.require('SaiTopMock.sol')
+const ForeignBridgeErcToNativeMock = artifacts.require('ForeignBridgeErcToNativeMock.sol')
 
 const { expect } = require('chai')
 const { expectEvent } = require('@openzeppelin/test-helpers')
@@ -27,6 +29,7 @@ const halfEther = ether('0.5')
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
 const oneEther = ether('1')
+const twoEthers = ether('2')
 const homeDailyLimit = oneEther
 const homeMaxPerTx = halfEther
 const homeMinPerTx = quarterEther
@@ -50,6 +53,11 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   let otherSideBridge
   let absoluteLimitsContract
   let relativeLimitsContract
+  let sai
+  let dai
+  let migrationContract
+  let saiTop
+  const user = accounts[7]
 
   before(async () => {
     validatorContract = await BridgeValidators.new()
@@ -59,6 +67,20 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     otherSideBridge = await ForeignBridge.new()
     absoluteLimitsContract = await AbsoluteDailyLimit.new()
     relativeLimitsContract = await RelativeExecutionDailyLimit.new()
+
+    // Used account 11 to deploy contracts. The contract addresses will be hardcoded in ForeignBridgeErcToNativeMock
+    const deployAccount = accounts[10]
+    sai = await ERC20Mock.new('sai', 'SAI', 18, { from: deployAccount })
+    saiTop = await SaiTopMock.new({ from: deployAccount })
+    dai = await ERC20Mock.new('dai', 'DAI', 18)
+    const daiAdapterMock = await DaiAdapterMock.new(dai.address)
+    migrationContract = await ScdMcdMigrationMock.new(sai.address, daiAdapterMock.address, { from: deployAccount })
+    await sai.transferOwnership(accounts[0], { from: deployAccount })
+
+    await dai.mint(user, ether('100000'))
+
+    // migration contract can mint dai
+    await dai.transferOwnership(migrationContract.address)
   })
   describe('#initialize', async () => {
     const shouldInitialize = isRelativeDailyLimit =>
@@ -242,7 +264,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     const value = ether('0.25')
     let foreignBridge
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
@@ -261,7 +283,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     const shouldAllowToExecuteSignatures = isRelativeDailyLimit =>
       async function() {
-        foreignBridge = await ForeignBridge.new()
+        foreignBridge = await ForeignBridgeErcToNativeMock.new()
         token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
         await foreignBridge.initialize(
           validatorContract.address,
@@ -357,7 +379,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     const shouldNotAllowWithdrawOverHomeMaxTxLimit = isRelativeDailyLimit =>
       async function() {
-        foreignBridge = await ForeignBridge.new()
+        foreignBridge = await ForeignBridgeErcToNativeMock.new()
         token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
         await foreignBridge.initialize(
           validatorContract.address,
@@ -393,7 +415,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     const shouldNotAllowWithdrawOverDailyHomeLimit = isRelativeDailyLimit =>
       async function() {
-        foreignBridge = await ForeignBridge.new()
+        foreignBridge = await ForeignBridgeErcToNativeMock.new()
         token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
         await foreignBridge.initialize(
           validatorContract.address,
@@ -407,10 +429,11 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           otherSideBridge.address,
           isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
         )
-        await token.mint(foreignBridge.address, value)
 
         const recipientAccount = accounts[3]
         await token.mint(foreignBridge.address, ether('1.25'))
+
+        console.log((await foreignBridge.executionDailyLimit()).toString())
 
         const transactionHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
         const message = createMessage(recipientAccount, halfEther, transactionHash, foreignBridge.address)
@@ -454,7 +477,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
         from: ownerOfValidatorContract
       })
-      foreignBridgeWithMultiSignatures = await ForeignBridge.new()
+      foreignBridgeWithMultiSignatures = await ForeignBridgeErcToNativeMock.new()
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
         token.address,
@@ -521,7 +544,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const value = halfEther
-      const foreignBridgeWithThreeSigs = await ForeignBridge.new()
+      const foreignBridgeWithThreeSigs = await ForeignBridgeErcToNativeMock.new()
 
       await foreignBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
@@ -685,7 +708,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
 
       const owner = accounts[0]
-      const foreignBridgeImpl = await ForeignBridge.new()
+      const foreignBridgeImpl = await ForeignBridgeErcToNativeMock.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
       const foreignBridge = await ForeignBridge.at(storageProxy.address)
@@ -737,7 +760,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
         from: ownerOfValidatorContract
       })
-      const foreignBridgeWithMultiSignatures = await ForeignBridge.new()
+      const foreignBridgeWithMultiSignatures = await ForeignBridgeErcToNativeMock.new()
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
         token.address,
@@ -1013,15 +1036,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   })
   describe('migrateToMCD', () => {
     let foreignBridge
-    let sai
-    let dai
-    let migrationContract
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
-      sai = await ERC20Mock.new('sai', 'SAI', 18)
-      dai = await ERC20Mock.new('dai', 'DAI', 18)
-      const daiAdapterMock = await DaiAdapterMock.new(dai.address)
-      migrationContract = await ScdMcdMigrationMock.new(sai.address, daiAdapterMock.address)
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
 
       await foreignBridge.initialize(
         validatorContract.address,
@@ -1038,9 +1054,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       // Mint the bridge some sai tokens
       await sai.mint(foreignBridge.address, oneEther)
-
-      // migration contract can mint dai
-      await dai.transferOwnership(migrationContract.address)
     })
     it('should be able to swap tokens', async () => {
       // Given
@@ -1050,33 +1063,379 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       // When
 
-      // migration address should be a contract
-      await foreignBridge.migrateToMCD(accounts[3], { from: owner }).should.be.rejectedWith(ERROR_MSG)
-
-      // should be called by owner
-      await foreignBridge
-        .migrateToMCD(migrationContract.address, { from: accounts[5] })
-        .should.be.rejectedWith(ERROR_MSG)
-
-      const { logs } = await foreignBridge.migrateToMCD(migrationContract.address, { from: owner }).should.be.fulfilled
+      const { logs } = await foreignBridge.migrateToMCD({ from: owner }).should.be.fulfilled
 
       // can't migrate token again
-      await foreignBridge.migrateToMCD(migrationContract.address, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.migrateToMCD({ from: owner }).should.be.rejectedWith(ERROR_MSG)
 
       // Then
       expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
       expect(await foreignBridge.erc20token()).to.be.equal(dai.address)
+      expect(await foreignBridge.minHDTokenBalance()).to.be.bignumber.equal(ether('10'))
       expectEventInLogs(logs, 'TokensSwapped', {
         from: sai.address,
         to: dai.address,
         value: oneEther
       })
       const transferEvent = await getEvents(dai, { event: 'Transfer' })
-      expect(transferEvent.length).to.be.equal(1)
-      expect(transferEvent[0].returnValues.from).to.be.equal(ZERO_ADDRESS)
-      expect(transferEvent[0].returnValues.to).to.be.equal(foreignBridge.address)
-      expect(transferEvent[0].returnValues.value).to.be.equal(oneEther.toString())
+
+      // first transfer event was for minting to user in the top Before section
+      expect(transferEvent.length).to.be.equal(2)
+      expect(transferEvent[1].returnValues.from).to.be.equal(ZERO_ADDRESS)
+      expect(transferEvent[1].returnValues.to).to.be.equal(foreignBridge.address)
+      expect(transferEvent[1].returnValues.value).to.be.equal(oneEther.toString())
+    })
+  })
+  describe('support two tokens', () => {
+    let foreignBridge
+    const recipient = accounts[8]
+    beforeEach(async () => {
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+
+      await foreignBridge.initialize(
+        validatorContract.address,
+        dai.address,
+        requireBlockConfirmations,
+        gasPrice,
+        requestLimitsArray,
+        executionLimitsArray,
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address,
+        absoluteLimitsContract.address
+      )
+
+      // Mint sai tokens to a user
+      await sai.mint(user, twoEthers)
+    })
+    describe('isTokenSwapAllowed', () => {
+      it('isTokenSwapAllowed should return true if SCD ES was executed', async () => {
+        // Given
+        expect(await foreignBridge.isTokenSwapAllowed(100)).to.be.equal(true)
+
+        // When
+        await saiTop.setCaged(150)
+
+        // Then
+        expect(await foreignBridge.isTokenSwapAllowed(100)).to.be.equal(true)
+        expect(await foreignBridge.isTokenSwapAllowed(150)).to.be.equal(true)
+        expect(await foreignBridge.isTokenSwapAllowed(200)).to.be.equal(false)
+
+        // reset the caged value
+        await saiTop.setCaged(0)
+      })
+    })
+    describe('isHDTokenBalanceAboveMinBalance', () => {
+      it('isHDTokenBalanceAboveMinBalance should return true if balance above the threshold ', async () => {
+        const threshold = halfEther
+        // Given
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.setMinHDTokenBalance(threshold)
+
+        expect(await foreignBridge.minHDTokenBalance()).to.be.bignumber.equal(threshold)
+
+        expect(await foreignBridge.isHDTokenBalanceAboveMinBalance()).to.be.equal(false)
+
+        // When
+        await sai.mint(foreignBridge.address, oneEther)
+
+        // Then
+        expect(await foreignBridge.isHDTokenBalanceAboveMinBalance()).to.be.equal(true)
+      })
+    })
+    describe('halfDuplexErc20token', () => {
+      it('should be able to get half duplex erc20 token', async () => {
+        expect(await foreignBridge.halfDuplexErc20token()).to.be.equal(sai.address)
+      })
+    })
+    describe('swapTokens', () => {
+      it('should be able to swap tokens calling swapTokens', async () => {
+        expect(await saiTop.caged()).to.be.bignumber.equal(ZERO)
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+        // should have sai balance
+        await foreignBridge.swapTokens().should.be.rejectedWith(ERROR_MSG)
+
+        // mint sai tokens to bridge
+        await sai.mint(foreignBridge.address, oneEther)
+
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+        const { logs } = await foreignBridge.swapTokens()
+
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await foreignBridge.erc20token()).to.be.equal(dai.address)
+        expectEventInLogs(logs, 'TokensSwapped', {
+          from: sai.address,
+          to: dai.address,
+          value: oneEther
+        })
+
+        // mint more sai tokens to bridge
+        await sai.mint(foreignBridge.address, oneEther)
+
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+
+        await foreignBridge.swapTokens().should.be.fulfilled
+
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
+
+        const block = await web3.eth.getBlock('latest')
+        // Trigger Emergency Shutdown
+        await saiTop.setCaged(block.number)
+
+        // mint sai tokens to bridge
+        await sai.mint(foreignBridge.address, oneEther)
+
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
+
+        // should not be able to swap tokens after Emergency Shutdown
+        await foreignBridge.swapTokens().should.be.rejectedWith(ERROR_MSG)
+
+        // reset the caged value
+        await saiTop.setCaged(0)
+      })
+    })
+    describe('relayTokens', () => {
+      const value = ether('0.25')
+      it('should allow to bridge tokens specifying the token address', async () => {
+        // Given
+        const balance = await dai.balanceOf(user)
+        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
+
+        const currentDay = await foreignBridge.getCurrentDay()
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+        await relayTokens(recipient, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+        await dai.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+        // When
+        await relayTokens(ZERO_ADDRESS, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(foreignBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(otherSideBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(recipient, 0, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        const { logs } = await relayTokens(recipient, value, dai.address, { from: user }).should.be.fulfilled
+
+        // Then
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+        expectEventInLogs(logs, 'UserRequestForAffirmation', {
+          recipient,
+          value
+        })
+        expect(await dai.balanceOf(user)).to.be.bignumber.equal(balance.sub(value))
+      })
+      it('should use erc20Token if token address is zero', async () => {
+        // Given
+        const balance = await dai.balanceOf(user)
+        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
+
+        const currentDay = await foreignBridge.getCurrentDay()
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+        await dai.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+        // When
+        const { logs } = await relayTokens(recipient, value, ZERO_ADDRESS, { from: user }).should.be.fulfilled
+
+        // Then
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+        expectEventInLogs(logs, 'UserRequestForAffirmation', {
+          recipient,
+          value
+        })
+        expect(await dai.balanceOf(user)).to.be.bignumber.equal(balance.sub(value))
+      })
+      it('should swap token if half duplex token is used', async () => {
+        // Given
+        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
+
+        const userBalance = await sai.balanceOf(user)
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        const currentDay = await foreignBridge.getCurrentDay()
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+        await sai.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+        // When
+        const { logs } = await relayTokens(recipient, value, sai.address, { from: user }).should.be.fulfilled
+
+        // Then
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+        expectEventInLogs(logs, 'UserRequestForAffirmation', {
+          recipient,
+          value
+        })
+        expectEventInLogs(logs, 'TokensSwapped', {
+          from: sai.address,
+          to: dai.address,
+          value
+        })
+        expect(await sai.balanceOf(user)).to.be.bignumber.equal(userBalance.sub(value))
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+      })
+      it('should fail if token address is unknown', async () => {
+        const otherToken = await ERC20Mock.new('token', 'TOK', 18)
+        await otherToken.mint(user, twoEthers)
+
+        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
+
+        await otherToken.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+        await relayTokens(recipient, value, otherToken.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      })
+      it('should allow specify the sender and a different receiver', async () => {
+        // Given
+        const currentDay = await foreignBridge.getCurrentDay()
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+        const userBalance = await dai.balanceOf(user)
+
+        const relayTokens = foreignBridge.methods['relayTokens(address,address,uint256,address)']
+
+        await relayTokens(user, recipient, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+        await dai.approve(foreignBridge.address, halfEther, { from: user }).should.be.fulfilled
+
+        // When
+        await relayTokens(user, ZERO_ADDRESS, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(user, foreignBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(
+          ERROR_MSG
+        )
+        await relayTokens(user, recipient, 0, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(user, recipient, value, dai.address, { from: recipient }).should.be.rejectedWith(ERROR_MSG)
+        const { logs } = await relayTokens(user, recipient, value, dai.address, { from: user }).should.be.fulfilled
+        const { logs: logsSecondTx } = await relayTokens(user, user, value, dai.address, { from: recipient }).should.be
+          .fulfilled
+
+        // Then
+        expectEventInLogs(logs, 'UserRequestForAffirmation', {
+          recipient,
+          value
+        })
+        expectEventInLogs(logsSecondTx, 'UserRequestForAffirmation', {
+          recipient: user,
+          value
+        })
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+        expect(await dai.balanceOf(user)).to.be.bignumber.equal(userBalance.sub(halfEther))
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      })
+      it('should not be able to transfer more than limit', async () => {
+        // Given
+        const userSupply = ether('2')
+        const bigValue = oneEther
+        const smallValue = ether('0.001')
+        const currentDay = await foreignBridge.getCurrentDay()
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
+
+        await dai.approve(foreignBridge.address, userSupply, { from: user }).should.be.fulfilled
+
+        // When
+        // value < minPerTx
+        await relayTokens(recipient, smallValue, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        // value > maxPerTx
+        await relayTokens(recipient, bigValue, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+        await relayTokens(recipient, halfEther, dai.address, { from: user }).should.be.fulfilled
+        await relayTokens(recipient, halfEther, dai.address, { from: user }).should.be.fulfilled
+        // totalSpentPerDay > dailyLimit
+        await relayTokens(recipient, halfEther, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+        // Then
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
+      })
+    })
+    describe('onExecuteMessage', () => {
+      it('should swapTokens in executeSignatures', async () => {
+        const value = ether('0.25')
+        const recipientAccount = accounts[3]
+        const balanceBefore = await dai.balanceOf(recipientAccount)
+
+        // fund dai tokens
+        await dai.transfer(foreignBridge.address, value, { from: user })
+
+        // mint sai tokens to bridge
+        await sai.mint(foreignBridge.address, halfEther)
+
+        const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+        const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+        const signature = await sign(authorities[0], message)
+        const vrs = signatureToVRS(signature)
+        expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(false)
+
+        const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+
+        expectEventInLogs(logs, 'RelayedMessage', {
+          recipient: recipientAccount,
+          value
+        })
+        expectEventInLogs(logs, 'TokensSwapped', {
+          from: sai.address,
+          to: dai.address,
+          value: halfEther
+        })
+        expect(await dai.balanceOf(recipientAccount)).to.be.bignumber.equal(balanceBefore.add(value))
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(true)
+      })
+    })
+    describe('claimTokens', async () => {
+      it('can send erc20', async () => {
+        const foreignBridgeImpl = await ForeignBridgeErcToNativeMock.new()
+        const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
+        await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
+        const foreignBridge = await ForeignBridgeErcToNativeMock.at(storageProxy.address)
+
+        await foreignBridge.initialize(
+          validatorContract.address,
+          dai.address,
+          requireBlockConfirmations,
+          gasPrice,
+          requestLimitsArray,
+          executionLimitsArray,
+          owner,
+          decimalShiftZero,
+          otherSideBridge.address,
+          absoluteLimitsContract.address
+        )
+
+        expect(await saiTop.caged()).to.be.bignumber.equal(ZERO)
+
+        // Mint sai tokens to the bridge
+        await sai.mint(foreignBridge.address, halfEther)
+
+        await foreignBridge.claimTokens(sai.address, accounts[3], { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+        const block = await web3.eth.getBlock('latest')
+        // Trigger Emergency Shutdown
+        await saiTop.setCaged(block.number)
+
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await sai.balanceOf(accounts[3])).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge
+          .claimTokens(sai.address, accounts[3], { from: accounts[3] })
+          .should.be.rejectedWith(ERROR_MSG)
+        await foreignBridge.claimTokens(sai.address, accounts[3], { from: owner })
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await sai.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+
+        // reset the caged value
+        await saiTop.setCaged(0)
+      })
     })
   })
   describe('#executionDailyLimit (relative)', () => {

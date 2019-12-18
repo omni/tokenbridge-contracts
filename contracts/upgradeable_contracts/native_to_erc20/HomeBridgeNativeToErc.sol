@@ -14,6 +14,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
 
     function nativeTransfer(address _receiver) internal {
         require(msg.value > 0);
+        _updateTodayLimit();
         require(withinLimit(msg.value));
         _increaseTotalSpentPerDay(msg.value);
         uint256 valueToTransfer = msg.value;

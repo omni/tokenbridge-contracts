@@ -129,12 +129,12 @@ contract AbsoluteDailyLimit is EternalStorage {
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external {
-        require(_maxPerTx < dailyLimit(0));
+        require(_maxPerTx == 0 || (_maxPerTx > minPerTx() && _maxPerTx < dailyLimit(0)));
         uintStorage[MAX_PER_TX] = _maxPerTx;
     }
 
     function setMinPerTx(uint256 _minPerTx) external {
-        require(_minPerTx < dailyLimit(0) && _minPerTx < maxPerTx());
+        require(_minPerTx > 0 && _minPerTx < dailyLimit(0) && _minPerTx < maxPerTx());
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 

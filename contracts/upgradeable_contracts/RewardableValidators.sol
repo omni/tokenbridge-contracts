@@ -14,7 +14,6 @@ contract RewardableValidators is BaseBridgeValidators {
         setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
-        require(_initialValidators.length <= MAX_VALIDATORS);
         require(_initialValidators.length == _initialRewards.length);
 
         for (uint256 i = 0; i < _initialValidators.length; i++) {

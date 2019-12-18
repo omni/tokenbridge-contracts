@@ -38,27 +38,30 @@ const threshold = ether('10000')
 contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
   const requestLimitsArray = [dailyLimit, maxPerTx, minPerTx]
   const executionLimitsArray = [homeDailyLimit, homeMaxPerTx, homeMinPerTx]
+  const relativeExecutionLimitsArray = [targetLimit, threshold, homeMaxPerTx, homeMinPerTx]
 
   let validatorContract
   let authorities
   let owner
   let token
+  let absoluteLimitsContract
+  let relativeLimitsContract
+
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
+    absoluteLimitsContract = await AbsoluteDailyLimit.new()
+    relativeLimitsContract = await RelativeExecutionDailyLimit.new()
   })
   describe('#initialize', async () => {
     const shouldInitialize = isRelativeDailyLimit =>
       async function() {
         token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
         const foreignBridge = await ForeignBridge.new()
-        const LimitsContract = isRelativeDailyLimit ? RelativeExecutionDailyLimit : AbsoluteDailyLimit
-        const limitsContract = await LimitsContract.new()
-        const executionLimitsArray = isRelativeDailyLimit
-          ? [targetLimit, threshold, homeMaxPerTx, homeMinPerTx]
-          : [homeDailyLimit, homeMaxPerTx, homeMinPerTx]
+        const executionLimits = isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray
+        const limitsContract = isRelativeDailyLimit ? relativeLimitsContract : absoluteLimitsContract
 
         expect(await foreignBridge.erc20token()).to.be.equal(ZERO_ADDRESS)
         expect(await foreignBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
@@ -75,7 +78,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
             requireBlockConfirmations,
             gasPrice,
             requestLimitsArray,
-            executionLimitsArray,
+            executionLimits,
             owner,
             decimalShiftZero,
             limitsContract.address
@@ -88,7 +91,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
             requireBlockConfirmations,
             gasPrice,
             requestLimitsArray,
-            executionLimitsArray,
+            executionLimits,
             owner,
             decimalShiftZero,
             limitsContract.address
@@ -101,7 +104,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
             requireBlockConfirmations,
             gasPrice,
             requestLimitsArray,
-            executionLimitsArray,
+            executionLimits,
             owner,
             decimalShiftZero,
             ZERO_ADDRESS
@@ -114,7 +117,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
             requireBlockConfirmations,
             gasPrice,
             requestLimitsArray,
-            executionLimitsArray,
+            executionLimits,
             owner,
             decimalShiftZero,
             limitsContract.address
@@ -127,7 +130,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
             0, // requireBlockConfirmations
             gasPrice,
             requestLimitsArray,
-            executionLimitsArray,
+            executionLimits,
             owner,
             decimalShiftZero,
             limitsContract.address
@@ -140,7 +143,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
             requireBlockConfirmations,
             0,
             requestLimitsArray,
-            executionLimitsArray,
+            executionLimits,
             owner,
             decimalShiftZero,
             limitsContract.address
@@ -153,7 +156,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
             requireBlockConfirmations,
             gasPrice,
             requestLimitsArray,
-            executionLimitsArray,
+            executionLimits,
             owner,
             decimalShiftZero,
             limitsContract.address
@@ -166,7 +169,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          executionLimitsArray,
+          executionLimits,
           owner,
           '9',
           limitsContract.address
@@ -210,23 +213,19 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     function() {
       const value = ether('0.25')
       let foreignBridge
-      const LimitsContract = isRelativeDailyLimit ? RelativeExecutionDailyLimit : AbsoluteDailyLimit
       beforeEach(async () => {
         foreignBridge = await ForeignBridge.new()
         token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-        const limitsContract = await LimitsContract.new()
         await foreignBridge.initialize(
           validatorContract.address,
           token.address,
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          isRelativeDailyLimit
-            ? [targetLimit, threshold, homeMaxPerTx, homeMinPerTx]
-            : [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
         )
         await token.mint(foreignBridge.address, oneEther)
       })
@@ -353,7 +352,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
         from: ownerOfValidatorContract
       })
-      const limitsContract = await AbsoluteDailyLimit.new()
       foreignBridgeWithMultiSignatures = await ForeignBridge.new()
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
@@ -364,7 +362,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         executionLimitsArray,
         owner,
         decimalShiftZero,
-        limitsContract.address
+        absoluteLimitsContract.address
       )
       await token.mint(foreignBridgeWithMultiSignatures.address, oneEther)
     })
@@ -414,7 +412,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const value = halfEther
-      const limitsContract = await AbsoluteDailyLimit.new()
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
 
       await foreignBridgeWithThreeSigs.initialize(
@@ -426,7 +423,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         executionLimitsArray,
         owner,
         decimalShiftZero,
-        limitsContract.address
+        absoluteLimitsContract.address
       )
       await erc20Token.mint(foreignBridgeWithThreeSigs.address, oneEther)
 
@@ -478,7 +475,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const foreignBridgeImpl = await ForeignBridge.new().should.be.fulfilled
       await foreignBridgeProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
 
-      const limitsContract = await AbsoluteDailyLimit.new()
       foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address)
       await foreignBridgeProxy.initialize(
         validatorsProxy.address,
@@ -489,7 +485,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         executionLimitsArray,
         owner,
         decimalShiftZero,
-        limitsContract.address
+        absoluteLimitsContract.address
       )
 
       // Deploy V2
@@ -509,7 +505,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const validatorsAddress = validatorContract.address
 
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      const limitsContract = await AbsoluteDailyLimit.new()
       const foreignBridge = await ForeignBridge.new()
       const data = foreignBridge.contract.methods
         .initialize(
@@ -521,7 +516,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           ['3', '2', '1'],
           owner,
           decimalShiftZero,
-          limitsContract.address
+          absoluteLimitsContract.address
         )
         .encodeABI()
       await storageProxy.upgradeToAndCall('1', foreignBridge.address, data).should.be.fulfilled
@@ -534,8 +529,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     const claim = isRelativeDailyLimit =>
       async function() {
         const owner = accounts[0]
-        const LimitsContract = isRelativeDailyLimit ? RelativeExecutionDailyLimit : AbsoluteDailyLimit
-        const limitsContract = await LimitsContract.new()
         token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
         const foreignBridgeImpl = await ForeignBridge.new()
         const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
@@ -547,12 +540,10 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          isRelativeDailyLimit
-            ? [targetLimit, threshold, homeMaxPerTx, homeMinPerTx]
-            : [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
         )
 
         const tokenSecond = await ERC677BridgeToken.new('Roman Token', 'RST', 18)
@@ -576,23 +567,18 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
   })
   const onTokenTransferTests = isRelativeDailyLimit =>
     function() {
-      const executionLimitsArray = isRelativeDailyLimit
-        ? [targetLimit, threshold, homeMaxPerTx, homeMinPerTx]
-        : [homeDailyLimit, homeMaxPerTx, homeMinPerTx]
-      const LimitsContract = isRelativeDailyLimit ? RelativeExecutionDailyLimit : AbsoluteDailyLimit
-
       it('should emit correct events on initialize', async () => {
         const owner = accounts[3]
         token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
         const foreignBridge = await ForeignBridgeErc677ToErc677.new()
-        const limitsContract = await LimitsContract.new()
+        const limitsContract = isRelativeDailyLimit ? relativeLimitsContract : absoluteLimitsContract
         const { logs, tx } = await foreignBridge.initialize(
           validatorContract.address,
           token.address,
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          executionLimitsArray,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
           limitsContract.address,
@@ -615,7 +601,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         const owner = accounts[3]
         const user = accounts[4]
         token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
-        const limitsContract = await LimitsContract.new()
         const foreignBridge = await ForeignBridgeErc677ToErc677.new()
         await foreignBridge.initialize(
           validatorContract.address,
@@ -623,10 +608,10 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          executionLimitsArray,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address,
           { from: owner }
         )
 
@@ -648,7 +633,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         const user = accounts[4]
         const valueMoreThanLimit = halfEther.add(toBN(1))
         token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
-        const limitsContract = await LimitsContract.new()
         const foreignBridge = await ForeignBridgeErc677ToErc677.new()
         await foreignBridge.initialize(
           validatorContract.address,
@@ -656,10 +640,10 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          executionLimitsArray,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address,
           { from: owner }
         )
 
@@ -686,7 +670,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         const user = accounts[4]
         const valueMoreThanLimit = halfEther.add(toBN(1))
         token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
-        const limitsContract = await LimitsContract.new()
         const foreignBridge = await ForeignBridgeErc677ToErc677.new()
         await foreignBridge.initialize(
           validatorContract.address,
@@ -694,10 +677,10 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          executionLimitsArray,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address,
           { from: owner }
         )
 
@@ -730,7 +713,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         const user = accounts[4]
         const valueLessThanMinPerTx = minPerTx.sub(toBN(1))
         token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
-        const limitsContract = await LimitsContract.new()
         const foreignBridge = await ForeignBridgeErc677ToErc677.new()
         await foreignBridge.initialize(
           validatorContract.address,
@@ -738,10 +720,10 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          executionLimitsArray,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address,
           { from: owner }
         )
 
@@ -769,7 +751,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         const user = accounts[4]
         const user2 = accounts[5]
         token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
-        const limitsContract = await LimitsContract.new()
         const foreignBridge = await ForeignBridgeErc677ToErc677.new()
         await foreignBridge.initialize(
           validatorContract.address,
@@ -777,10 +758,10 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          executionLimitsArray,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address,
           { from: owner }
         )
         await token.mint(user, halfEther, { from: owner }).should.be.fulfilled
@@ -809,7 +790,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
       const foreignBridge = await ForeignBridge.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
-      const limitsContract = await AbsoluteDailyLimit.new()
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -819,7 +799,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         executionLimitsArray,
         owner,
         decimalShiftTwo,
-        limitsContract.address
+        absoluteLimitsContract.address
       )
       await token.mint(foreignBridge.address, valueOnHome.mul(toBN('2')))
 
@@ -853,7 +833,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const validatorContractWith3Signatures = await BridgeValidators.new()
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
-      const limitsContract = await AbsoluteDailyLimit.new()
 
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
 
@@ -866,7 +845,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         executionLimitsArray,
         owner,
         decimalShiftTwo,
-        limitsContract.address
+        absoluteLimitsContract.address
       )
       await erc20Token.mint(foreignBridgeWithThreeSigs.address, valueOnHome.mul(toBN('2')))
 
@@ -908,7 +887,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const owner = accounts[3]
       const user = accounts[4]
       token = await ERC677BridgeToken.new('TEST', 'TST', 16, { from: owner })
-      const limitsContract = await AbsoluteDailyLimit.new()
       const foreignBridge = await ForeignBridgeErc677ToErc677.new({ from: owner })
       await foreignBridge.initialize(
         validatorContract.address,
@@ -919,7 +897,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         executionLimitsArray,
         owner,
         decimalShiftTwo,
-        limitsContract.address,
+        absoluteLimitsContract.address,
         { from: owner }
       )
 
@@ -945,7 +923,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      const limitsContract = await AbsoluteDailyLimit.new()
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -955,14 +932,12 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         executionLimitsArray,
         owner,
         decimalShiftZero,
-        limitsContract.address
+        absoluteLimitsContract.address
       )
       await token.mint(user, ether('2'))
     })
     const shouldAllowToBridgeTokens = isRelativeDailyLimit =>
       async function() {
-        const LimitsContract = isRelativeDailyLimit ? RelativeExecutionDailyLimit : AbsoluteDailyLimit
-        const limitsContract = await LimitsContract.new()
         foreignBridge = await ForeignBridge.new()
         await foreignBridge.initialize(
           validatorContract.address,
@@ -970,12 +945,10 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          isRelativeDailyLimit
-            ? [targetLimit, threshold, homeMaxPerTx, homeMinPerTx]
-            : [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
         )
         // Given
         const currentDay = await foreignBridge.getCurrentDay()
@@ -1038,8 +1011,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     })
     const shouldNotBeAbleToTransferMoreThanLimit = isRelativeDailyLimit =>
       async function() {
-        const LimitsContract = isRelativeDailyLimit ? RelativeExecutionDailyLimit : AbsoluteDailyLimit
-        const limitsContract = await LimitsContract.new()
         foreignBridge = await ForeignBridge.new()
         await foreignBridge.initialize(
           validatorContract.address,
@@ -1047,12 +1018,10 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
           requireBlockConfirmations,
           gasPrice,
           requestLimitsArray,
-          isRelativeDailyLimit
-            ? [targetLimit, threshold, homeMaxPerTx, homeMinPerTx]
-            : [homeDailyLimit, homeMaxPerTx, homeMinPerTx],
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
           owner,
           decimalShiftZero,
-          limitsContract.address
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
         )
         // Given
         const userSupply = ether('2')
@@ -1137,7 +1106,6 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
   describe('#executionDailyLimit (relative)', () => {
     let token
     let foreignBridge
-    let limitsContract
 
     function initialize(customExecutionLimitsArray) {
       return foreignBridge.initialize(
@@ -1149,14 +1117,13 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         customExecutionLimitsArray,
         owner,
         decimalShiftZero,
-        limitsContract.address
+        relativeLimitsContract.address
       ).should.be.fulfilled
     }
 
     beforeEach(async () => {
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       foreignBridge = await ForeignBridge.new()
-      limitsContract = await RelativeExecutionDailyLimit.new()
     })
     it('should be calculated correctly - 1', async () => {
       await initialize([targetLimit, threshold, homeMaxPerTx, homeMinPerTx])

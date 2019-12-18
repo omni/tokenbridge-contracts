@@ -129,9 +129,9 @@ library Message {
     ) internal view {
         require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
-        uint8 amount;
+        uint256 amount;
         assembly {
-            amount := mload(add(_signatures, 1))
+            amount := and(mload(add(_signatures, 1)), 0xff)
         }
         require(amount >= requiredSignatures);
         bytes32 hash = hashMessage(_message, isAMBMessage);

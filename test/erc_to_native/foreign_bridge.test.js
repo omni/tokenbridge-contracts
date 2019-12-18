@@ -21,7 +21,8 @@ const {
   ether,
   expectEventInLogs,
   getEvents,
-  calculateDailyLimit
+  calculateDailyLimit,
+  createFullAccounts
 } = require('../helpers/helpers')
 
 const quarterEther = ether('0.25')
@@ -37,6 +38,9 @@ const dailyLimit = oneEther
 const maxPerTx = halfEther
 const minPerTx = ether('0.01')
 const ZERO = toBN(0)
+const MAX_VALIDATORS = 50
+const MAX_SIGNATURES = MAX_VALIDATORS
+const MAX_GAS = 8000000
 const decimalShiftZero = 0
 const targetLimit = ether('0.05')
 const threshold = ether('10000')
@@ -58,7 +62,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   let migrationContract
   let saiTop
   const user = accounts[7]
-
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]]
@@ -585,6 +588,49 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       event.args.recipient.should.be.equal(recipient)
       event.args.value.should.be.bignumber.equal(value)
       true.should.be.equal(await foreignBridgeWithThreeSigs.relayedMessages(txHash))
+    })
+    it('works with max allowed number of signatures required', async () => {
+      const recipient = accounts[8]
+      const value = halfEther
+      const validatorContract = await BridgeValidators.new()
+      const authorities = createFullAccounts(web3, MAX_VALIDATORS)
+      const addresses = authorities.map(account => account.address)
+      const ownerOfValidators = accounts[0]
+
+      await validatorContract.initialize(MAX_SIGNATURES, addresses, ownerOfValidators)
+      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
+      const foreignBridgeWithMaxSigs = await ForeignBridgeErcToNativeMock.new()
+
+      await foreignBridgeWithMaxSigs.initialize(
+        validatorContract.address,
+        erc20Token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        requestLimitsArray,
+        executionLimitsArray,
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address,
+        absoluteLimitsContract.address
+      )
+      await erc20Token.mint(foreignBridgeWithMaxSigs.address, value)
+
+      const txHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+      const message = createMessage(recipient, value, txHash, foreignBridgeWithMaxSigs.address)
+
+      const vrsList = []
+      for (let i = 0; i < MAX_SIGNATURES; i++) {
+        const { signature } = await authorities[i].sign(message)
+        vrsList[i] = signatureToVRS(signature)
+      }
+
+      const { receipt } = await foreignBridgeWithMaxSigs.executeSignatures(
+        vrsList.map(vrs => vrs.v),
+        vrsList.map(vrs => vrs.r),
+        vrsList.map(vrs => vrs.s),
+        message
+      ).should.be.fulfilled
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
   })
   describe('#upgradeable', async () => {

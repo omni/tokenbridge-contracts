@@ -10,7 +10,8 @@ const {
   expectEventInLogs,
   addTxHashToAMBData,
   signatureToVRSAMB,
-  packSignatures
+  packSignatures,
+  createFullAccounts
 } = require('../helpers/helpers')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
 
@@ -19,6 +20,9 @@ const gasPrice = web3.utils.toWei('1', 'gwei')
 const oneEther = ether('1')
 const twoEther = ether('2')
 const ZERO = toBN(0)
+const MAX_VALIDATORS = 50
+const MAX_SIGNATURES = MAX_VALIDATORS
+const MAX_GAS = 8000000
 
 contract('ForeignAMB', async accounts => {
   let validatorContract
@@ -333,6 +337,55 @@ contract('ForeignAMB', async accounts => {
       expect(await box.lastSender()).to.be.equal(user)
       expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
       expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
+    })
+    it('test with max allowed number of signatures required', async () => {
+      // set validator
+      const validatorContract = await BridgeValidators.new()
+      const authorities = createFullAccounts(web3, MAX_VALIDATORS)
+      const addresses = authorities.map(account => account.address)
+      const ownerOfValidators = accounts[0]
+      await validatorContract.initialize(MAX_SIGNATURES, addresses, ownerOfValidators)
+
+      // set bridge
+      const foreignBridgeWithMaxSigs = await ForeignBridge.new()
+      await foreignBridgeWithMaxSigs.initialize(
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
+
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(ZERO)
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await foreignBridgeWithMaxSigs.requireToPassMessage(
+        box.address,
+        setValueData,
+        821254,
+        { from: user }
+      )
+
+      // Validator on token-bridge add txHash to message
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+
+      const vrsList = []
+      for (let i = 0; i < MAX_SIGNATURES; i++) {
+        const { signature } = await authorities[i].sign(message)
+        vrsList[i] = signatureToVRSAMB(signature)
+      }
+
+      const signatures = packSignatures(vrsList)
+
+      const { receipt } = await foreignBridgeWithMaxSigs.executeSignatures(message, signatures, {
+        from: accounts[0],
+        gasPrice
+      }).should.be.fulfilled
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
     it('should not allow to double execute signatures', async () => {
       const user = accounts[8]

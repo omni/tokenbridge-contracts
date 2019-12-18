@@ -4,13 +4,11 @@ const { web3Home, HOME_RPC_URL, web3Foreign, FOREIGN_RPC_URL, deploymentPrivateK
 const {
   homeContracts: {
     EternalStorageProxy,
-    HomeAMBErc677ToErc677,
-    HomeAMBErc677ToErc677RelativeDailyLimit
+    HomeAMBErc677ToErc677
   },
   foreignContracts: {
     EternalStorageProxy: ForeignEternalStorageProxy,
-    ForeignAMBErc677ToErc677,
-    ForeignAMBErc677ToErc677RelativeDailyLimit
+    ForeignAMBErc677ToErc677
   }
 } = require('../loadContracts')
 const {
@@ -64,7 +62,8 @@ async function initialize({
     executionMinPerTx,
     requestGasLimit,
     foreignToHomeDecimalShift,
-    owner
+    owner,
+    limitsContract
   },
   upgradeableAdmin,
   sendRawTx,
@@ -98,7 +97,8 @@ async function initialize({
     EXECUTION_MIN_AMOUNT_PER_TX: ${executionMinPerTx} which is ${Web3Utils.fromWei(executionMinPerTx)} in eth,
     FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
-    OWNER: ${owner}
+    OWNER: ${owner},
+    LIMITS_CONTRACT: ${limitsContract}
   `)
 
   let requestLimitsArray = [dailyLimit, maxPerTx, minPerTx]
@@ -121,7 +121,8 @@ async function initialize({
       executionLimitsArray,
       requestGasLimit,
       foreignToHomeDecimalShift,
-      owner
+      owner,
+      limitsContract
     )
     .encodeABI()
   const txInitialize = await sendRawTx({
@@ -149,7 +150,13 @@ async function initialize({
   })
 }
 
-async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
+async function initializeBridges({
+  homeBridge,
+  foreignBridge,
+  homeErc677,
+  homeLimitsContract,
+  foreignLimitsContract
+}) {
   const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
 
   console.log('\n[Home] Initializing Bridge Mediator with following parameters:\n')
@@ -157,7 +164,7 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
     web3: web3Home,
     url: HOME_RPC_URL,
     address: homeBridge,
-    abi: RELATIVE_DAILY_LIMIT ? HomeAMBErc677ToErc677RelativeDailyLimit.abi : HomeAMBErc677ToErc677.abi,
+    abi: HomeAMBErc677ToErc677.abi,
     proxyAbi: EternalStorageProxy.abi,
     params: {
       bridgeContract: HOME_AMB_BRIDGE,
@@ -171,7 +178,8 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
       executionMinPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
       requestGasLimit: HOME_MEDIATOR_REQUEST_GAS_LIMIT,
       foreignToHomeDecimalShift,
-      owner: HOME_BRIDGE_OWNER
+      owner: HOME_BRIDGE_OWNER,
+      limitsContract: homeLimitsContract
     },
     upgradeableAdmin: HOME_UPGRADEABLE_ADMIN,
     sendRawTx: sendRawTxHome,
@@ -183,7 +191,7 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
     web3: web3Foreign,
     url: FOREIGN_RPC_URL,
     address: foreignBridge,
-    abi: RELATIVE_DAILY_LIMIT ? ForeignAMBErc677ToErc677RelativeDailyLimit.abi : ForeignAMBErc677ToErc677.abi,
+    abi: ForeignAMBErc677ToErc677.abi,
     proxyAbi: ForeignEternalStorageProxy.abi,
     params: {
       bridgeContract: FOREIGN_AMB_BRIDGE,
@@ -197,7 +205,8 @@ async function initializeBridges({ homeBridge, foreignBridge, homeErc677 }) {
       executionMinPerTx: HOME_MIN_AMOUNT_PER_TX,
       requestGasLimit: FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
       foreignToHomeDecimalShift,
-      owner: FOREIGN_BRIDGE_OWNER
+      owner: FOREIGN_BRIDGE_OWNER,
+      limitsContract: foreignLimitsContract
     },
     upgradeableAdmin: FOREIGN_UPGRADEABLE_ADMIN,
     sendRawTx: sendRawTxForeign,

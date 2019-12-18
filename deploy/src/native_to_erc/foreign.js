@@ -19,11 +19,12 @@ const {
     EternalStorageProxy,
     BridgeValidators,
     RewardableValidators,
-    ForeignBridgeNativeToErc: ForeignBridgeAbsoluteDailyLimit,
-    ForeignBridgeNativeToErcRelativeDailyLimit: ForeignBridgeRelativeDailyLimit,
+    ForeignBridgeNativeToErc,
     ERC677BridgeToken,
     ERC677BridgeTokenRewardable,
-    FeeManagerNativeToErc
+    FeeManagerNativeToErc,
+    AbsoluteDailyLimit,
+    RelativeDailyLimit
   }
 } = require('../loadContracts')
 
@@ -69,7 +70,14 @@ if (isRewardableBridge) {
   VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 }
 
-async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, initialNonce, homeBridgeAddress }) {
+async function initializeBridge({
+  validatorsBridge,
+  bridge,
+  erc677bridgeToken,
+  limitsContract,
+  initialNonce,
+  homeBridgeAddress
+}) {
   let nonce = initialNonce
   let initializeFBridgeData
 
@@ -114,7 +122,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
   Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+  LIMITS_CONTRACT: ${limitsContract.options.address},
   Home bridge Address: ${homeBridgeAddress}`)
 
     initializeFBridgeData = await bridge.methods
@@ -129,7 +138,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
         feeManager.options.address,
         homeFeeInWei,
         foreignToHomeDecimalShift,
-        homeBridgeAddress
+        homeBridgeAddress,
+        limitsContract.options.address
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   } else {
@@ -151,7 +161,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+  LIMITS_CONTRACT: ${limitsContract.options.address},
   Home bridge Address: ${homeBridgeAddress}
   `)
 
@@ -165,7 +176,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
         [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         FOREIGN_BRIDGE_OWNER,
         foreignToHomeDecimalShift,
-        homeBridgeAddress
+        homeBridgeAddress,
+        limitsContract.options.address
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   }
@@ -254,6 +266,16 @@ async function deployForeign(homeBridgeAddress) {
   })
   nonce++
 
+  console.log('\ndeploying limits contract')
+  const LimitsContract = RELATIVE_DAILY_LIMIT ? RelativeDailyLimit : AbsoluteDailyLimit
+  const limitsContract = await deployContract(LimitsContract, [], {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    network: 'foreign',
+    nonce
+  })
+  nonce++
+  console.log('[Foreign] Limits Contract: ', limitsContract.options.address)
+
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
@@ -264,8 +286,7 @@ async function deployForeign(homeBridgeAddress) {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
-  const ForeignBridgeContract = RELATIVE_DAILY_LIMIT ? ForeignBridgeRelativeDailyLimit : ForeignBridgeAbsoluteDailyLimit
-  const foreignBridgeImplementation = await deployContract(ForeignBridgeContract, [], {
+  const foreignBridgeImplementation = await deployContract(ForeignBridgeNativeToErc, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce
@@ -288,6 +309,7 @@ async function deployForeign(homeBridgeAddress) {
     validatorsBridge: storageValidatorsForeign,
     bridge: foreignBridgeImplementation,
     erc677bridgeToken,
+    limitsContract,
     initialNonce: nonce,
     homeBridgeAddress
   })

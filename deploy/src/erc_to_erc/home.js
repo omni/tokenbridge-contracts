@@ -22,12 +22,12 @@ const {
     BridgeValidators,
     RewardableValidators,
     FeeManagerErcToErcPOSDAO,
-    HomeBridgeErcToErc: HomeBridgeAbsoluteDailyLimit,
-    HomeBridgeErcToErcRelativeDailyLimit: HomeBridgeRelativeDailyLimit,
-    HomeBridgeErcToErcPOSDAO: HomeBridgePOSDAOAbsoluteDailyLimit,
-    HomeBridgeErcToErcPOSDAORelativeDailyLimit: HomeBridgePOSDAORelativeDailyLimit,
+    HomeBridgeErcToErc,
+    HomeBridgeErcToErcPOSDAO,
     ERC677BridgeToken,
-    ERC677BridgeTokenRewardable
+    ERC677BridgeTokenRewardable,
+    AbsoluteDailyLimit,
+    RelativeDailyLimit
   }
 } = require('../loadContracts')
 
@@ -74,7 +74,7 @@ if (isRewardableBridge && BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
   VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 }
 
-async function initializeBridge({ validatorsBridge, bridge, erc677token, initialNonce }) {
+async function initializeBridge({ validatorsBridge, bridge, erc677token, limitsContract, initialNonce }) {
   let nonce = initialNonce
   let initializeHomeBridgeData
 
@@ -108,6 +108,7 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
     HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
     HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
+    LIMITS_CONTRACT: ${limitsContract.options.address},
     Block Reward: ${BLOCK_REWARD_ADDRESS},
     Fee Manager: ${feeManager.options.address},
     Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%
@@ -124,7 +125,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
         feeManager.options.address,
         [homeFeeInWei, foreignFeeInWei],
         BLOCK_REWARD_ADDRESS,
-        foreignToHomeDecimalShift
+        foreignToHomeDecimalShift,
+        limitsContract.options.address
       )
       .encodeABI()
   } else {
@@ -137,7 +139,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
     HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
     HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
     HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS},
-    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+    LIMITS_CONTRACT: ${limitsContract.options.address}
     `)
     initializeHomeBridgeData = await bridge.methods
       .initialize(
@@ -148,7 +151,8 @@ async function initializeBridge({ validatorsBridge, bridge, erc677token, initial
         erc677token.options.address,
         [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
         HOME_BRIDGE_OWNER,
-        foreignToHomeDecimalShift
+        foreignToHomeDecimalShift,
+        limitsContract.options.address
       )
       .encodeABI()
   }
@@ -223,6 +227,15 @@ async function deployHome() {
   })
   nonce++
 
+  console.log('\ndeploying limits contract')
+  const LimitsContract = RELATIVE_DAILY_LIMIT ? RelativeDailyLimit : AbsoluteDailyLimit
+  const limitsContract = await deployContract(LimitsContract, [], {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    nonce
+  })
+  nonce++
+  console.log('[Home] Limits Contract: ', limitsContract.options.address)
+
   console.log('\ndeploying homeBridge storage\n')
   const homeBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
@@ -232,14 +245,8 @@ async function deployHome() {
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
   console.log('\ndeploying homeBridge implementation\n')
-  let HomeBridgePOSDAOContract = HomeBridgePOSDAOAbsoluteDailyLimit
-  let HomeBridgeContract = HomeBridgeAbsoluteDailyLimit
-  if (RELATIVE_DAILY_LIMIT) {
-    HomeBridgePOSDAOContract = HomeBridgePOSDAORelativeDailyLimit
-    HomeBridgeContract = HomeBridgeRelativeDailyLimit
-  }
   const bridgeContract =
-    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? HomeBridgePOSDAOContract : HomeBridgeContract
+    isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS ? HomeBridgeErcToErcPOSDAO : HomeBridgeErcToErc
   const homeBridgeImplementation = await deployContract(bridgeContract, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
@@ -327,6 +334,7 @@ async function deployHome() {
     validatorsBridge: storageValidatorsHome,
     bridge: homeBridgeImplementation,
     erc677token,
+    limitsContract,
     initialNonce: nonce
   })
 

@@ -18,9 +18,10 @@ const {
     BridgeValidators,
     RewardableValidators,
     FeeManagerNativeToErc,
-    HomeBridgeNativeToErc: HomeBridge,
-    HomeBridgeNativeToErcRelativeDailyLimit: HomeBridgeRelativeDailyLimit,
-    FeeManagerNativeToErcBothDirections
+    HomeBridgeNativeToErc,
+    FeeManagerNativeToErcBothDirections,
+    AbsoluteDailyLimit,
+    RelativeExecutionDailyLimit
   }
 } = require('../loadContracts')
 
@@ -62,7 +63,7 @@ if (isRewardableBridge) {
   VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 }
 
-async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
+async function initializeBridge({ validatorsBridge, bridge, limitsContract, initialNonce }) {
   let nonce = initialNonce
   let initializeHomeBridgeData
 
@@ -110,7 +111,8 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   Fee Manager: ${feeManager.options.address},
   Home Fee: ${homeFeeInWei} which is ${homeFee * 100}%
   Foreign Fee: ${foreignFeeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}`)
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+  LIMITS_CONTRACT: ${limitsContract.options.address}`)
 
     initializeHomeBridgeData = await bridge.methods
       .rewardableInitialize(
@@ -122,7 +124,8 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
         HOME_BRIDGE_OWNER,
         feeManager.options.address,
         [homeFeeInWei, foreignFeeInWei],
-        foreignToHomeDecimalShift
+        foreignToHomeDecimalShift,
+        limitsContract.options.address
       )
       .encodeABI()
   } else {
@@ -144,7 +147,8 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
       FOREIGN_MIN_AMOUNT_PER_TX
     )} in eth,
   HOME_BRIDGE_OWNER: ${HOME_BRIDGE_OWNER},
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+  LIMITS_CONTRACT: ${limitsContract.options.address}
   `)
     initializeHomeBridgeData = await bridge.methods
       .initialize(
@@ -154,7 +158,8 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
         HOME_REQUIRED_BLOCK_CONFIRMATIONS,
         executionLimitsArray,
         HOME_BRIDGE_OWNER,
-        foreignToHomeDecimalShift
+        foreignToHomeDecimalShift,
+        limitsContract.options.address
       )
       .encodeABI()
   }
@@ -229,6 +234,15 @@ async function deployHome() {
   })
   nonce++
 
+  console.log('\ndeploying limits contract')
+  const LimitsContract = RELATIVE_DAILY_LIMIT ? RelativeExecutionDailyLimit : AbsoluteDailyLimit
+  const limitsContract = await deployContract(LimitsContract, [], {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    nonce
+  })
+  nonce++
+  console.log('[Home] Limits Contract: ', limitsContract.options.address)
+
   console.log('\ndeploying homeBridge storage\n')
   const homeBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
@@ -238,8 +252,7 @@ async function deployHome() {
   console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
   console.log('\ndeploying homeBridge implementation\n')
-  const HomeBridgeContract = RELATIVE_DAILY_LIMIT ? HomeBridgeRelativeDailyLimit : HomeBridge
-  const homeBridgeImplementation = await deployContract(HomeBridgeContract, [], {
+  const homeBridgeImplementation = await deployContract(HomeBridgeNativeToErc, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
   })
@@ -260,6 +273,7 @@ async function deployHome() {
   nonce = await initializeBridge({
     validatorsBridge: storageValidatorsHome,
     bridge: homeBridgeImplementation,
+    limitsContract,
     initialNonce: nonce
   })
 

@@ -16,8 +16,9 @@ const {
   foreignContracts: {
     EternalStorageProxy,
     BridgeValidators,
-    ForeignBridgeErcToNative: ForeignBridgeAbsoluteDailyLimit,
-    ForeignBridgeErcToNativeRelativeDailyLimit: ForeignBridgeRelativeDailyLimit,
+    ForeignBridgeErcToNative,
+    AbsoluteDailyLimit,
+    RelativeExecutionDailyLimit
   }
 } = require('../loadContracts')
 
@@ -48,7 +49,7 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 
 const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
 
-async function initializeBridge({ validatorsBridge, bridge, nonce, homeBridgeAddress }) {
+async function initializeBridge({ validatorsBridge, bridge, limitsContract, nonce, homeBridgeAddress }) {
   console.log(`Foreign Validators: ${validatorsBridge.options.address},
   ERC20_TOKEN_ADDRESS: ${ERC20_TOKEN_ADDRESS},
   FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
@@ -69,6 +70,7 @@ async function initializeBridge({ validatorsBridge, bridge, nonce, homeBridgeAdd
   HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+  LIMITS_CONTRACT: ${limitsContract.options.address},
   Home bridge Address: ${homeBridgeAddress}
   `)
 
@@ -86,7 +88,8 @@ async function initializeBridge({ validatorsBridge, bridge, nonce, homeBridgeAdd
       executionLimitsArray,
       FOREIGN_BRIDGE_OWNER,
       foreignToHomeDecimalShift,
-      homeBridgeAddress
+      homeBridgeAddress,
+      limitsContract.options.address
     )
     .encodeABI()
   const txInitializeBridge = await sendRawTxForeign({
@@ -163,6 +166,16 @@ async function deployForeign(homeBridgeAddress) {
   })
   nonce++
 
+  console.log('\ndeploying limits contract')
+  const LimitsContract = RELATIVE_DAILY_LIMIT ? RelativeExecutionDailyLimit : AbsoluteDailyLimit
+  const limitsContract = await deployContract(LimitsContract, [], {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    network: 'foreign',
+    nonce
+  })
+  nonce++
+  console.log('[Foreign] Limits Contract: ', limitsContract.options.address)
+
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
@@ -173,8 +186,7 @@ async function deployForeign(homeBridgeAddress) {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
-  const ForeignBridgeContract = RELATIVE_DAILY_LIMIT ? ForeignBridgeRelativeDailyLimit : ForeignBridgeAbsoluteDailyLimit
-  const foreignBridgeImplementation = await deployContract(ForeignBridgeContract, [], {
+  const foreignBridgeImplementation = await deployContract(ForeignBridgeErcToNative, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce
@@ -197,8 +209,9 @@ async function deployForeign(homeBridgeAddress) {
   await initializeBridge({
     validatorsBridge: storageValidatorsForeign,
     bridge: foreignBridgeImplementation,
+    limitsContract,
     nonce,
-    homeBridgeAddress
+    homeBridgeAddress,
   })
   nonce++
 

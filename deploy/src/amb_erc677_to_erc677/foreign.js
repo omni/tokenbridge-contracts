@@ -11,25 +11,25 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 async function deployForeign() {
   let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
 
-  console.log('\n[Foreign] Deploying foreignBridge storage\n')
+  console.log('\n[Foreign] Deploying Bridge Mediator storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce
   })
   nonce++
-  console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
+  console.log('[Foreign] Bridge Mediator Storage: ', foreignBridgeStorage.options.address)
 
-  console.log('\n[Foreign] Deploying foreignBridge implementation\n')
+  console.log('\n[Foreign] Deploying Bridge Mediator implementation\n')
   const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce
   })
   nonce++
-  console.log('[Foreign] ForeignBridge Implementation: ', foreignBridgeImplementation.options.address)
+  console.log('[Foreign] Bridge Mediator Implementation: ', foreignBridgeImplementation.options.address)
 
-  console.log('\n[Foreign] Hooking up ForeignBridge storage to ForeignBridge implementation')
+  console.log('\n[Foreign] Hooking up Mediator storage to Mediator implementation')
   await upgradeProxy({
     proxy: foreignBridgeStorage,
     implementationAddress: foreignBridgeImplementation.options.address,
@@ -38,12 +38,9 @@ async function deployForeign() {
     url: FOREIGN_RPC_URL
   })
 
-  console.log('\nForeign Deployment Bridge completed\n')
+  console.log('\nForeign part of ERC677-to-ERC677 bridge deployed\n')
   return {
-    foreignBridge: {
-      address: foreignBridgeStorage.options.address,
-      deployedBlockNumber: Web3Utils.hexToNumber(foreignBridgeStorage.deployedBlockNumber)
-    }
+    foreignBridgeMediator: { address: foreignBridgeStorage.options.address }
   }
 }
 

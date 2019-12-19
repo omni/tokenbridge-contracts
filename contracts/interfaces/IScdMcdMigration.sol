@@ -8,3 +8,7 @@ interface IScdMcdMigration {
 interface IDaiAdapter {
     function dai() public returns (address);
 }
+
+interface ISaiTop {
+    function caged() public returns (uint256);
+}

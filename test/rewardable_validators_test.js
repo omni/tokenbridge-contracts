@@ -5,6 +5,8 @@ const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS, BN } = require('./setup')
 const { expectEventInLogs, createAccounts } = require('./helpers/helpers')
 
+const MAX_GAS = 8000000
+const MAX_VALIDATORS = 50
 const ZERO = new BN(0)
 
 contract('RewardableValidators', async accounts => {
@@ -62,18 +64,32 @@ contract('RewardableValidators', async accounts => {
     })
     it('should fail if exceed amount of validators', async () => {
       // Given
-      const validators = createAccounts(web3, 101)
+      const validators = createAccounts(web3, MAX_VALIDATORS + 1)
 
       // When
       await bridgeValidators
-        .initialize(99, validators, validators, accounts[2], { from: accounts[2] })
+        .initialize(MAX_VALIDATORS - 1, validators, validators, accounts[2], { from: accounts[2] })
         .should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators.initialize(99, validators.slice(0, 100), validators.slice(0, 100), accounts[2], {
+    })
+
+    it('should be able to operate with max allowed number of validators', async () => {
+      // Given
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+
+      // When
+      const { receipt } = await bridgeValidators.initialize(MAX_VALIDATORS - 1, validators, validators, accounts[2], {
         from: accounts[2]
       }).should.be.fulfilled
 
-      // Then
-      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('100')
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS}`)
+
+      // removing last validator from list (the highest gas consumption)
+      await bridgeValidators.removeValidator(validators[MAX_VALIDATORS - 1], {
+        from: accounts[2]
+      }).should.be.fulfilled
+
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS - 1}`)
     })
   })
 
@@ -267,7 +283,7 @@ contract('RewardableValidators', async accounts => {
         await proxy.upgradeTo('1', bridgeValidatorsImpl.address)
         bridgeValidators = await BridgeValidators.at(proxy.address)
         const { initialize, isInitialized, removeValidator } = bridgeValidators
-        await initialize(1, accounts.slice(0, 5), accounts.slice(5), owner, { from: owner }).should.be.fulfilled
+        await initialize(1, accounts.slice(0, 5), accounts.slice(5, 10), owner, { from: owner }).should.be.fulfilled
         true.should.be.equal(await isInitialized())
 
         // When
@@ -283,7 +299,7 @@ contract('RewardableValidators', async accounts => {
     it(`reward address is properly assigned`, async () => {
       // Given
       const { initialize, isInitialized, getValidatorRewardAddress } = bridgeValidators
-      await initialize(1, accounts.slice(0, 5), accounts.slice(5), owner, { from: owner }).should.be.fulfilled
+      await initialize(1, accounts.slice(0, 5), accounts.slice(5, 10), owner, { from: owner }).should.be.fulfilled
 
       // When
       expect(await isInitialized()).to.be.equal(true)
@@ -302,7 +318,7 @@ contract('RewardableValidators', async accounts => {
       const { initialize, validatorList } = bridgeValidators
 
       // When
-      await initialize(1, validators, accounts.slice(5), owner, { from: owner }).should.be.fulfilled
+      await initialize(1, validators, accounts.slice(5, 10), owner, { from: owner }).should.be.fulfilled
 
       // Then
       expect(await validatorList()).to.be.eql(validators)

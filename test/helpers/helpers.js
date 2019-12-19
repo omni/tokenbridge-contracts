@@ -198,6 +198,16 @@ function createAccounts(web3, amount) {
 
 module.exports.createAccounts = createAccounts
 
+function createFullAccounts(web3, amount) {
+  const array = []
+  for (let i = 0; i < amount; i++) {
+    array[i] = web3.eth.accounts.create()
+  }
+  return array
+}
+
+module.exports.createFullAccounts = createFullAccounts
+
 function addTxHashToAMBData(encodedData, transactionHash) {
   return encodedData.slice(0, 2) + strip0x(transactionHash) + encodedData.slice(2)
 }

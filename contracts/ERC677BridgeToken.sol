@@ -79,4 +79,12 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
     function claimTokens(address _token, address _to) public onlyOwner validAddress(_to) {
         claimValues(_token, _to);
     }
+
+    function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
+        return super.increaseApproval(spender, addedValue);
+    }
+
+    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
+        return super.decreaseApproval(spender, subtractedValue);
+    }
 }

@@ -36,6 +36,7 @@ start_ganache() {
     --account="0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501207,1000000000000000000000000"
     --account="0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501208,1000000000000000000000000"
     --account="0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501209,1000000000000000000000000"
+    --account="0x19fba401d77e4113b15095e9aa7117bcd25adcfac7f6111f8298894eef443600,1000000000000000000000000"
   )
 
   if [ "$SOLIDITY_COVERAGE" != true ]; then
@@ -55,7 +56,7 @@ if [ "$SOLIDITY_COVERAGE" != true ]; then
 fi
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then
-  node_modules/.bin/truffle test; istanbul report lcov
+  node --max-old-space-size=4096 node_modules/.bin/truffle test; istanbul report lcov
 
   if [ "$CONTINUOUS_INTEGRATION" = true ]; then
     cat coverage/lcov.info | node_modules/.bin/coveralls

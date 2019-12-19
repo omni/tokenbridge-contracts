@@ -138,5 +138,6 @@ contract AbsoluteDailyLimit is EternalStorage {
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function updateTodayLimit(uint256) external payable {}
 }

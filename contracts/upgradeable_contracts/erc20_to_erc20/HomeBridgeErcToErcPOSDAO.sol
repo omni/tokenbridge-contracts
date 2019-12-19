@@ -23,19 +23,20 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         address _limitsContract
     ) public returns (bool) {
         _setBlockRewardContract(_feeManager, _blockReward);
-        return super.rewardableInitialize(
-            _validatorContract,
-            _requestLimitsArray,
-            _homeGasPrice,
-            _requiredBlockConfirmations,
-            _erc677token,
-            _executionLimitsArray,
-            _owner,
-            _feeManager,
-            _homeFeeForeignFeeArray,
-            _decimalShift,
-            _limitsContract
-        );
+        return
+            super.rewardableInitialize(
+                _validatorContract,
+                _requestLimitsArray,
+                _homeGasPrice,
+                _requiredBlockConfirmations,
+                _erc677token,
+                _executionLimitsArray,
+                _owner,
+                _feeManager,
+                _homeFeeForeignFeeArray,
+                _decimalShift,
+                _limitsContract
+            );
     }
 
     function blockRewardContract() public view returns (address) {

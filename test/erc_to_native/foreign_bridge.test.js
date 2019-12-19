@@ -436,8 +436,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         const recipientAccount = accounts[3]
         await token.mint(foreignBridge.address, ether('1.25'))
 
-        console.log((await foreignBridge.executionDailyLimit()).toString())
-
         const transactionHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
         const message = createMessage(recipientAccount, halfEther, transactionHash, foreignBridge.address)
         const signature = await sign(authorities[0], message)

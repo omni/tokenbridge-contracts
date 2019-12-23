@@ -1,10 +1,32 @@
 const axios = require('axios')
 const querystring = require('querystring')
-const flattener = require('truffle-flattener')
+const fs = require('fs')
+const path = require('path')
 const { EXPLORER_TYPES, REQUEST_STATUS } = require('../constants')
 const promiseRetry = require('promise-retry')
 
-const flat = async contractPath => flattener([contractPath], process.cwd())
+const basePath = path.join(__dirname, '..', '..', '..', 'flats')
+
+const isBridgeToken = (name) => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol'
+const isValidators = (name) => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
+
+const flat = async contractPath => {
+  const pathArray = contractPath.split('/')
+  const name = pathArray[pathArray.length - 1]
+  let module = pathArray[pathArray.length - 2]
+
+  if (isBridgeToken(name)) {
+    module = ''
+  } else if (isValidators(name)) {
+    module = 'validators'
+  }
+
+  const flatName = name.replace('.sol', '_flat.sol')
+
+  const filePath = path.join(basePath, module, flatName)
+
+  return fs.readFileSync(filePath).toString()
+}
 
 const sendRequest = (url, queries) => axios.post(url, querystring.stringify(queries))
 

@@ -20,7 +20,7 @@ cp .env.example .env
 
 5. Add funds to the deployment accounts in both the Home and Foreign networks.
 
-6. Run `node deploy.js`.
+6. Run `npm run deploy`.
 
 ## `NATIVE-TO-ERC` Bridge Mode Configuration Example.
 

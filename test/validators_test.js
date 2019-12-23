@@ -5,6 +5,8 @@ const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS, BN } = require('./setup')
 const { expectEventInLogs, createAccounts } = require('./helpers/helpers')
 
+const MAX_GAS = 8000000
+const MAX_VALIDATORS = 50
 const ZERO = new BN(0)
 
 contract('BridgeValidators', async accounts => {
@@ -50,17 +52,30 @@ contract('BridgeValidators', async accounts => {
     })
     it('should fail if exceed amount of validators', async () => {
       // Given
-      const validators = createAccounts(web3, 101)
+      const validators = createAccounts(web3, MAX_VALIDATORS + 1)
 
       // When
       await bridgeValidators
-        .initialize(99, validators, accounts[2], { from: accounts[2] })
+        .initialize(MAX_VALIDATORS - 1, validators, accounts[2], { from: accounts[2] })
         .should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators.initialize(99, validators.slice(0, 100), accounts[2], { from: accounts[2] }).should.be
-        .fulfilled
+    })
 
-      // Then
-      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('100')
+    it('should be able to operate with max allowed number of validators', async () => {
+      // Given
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+
+      // When
+      const { receipt } = await bridgeValidators.initialize(MAX_VALIDATORS - 1, validators, accounts[2], {
+        from: accounts[2]
+      }).should.be.fulfilled
+
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS}`)
+
+      // removing last validator from list (the highest gas consumption)
+      await bridgeValidators.removeValidator(validators[MAX_VALIDATORS - 1], { from: accounts[2] }).should.be.fulfilled
+
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS - 1}`)
     })
   })
 

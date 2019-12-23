@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "pkg deploy.js --out-path build/tmp_build",
     "lint": "eslint .",
-    "deploy": "cd .. && npm run flatten && cd deploy && node deploy.js"
+    "deploy": "if test \"$NOFLAT\" != \"true\" ; then cd ..; npm run flatten; cd deploy; fi && node deploy.js"
   },
   "author": "",
   "license": "ISC",

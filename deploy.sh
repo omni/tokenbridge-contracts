@@ -7,9 +7,9 @@ if [ -f /.dockerenv ]; then
   if [ "$1" == "token" ]; then
     echo "Deployment of token for testing environment started"
     node testenv-deploy.js token
-  else 
+  else
     echo "Bridge contract deployment started"
-    node deploy.js
+    npm run deploy
     if [ -f bridgeDeploymentResults.json ]; then
       cat bridgeDeploymentResults.json
       echo

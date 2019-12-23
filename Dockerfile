@@ -23,3 +23,4 @@ RUN npm run compile
 RUN bash flatten.sh
 
 ENV PATH="/contracts/:${PATH}"
+ENV NOFLAT=true

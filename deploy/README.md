@@ -18,9 +18,9 @@ cp .env.example .env
 
 4. Adjust the parameters in the `.env` file depending on the desired bridge mode. See below for comments related to each parameter.
 
-5. Add funds to the deployment accounts in both the Home and Foreign networks. 
+5. Add funds to the deployment accounts in both the Home and Foreign networks.
 
-6. Run `node deploy.js`. 
+6. Run `npm run deploy`.
 
 ## `NATIVE-TO-ERC` Bridge Mode Configuration Example.
 
@@ -45,7 +45,7 @@ BRIDGE_MODE=NATIVE_TO_ERC
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # Extra gas added to the estimated gas of a particular deployment/configuration transaction
-# E.g. if estimated gas returns 100000 and the parameter is 0.2, 
+# E.g. if estimated gas returns 100000 and the parameter is 0.2,
 # the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
 DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on
@@ -74,14 +74,14 @@ HOME_RPC_URL=https://core.poa.network
 HOME_BRIDGE_OWNER=0x
 # Address on Home network with permissions to change parameters of bridge validator contract.
 HOME_VALIDATORS_OWNER=0x
-# Address on Home network with permissions to upgrade the bridge contract and the 
+# Address on Home network with permissions to upgrade the bridge contract and the
 # bridge validator contract.
 HOME_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be
 # less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
@@ -105,7 +105,7 @@ FOREIGN_RPC_URL=https://mainnet.infura.io
 FOREIGN_BRIDGE_OWNER=0x
 # Address on Foreign network with permissions to change parameters of bridge validator contract.
 FOREIGN_VALIDATORS_OWNER=0x
-# Address on Foreign network with permissions to upgrade the bridge contract and the 
+# Address on Foreign network with permissions to upgrade the bridge contract and the
 # bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
 # The daily limit in Wei. As soon as this limit is exceeded, any transaction
@@ -166,10 +166,19 @@ DPOS_STAKING_ADDRESS=0x
 # The address of BlockReward contract used by ERC677BridgeTokenRewardable contract.
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
 BLOCK_REWARD_ADDRESS=0x
+
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
+#HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
+#HOME_EXPLORER_API_KEY=
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
+#FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
+#FOREIGN_EXPLORER_API_KEY=
 ```
 
 
-## `ERC-TO-ERC` Bridge Mode Configuration Example. 
+## `ERC-TO-ERC` Bridge Mode Configuration Example.
 
 This example of an `.env` file for the `erc-to-erc` bridge mode includes comments describing each parameter.
 
@@ -190,7 +199,7 @@ BRIDGE_MODE=ERC_TO_ERC
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # Extra gas added to the estimated gas of a particular deployment/configuration transaction
-# E.g. if estimated gas returns 100000 and the parameter is 0.2, 
+# E.g. if estimated gas returns 100000 and the parameter is 0.2,
 # the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
 DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on
@@ -226,12 +235,12 @@ HOME_UPGRADEABLE_ADMIN=0x
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be
 # less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
-# validator accounts. 
+# validator accounts.
 HOME_MIN_AMOUNT_PER_TX=500000000000000000
 # The finalization threshold. The number of blocks issued after the block with
 # the corresponding deposit transaction to guarantee the transaction will not be
@@ -250,7 +259,7 @@ FOREIGN_RPC_URL=https://mainnet.infura.io
 FOREIGN_BRIDGE_OWNER=0x
 # Address on Foreign network with permissions to change parameters of bridge validator contract.
 FOREIGN_VALIDATORS_OWNER=0x
-# Address on Foreign network with permissions to upgrade the bridge contract and the 
+# Address on Foreign network with permissions to upgrade the bridge contract and the
 # bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. Used on the Home side to check the bridge validator’s actions.
@@ -293,9 +302,18 @@ DPOS_STAKING_ADDRESS=0x
 # The address of BlockReward contract used by ERC677BridgeTokenRewardable contract.
 # Makes sense only when DEPLOY_REWARDABLE_TOKEN=true
 BLOCK_REWARD_ADDRESS=0x
+
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
+#HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
+#HOME_EXPLORER_API_KEY=
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
+#FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
+#FOREIGN_EXPLORER_API_KEY=
 ```
 
-## `ERC-TO-NATIVE` Bridge Mode Configuration Example. 
+## `ERC-TO-NATIVE` Bridge Mode Configuration Example.
 
 This example of an `.env` file for the `erc-to-native` bridge mode includes comments describing each parameter.
 
@@ -316,7 +334,7 @@ BRIDGE_MODE=ERC_TO_NATIVE
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # Extra gas added to the estimated gas of a particular deployment/configuration transaction
-# E.g. if estimated gas returns 100000 and the parameter is 0.2, 
+# E.g. if estimated gas returns 100000 and the parameter is 0.2,
 # the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
 DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on
@@ -337,14 +355,14 @@ HOME_RPC_URL=https://core.poa.network
 HOME_BRIDGE_OWNER=0x
 # Address on Home network with permissions to change parameters of bridge validator contract.
 HOME_VALIDATORS_OWNER=0x
-# Address on Home network with permissions to upgrade the bridge contract and the 
+# Address on Home network with permissions to upgrade the bridge contract and the
 # bridge validator contract.
 HOME_UPGRADEABLE_ADMIN=0x
 # The daily transaction limit in Wei. As soon as this limit is exceeded, any
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be
 # less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
@@ -369,16 +387,16 @@ FOREIGN_RPC_URL=https://mainnet.infura.io
 # Address on Foreign network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 FOREIGN_BRIDGE_OWNER=0x
-# Address on the Foreign network with permissions to change parameters of 
+# Address on the Foreign network with permissions to change parameters of
 # the bridge validator contract.
 FOREIGN_VALIDATORS_OWNER=0x
-# Address on the Foreign network with permissions to upgrade the bridge contract 
+# Address on the Foreign network with permissions to upgrade the bridge contract
 # and the bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
-# The daily transaction limit in Wei. Used on the Home side to check 
-# the bridge validator’s actions. 
+# The daily transaction limit in Wei. Used on the Home side to check
+# the bridge validator’s actions.
 FOREIGN_DAILY_LIMIT=15000000000000000000000000
-# The maximum limit for one transaction in Wei. FOREIGN_MAX_AMOUNT_PER_TX must be 
+# The maximum limit for one transaction in Wei. FOREIGN_MAX_AMOUNT_PER_TX must be
 # less than FOREIGN_DAILY_LIMIT. Used on the Home side to check the bridge validator’s actions.
 FOREIGN_MAX_AMOUNT_PER_TX=750000000000000000000000
 # Not used in this mode, comment out or delete this variable.
@@ -428,9 +446,18 @@ HOME_TRANSACTIONS_FEE=0.001
 # Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
 # e.g. 0.1% fee
 FOREIGN_TRANSACTIONS_FEE=0.001
+
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
+#HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
+#HOME_EXPLORER_API_KEY=
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
+#FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
+#FOREIGN_EXPLORER_API_KEY=
 ```
 
-## `ARBITRARY-MESSAGE` Bridge Mode Configuration Example. 
+## `ARBITRARY-MESSAGE` Bridge Mode Configuration Example.
 
 This example of an `.env` file for the `arbitrary-message` bridge mode includes comments describing each parameter.
 
@@ -508,9 +535,18 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
 VALIDATORS="0x 0x 0x"
+
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
+#HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
+#HOME_EXPLORER_API_KEY=
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
+#FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
+#FOREIGN_EXPLORER_API_KEY=
 ```
 
-## `AMB-ERC-TO-ERC` Bridge Mode Configuration Example. 
+## `AMB-ERC-TO-ERC` Bridge Mode Configuration Example.
 
 This example of an `.env` file for the `AMB-ERC-TO-ERC` bridge mode includes comments describing each parameter.
 
@@ -531,7 +567,7 @@ BRIDGE_MODE=AMB_ERC_TO_ERC
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # Extra gas added to the estimated gas of a particular deployment/configuration transaction
-# E.g. if estimated gas returns 100000 and the parameter is 0.2, 
+# E.g. if estimated gas returns 100000 and the parameter is 0.2,
 # the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
 DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on
@@ -573,12 +609,12 @@ HOME_UPGRADEABLE_ADMIN=0x
 # transaction which requests to relay assets will fail.
 HOME_DAILY_LIMIT=30000000000000000000000000
 # The maximum limit for one transaction in Wei. If a single transaction tries to
-# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be 
+# relay funds exceeding this limit it will fail. HOME_MAX_AMOUNT_PER_TX must be
 # less than HOME_DAILY_LIMIT.
 HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
 # The minimum limit for one transaction in Wei. If a transaction tries to relay
 # funds below this limit it will fail. This is required to prevent dryout
-# validator accounts. 
+# validator accounts.
 HOME_MIN_AMOUNT_PER_TX=500000000000000000
 
 # The RPC channel to a Foreign node able to handle deployment/configuration
@@ -587,7 +623,7 @@ FOREIGN_RPC_URL=https://mainnet.infura.io
 # Address on Foreign network with permissions to change parameters of the bridge contract.
 # For extra security we recommended using a multi-sig wallet contract address here.
 FOREIGN_BRIDGE_OWNER=0x
-# Address on Foreign network with permissions to upgrade the bridge contract and the 
+# Address on Foreign network with permissions to upgrade the bridge contract and the
 # bridge validator contract.
 FOREIGN_UPGRADEABLE_ADMIN=0x
 # The daily limit in Wei. As soon as this limit is exceeded, any transaction
@@ -616,4 +652,13 @@ HOME_MEDIATOR_REQUEST_GAS_LIMIT=2000000
 # The gas limit that will be used in the execution of the message passed to the mediator contract
 # in the Home network.
 FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT=2000000
+
+# The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
+#HOME_EXPLORER_URL=https://blockscout.com/poa/core/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Home network.
+#HOME_EXPLORER_API_KEY=
+# The api url of an explorer to verify all the deployed contracts in Foreign network. Supported explorers: Blockscout, etherscan
+#FOREIGN_EXPLORER_URL=https://api.etherscan.io/api
+# The api key of the explorer api, if required, used to verify all the deployed contracts in Foreign network.
+#FOREIGN_EXPLORER_API_KEY=
 ```

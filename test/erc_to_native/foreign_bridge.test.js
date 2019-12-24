@@ -11,6 +11,21 @@ const RelativeExecutionDailyLimit = artifacts.require('RelativeExecutionDailyLim
 const SaiTopMock = artifacts.require('SaiTopMock.sol')
 const ForeignBridgeErcToNativeMock = artifacts.require('ForeignBridgeErcToNativeMock.sol')
 
+const truffleContract = require('@truffle/contract')
+const RToken = truffleContract(require('@rtoken/contracts/build/contracts/RToken.json'))
+const ComptrollerMock = truffleContract(require('@rtoken/contracts/build/contracts/ComptrollerMock.json'))
+const CErc20 = truffleContract(require('@rtoken/contracts/build/contracts/CErc20.json'))
+const InterestRateModelMock = truffleContract(require('@rtoken/contracts/build/contracts/InterestRateModelMock.json'))
+const CompoundAllocationStrategy = truffleContract(
+  require('@rtoken/contracts/build/contracts/CompoundAllocationStrategy.json')
+)
+
+RToken.setProvider(web3.currentProvider)
+ComptrollerMock.setProvider(web3.currentProvider)
+CErc20.setProvider(web3.currentProvider)
+InterestRateModelMock.setProvider(web3.currentProvider)
+CompoundAllocationStrategy.setProvider(web3.currentProvider)
+
 const { expect } = require('chai')
 const { expectEvent } = require('@openzeppelin/test-helpers')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -62,6 +77,27 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   let migrationContract
   let saiTop
   const user = accounts[7]
+
+  async function createRToken(token) {
+    const comptroller = await ComptrollerMock.new({ from: owner })
+    const interestRateModel = await InterestRateModelMock.new({ from: owner })
+    const cToken = await CErc20.new(
+      token.address,
+      comptroller.address,
+      interestRateModel.address,
+      oneEther, // 1 cToken == cTokenExchangeRate * token
+      'Compound token',
+      'cToken',
+      18,
+      { from: owner }
+    )
+    const compoundAS = await CompoundAllocationStrategy.new(cToken.address, { from: owner })
+    const rToken = await RToken.new({ from: owner })
+    await compoundAS.transferOwnership(rToken.address, { from: owner })
+    await rToken.initialize(compoundAS.address, 'RToken Test', 'RTOKEN', 18, { from: owner })
+    return rToken
+  }
+
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1], accounts[2]]
@@ -85,6 +121,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     // migration contract can mint dai
     await dai.transferOwnership(migrationContract.address)
   })
+
   describe('#initialize', async () => {
     const shouldInitialize = isRelativeDailyLimit =>
       async function() {
@@ -1559,6 +1596,154 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const limit = await foreignBridge.executionDailyLimit()
       const expectedLimit = calculateDailyLimit(amountToMint, targetLimit, threshold, homeMinPerTx)
       expect(limit).to.be.bignumber.equal(expectedLimit)
+    })
+  })
+  describe('initializeRToken', () => {
+    let token
+    let foreignBridge
+    let rToken
+
+    beforeEach(async () => {
+      token = await ERC20Mock.new('Some ERC20', 'RSZT', 18)
+      foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        requestLimitsArray,
+        executionLimitsArray,
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address,
+        absoluteLimitsContract.address
+      )
+      rToken = await createRToken(token)
+    })
+    it('should be initialized', async () => {
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1]).should.be.fulfilled
+    })
+    it('should fail if wrong param', async () => {
+      await foreignBridge.initializeRToken(ZERO_ADDRESS, [owner], [1]).should.be.rejected
+      await foreignBridge.initializeRToken(rToken.address, [], [1]).should.be.rejected
+      await foreignBridge.initializeRToken(rToken.address, [owner], []).should.be.rejected
+      await foreignBridge.initializeRToken(rToken.address, [owner], [0]).should.be.rejected
+    })
+    it('should fail if not an owner', async () => {
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1], { from: accounts[1] }).should.be.rejected
+    })
+  })
+  describe('removeRToken', () => {
+    let token
+    let foreignBridge
+    let rToken
+
+    beforeEach(async () => {
+      token = await ERC20Mock.new('Some ERC20', 'RSZT', 18)
+      foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        requestLimitsArray,
+        executionLimitsArray,
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address,
+        absoluteLimitsContract.address
+      )
+      rToken = await createRToken(token)
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1]).should.be.fulfilled
+    })
+    it('should be removed', async () => {
+      expect(await foreignBridge.rToken()).to.be.equal(rToken.address)
+      await foreignBridge.removeRToken().should.be.fulfilled
+      expect(await foreignBridge.rToken()).to.be.equal(ZERO_ADDRESS)
+    })
+    it('should fail if not an owner', async () => {
+      await foreignBridge.removeRToken({ from: accounts[1] }).should.be.rejected
+      await foreignBridge.removeRToken({ from: owner }).should.be.fulfilled
+    })
+  })
+  describe('mintRToken', () => {
+    let token
+    let foreignBridge
+    let rToken
+
+    beforeEach(async () => {
+      token = await ERC20Mock.new('Some ERC20', 'RSZT', 18)
+      foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        requestLimitsArray,
+        executionLimitsArray,
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address,
+        absoluteLimitsContract.address
+      )
+      rToken = await createRToken(token)
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+      await token.mint(foreignBridge.address, halfEther)
+    })
+    it('should mint', async () => {
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+      await foreignBridge.mintRToken(halfEther).should.be.fulfilled
+
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+    })
+    it('should fail if not enough tokens', async () => {
+      await foreignBridge.mintRToken(oneEther).should.be.rejected
+    })
+  })
+  describe('redeemRToken', () => {
+    let token
+    let foreignBridge
+    let rToken
+
+    beforeEach(async () => {
+      token = await ERC20Mock.new('Some ERC20', 'RSZT', 18)
+      foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        requestLimitsArray,
+        executionLimitsArray,
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address,
+        absoluteLimitsContract.address
+      )
+      rToken = await createRToken(token)
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+      await token.mint(foreignBridge.address, halfEther)
+      await foreignBridge.mintRToken(halfEther)
+    })
+    it('should redeem', async () => {
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+
+      await foreignBridge.redeemRToken(halfEther).should.be.fulfilled
+
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+    })
+    it('should fail if not enough r-tokens', async () => {
+      await foreignBridge.redeemRToken(oneEther).should.be.rejected
+      await foreignBridge.redeemRToken(halfEther).should.be.fulfilled
+    })
+    it('should fail if not an owner', async () => {
+      await foreignBridge.redeemRToken(halfEther, { from: accounts[1] }).should.be.rejected
+      await foreignBridge.redeemRToken(halfEther, { from: owner }).should.be.fulfilled
     })
   })
 })

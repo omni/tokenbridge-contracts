@@ -3,8 +3,9 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../interfaces/IRToken.sol";
 import "./Ownable.sol";
+import "./ERC20Bridge.sol";
 
-contract RTokenConnector is Ownable {
+contract RTokenConnector is Ownable, ERC20Bridge {
     bytes32 internal constant RTOKEN = 0xdce7cb71f7466970418465f97f1fb7d721c1661bc59b1f0caa7d1f8ce374a47e; // keccak256(abi.encodePacked("rToken"))
 
     function initializeRToken(
@@ -14,6 +15,7 @@ contract RTokenConnector is Ownable {
     ) external onlyOwner returns (uint256) {
         require(AddressUtils.isContract(_rToken));
         addressStorage[RTOKEN] = _rToken;
+        erc20token().approve(_rToken, uint256(-1));
         return createAndChangeRTokenHat(_recipients, _proportions);
     }
 

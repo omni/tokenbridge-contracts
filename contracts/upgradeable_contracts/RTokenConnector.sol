@@ -17,6 +17,10 @@ contract RTokenConnector is Ownable {
         return createAndChangeRTokenHat(_recipients, _proportions);
     }
 
+    function removeRToken() external onlyOwner {
+        addressStorage[RTOKEN] = address(0);
+    }
+
     function redeemRToken(uint256 _redeemTokens) external onlyOwner returns (bool) {
         return _redeemRToken(_redeemTokens);
     }

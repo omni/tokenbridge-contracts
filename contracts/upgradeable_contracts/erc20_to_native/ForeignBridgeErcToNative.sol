@@ -4,8 +4,9 @@ import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 import "../OtherSideBridgeStorage.sol";
 import "../../interfaces/IScdMcdMigration.sol";
+import "../RTokenConnector.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage {
+contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, RTokenConnector {
     event TokensSwapped(address indexed from, address indexed to, uint256 value);
 
     bytes32 internal constant MIN_HDTOKEN_BALANCE = 0x48649cf195feb695632309f41e61252b09f537943654bde13eb7bb1bca06964e; // keccak256(abi.encodePacked("minHDTokenBalance"))
@@ -73,6 +74,12 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     ) internal returns (bool) {
         _increaseTotalExecutedPerDay(_amount);
         uint256 amount = _amount.div(10**decimalShift());
+
+        uint256 currentBalance = _getTokenBalance();
+        if (currentBalance < amount) {
+            _redeemRToken(amount.sub(currentBalance));
+        }
+
         bool res = erc20token().transfer(_recipient, amount);
 
         if (tokenBalance(halfDuplexErc20token()) > 0) {
@@ -157,6 +164,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         require(tokenBalance(fdToken).sub(curFDTokenBalance) == curHDTokenBalance);
 
+        mintRToken(_getTokenBalance());
+
         emit TokensSwapped(hdToken, fdToken, curHDTokenBalance);
     }
 
@@ -191,6 +200,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         tokenToOperate.transferFrom(_sender, address(this), _amount);
         emit UserRequestForAffirmation(_receiver, _amount);
+
+        mintRToken(_getTokenBalance());
 
         if (tokenToOperate == hdToken) {
             swapTokens();

@@ -44,11 +44,6 @@ contract RTokenConnector is Ownable, ERC20Bridge {
         return addressStorage[RTOKEN];
     }
 
-    function rTokenBalance() public view returns (uint256) {
-        if (rToken() == address(0)) return;
-        return IRToken(rToken()).balanceOf(address(this));
-    }
-
     function _redeemRToken(uint256 _redeemTokens) internal returns (bool) {
         if (rToken() == address(0)) return;
         return IRToken(rToken()).redeem(_redeemTokens);

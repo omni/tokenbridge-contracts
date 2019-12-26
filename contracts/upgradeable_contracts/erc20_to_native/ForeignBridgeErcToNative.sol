@@ -201,11 +201,17 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         tokenToOperate.transferFrom(_sender, address(this), _amount);
         emit UserRequestForAffirmation(_receiver, _amount);
 
-        mintRToken(_getTokenBalance());
-
+        if (tokenToOperate == fdToken) {
+            mintRToken(_getTokenBalance());
+        }
         if (tokenToOperate == hdToken) {
             swapTokens();
         }
+    }
+
+    function _relayTokens(address _sender, address _receiver, uint256 _amount) internal {
+        super._relayTokens(_sender, _receiver, _amount);
+        mintRToken(_getTokenBalance());
     }
 
     function _getTokenBalance() internal view returns (uint256) {

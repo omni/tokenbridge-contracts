@@ -23,8 +23,14 @@ contract UpgradeabilityProxy is Proxy, UpgradeabilityStorage {
     */
     function _upgradeTo(uint256 version, address implementation) internal {
         require(_implementation != implementation);
+
+        // This additional check verifies that provided implementation is at least a contract
         require(AddressUtils.isContract(implementation));
+
+        // This additional check guarantees that new version will be at least greater than the privios one,
+        // so it is impossible to reuse old versions, or use the last version twice
         require(version > _version);
+
         _version = version;
         _implementation = implementation;
         emit Upgraded(version, implementation);

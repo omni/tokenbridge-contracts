@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../interfaces/IBlockReward.sol";
-import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
+import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 
 contract BlockRewardBridge is EternalStorage {

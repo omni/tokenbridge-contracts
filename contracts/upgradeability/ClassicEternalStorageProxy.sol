@@ -1,8 +1,9 @@
 pragma solidity 0.4.24;
 
-import "./EternalStorageProxy.sol";
+import "./EternalStorage.sol";
+import "./OwnedUpgradeabilityProxy.sol";
 
-contract ClassicEternalStorageProxy is EternalStorageProxy {
+contract ClassicEternalStorageProxy is EternalStorage, OwnedUpgradeabilityProxy {
     // solhint-disable-next-line no-complex-fallback
     function() public payable {
         address _impl = implementation();

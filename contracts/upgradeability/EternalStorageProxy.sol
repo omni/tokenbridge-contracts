@@ -1,12 +1,13 @@
 pragma solidity 0.4.24;
 
-import "openzeppelin-solidity/contracts/AddressUtils.sol";
-import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
-import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/OwnedUpgradeabilityProxy.sol";
+import "./EternalStorage.sol";
+import "./OwnedUpgradeabilityProxy.sol";
 
-contract EternalStorageProxy is EternalStorage, OwnedUpgradeabilityProxy {
-    function upgradeTo(string version, address implementation) public {
-        require(AddressUtils.isContract(implementation));
-        super.upgradeTo(version, implementation);
-    }
-}
+/**
+ * @title EternalStorageProxy
+ * @dev This proxy holds the storage of the token contract and delegates every call to the current implementation set.
+ * Besides, it allows to upgrade the token's behaviour towards further implementations, and provides basic
+ * authorization control functionalities
+ */
+// solhint-disable-next-line no-empty-blocks
+contract EternalStorageProxy is EternalStorage, OwnedUpgradeabilityProxy {}

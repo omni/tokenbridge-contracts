@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
+import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../interfaces/IRewardableValidators.sol";
 import "./FeeTypes.sol";

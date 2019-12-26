@@ -24,8 +24,7 @@
     "@0x/sol-trace": "^2.0.19",
     "@0x/subproviders": "^5.0.3",
     "openzeppelin-solidity": "1.12.0",
-    "truffle": "^5.0.35",
-    "openzeppelin-labs": "openzeppelin/openzeppelin-labs#a82c35a6a7aa698ef5530adc5fbb889fee918be3"
+    "truffle": "^5.0.35"
   },
   "devDependencies": {
     "@codechecks/client": "^0.1.9",

@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../../libraries/Message.sol";
-import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
+import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBlockReward.sol";
 import "../BasicHomeBridge.sol";
 import "../OverdrawManagement.sol";

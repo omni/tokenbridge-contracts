@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "openzeppelin-labs/upgradeability_using_eternal_storage/contracts/EternalStorage.sol";
+import "../upgradeability/EternalStorage.sol";
 
 contract BaseOverdrawManagement is EternalStorage {
     event AmountLimitExceeded(address recipient, uint256 value, bytes32 transactionHash);

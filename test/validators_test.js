@@ -5,6 +5,8 @@ const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS, BN } = require('./setup')
 const { expectEventInLogs, createAccounts } = require('./helpers/helpers')
 
+const MAX_GAS = 8000000
+const MAX_VALIDATORS = 50
 const ZERO = new BN(0)
 
 contract('BridgeValidators', async accounts => {
@@ -50,17 +52,30 @@ contract('BridgeValidators', async accounts => {
     })
     it('should fail if exceed amount of validators', async () => {
       // Given
-      const validators = createAccounts(web3, 101)
+      const validators = createAccounts(web3, MAX_VALIDATORS + 1)
 
       // When
       await bridgeValidators
-        .initialize(99, validators, accounts[2], { from: accounts[2] })
+        .initialize(MAX_VALIDATORS - 1, validators, accounts[2], { from: accounts[2] })
         .should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators.initialize(99, validators.slice(0, 100), accounts[2], { from: accounts[2] }).should.be
-        .fulfilled
+    })
 
-      // Then
-      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('100')
+    it('should be able to operate with max allowed number of validators', async () => {
+      // Given
+      const validators = createAccounts(web3, MAX_VALIDATORS)
+
+      // When
+      const { receipt } = await bridgeValidators.initialize(MAX_VALIDATORS - 1, validators, accounts[2], {
+        from: accounts[2]
+      }).should.be.fulfilled
+
+      expect(receipt.gasUsed).to.be.lte(MAX_GAS)
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS}`)
+
+      // removing last validator from list (the highest gas consumption)
+      await bridgeValidators.removeValidator(validators[MAX_VALIDATORS - 1], { from: accounts[2] }).should.be.fulfilled
+
+      expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal(`${MAX_VALIDATORS - 1}`)
     })
   })
 
@@ -164,12 +179,21 @@ contract('BridgeValidators', async accounts => {
 
   describe('#upgradable', async () => {
     it('can be upgraded via upgradeToAndCall', async () => {
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
+      const storageProxy = await EternalStorageProxy.new({
+        from: accounts[0]
+      }).should.be.fulfilled
       const requiredSignatures = '2'
       const validators = [accounts[0], accounts[1]]
       const owner = accounts[2]
       const data = bridgeValidators.contract.methods.initialize(requiredSignatures, validators, owner).encodeABI()
-      await storageProxy.upgradeToAndCall('1', bridgeValidators.address, data).should.be.fulfilled
+      await storageProxy
+        .upgradeToAndCall('1', bridgeValidators.address, data, {
+          from: accounts[1]
+        })
+        .should.be.rejectedWith(ERROR_MSG)
+      await storageProxy.upgradeToAndCall('1', bridgeValidators.address, data, {
+        from: accounts[0]
+      }).should.be.fulfilled
       const finalContract = await BridgeValidators.at(storageProxy.address)
       true.should.be.equal(await finalContract.isInitialized())
       expect(await finalContract.requiredSignatures()).to.be.bignumber.equal(requiredSignatures)
@@ -217,11 +241,14 @@ contract('BridgeValidators', async accounts => {
     accounts.slice(0, 5).forEach(validator => {
       it(`should remove ${validator} - with Proxy`, async () => {
         // Given
-        const proxy = await EternalStorageProxy.new()
+        const proxy = await EternalStorageProxy.new({
+          from: owner
+        })
         const bridgeValidatorsImpl = await BridgeValidators.new()
         await proxy.upgradeTo('1', bridgeValidatorsImpl.address)
         bridgeValidators = await BridgeValidators.at(proxy.address)
         const { initialize, isInitialized, removeValidator } = bridgeValidators
+        await initialize(1, accounts.slice(0, 5), owner, { from: accounts[1] }).should.be.rejectedWith(ERROR_MSG)
         await initialize(1, accounts.slice(0, 5), owner, { from: owner }).should.be.fulfilled
         true.should.be.equal(await isInitialized())
 
@@ -246,6 +273,20 @@ contract('BridgeValidators', async accounts => {
 
       // Then
       returnedList.should.be.eql(validators)
+    })
+  })
+  describe('#isValidatorDuty', () => {
+    it('should return if provided valdidator is on duty', async () => {
+      // Given
+      const validators = accounts.slice(0, 5)
+      const { initialize, isValidatorDuty } = bridgeValidators
+      await initialize(1, validators, owner, { from: owner }).should.be.fulfilled
+
+      // When
+      const results = await Promise.all(validators.map(v => isValidatorDuty(v)))
+
+      // Then
+      expect(results.filter(r => r === true).length).to.be.equal(1)
     })
   })
 })

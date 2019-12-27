@@ -90,12 +90,12 @@ contract BasicTokenBridge is EternalStorage, Ownable {
     }
 
     function setMaxPerTx(uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < dailyLimit());
+        require(_maxPerTx == 0 || (_maxPerTx > minPerTx() && _maxPerTx < dailyLimit()));
         uintStorage[MAX_PER_TX] = _maxPerTx;
     }
 
     function setMinPerTx(uint256 _minPerTx) external onlyOwner {
-        require(_minPerTx < dailyLimit() && _minPerTx < maxPerTx());
+        require(_minPerTx > 0 && _minPerTx < dailyLimit() && _minPerTx < maxPerTx());
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 }

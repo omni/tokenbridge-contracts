@@ -3,8 +3,17 @@ const EVM_TYPES = {
   BYZANTIUM: 'byzantium',
   SPURIOUSDRAGON: 'spuriousDragon'
 }
+const EXPLORER_TYPES = {
+  ETHERSCAN: 'etherscan',
+  BLOCKSCOUT: 'blockscout'
+}
+const REQUEST_STATUS = {
+  OK: 'OK',
+}
 
 module.exports = {
   ZERO_ADDRESS,
-  EVM_TYPES
+  EVM_TYPES,
+  EXPLORER_TYPES,
+  REQUEST_STATUS
 }

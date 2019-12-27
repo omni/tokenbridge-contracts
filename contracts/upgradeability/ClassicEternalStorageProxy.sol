@@ -1,7 +1,6 @@
 pragma solidity 0.4.24;
 
-import "./EternalStorage.sol";
-import "./OwnedUpgradeabilityProxy.sol";
+import "./EternalStorageProxy.sol";
 
 /**
  * @title ClassicEternalStorageProxy
@@ -10,7 +9,7 @@ import "./OwnedUpgradeabilityProxy.sol";
  * authorization control functionalities.
  * The only differency between this contract and EternalStorageProxy is a provided support of pre-Byzantium environment.
  */
-contract ClassicEternalStorageProxy is EternalStorage, OwnedUpgradeabilityProxy {
+contract ClassicEternalStorageProxy is EternalStorageProxy {
     // solhint-disable-next-line no-complex-fallback
     function() public payable {
         address _impl = implementation();

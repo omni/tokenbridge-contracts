@@ -15,21 +15,32 @@ const {
   GAS_LIMIT_EXTRA,
   HOME_DEPLOYMENT_GAS_PRICE,
   FOREIGN_DEPLOYMENT_GAS_PRICE,
-  GET_RECEIPT_INTERVAL_IN_MILLISECONDS
+  GET_RECEIPT_INTERVAL_IN_MILLISECONDS,
+  HOME_EXPLORER_URL,
+  FOREIGN_EXPLORER_URL,
+  HOME_EXPLORER_API_KEY,
+  FOREIGN_EXPLORER_API_KEY
 } = require('./web3')
+const verifier = require('./utils/verifier')
 
 async function deployContract(contractJson, args, { from, network, nonce }) {
   let web3
   let url
   let gasPrice
+  let apiUrl
+  let apiKey
   if (network === 'foreign') {
     web3 = web3Foreign
     url = FOREIGN_RPC_URL
     gasPrice = FOREIGN_DEPLOYMENT_GAS_PRICE
+    apiUrl = FOREIGN_EXPLORER_URL
+    apiKey = FOREIGN_EXPLORER_API_KEY
   } else {
     web3 = web3Home
     url = HOME_RPC_URL
     gasPrice = HOME_DEPLOYMENT_GAS_PRICE
+    apiUrl = HOME_EXPLORER_URL
+    apiKey = HOME_EXPLORER_API_KEY
   }
   const options = {
     from
@@ -54,6 +65,15 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
   }
   instance.options.address = tx.contractAddress
   instance.deployedBlockNumber = tx.blockNumber
+
+  if (apiUrl) {
+    let constructorArguments
+    if (args.length) {
+      constructorArguments = result.substring(contractJson.bytecode.length)
+    }
+    await verifier({ artifact: contractJson, constructorArguments, address: tx.contractAddress, apiUrl, apiKey })
+  }
+
   return instance
 }
 

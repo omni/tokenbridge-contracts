@@ -205,14 +205,14 @@ async function deployForeign(homeBridgeAddress) {
   console.log('deploying ForeignBridge')
   console.log('========================================\n')
 
-  console.log('\n[Foreign] deploying BRIDGEABLE_TOKEN_SYMBOL token')
+  console.log('\n[Foreign] deploying bridgeable token')
   const erc677bridgeToken = await deployContract(
     DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce }
   )
   nonce++
-  console.log('[Foreign] BRIDGEABLE_TOKEN_SYMBOL: ', erc677bridgeToken.options.address)
+  console.log('[Foreign] Bridgeable Token: ', erc677bridgeToken.options.address)
 
   console.log('\ndeploying storage for foreign validators')
   const storageValidatorsForeign = await deployContract(EternalStorageProxy, [], {

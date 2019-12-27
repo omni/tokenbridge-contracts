@@ -8,7 +8,7 @@ contract RewardableValidators is BaseBridgeValidators {
         address[] _initialValidators,
         address[] _initialRewards,
         address _owner
-    ) public returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(_owner != address(0));
         setOwner(_owner);

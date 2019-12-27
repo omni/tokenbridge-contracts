@@ -24,7 +24,7 @@ contract ForeignBridgeNativeToErc is
         uint256 _decimalShift,
         address _bridgeOnOtherSide,
         address _limitsContract
-    ) public returns (bool) {
+    ) public onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations > 0);

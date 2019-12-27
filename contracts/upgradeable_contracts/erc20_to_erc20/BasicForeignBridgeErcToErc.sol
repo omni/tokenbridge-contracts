@@ -17,7 +17,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         address _owner,
         uint256 _decimalShift,
         address _limitsContract
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);

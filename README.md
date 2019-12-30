@@ -1,6 +1,6 @@
 [![Join the chat at https://gitter.im/poanetwork/poa-bridge](https://badges.gitter.im/poanetwork/poa-bridge.svg)](https://gitter.im/poanetwork/poa-bridge?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/poanetwork/poa-bridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/poa-bridge-contracts)
-[![Coverage Status](https://coveralls.io/repos/github/poanetwork/poa-bridge-contracts/badge.svg?branch=master)](https://coveralls.io/github/poanetwork/poa-bridge-contracts?branch=master)
+[![Build Status](https://travis-ci.org/poanetwork/tokenbridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/tokenbridge-contracts)
+[![Coverage Status](https://coveralls.io/repos/github/poanetwork/tokenbridge-contracts/badge.svg?branch=master)](https://coveralls.io/github/poanetwork/tokenbridge-contracts?branch=master)
 
 # POA Bridge Smart Contracts
 These contracts provide the core functionality for the POA bridge. They implement the logic to relay assests between two EVM-based blockchain networks. The contracts collect bridge validator's signatures to approve and facilitate relay operations. 

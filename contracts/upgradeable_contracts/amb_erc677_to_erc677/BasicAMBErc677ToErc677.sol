@@ -43,7 +43,7 @@ contract BasicAMBErc677ToErc677 is
         uint256 _decimalShift,
         address _owner,
         address _limitsContract
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_limitsContract));
 

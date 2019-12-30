@@ -85,10 +85,13 @@ async function initializeBridge({
     ? [TARGET_LIMIT, THRESHOLD, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX]
     : [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX]
 
-  const RELATIVE_DAILY_LIMIT_PARAMS = `TARGET_LIMIT: ${TARGET_LIMIT} which is ${
-    Web3Utils.fromWei(Web3Utils.toBN(TARGET_LIMIT).mul(Web3Utils.toBN(100)))
-  }%,
-  THRESHOLD: ${THRESHOLD} which is ${Web3Utils.fromWei(THRESHOLD)} in eth,`
+  let RELATIVE_DAILY_LIMIT_PARAMS
+  if (RELATIVE_DAILY_LIMIT) {
+    RELATIVE_DAILY_LIMIT_PARAMS = `TARGET_LIMIT: ${TARGET_LIMIT} which is ${
+      Web3Utils.fromWei(Web3Utils.toBN(TARGET_LIMIT).mul(Web3Utils.toBN(100)))
+    }%,
+    THRESHOLD: ${THRESHOLD} which is ${Web3Utils.fromWei(THRESHOLD)} in eth,`
+  }
 
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
@@ -205,14 +208,14 @@ async function deployForeign(homeBridgeAddress) {
   console.log('deploying ForeignBridge')
   console.log('========================================\n')
 
-  console.log('\n[Foreign] deploying BRIDGEABLE_TOKEN_SYMBOL token')
+  console.log('\n[Foreign] deploying bridgeable token')
   const erc677bridgeToken = await deployContract(
     DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken,
     [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce }
   )
   nonce++
-  console.log('[Foreign] BRIDGEABLE_TOKEN_SYMBOL: ', erc677bridgeToken.options.address)
+  console.log('[Foreign] Bridgeable Token: ', erc677bridgeToken.options.address)
 
   console.log('\ndeploying storage for foreign validators')
   const storageValidatorsForeign = await deployContract(EternalStorageProxy, [], {

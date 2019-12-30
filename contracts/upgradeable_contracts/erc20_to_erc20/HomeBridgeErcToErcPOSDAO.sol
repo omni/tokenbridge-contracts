@@ -21,7 +21,7 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         address _blockReward,
         uint256 _decimalShift,
         address _limitsContract
-    ) public returns (bool) {
+    ) public onlyRelevantSender returns (bool) {
         _setBlockRewardContract(_feeManager, _blockReward);
         return
             super.rewardableInitialize(

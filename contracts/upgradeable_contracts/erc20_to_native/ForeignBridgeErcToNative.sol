@@ -21,7 +21,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         address _owner,
         uint256 _decimalShift,
         address _bridgeOnOtherSide
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);

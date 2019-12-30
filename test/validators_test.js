@@ -179,12 +179,21 @@ contract('BridgeValidators', async accounts => {
 
   describe('#upgradable', async () => {
     it('can be upgraded via upgradeToAndCall', async () => {
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
+      const storageProxy = await EternalStorageProxy.new({
+        from: accounts[0]
+      }).should.be.fulfilled
       const requiredSignatures = '2'
       const validators = [accounts[0], accounts[1]]
       const owner = accounts[2]
       const data = bridgeValidators.contract.methods.initialize(requiredSignatures, validators, owner).encodeABI()
-      await storageProxy.upgradeToAndCall('1', bridgeValidators.address, data).should.be.fulfilled
+      await storageProxy
+        .upgradeToAndCall('1', bridgeValidators.address, data, {
+          from: accounts[1]
+        })
+        .should.be.rejectedWith(ERROR_MSG)
+      await storageProxy.upgradeToAndCall('1', bridgeValidators.address, data, {
+        from: accounts[0]
+      }).should.be.fulfilled
       const finalContract = await BridgeValidators.at(storageProxy.address)
       true.should.be.equal(await finalContract.isInitialized())
       expect(await finalContract.requiredSignatures()).to.be.bignumber.equal(requiredSignatures)
@@ -232,11 +241,14 @@ contract('BridgeValidators', async accounts => {
     accounts.slice(0, 5).forEach(validator => {
       it(`should remove ${validator} - with Proxy`, async () => {
         // Given
-        const proxy = await EternalStorageProxy.new()
+        const proxy = await EternalStorageProxy.new({
+          from: owner
+        })
         const bridgeValidatorsImpl = await BridgeValidators.new()
         await proxy.upgradeTo('1', bridgeValidatorsImpl.address)
         bridgeValidators = await BridgeValidators.at(proxy.address)
         const { initialize, isInitialized, removeValidator } = bridgeValidators
+        await initialize(1, accounts.slice(0, 5), owner, { from: accounts[1] }).should.be.rejectedWith(ERROR_MSG)
         await initialize(1, accounts.slice(0, 5), owner, { from: owner }).should.be.fulfilled
         true.should.be.equal(await isInitialized())
 

@@ -24,7 +24,7 @@ contract HomeBridgeErcToErc is
         uint256[] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
         uint256 _decimalShift
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         _initialize(
             _validatorContract,
             _dailyLimitMaxPerTxMinPerTxArray,
@@ -51,7 +51,7 @@ contract HomeBridgeErcToErc is
         address _feeManager,
         uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         uint256 _decimalShift
-    ) external returns (bool) {
+    ) external onlyRelevantSender returns (bool) {
         _rewardableInitialize(
             _validatorContract,
             _dailyLimitMaxPerTxMinPerTxArray,

@@ -10,14 +10,15 @@ mkdir -p flats/erc20_to_native
 mkdir -p flats/validators
 mkdir -p flats/arbitrary_message
 mkdir -p flats/amb_erc677_to_erc677
+mkdir -p flats/upgradeability
 
 FLATTENER=./node_modules/.bin/truffle-flattener
 BRIDGE_CONTRACTS_DIR=contracts/upgradeable_contracts
 VALIDATOR_CONTRACTS_DIR=contracts/upgradeable_contracts
 
 echo "Flattening common bridge contracts"
-${FLATTENER} contracts/upgradeability/EternalStorageProxy.sol > flats/EternalStorageProxy_flat.sol
-${FLATTENER} contracts/upgradeability/ClassicEternalStorageProxy.sol > flats/ClassicEternalStorageProxy_flat.sol
+${FLATTENER} contracts/upgradeability/EternalStorageProxy.sol > flats/upgradeability/EternalStorageProxy_flat.sol
+${FLATTENER} contracts/upgradeability/ClassicEternalStorageProxy.sol > flats/upgradeability/ClassicEternalStorageProxy_flat.sol
 ${FLATTENER} contracts/ERC677BridgeToken.sol > flats/ERC677BridgeToken_flat.sol
 ${FLATTENER} contracts/ERC677BridgeTokenRewardable.sol > flats/ERC677BridgeTokenRewardable_flat.sol
 

@@ -15,7 +15,6 @@ contract RTokenConnector is Ownable, ERC20Bridge {
     ) external onlyOwner returns (uint256) {
         require(AddressUtils.isContract(_rToken));
         addressStorage[RTOKEN] = _rToken;
-        erc20token().approve(_rToken, uint256(-1));
         return createAndChangeRTokenHat(_recipients, _proportions);
     }
 
@@ -23,20 +22,21 @@ contract RTokenConnector is Ownable, ERC20Bridge {
         addressStorage[RTOKEN] = address(0);
     }
 
-    function redeemRToken(uint256 _redeemTokens) external onlyOwner returns (bool) {
-        return _redeemRToken(_redeemTokens);
+    function redeemRToken(uint256 _redeemTokens) external onlyOwner {
+        _redeemRToken(_redeemTokens);
     }
 
-    function mintRToken(uint256 _mintAmount) public returns (bool) {
-        if (rToken() == address(0)) return;
-        return IRToken(rToken()).mint(_mintAmount);
+    function mintRToken(uint256 _mintAmount) public {
+        address rTokenAddress = rToken();
+        if (rTokenAddress == address(0)) return;
+        erc20token().approve(rTokenAddress, _mintAmount);
+        IRToken(rTokenAddress).mint(_mintAmount);
     }
 
     function createAndChangeRTokenHat(
         address[] _recipients,
         uint32[] _proportions
     ) public onlyOwner returns (uint256) {
-        if (rToken() == address(0)) return;
         return IRToken(rToken()).createHat(_recipients, _proportions, true);
     }
 
@@ -44,8 +44,8 @@ contract RTokenConnector is Ownable, ERC20Bridge {
         return addressStorage[RTOKEN];
     }
 
-    function _redeemRToken(uint256 _redeemTokens) internal returns (bool) {
+    function _redeemRToken(uint256 _redeemTokens) internal {
         if (rToken() == address(0)) return;
-        return IRToken(rToken()).redeem(_redeemTokens);
+        IRToken(rToken()).redeem(_redeemTokens);
     }
 }

@@ -1,5 +1,9 @@
 pragma solidity 0.4.24;
 
+/**
+* @title IRToken
+* @dev Interface of RToken (https://github.com/rtoken-project/rtoken-contracts)
+*/
 contract IRToken {
     function mint(uint256 mintAmount) external returns (bool);
     function redeem(uint256 redeemTokens) external returns (bool);

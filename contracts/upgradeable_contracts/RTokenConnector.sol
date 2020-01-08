@@ -63,8 +63,17 @@ contract RTokenConnector is Ownable, ERC20Bridge {
     function mintRToken(uint256 _mintAmount) public {
         address rTokenAddress = rToken();
         if (rTokenAddress == address(0)) return;
+
+        uint256 balanceBefore = erc20token().balanceOf(address(this));
+        uint256 rBalanceBefore = rTokenBalance();
+
         erc20token().approve(rTokenAddress, _mintAmount);
         IRToken(rTokenAddress).mint(_mintAmount);
+
+        uint256 balanceAfter = erc20token().balanceOf(address(this));
+        uint256 rBalanceAfter = rTokenBalance();
+
+        require(balanceAfter == balanceBefore.sub(_mintAmount) && rBalanceAfter == rBalanceBefore.add(_mintAmount));
     }
 
     /**
@@ -81,12 +90,26 @@ contract RTokenConnector is Ownable, ERC20Bridge {
         return addressStorage[RTOKEN];
     }
 
+    /// @dev Returns rToken balance
+    function rTokenBalance() public view returns (uint256) {
+        return IRToken(rToken()).balanceOf(address(this));
+    }
+
     /**
     * @dev Swaps rTokens to bridge's tokens
     * @param _redeemTokens Amount to swap
     */
     function _redeemRToken(uint256 _redeemTokens) internal {
         if (rToken() == address(0)) return;
+
+        uint256 balanceBefore = erc20token().balanceOf(address(this));
+        uint256 rBalanceBefore = rTokenBalance();
+
         IRToken(rToken()).redeem(_redeemTokens);
+
+        uint256 balanceAfter = erc20token().balanceOf(address(this));
+        uint256 rBalanceAfter = rTokenBalance();
+
+        require(balanceAfter == balanceBefore.add(_redeemTokens) && rBalanceAfter == rBalanceBefore.sub(_redeemTokens));
     }
 }

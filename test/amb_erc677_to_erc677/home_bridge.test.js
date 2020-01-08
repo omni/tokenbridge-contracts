@@ -5,6 +5,8 @@ const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const HomeAMB = artifacts.require('HomeAMB.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
+const AbsoluteDailyLimit = artifacts.require('AbsoluteDailyLimit.sol')
+const RelativeDailyLimit = artifacts.require('RelativeDailyLimit.sol')
 
 const { expect } = require('chai')
 const { shouldBehaveLikeBasicAMBErc677ToErc677 } = require('./AMBErc677ToErc677Behavior.test')
@@ -22,8 +24,11 @@ const maxPerTx = oneEther
 const minPerTx = ether('0.01')
 const executionDailyLimit = dailyLimit
 const executionMaxPerTx = maxPerTx
+const executionMinPerTx = minPerTx
 const exampleTxHash = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const decimalShiftZero = 0
+const targetLimit = ether('0.05')
+const threshold = ether('10000')
 
 contract('HomeAMBErc677ToErc677', async accounts => {
   const owner = accounts[0]
@@ -32,13 +37,17 @@ contract('HomeAMBErc677ToErc677', async accounts => {
   let mediatorContract
   let erc677Token
   let homeBridge
+  let limitsContract
+
+  const limitsArray = [dailyLimit, maxPerTx, minPerTx]
+
   beforeEach(async function() {
     this.bridge = await HomeAMBErc677ToErc677.new()
     const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
     await storageProxy.upgradeTo('1', this.bridge.address).should.be.fulfilled
     this.proxyContract = await HomeAMBErc677ToErc677.at(storageProxy.address)
   })
-  shouldBehaveLikeBasicAMBErc677ToErc677(ForeignAMBErc677ToErc677, accounts)
+  shouldBehaveLikeBasicAMBErc677ToErc677(HomeAMBErc677ToErc677, accounts, true)
   describe('onTokenTransfer', () => {
     beforeEach(async () => {
       const validatorContract = await BridgeValidators.new()
@@ -49,17 +58,19 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       mediatorContract = await ForeignAMBErc677ToErc677.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      limitsContract = await AbsoluteDailyLimit.new()
 
       homeBridge = await HomeAMBErc677ToErc677.new()
       await homeBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
         erc677Token.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        limitsArray,
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
-        owner
+        owner,
+        limitsContract.address
       ).should.be.fulfilled
     })
     it('should emit UserRequestForSignature in AMB bridge and burn transferred tokens', async () => {
@@ -128,17 +139,19 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await ForeignAMBErc677ToErc677.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      limitsContract = await AbsoluteDailyLimit.new()
 
       homeBridge = await HomeAMBErc677ToErc677.new()
       await homeBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
         erc677Token.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        limitsArray,
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftZero,
-        owner
+        owner,
+        limitsContract.address
       ).should.be.fulfilled
       await erc677Token.transferOwnership(homeBridge.address)
     })
@@ -188,17 +201,19 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       // Given
       const decimalShiftTwo = 2
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      limitsContract = await AbsoluteDailyLimit.new()
 
       homeBridge = await HomeAMBErc677ToErc677.new()
       await homeBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
         erc677Token.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
+        limitsArray,
+        [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
         maxGasPerTx,
         decimalShiftTwo,
-        owner
+        owner,
+        limitsContract.address
       ).should.be.fulfilled
       await erc677Token.transferOwnership(homeBridge.address)
 
@@ -242,42 +257,68 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(valueOnHome)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(valueOnHome)
     })
-    it('should emit AmountLimitExceeded and not mint tokens when out of execution limits', async () => {
-      // Given
-      const currentDay = await homeBridge.getCurrentDay()
-      expect(await homeBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-      const initialEvents = await getEvents(erc677Token, { event: 'Mint' })
-      expect(initialEvents.length).to.be.equal(0)
-      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(ZERO)
+    const shouldEmitAmountLimitExceededAndNotMintTokens = isRelativeDailyLimit =>
+      async function() {
+        erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+        const LimitsContract = isRelativeDailyLimit ? RelativeDailyLimit : AbsoluteDailyLimit
+        limitsContract = await LimitsContract.new()
 
-      const outOfLimitValueData = await homeBridge.contract.methods
-        .handleBridgedTokens(user, twoEthers.toString(), nonce)
-        .encodeABI()
+        homeBridge = await HomeAMBErc677ToErc677.new()
+        await homeBridge.initialize(
+          ambBridgeContract.address,
+          mediatorContract.address,
+          erc677Token.address,
+          isRelativeDailyLimit ? [targetLimit, threshold, maxPerTx, minPerTx] : [dailyLimit, maxPerTx, minPerTx],
+          [executionDailyLimit, executionMaxPerTx, executionMinPerTx],
+          maxGasPerTx,
+          decimalShiftZero,
+          owner,
+          limitsContract.address
+        ).should.be.fulfilled
+        await erc677Token.transferOwnership(homeBridge.address)
+        // Given
+        const currentDay = await homeBridge.getCurrentDay()
+        expect(await homeBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+        const initialEvents = await getEvents(erc677Token, { event: 'Mint' })
+        expect(initialEvents.length).to.be.equal(0)
+        expect(await erc677Token.totalSupply()).to.be.bignumber.equal(ZERO)
 
-      // when
-      await ambBridgeContract.executeMessageCall(
-        homeBridge.address,
-        mediatorContract.address,
-        outOfLimitValueData,
-        exampleTxHash,
-        1000000
-      ).should.be.fulfilled
+        const outOfLimitValueData = await homeBridge.contract.methods
+          .handleBridgedTokens(user, twoEthers.toString(), nonce)
+          .encodeABI()
 
-      expect(await ambBridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+        // when
+        await ambBridgeContract.executeMessageCall(
+          homeBridge.address,
+          mediatorContract.address,
+          outOfLimitValueData,
+          exampleTxHash,
+          1000000
+        ).should.be.fulfilled
 
-      // Then
-      expect(await homeBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-      const events = await getEvents(erc677Token, { event: 'Mint' })
-      expect(events.length).to.be.equal(0)
-      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(ZERO)
-      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
+        expect(await ambBridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
 
-      expect(await homeBridge.outOfLimitAmount()).to.be.bignumber.equal(twoEthers)
-      const outOfLimitEvent = await getEvents(homeBridge, { event: 'AmountLimitExceeded' })
-      expect(outOfLimitEvent.length).to.be.equal(1)
-      expect(outOfLimitEvent[0].returnValues.recipient).to.be.equal(user)
-      expect(outOfLimitEvent[0].returnValues.value).to.be.equal(twoEthers.toString())
-      expect(outOfLimitEvent[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
-    })
+        // Then
+        expect(await homeBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+        const events = await getEvents(erc677Token, { event: 'Mint' })
+        expect(events.length).to.be.equal(0)
+        expect(await erc677Token.totalSupply()).to.be.bignumber.equal(ZERO)
+        expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
+
+        expect(await homeBridge.outOfLimitAmount()).to.be.bignumber.equal(twoEthers)
+        const outOfLimitEvent = await getEvents(homeBridge, { event: 'AmountLimitExceeded' })
+        expect(outOfLimitEvent.length).to.be.equal(1)
+        expect(outOfLimitEvent[0].returnValues.recipient).to.be.equal(user)
+        expect(outOfLimitEvent[0].returnValues.value).to.be.equal(twoEthers.toString())
+        expect(outOfLimitEvent[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
+      }
+    it(
+      'should emit AmountLimitExceeded and not mint tokens when out of execution limits',
+      shouldEmitAmountLimitExceededAndNotMintTokens(false)
+    )
+    it(
+      'should emit AmountLimitExceeded and not mint tokens when out of execution limits (relative limit)',
+      shouldEmitAmountLimitExceededAndNotMintTokens(true)
+    )
   })
 })

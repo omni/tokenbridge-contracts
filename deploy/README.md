@@ -148,6 +148,13 @@ FOREIGN_REWARDABLE=false
 # Makes sense only when HOME_REWARDABLE!=false or FOREIGN_REWARDABLE!=false
 VALIDATORS_REWARD_ACCOUNTS=0x 0x 0x
 
+# Relative or absolute daily limit. If true then TARGET_LIMIT and THRESHOLD will be used in the calculation
+RELATIVE_DAILY_LIMIT=true
+# Fixed percentage of balance after threshold (e.g. 5%). Must be less than or equal to 1 ether in wei
+TARGET_LIMIT=50000000000000000
+# Must be greater than or equal to MIN_AMOUNT_PER_TX of the side on which relative daily limit is used
+THRESHOLD=100000000000000000000000
+
 # Fee to be taken for every transaction directed from the Home network to the Foreign network
 # Makes sense only when FOREIGN_REWARDABLE=ONE_DIRECTION or HOME_REWARDABLE=BOTH_DIRECTIONS
 # e.g. 0.1% fee

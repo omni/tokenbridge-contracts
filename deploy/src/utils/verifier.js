@@ -7,15 +7,17 @@ const promiseRetry = require('promise-retry')
 
 const basePath = path.join(__dirname, '..', '..', '..', 'flats')
 
-const isBridgeToken = (name) => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol'
-const isValidators = (name) => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
+const isBridgeToken = name => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol'
+const isValidators = name => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
+const isLimitContract = name =>
+  name === 'AbsoluteDailyLimit.sol' || name === 'RelativeDailyLimit.sol' || name === 'RelativeExecutionDailyLimit.sol'
 
 const flat = async contractPath => {
   const pathArray = contractPath.split('/')
   const name = pathArray[pathArray.length - 1]
   let module = pathArray[pathArray.length - 2]
 
-  if (isBridgeToken(name)) {
+  if (isBridgeToken(name) || isLimitContract(name)) {
     module = ''
   } else if (isValidators(name)) {
     module = 'validators'

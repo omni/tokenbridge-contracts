@@ -4,46 +4,42 @@ import "../BasicForeignBridge.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 contract BasicForeignBridgeErcToErc is BasicForeignBridge {
-    function _initialize(
+    function initialize(
         address _validatorContract,
         address _erc20token,
         uint256 _requiredBlockConfirmations,
         uint256 _gasPrice,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _requestLimitsArray,
+        // absolute: [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _executionMaxPerTx, 3 = _executionMinPerTx ]
+        uint256[] _executionLimitsArray,
         address _owner,
-        uint256 _decimalShift
-    ) internal {
+        uint256 _decimalShift,
+        address _limitsContract
+    ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
         require(_gasPrice > 0);
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(_homeDailyLimitHomeMaxPerTxArray[1] < _homeDailyLimitHomeMaxPerTxArray[0]); // _homeMaxPerTx < _homeDailyLimit
         require(_owner != address(0));
+        require(AddressUtils.isContract(_limitsContract));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[GAS_PRICE] = _gasPrice;
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
-        setInitialize();
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
         emit GasPriceChanged(_gasPrice);
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
+
+        setInitialize();
+        return isInitialized();
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -60,13 +56,17 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         uint256 _amount,
         bytes32 /*_txHash*/
     ) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
+        _increaseTotalExecutedPerDay(_amount);
         uint256 amount = _amount.div(10**decimalShift());
         return erc20token().transfer(_recipient, amount);
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {
         revert();
+    }
+
+    function _getTokenBalance() internal view returns (uint256) {
+        return erc20token().balanceOf(address(this));
     }
 
     /* solcov ignore next */

@@ -33,37 +33,31 @@ contract BasicAMBErc677ToErc677 is
         address _bridgeContract,
         address _mediatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
+        // absolute: [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = threshold, 2 = _maxPerTx, 3 = _minPerTx ]
+        uint256[] _requestLimitsArray,
+        // absolute: [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx, 2 = _executionMinPerTx ]
+        // relative: [ 0 = _targetLimit, 1 = _threshold, 2 = _executionMaxPerTx, 3 = _executionMinPerTx ]
+        uint256[] _executionLimitsArray,
         uint256 _requestGasLimit,
         uint256 _decimalShift,
-        address _owner
+        address _owner,
+        address _limitsContract
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // _executionMaxPerTx < _executionDailyLimit
+        require(AddressUtils.isContract(_limitsContract));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
         setErc677token(_erc677token);
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
         _setRequestGasLimit(_requestGasLimit);
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
         setNonce(keccak256(abi.encodePacked(address(this))));
+        addressStorage[LIMITS_CONTRACT] = _limitsContract;
+        _setLimits(_requestLimitsArray, _executionLimitsArray);
+
         setInitialize();
-
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxArray[0]);
-
         return isInitialized();
     }
 
@@ -95,8 +89,9 @@ contract BasicAMBErc677ToErc677 is
         require(!lock());
         ERC677 token = erc677token();
         address to = address(this);
+        _updateTodayLimit();
         require(withinLimit(_value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        _increaseTotalSpentPerDay(_value);
 
         setLock(true);
         token.transferFrom(_from, to, _value);
@@ -112,8 +107,9 @@ contract BasicAMBErc677ToErc677 is
         ERC677 token = erc677token();
         require(msg.sender == address(token));
         if (!lock()) {
+            _updateTodayLimit();
             require(withinLimit(_value));
-            setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+            _increaseTotalSpentPerDay(_value);
         }
         bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
         return true;
@@ -216,8 +212,9 @@ contract BasicAMBErc677ToErc677 is
     ) external {
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
+        _updateTodayLimit();
         if (withinExecutionLimit(_value)) {
-            setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+            _increaseTotalExecutedPerDay(_value);
             executeActionOnBridgedTokens(_recipient, _value);
         } else {
             bytes32 txHash = transactionHash();

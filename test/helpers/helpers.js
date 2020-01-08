@@ -1,5 +1,5 @@
 const { expect } = require('chai')
-const { BN } = require('../setup')
+const { BN, toBN } = require('../setup')
 
 // returns a Promise that resolves with a hex string that is the signature of
 // `data` signed with the key of `address`
@@ -213,3 +213,20 @@ function addTxHashToAMBData(encodedData, transactionHash) {
 }
 
 module.exports.addTxHashToAMBData = addTxHashToAMBData
+
+function calculateDailyLimit(balance, targetLimit, threshold, minPerTx) {
+  if (balance.lte(minPerTx)) {
+    return balance
+  }
+  let limit = targetLimit
+  const multiplier = ether('1').pow(toBN(2))
+  if (balance.gt(minPerTx) && balance.lt(threshold)) {
+    const a = ether('1').sub(limit).mul(multiplier).div(threshold.sub(minPerTx).pow(toBN(2))) // eslint-disable-line
+    const b = a.mul(threshold).mul(toBN(2))
+    const c = limit.mul(multiplier).add(a.mul(threshold.pow(toBN(2))))
+    limit = a.mul(balance.pow(toBN(2))).sub(b.mul(balance)).add(c).div(multiplier) // eslint-disable-line
+  }
+  return balance.mul(limit).div(ether('1'))
+}
+
+module.exports.calculateDailyLimit = calculateDailyLimit

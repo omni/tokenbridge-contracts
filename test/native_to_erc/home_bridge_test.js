@@ -7,10 +7,20 @@ const FeeManagerNativeToErcBothDirections = artifacts.require('FeeManagerNativeT
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.sol')
+const AbsoluteDailyLimit = artifacts.require('AbsoluteDailyLimit.sol')
+const RelativeExecutionDailyLimit = artifacts.require('RelativeExecutionDailyLimit.sol')
 
 const { expect } = require('chai')
+const { expectEvent } = require('@openzeppelin/test-helpers')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { createMessage, sign, ether, expectEventInLogs, createAccounts } = require('../helpers/helpers')
+const {
+  createMessage,
+  sign,
+  ether,
+  expectEventInLogs,
+  calculateDailyLimit,
+  createAccounts
+} = require('../helpers/helpers')
 
 const minPerTx = ether('0.01')
 const requireBlockConfirmations = 8
@@ -20,67 +30,88 @@ const twoEther = ether('2')
 const halfEther = ether('0.5')
 const foreignDailyLimit = oneEther
 const foreignMaxPerTx = halfEther
+const foreignMinPerTx = minPerTx
 const ZERO = toBN(0)
 const MAX_GAS = 8000000
 const MAX_VALIDATORS = 50
 const decimalShiftZero = 0
+const targetLimit = ether('0.05')
+const threshold = ether('10000')
 
-contract('HomeBridge', async accounts => {
+contract('HomeBridge_Native_to_ERC', async accounts => {
+  const executionLimitsArray = [foreignDailyLimit, foreignMaxPerTx, foreignMinPerTx]
+  const relativeExecutionLimitsArray = [targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx]
+
   let homeContract
   let validatorContract
   let authorities
   let owner
+  let absoluteLimitsContract
+  let relativeLimitsContract
+
   before(async () => {
     validatorContract = await BridgeValidators.new()
     authorities = [accounts[1]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
+    absoluteLimitsContract = await AbsoluteDailyLimit.new()
+    relativeLimitsContract = await RelativeExecutionDailyLimit.new()
   })
 
   describe('#initialize', async () => {
     beforeEach(async () => {
       homeContract = await HomeBridge.new()
     })
-    it('sets variables', async () => {
-      expect(await homeContract.validatorContract()).to.be.equal(ZERO_ADDRESS)
-      expect(await homeContract.deployedAtBlock()).to.be.bignumber.equal(ZERO)
-      expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
-      expect(await homeContract.maxPerTx()).to.be.bignumber.equal(ZERO)
-      expect(await homeContract.decimalShift()).to.be.bignumber.equal(ZERO)
-      expect(await homeContract.isInitialized()).to.be.equal(false)
+    const setsVariables = isRelativeDailyLimit =>
+      async function() {
+        expect(await homeContract.validatorContract()).to.be.equal(ZERO_ADDRESS)
+        expect(await homeContract.limitsContract()).to.be.equal(ZERO_ADDRESS)
+        expect(await homeContract.deployedAtBlock()).to.be.bignumber.equal(ZERO)
+        expect(await homeContract.decimalShift()).to.be.bignumber.equal(ZERO)
+        expect(await homeContract.isInitialized()).to.be.equal(false)
 
-      const { logs } = await homeContract.initialize(
-        validatorContract.address,
-        ['3', '2', '1'],
-        gasPrice,
-        requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
-        owner,
-        '9'
-      ).should.be.fulfilled
+        const limitsContract = isRelativeDailyLimit ? relativeLimitsContract : absoluteLimitsContract
 
-      expect(await homeContract.isInitialized()).to.be.equal(true)
-      expect(await homeContract.validatorContract()).to.be.equal(validatorContract.address)
-      expect(await homeContract.deployedAtBlock()).to.be.bignumber.above(ZERO)
-      expect(await homeContract.dailyLimit()).to.be.bignumber.equal('3')
-      expect(await homeContract.maxPerTx()).to.be.bignumber.equal('2')
-      expect(await homeContract.minPerTx()).to.be.bignumber.equal('1')
-      expect(await homeContract.gasPrice()).to.be.bignumber.equal(gasPrice)
-      expect(await homeContract.decimalShift()).to.be.bignumber.equal('9')
-      const bridgeMode = '0x92a8d7fe' // 4 bytes of keccak256('native-to-erc-core')
-      expect(await homeContract.getBridgeMode()).to.be.equal(bridgeMode)
-      const { major, minor, patch } = await homeContract.getBridgeInterfacesVersion()
-      expect(major).to.be.bignumber.gte(ZERO)
-      expect(minor).to.be.bignumber.gte(ZERO)
-      expect(patch).to.be.bignumber.gte(ZERO)
+        const { logs, tx } = await homeContract.initialize(
+          validatorContract.address,
+          ['3', '2', '1'],
+          gasPrice,
+          requireBlockConfirmations,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
+          owner,
+          '9',
+          limitsContract.address
+        ).should.be.fulfilled
 
-      expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
-        requiredBlockConfirmations: toBN(requireBlockConfirmations)
-      })
-      expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
-      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: foreignDailyLimit })
-      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: '3' })
-    })
+        expect(await homeContract.isInitialized()).to.be.equal(true)
+        expect(await homeContract.validatorContract()).to.be.equal(validatorContract.address)
+        expect(await homeContract.limitsContract()).to.be.equal(limitsContract.address)
+        expect(await homeContract.deployedAtBlock()).to.be.bignumber.above(ZERO)
+        expect(await homeContract.dailyLimit()).to.be.bignumber.equal('3')
+        expect(await homeContract.maxPerTx()).to.be.bignumber.equal('2')
+        expect(await homeContract.minPerTx()).to.be.bignumber.equal('1')
+        expect(await homeContract.gasPrice()).to.be.bignumber.equal(gasPrice)
+        expect(await homeContract.decimalShift()).to.be.bignumber.equal('9')
+        const bridgeMode = '0x92a8d7fe' // 4 bytes of keccak256('native-to-erc-core')
+        expect(await homeContract.getBridgeMode()).to.be.equal(bridgeMode)
+        const { major, minor, patch } = await homeContract.getBridgeInterfacesVersion()
+        expect(major).to.be.bignumber.gte(ZERO)
+        expect(minor).to.be.bignumber.gte(ZERO)
+        expect(patch).to.be.bignumber.gte(ZERO)
+
+        expectEventInLogs(logs, 'RequiredBlockConfirmationChanged', {
+          requiredBlockConfirmations: toBN(requireBlockConfirmations)
+        })
+        expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
+        await expectEvent.inTransaction(tx, limitsContract, 'DailyLimitChanged', { newLimit: '3' })
+        if (!isRelativeDailyLimit) {
+          await expectEvent.inTransaction(tx, limitsContract, 'ExecutionDailyLimitChanged', {
+            newLimit: foreignDailyLimit.toString()
+          })
+        }
+      }
+    it('sets variables', setsVariables(false))
+    it('sets variables (relative limit)', setsVariables(true))
     it('cant set maxPerTx > dailyLimit', async () => {
       false.should.be.equal(await homeContract.isInitialized())
       await homeContract
@@ -89,9 +120,10 @@ contract('HomeBridge', async accounts => {
           ['1', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -100,9 +132,10 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '2'],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       false.should.be.equal(await homeContract.isInitialized())
@@ -114,9 +147,10 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       expect(await homeContract.gasPrice()).to.be.bignumber.equal(gasPrice)
@@ -139,9 +173,10 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       expect(await homeContract.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(requireBlockConfirmations))
@@ -169,9 +204,10 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          ['3', '2'],
+          ['3', '2', '1'],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .encodeABI()
       await storageProxy.upgradeTo('1', accounts[5]).should.be.rejectedWith(ERROR_MSG)
@@ -193,9 +229,10 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           0,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -204,9 +241,10 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract
@@ -215,9 +253,10 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeContract.initialize(
@@ -225,9 +264,10 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
       true.should.be.equal(await homeContract.isInitialized())
     })
@@ -238,9 +278,10 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       expect(await homeContract.owner()).to.be.equal(owner)
@@ -264,9 +305,10 @@ contract('HomeBridge', async accounts => {
           ['3', '2', '1'],
           gasPrice,
           requireBlockConfirmations,
-          ['3', '2'],
+          ['3', '2', '1'],
           owner,
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .encodeABI()
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
@@ -276,228 +318,242 @@ contract('HomeBridge', async accounts => {
     })
   })
 
-  describe('#fallback', async () => {
-    beforeEach(async () => {
-      homeContract = await HomeBridge.new()
-      await homeContract.initialize(
-        validatorContract.address,
-        ['3', '2', '1'],
-        gasPrice,
-        requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
-        owner,
-        decimalShiftZero
-      )
-    })
-    it('should accept native coins', async () => {
-      const currentDay = await homeContract.getCurrentDay()
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+  const fallback = isRelativeDailyLimit =>
+    function() {
+      beforeEach(async () => {
+        homeContract = await HomeBridge.new()
+        await homeContract.initialize(
+          validatorContract.address,
+          ['3', '2', '1'],
+          gasPrice,
+          requireBlockConfirmations,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
+          owner,
+          decimalShiftZero,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+        )
+      })
+      it('should accept native coins', async () => {
+        const currentDay = await homeContract.getCurrentDay()
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-      const { logs } = await homeContract.sendTransaction({
-        from: accounts[1],
-        value: 1
-      }).should.be.fulfilled
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
-
-      expectEventInLogs(logs, 'UserRequestForSignature', { recipient: accounts[1], value: toBN(1) })
-
-      await homeContract
-        .sendTransaction({
-          from: accounts[1],
-          value: 3
-        })
-        .should.be.rejectedWith(ERROR_MSG)
-
-      await homeContract.setDailyLimit(4).should.be.fulfilled
-      await homeContract.sendTransaction({
-        from: accounts[1],
-        value: 1
-      }).should.be.fulfilled
-
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
-    })
-
-    it('doesnt let you send more than max amount per tx', async () => {
-      await homeContract.sendTransaction({
-        from: accounts[1],
-        value: 1
-      }).should.be.fulfilled
-      await homeContract
-        .sendTransaction({
-          from: accounts[1],
-          value: 3
-        })
-        .should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setDailyLimit(100).should.be.fulfilled
-      await homeContract.setMaxPerTx(99).should.be.fulfilled
-      // meets max per tx and daily limit
-      await homeContract.sendTransaction({
-        from: accounts[1],
-        value: 99
-      }).should.be.fulfilled
-      // above daily limit
-      await homeContract
-        .sendTransaction({
+        const { logs } = await homeContract.sendTransaction({
           from: accounts[1],
           value: 1
-        })
-        .should.be.rejectedWith(ERROR_MSG)
-    })
+        }).should.be.fulfilled
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
 
-    it('should not let to deposit less than minPerTx', async () => {
-      const newDailyLimit = 100
-      const newMaxPerTx = 50
-      const newMinPerTx = 20
-      await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled
-      await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled
-      await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled
+        expectEventInLogs(logs, 'UserRequestForSignature', { recipient: accounts[1], value: toBN(1) })
 
-      await homeContract.sendTransaction({
-        from: accounts[1],
-        value: newMinPerTx
-      }).should.be.fulfilled
-      await homeContract
-        .sendTransaction({
+        await homeContract
+          .sendTransaction({
+            from: accounts[1],
+            value: 3
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+
+        await homeContract.setDailyLimit(4).should.be.fulfilled
+        await homeContract.sendTransaction({
           from: accounts[1],
-          value: newMinPerTx - 1
-        })
-        .should.be.rejectedWith(ERROR_MSG)
-    })
-  })
+          value: 1
+        }).should.be.fulfilled
 
-  describe('#relayTokens', async () => {
-    const user = accounts[1]
-    const user2 = accounts[2]
-    beforeEach(async () => {
-      homeContract = await HomeBridge.new()
-      await homeContract.initialize(
-        validatorContract.address,
-        ['3', '2', '1'],
-        gasPrice,
-        requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
-        owner,
-        decimalShiftZero
-      )
-    })
-    it('should accept native coins and alternative receiver', async () => {
-      const currentDay = await homeContract.getCurrentDay()
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
+      })
 
-      const { logs } = await homeContract.relayTokens(user2, {
-        from: user,
-        value: 1
-      }).should.be.fulfilled
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
+      it('doesnt let you send more than max amount per tx', async () => {
+        await homeContract.sendTransaction({
+          from: accounts[1],
+          value: 1
+        }).should.be.fulfilled
+        await homeContract
+          .sendTransaction({
+            from: accounts[1],
+            value: 3
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+        await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG)
+        await homeContract.setDailyLimit(100).should.be.fulfilled
+        await homeContract.setMaxPerTx(99).should.be.fulfilled
+        // meets max per tx and daily limit
+        await homeContract.sendTransaction({
+          from: accounts[1],
+          value: 99
+        }).should.be.fulfilled
+        // above daily limit
+        await homeContract
+          .sendTransaction({
+            from: accounts[1],
+            value: 1
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+      })
 
-      expectEventInLogs(logs, 'UserRequestForSignature', { recipient: user2, value: toBN(1) })
+      it('should not let to deposit less than minPerTx', async () => {
+        const newDailyLimit = 100
+        const newMaxPerTx = 50
+        const newMinPerTx = 20
+        await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled
+        await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled
+        await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled
 
-      await homeContract
-        .relayTokens(user2, {
-          from: user,
-          value: 3
-        })
-        .should.be.rejectedWith(ERROR_MSG)
+        await homeContract.sendTransaction({
+          from: accounts[1],
+          value: newMinPerTx
+        }).should.be.fulfilled
+        await homeContract
+          .sendTransaction({
+            from: accounts[1],
+            value: newMinPerTx - 1
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+      })
+    }
 
-      await homeContract.setDailyLimit(4).should.be.fulfilled
-      await homeContract.relayTokens(user2, {
-        from: user,
-        value: 1
-      }).should.be.fulfilled
+  describe('#fallback', fallback(false))
+  describe('#fallback (relative limit)', fallback(true))
 
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
-    })
+  const relayTokens = isRelativeDailyLimit =>
+    function() {
+      const user = accounts[1]
+      const user2 = accounts[2]
+      beforeEach(async () => {
+        homeContract = await HomeBridge.new()
+        await homeContract.initialize(
+          validatorContract.address,
+          ['3', '2', '1'],
+          gasPrice,
+          requireBlockConfirmations,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
+          owner,
+          decimalShiftZero,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+        )
+      })
+      it('should accept native coins and alternative receiver', async () => {
+        const currentDay = await homeContract.getCurrentDay()
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-    it('doesnt let you send more than max amount per tx', async () => {
-      await homeContract.relayTokens(user2, {
-        from: user,
-        value: 1
-      }).should.be.fulfilled
-      await homeContract
-        .relayTokens(user2, {
-          from: user,
-          value: 3
-        })
-        .should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setDailyLimit(100).should.be.fulfilled
-      await homeContract.setMaxPerTx(99).should.be.fulfilled
-      // meets max per tx and daily limit
-      await homeContract.relayTokens(user2, {
-        from: user,
-        value: 99
-      }).should.be.fulfilled
-      // above daily limit
-      await homeContract
-        .relayTokens(user2, {
+        const { logs } = await homeContract.relayTokens(user2, {
           from: user,
           value: 1
-        })
-        .should.be.rejectedWith(ERROR_MSG)
-    })
+        }).should.be.fulfilled
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
 
-    it('should not let to deposit less than minPerTx', async () => {
-      const newDailyLimit = 100
-      const newMaxPerTx = 50
-      const newMinPerTx = 20
-      await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled
-      await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled
-      await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled
+        expectEventInLogs(logs, 'UserRequestForSignature', { recipient: user2, value: toBN(1) })
 
-      await homeContract.relayTokens(user2, {
-        from: user,
-        value: newMinPerTx
-      }).should.be.fulfilled
-      await homeContract
-        .relayTokens(user2, {
+        await homeContract
+          .relayTokens(user2, {
+            from: user,
+            value: 3
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+
+        await homeContract.setDailyLimit(4).should.be.fulfilled
+        await homeContract.relayTokens(user2, {
           from: user,
-          value: newMinPerTx - 1
-        })
-        .should.be.rejectedWith(ERROR_MSG)
-    })
-  })
+          value: 1
+        }).should.be.fulfilled
 
-  describe('#setting limits', async () => {
-    let homeContract
-    beforeEach(async () => {
-      homeContract = await HomeBridge.new()
-      await homeContract.initialize(
-        validatorContract.address,
-        ['3', '2', '1'],
-        gasPrice,
-        requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
-        owner,
-        decimalShiftZero
-      )
-    })
-    it('#setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
-      await homeContract.setMaxPerTx(2, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setMaxPerTx(2, { from: owner }).should.be.fulfilled
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
+      })
 
-      await homeContract.setMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
-    })
-    it('#setMinPerTx allows to set only to owner and cannot be more than daily limit and should be less than maxPerTx', async () => {
-      await homeContract.setMinPerTx(1, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setMinPerTx(1, { from: owner }).should.be.fulfilled
+      it('doesnt let you send more than max amount per tx', async () => {
+        await homeContract.relayTokens(user2, {
+          from: user,
+          value: 1
+        }).should.be.fulfilled
+        await homeContract
+          .relayTokens(user2, {
+            from: user,
+            value: 3
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+        await homeContract.setMaxPerTx(100).should.be.rejectedWith(ERROR_MSG)
+        await homeContract.setDailyLimit(100).should.be.fulfilled
+        await homeContract.setMaxPerTx(99).should.be.fulfilled
+        // meets max per tx and daily limit
+        await homeContract.relayTokens(user2, {
+          from: user,
+          value: 99
+        }).should.be.fulfilled
+        // above daily limit
+        await homeContract
+          .relayTokens(user2, {
+            from: user,
+            value: 1
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+      })
 
-      await homeContract.setMinPerTx(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
-    })
-    it('#setDailyLimit allow to set by owner and should be greater than maxPerTx or zero', async () => {
-      await homeContract.setDailyLimit(4, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
-      await homeContract.setDailyLimit(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      it('should not let to deposit less than minPerTx', async () => {
+        const newDailyLimit = 100
+        const newMaxPerTx = 50
+        const newMinPerTx = 20
+        await homeContract.setDailyLimit(newDailyLimit).should.be.fulfilled
+        await homeContract.setMaxPerTx(newMaxPerTx).should.be.fulfilled
+        await homeContract.setMinPerTx(newMinPerTx).should.be.fulfilled
 
-      await homeContract.setDailyLimit(4, { from: owner }).should.be.fulfilled
-      expect(await homeContract.dailyLimit()).to.be.bignumber.equal('4')
+        await homeContract.relayTokens(user2, {
+          from: user,
+          value: newMinPerTx
+        }).should.be.fulfilled
+        await homeContract
+          .relayTokens(user2, {
+            from: user,
+            value: newMinPerTx - 1
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+      })
+    }
 
-      await homeContract.setDailyLimit(0, { from: owner }).should.be.fulfilled
-      expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
+  describe('#relayTokens', relayTokens(false))
+  describe('#relayTokens (relative limit)', relayTokens(true))
 
-      await homeContract.setDailyLimit(4, { from: owner }).should.be.fulfilled
-      expect(await homeContract.dailyLimit()).to.be.bignumber.equal('4')
-    })
-  })
+  const settingLimits = isRelativeDailyLimit =>
+    function() {
+      let homeContract
+      beforeEach(async () => {
+        homeContract = await HomeBridge.new()
+        await homeContract.initialize(
+          validatorContract.address,
+          ['3', '2', '1'],
+          gasPrice,
+          requireBlockConfirmations,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
+          owner,
+          decimalShiftZero,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+        )
+      })
+      it('#setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
+        await homeContract.setMaxPerTx(2, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
+        await homeContract.setMaxPerTx(2, { from: owner }).should.be.fulfilled
+
+        await homeContract.setMaxPerTx(3, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      })
+      it('#setMinPerTx allows to set only to owner and cannot be more than daily limit and should be less than maxPerTx', async () => {
+        await homeContract.setMinPerTx(1, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
+        await homeContract.setMinPerTx(1, { from: owner }).should.be.fulfilled
+
+        await homeContract.setMinPerTx(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      })
+      it('#setDailyLimit allow to set by owner and should be greater than maxPerTx or zero', async () => {
+        await homeContract.setDailyLimit(4, { from: authorities[0] }).should.be.rejectedWith(ERROR_MSG)
+        await homeContract.setDailyLimit(2, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+        await homeContract.setDailyLimit(4, { from: owner }).should.be.fulfilled
+        expect(await homeContract.dailyLimit()).to.be.bignumber.equal('4')
+
+        await homeContract.setDailyLimit(0, { from: owner }).should.be.fulfilled
+        expect(await homeContract.dailyLimit()).to.be.bignumber.equal(ZERO)
+
+        await homeContract.setDailyLimit(4, { from: owner }).should.be.fulfilled
+        expect(await homeContract.dailyLimit()).to.be.bignumber.equal('4')
+      })
+    }
+  describe('#setting limits', settingLimits(false))
+  describe('#setting limits (relative limit)', settingLimits(true))
 
   describe('#executeAffirmation', async () => {
     let homeBridge
@@ -508,42 +564,63 @@ contract('HomeBridge', async accounts => {
         [twoEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       )
       await homeBridge.sendTransaction({
         from: accounts[2],
         value: halfEther
       }).should.be.fulfilled
     })
-    it('should allow validator to executeAffirmation', async () => {
-      const recipient = accounts[5]
-      const value = halfEther
-      const balanceBefore = toBN(await web3.eth.getBalance(recipient))
-      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
-      const { logs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {
-        from: authorities[0]
-      })
+    const shouldAllowValidatorToExecuteAffirmation = isRelativeDailyLimit =>
+      async function() {
+        homeBridge = await HomeBridge.new()
+        await homeBridge.initialize(
+          validatorContract.address,
+          [twoEther, oneEther, minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
+          owner,
+          decimalShiftZero,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+        )
+        await homeBridge.sendTransaction({
+          from: accounts[2],
+          value: oneEther
+        }).should.be.fulfilled
 
-      expectEventInLogs(logs, 'SignedForAffirmation', {
-        signer: authorities[0],
-        transactionHash
-      })
-      expectEventInLogs(logs, 'AffirmationCompleted', {
-        recipient,
-        value,
-        transactionHash
-      })
-      const homeBalanceAfter = toBN(await web3.eth.getBalance(homeBridge.address))
-      const balanceAfter = toBN(await web3.eth.getBalance(recipient))
-      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
-      homeBalanceAfter.should.be.bignumber.equal(ZERO)
+        const recipient = accounts[5]
+        const value = halfEther
 
-      const msgHash = web3.utils.soliditySha3(recipient, value, transactionHash)
-      const senderHash = web3.utils.soliditySha3(authorities[0], msgHash)
-      true.should.be.equal(await homeBridge.affirmationsSigned(senderHash))
-    })
+        const balanceBefore = toBN(await web3.eth.getBalance(recipient))
+        const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+        const { logs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {
+          from: authorities[0]
+        }).should.be.fulfilled
+
+        expectEventInLogs(logs, 'SignedForAffirmation', {
+          signer: authorities[0],
+          transactionHash
+        })
+        expectEventInLogs(logs, 'AffirmationCompleted', {
+          recipient,
+          value,
+          transactionHash
+        })
+        const homeBalanceAfter = toBN(await web3.eth.getBalance(homeBridge.address))
+        const balanceAfter = toBN(await web3.eth.getBalance(recipient))
+        balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+        homeBalanceAfter.should.be.bignumber.equal(halfEther)
+
+        const msgHash = web3.utils.soliditySha3(recipient, value, transactionHash)
+        const senderHash = web3.utils.soliditySha3(authorities[0], msgHash)
+        true.should.be.equal(await homeBridge.affirmationsSigned(senderHash))
+      }
+    it('should allow validator to executeAffirmation', shouldAllowValidatorToExecuteAffirmation(false))
+    it('should allow validator to executeAffirmation (relative limit)', shouldAllowValidatorToExecuteAffirmation(true))
 
     it('should allow validator to executeAffirmation with zero value', async () => {
       const recipient = accounts[5]
@@ -580,20 +657,21 @@ contract('HomeBridge', async accounts => {
       const homeBridgeWithTwoSigs = await HomeBridge.new()
       await homeBridgeWithTwoSigs.initialize(
         validatorContractWith2Signatures.address,
-        [twoEther, halfEther, minPerTx],
+        [twoEther, ether('1.5'), minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       )
 
       await homeBridgeWithTwoSigs.sendTransaction({
         from: accounts[2],
-        value: halfEther
+        value: ether('1.5')
       }).should.be.fulfilled
       const homeBalanceBefore = toBN(await web3.eth.getBalance(homeBridgeWithTwoSigs.address))
-      homeBalanceBefore.should.be.bignumber.equal(halfEther)
+      homeBalanceBefore.should.be.bignumber.equal(ether('1.5'))
 
       const recipient = accounts[5]
       const value = halfEther
@@ -606,7 +684,7 @@ contract('HomeBridge', async accounts => {
       }).should.be.fulfilled
 
       expectEventInLogs(logs, 'SignedForAffirmation', { signer: authorities[0], transactionHash })
-      halfEther.should.be.bignumber.equal(await web3.eth.getBalance(homeBridgeWithTwoSigs.address))
+      ether('1.5').should.be.bignumber.equal(await web3.eth.getBalance(homeBridgeWithTwoSigs.address))
       const notProcessed = await homeBridgeWithTwoSigs.numAffirmationsSigned(msgHash)
       notProcessed.should.be.bignumber.equal('1')
 
@@ -619,7 +697,7 @@ contract('HomeBridge', async accounts => {
 
       const balanceAfter = toBN(await web3.eth.getBalance(recipient))
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
-      expect(toBN(await web3.eth.getBalance(homeBridgeWithTwoSigs.address))).to.be.bignumber.equal(ZERO)
+      expect(toBN(await web3.eth.getBalance(homeBridgeWithTwoSigs.address))).to.be.bignumber.equal(oneEther)
 
       expectEventInLogs(secondSignature.logs, 'AffirmationCompleted', {
         recipient,
@@ -671,9 +749,10 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       )
 
       await homeBridgeWithTwoSigs.sendTransaction({
@@ -713,6 +792,8 @@ contract('HomeBridge', async accounts => {
       await revertFallbackContract.receiveEth({ from: accounts[0], value: halfEther })
       expect(toBN(await web3.eth.getBalance(revertFallbackContract.address))).to.be.bignumber.equal(halfEther)
 
+      await homeBridge.sendTransaction({ from: accounts[2], value: halfEther })
+
       const transactionHash = '0x106335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
       const { logs } = await homeBridge.executeAffirmation(revertFallbackContract.address, halfEther, transactionHash, {
         from: authorities[0]
@@ -730,7 +811,7 @@ contract('HomeBridge', async accounts => {
       const homeBalanceAfter = toBN(await web3.eth.getBalance(homeBridge.address))
       const balanceAfter = toBN(await web3.eth.getBalance(revertFallbackContract.address))
       balanceAfter.should.be.bignumber.equal(halfEther.add(halfEther))
-      homeBalanceAfter.should.be.bignumber.equal(ZERO)
+      homeBalanceAfter.should.be.bignumber.equal(halfEther)
     })
     it('works with 5 validators and 3 required signatures', async () => {
       const recipient = accounts[8]
@@ -745,14 +826,19 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       )
 
       const value = halfEther
       const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
 
+      await homeBridgeWithThreeSigs.sendTransaction({
+        from: recipient,
+        value: halfEther
+      }).should.be.fulfilled
       await homeBridgeWithThreeSigs.sendTransaction({
         from: recipient,
         value: halfEther
@@ -779,56 +865,103 @@ contract('HomeBridge', async accounts => {
         transactionHash
       })
     })
-    it('should not allow execute affirmation over foreign max tx limit', async () => {
-      const recipient = accounts[5]
-      const value = oneEther
-      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+    const shouldNotAllowExecuteAffirmationOverForeignMaxTxLimit = isRelativeDailyLimit =>
+      async function() {
+        homeBridge = await HomeBridge.new()
+        await homeBridge.initialize(
+          validatorContract.address,
+          [twoEther, oneEther, minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
+          owner,
+          decimalShiftZero,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+        )
+        await homeBridge.sendTransaction({
+          from: accounts[2],
+          value: oneEther
+        }).should.be.fulfilled
 
-      await homeBridge
-        .executeAffirmation(recipient, value, transactionHash, { from: authorities[0] })
-        .should.be.rejectedWith(ERROR_MSG)
-    })
-    it('should not allow execute affirmation over daily foreign limit', async () => {
-      await homeBridge.sendTransaction({ from: accounts[2], value: halfEther }).should.be.fulfilled
-      await homeBridge.sendTransaction({ from: accounts[2], value: halfEther }).should.be.fulfilled
+        const recipient = accounts[5]
+        const value = oneEther
+        const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
 
-      const recipient = accounts[5]
-      const value = halfEther
-      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
-      const { logs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {
-        from: authorities[0]
-      }).should.be.fulfilled
+        await homeBridge
+          .executeAffirmation(recipient, value, transactionHash, { from: authorities[0] })
+          .should.be.rejectedWith(ERROR_MSG)
+      }
+    it(
+      'should not allow execute affirmation over foreign max tx limit',
+      shouldNotAllowExecuteAffirmationOverForeignMaxTxLimit(false)
+    )
+    it(
+      'should not allow execute affirmation over foreign max tx limit (relative limit)',
+      shouldNotAllowExecuteAffirmationOverForeignMaxTxLimit(true)
+    )
+    const shouldNotAllowExecuteAffirmationOverDailyForeignLimit = isRelativeDailyLimit =>
+      async function() {
+        homeBridge = await HomeBridge.new()
+        await homeBridge.initialize(
+          validatorContract.address,
+          [twoEther, oneEther.add(halfEther), minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          isRelativeDailyLimit ? relativeExecutionLimitsArray : executionLimitsArray,
+          owner,
+          decimalShiftZero,
+          isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+        )
+        await homeBridge.sendTransaction({
+          from: accounts[2],
+          value: oneEther.add(halfEther)
+        }).should.be.fulfilled
 
-      expectEventInLogs(logs, 'SignedForAffirmation', {
-        signer: authorities[0],
-        transactionHash
-      })
-      expectEventInLogs(logs, 'AffirmationCompleted', {
-        recipient,
-        value,
-        transactionHash
-      })
+        const recipient = accounts[5]
+        const value = halfEther
+        const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+        const { logs } = await homeBridge.executeAffirmation(recipient, value, transactionHash, {
+          from: authorities[0]
+        }).should.be.fulfilled
 
-      const transactionHash2 = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
-      const { logs: logs2 } = await homeBridge.executeAffirmation(recipient, value, transactionHash2, {
-        from: authorities[0]
-      }).should.be.fulfilled
+        expectEventInLogs(logs, 'SignedForAffirmation', {
+          signer: authorities[0],
+          transactionHash
+        })
+        expectEventInLogs(logs, 'AffirmationCompleted', {
+          recipient,
+          value,
+          transactionHash
+        })
 
-      expectEventInLogs(logs2, 'SignedForAffirmation', {
-        signer: authorities[0],
-        transactionHash: transactionHash2
-      })
-      expectEventInLogs(logs2, 'AffirmationCompleted', {
-        recipient,
-        value,
-        transactionHash: transactionHash2
-      })
+        const transactionHash2 = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+        const { logs: logs2 } = await homeBridge.executeAffirmation(recipient, value, transactionHash2, {
+          from: authorities[0]
+        }).should.be.fulfilled
 
-      const transactionHash3 = '0x69debd8fd1923c9cb3cd8ef6461e2740b2d037943b941729d5a47671a2bb8712'
-      await homeBridge
-        .executeAffirmation(recipient, value, transactionHash3, { from: authorities[0] })
-        .should.be.rejectedWith(ERROR_MSG)
-    })
+        expectEventInLogs(logs2, 'SignedForAffirmation', {
+          signer: authorities[0],
+          transactionHash: transactionHash2
+        })
+        expectEventInLogs(logs2, 'AffirmationCompleted', {
+          recipient,
+          value,
+          transactionHash: transactionHash2
+        })
+
+        const transactionHash3 = '0x69debd8fd1923c9cb3cd8ef6461e2740b2d037943b941729d5a47671a2bb8712'
+        await homeBridge
+          .executeAffirmation(recipient, value, transactionHash3, { from: authorities[0] })
+          .should.be.rejectedWith(ERROR_MSG)
+      }
+    it(
+      'should not allow execute affirmation over daily foreign limit',
+      shouldNotAllowExecuteAffirmationOverDailyForeignLimit(false)
+    )
+    it(
+      'should not allow execute affirmation over daily foreign limit (relative limit)',
+      shouldNotAllowExecuteAffirmationOverDailyForeignLimit(true)
+    )
   })
 
   describe('#isAlreadyProcessed', async () => {
@@ -858,9 +991,10 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       )
     })
     it('allows a validator to submit a signature', async () => {
@@ -918,9 +1052,10 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       )
 
       const value = halfEther
@@ -1012,91 +1147,99 @@ contract('HomeBridge', async accounts => {
     })
   })
 
-  describe('#claimTokens', () => {
-    it('should work with token that return bool on transfer', async () => {
-      const storageProxy = await EternalStorageProxy.new()
-      const data = homeContract.contract.methods
-        .initialize(
-          validatorContract.address,
-          ['3', '2', '1'],
-          gasPrice,
-          requireBlockConfirmations,
-          ['3', '2'],
-          owner,
-          decimalShiftZero
-        )
-        .encodeABI()
-      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
-      const homeBridge = await HomeBridge.at(storageProxy.address)
+  const claimTokens = isRelativeDailyLimit =>
+    function() {
+      it('should work with token that return bool on transfer', async () => {
+        const storageProxy = await EternalStorageProxy.new()
+        const data = homeContract.contract.methods
+          .initialize(
+            validatorContract.address,
+            ['3', '2', '1'],
+            gasPrice,
+            requireBlockConfirmations,
+            isRelativeDailyLimit ? ['1', '3', '2', '1'] : ['3', '2', '1'],
+            owner,
+            decimalShiftZero,
+            isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+          )
+          .encodeABI()
+        await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
+        const homeBridge = await HomeBridge.at(storageProxy.address)
 
-      const token = await ERC677BridgeToken.new('Test', 'TST', 18)
+        const token = await ERC677BridgeToken.new('Test', 'TST', 18)
 
-      await token.mint(accounts[0], halfEther).should.be.fulfilled
-      expect(await token.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+        await token.mint(accounts[0], halfEther).should.be.fulfilled
+        expect(await token.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
 
-      await token.transfer(homeBridge.address, halfEther).should.be.fulfilled
-      expect(await token.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
-      expect(await token.balanceOf(homeBridge.address)).to.be.bignumber.equal(halfEther)
+        await token.transfer(homeBridge.address, halfEther).should.be.fulfilled
+        expect(await token.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(homeBridge.address)).to.be.bignumber.equal(halfEther)
 
-      await homeBridge.claimTokens(token.address, accounts[3], { from: owner }).should.be.fulfilled
-      expect(await token.balanceOf(homeBridge.address)).to.be.bignumber.equal(ZERO)
-      expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
-    })
-    it('should works with token that not return on transfer', async () => {
-      const storageProxy = await EternalStorageProxy.new()
-      const data = homeContract.contract.methods
-        .initialize(
-          validatorContract.address,
-          ['3', '2', '1'],
-          gasPrice,
-          requireBlockConfirmations,
-          ['3', '2'],
-          owner,
-          decimalShiftZero
-        )
-        .encodeABI()
-      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
-      const homeBridge = await HomeBridge.at(storageProxy.address)
+        await homeBridge.claimTokens(token.address, accounts[3], { from: owner }).should.be.fulfilled
+        expect(await token.balanceOf(homeBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+      })
+      it('should works with token that not return on transfer', async () => {
+        const storageProxy = await EternalStorageProxy.new()
+        const data = homeContract.contract.methods
+          .initialize(
+            validatorContract.address,
+            ['3', '2', '1'],
+            gasPrice,
+            requireBlockConfirmations,
+            isRelativeDailyLimit ? ['1', '3', '2', '1'] : ['3', '2', '1'],
+            owner,
+            decimalShiftZero,
+            isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+          )
+          .encodeABI()
+        await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
+        const homeBridge = await HomeBridge.at(storageProxy.address)
 
-      const tokenMock = await NoReturnTransferTokenMock.new()
+        const tokenMock = await NoReturnTransferTokenMock.new()
 
-      await tokenMock.mint(accounts[0], halfEther).should.be.fulfilled
-      expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+        await tokenMock.mint(accounts[0], halfEther).should.be.fulfilled
+        expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
 
-      await tokenMock.transfer(homeBridge.address, halfEther).should.be.fulfilled
-      expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
-      expect(await tokenMock.balanceOf(homeBridge.address)).to.be.bignumber.equal(halfEther)
+        await tokenMock.transfer(homeBridge.address, halfEther).should.be.fulfilled
+        expect(await tokenMock.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+        expect(await tokenMock.balanceOf(homeBridge.address)).to.be.bignumber.equal(halfEther)
 
-      await homeBridge.claimTokens(tokenMock.address, accounts[3], { from: owner }).should.be.fulfilled
-      expect(await tokenMock.balanceOf(homeBridge.address)).to.be.bignumber.equal(ZERO)
-      expect(await tokenMock.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
-    })
-    it('should work for native coins', async () => {
-      const storageProxy = await EternalStorageProxy.new()
-      const data = homeContract.contract.methods
-        .initialize(
-          validatorContract.address,
-          [oneEther.toString(), halfEther.toString(), '1'],
-          gasPrice,
-          requireBlockConfirmations,
-          [oneEther.toString(), halfEther.toString()],
-          owner,
-          decimalShiftZero
-        )
-        .encodeABI()
-      await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
-      const homeBridge = await HomeBridge.at(storageProxy.address)
+        await homeBridge.claimTokens(tokenMock.address, accounts[3], { from: owner }).should.be.fulfilled
+        expect(await tokenMock.balanceOf(homeBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await tokenMock.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+      })
+      it('should work for native coins', async () => {
+        const storageProxy = await EternalStorageProxy.new()
+        const data = homeContract.contract.methods
+          .initialize(
+            validatorContract.address,
+            [oneEther.toString(), halfEther.toString(), '1'],
+            gasPrice,
+            requireBlockConfirmations,
+            isRelativeDailyLimit
+              ? [targetLimit.toString(), threshold.toString(), halfEther.toString(), '1']
+              : [oneEther.toString(), halfEther.toString(), '1'],
+            owner,
+            decimalShiftZero,
+            isRelativeDailyLimit ? relativeLimitsContract.address : absoluteLimitsContract.address
+          )
+          .encodeABI()
+        await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
+        const homeBridge = await HomeBridge.at(storageProxy.address)
 
-      const balanceBefore = toBN(await web3.eth.getBalance(accounts[3]))
+        const balanceBefore = toBN(await web3.eth.getBalance(accounts[3]))
 
-      await homeBridge.sendTransaction({ from: accounts[2], value: halfEther }).should.be.fulfilled
-      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(halfEther)
+        await homeBridge.sendTransaction({ from: accounts[2], value: halfEther }).should.be.fulfilled
+        expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(halfEther)
 
-      await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.fulfilled
-      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(ZERO)
-      expect(toBN(await web3.eth.getBalance(accounts[3]))).to.be.bignumber.equal(balanceBefore.add(halfEther))
-    })
-  })
+        await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.fulfilled
+        expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(ZERO)
+        expect(toBN(await web3.eth.getBalance(accounts[3]))).to.be.bignumber.equal(balanceBefore.add(halfEther))
+      })
+    }
+  describe('#claimTokens', claimTokens(false))
+  describe('#claimTokens (relative limit)', claimTokens(true))
 
   describe('#rewardableInitialize', async () => {
     let homeFee
@@ -1117,8 +1260,6 @@ contract('HomeBridge', async accounts => {
       const feeManager = await FeeManagerNativeToErc.new()
       expect(await homeBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
       expect(await homeBridge.deployedAtBlock()).to.be.bignumber.equal(ZERO)
-      expect(await homeBridge.dailyLimit()).to.be.bignumber.equal(ZERO)
-      expect(await homeBridge.maxPerTx()).to.be.bignumber.equal(ZERO)
       expect(await homeBridge.isInitialized()).to.be.equal(false)
 
       await homeBridge
@@ -1127,11 +1268,12 @@ contract('HomeBridge', async accounts => {
           [oneEther, halfEther, minPerTx],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
           feeManager.address,
           [homeFee, foreignFee],
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
@@ -1140,11 +1282,12 @@ contract('HomeBridge', async accounts => {
           [oneEther, halfEther, minPerTx],
           0,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
           feeManager.address,
           [homeFee, foreignFee],
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
@@ -1153,11 +1296,12 @@ contract('HomeBridge', async accounts => {
           [oneEther, halfEther, minPerTx],
           gasPrice,
           0,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
           feeManager.address,
           [homeFee, foreignFee],
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
@@ -1166,11 +1310,12 @@ contract('HomeBridge', async accounts => {
           [oneEther, halfEther, minPerTx],
           gasPrice,
           requireBlockConfirmations,
-          [foreignDailyLimit, foreignMaxPerTx],
+          executionLimitsArray,
           owner,
           ZERO_ADDRESS,
           [homeFee, foreignFee],
-          decimalShiftZero
+          decimalShiftZero,
+          absoluteLimitsContract.address
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge.rewardableInitialize(
@@ -1178,11 +1323,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [homeFee, foreignFee],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       expect(await homeBridge.isInitialized()).to.be.equal(true)
@@ -1212,11 +1358,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [homeFee, foreignFee],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // Given
@@ -1237,11 +1384,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [homeFee, foreignFee],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // Given
@@ -1261,11 +1409,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [homeFee, foreignFee],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // Given
@@ -1292,11 +1441,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [homeFee, foreignFee],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // Then
@@ -1314,11 +1464,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [homeFee, foreignFee],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // Then
@@ -1354,11 +1505,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // When
@@ -1403,11 +1555,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // When
@@ -1453,11 +1606,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       await homeBridge.sendTransaction({
@@ -1513,12 +1667,17 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
       await homeBridge.sendTransaction({
         from: accounts[0],
         value: halfEther
@@ -1585,12 +1744,17 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
       await homeBridge.sendTransaction({
         from: accounts[0],
         value: halfEther
@@ -1651,7 +1815,7 @@ contract('HomeBridge', async accounts => {
       ).to.equal(true)
 
       const homeBridgeBalance = toBN(await web3.eth.getBalance(homeBridge.address))
-      homeBridgeBalance.should.be.bignumber.equal(ZERO)
+      homeBridgeBalance.should.be.bignumber.equal(halfEther)
     })
     it('should distribute fee to 5 validators', async () => {
       // Given
@@ -1680,12 +1844,17 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
       await homeBridge.sendTransaction({
         from: accounts[0],
         value: halfEther
@@ -1776,11 +1945,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [notUsedFee, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
       await homeBridge.sendTransaction({
         from: accounts[0],
@@ -1825,11 +1995,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // When
@@ -1875,11 +2046,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       // When
@@ -1930,11 +2102,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       await homeBridge.sendTransaction({
@@ -1982,7 +2155,6 @@ contract('HomeBridge', async accounts => {
       const feeInWei = ether(fee.toString())
       const feePerValidator = toBN(166666666666666)
       const feePerValidatorPlusDiff = toBN(166666666666668)
-      const initialValue = halfEther
       const valueCalc = 0.5 * (1 - fee)
       const value = ether(valueCalc.toString())
       const feeAmountCalc = 0.5 * fee
@@ -1993,16 +2165,21 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       await homeBridge.sendTransaction({
         from: user,
-        value: initialValue
+        value: halfEther
+      }).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: user,
+        value: halfEther
       }).should.be.fulfilled
 
       const initialBalanceRewardAddress1 = toBN(await web3.eth.getBalance(rewards[0]))
@@ -2065,7 +2242,6 @@ contract('HomeBridge', async accounts => {
       // 0.1% fee
       const fee = 0.001
       const feeInWei = ether(fee.toString())
-      const initialValue = halfEther
       const valueCalc = 0.5 * (1 - fee)
       const value = ether(valueCalc.toString())
       const feeAmountCalc = 0.5 * fee
@@ -2077,16 +2253,21 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       await homeBridge.sendTransaction({
         from: user,
-        value: initialValue
+        value: halfEther
+      }).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: user,
+        value: halfEther
       }).should.be.fulfilled
 
       const initialBalanceRewardAddress1 = toBN(await web3.eth.getBalance(rewards[0]))
@@ -2160,11 +2341,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
 
       await homeBridge.sendTransaction({
@@ -2213,12 +2395,17 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
       await homeBridge.sendTransaction({
         from: accounts[0],
         value: halfEther
@@ -2284,12 +2471,17 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
       await homeBridge.sendTransaction({
         from: accounts[0],
         value: halfEther
@@ -2350,7 +2542,7 @@ contract('HomeBridge', async accounts => {
       ).to.equal(true)
 
       const homeBridgeBalance = toBN(await web3.eth.getBalance(homeBridge.address))
-      homeBridgeBalance.should.be.bignumber.equal('0')
+      homeBridgeBalance.should.be.bignumber.equal(halfEther)
     })
     it('should distribute fee to 5 validators', async () => {
       // Given
@@ -2378,12 +2570,17 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
+      await homeBridge.sendTransaction({
+        from: accounts[0],
+        value: halfEther
+      }).should.be.fulfilled
       await homeBridge.sendTransaction({
         from: accounts[0],
         value: halfEther
@@ -2473,11 +2670,12 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
         feeManager.address,
         [feeInWei, feeInWei],
-        decimalShiftZero
+        decimalShiftZero,
+        absoluteLimitsContract.address
       ).should.be.fulfilled
       await homeBridge.sendTransaction({
         from: accounts[0],
@@ -2509,9 +2707,10 @@ contract('HomeBridge', async accounts => {
         [oneEther, halfEther, minPerTx],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftTwo
+        decimalShiftTwo,
+        absoluteLimitsContract.address
       )
 
       const valueOnForeign = toBN('1000')
@@ -2559,9 +2758,10 @@ contract('HomeBridge', async accounts => {
         ['3', '2', '1'],
         gasPrice,
         requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
+        executionLimitsArray,
         owner,
-        decimalShiftTwo
+        decimalShiftTwo,
+        absoluteLimitsContract.address
       )
       const currentDay = await homeContract.getCurrentDay()
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
@@ -2588,6 +2788,69 @@ contract('HomeBridge', async accounts => {
       }).should.be.fulfilled
 
       expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
+    })
+  })
+  describe('#executionDailyLimit (relative)', () => {
+    let homeBridge
+
+    function initialize(customExecutionLimitsArray) {
+      return homeBridge.initialize(
+        validatorContract.address,
+        [threshold.add(toBN(1)), threshold, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        customExecutionLimitsArray,
+        owner,
+        decimalShiftZero,
+        relativeLimitsContract.address
+      ).should.be.fulfilled
+    }
+
+    beforeEach(async () => {
+      homeBridge = await HomeBridge.new()
+    })
+    it('should be calculated correctly - 1', async () => {
+      await initialize([targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx])
+
+      await homeBridge.sendTransaction({ from: accounts[4], value: halfEther }).should.be.fulfilled
+      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(halfEther)
+
+      const limit = await homeBridge.executionDailyLimit()
+      const expectedLimit = calculateDailyLimit(halfEther, targetLimit, threshold, foreignMinPerTx)
+      expect(limit).to.be.bignumber.equal(expectedLimit)
+    })
+    it('should be calculated correctly - 2', async function() {
+      await initialize([targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx])
+
+      await homeBridge.sendTransaction({ from: accounts[4], value: foreignMinPerTx }).should.be.fulfilled
+      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(foreignMinPerTx)
+
+      const limit = await homeBridge.executionDailyLimit()
+      expect(limit).to.be.bignumber.equal(foreignMinPerTx)
+    })
+    it('should be calculated correctly - 3', async function() {
+      await initialize([targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx])
+
+      await homeBridge.sendTransaction({ from: accounts[4], value: threshold }).should.be.fulfilled
+      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(threshold)
+
+      const limit = await homeBridge.executionDailyLimit()
+      expect(limit).to.be.bignumber.equal(threshold.mul(targetLimit).div(oneEther))
+    })
+    it('should be calculated correctly - 4', async function() {
+      const amountToSend = ether('5')
+      const targetLimit = ether('0.06')
+      const threshold = ether('100')
+      const foreignMinPerTx = ether('0.1')
+
+      await initialize([targetLimit, threshold, foreignMaxPerTx, foreignMinPerTx])
+
+      await homeBridge.sendTransaction({ from: accounts[4], value: amountToSend }).should.be.fulfilled
+      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(amountToSend)
+
+      const limit = await homeBridge.executionDailyLimit()
+      const expectedLimit = calculateDailyLimit(amountToSend, targetLimit, threshold, foreignMinPerTx)
+      expect(limit).to.be.bignumber.equal(expectedLimit)
     })
   })
 })

@@ -17,15 +17,18 @@ const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   DEPLOY_REWARDABLE_TOKEN,
   BLOCK_REWARD_ADDRESS,
-  DPOS_STAKING_ADDRESS
+  DPOS_STAKING_ADDRESS,
+  RELATIVE_DAILY_LIMIT
 } = require('../loadEnv')
 
 const {
   homeContracts: {
     EternalStorageProxy,
-    HomeAMBErc677ToErc677: HomeBridge,
+    HomeAMBErc677ToErc677,
     ERC677BridgeToken,
-    ERC677BridgeTokenRewardable
+    ERC677BridgeTokenRewardable,
+    AbsoluteDailyLimit,
+    RelativeDailyLimit
   }
 } = require('../loadContracts')
 
@@ -43,7 +46,7 @@ async function deployHome() {
   console.log('[Home] Bridge Mediator Storage: ', homeBridgeStorage.options.address)
 
   console.log('\n[Home] Deploying Bridge Mediator implementation\n')
-  const homeBridgeImplementation = await deployContract(HomeBridge, [], {
+  const homeBridgeImplementation = await deployContract(HomeAMBErc677ToErc677, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
   })
@@ -122,11 +125,22 @@ async function deployHome() {
     nonce,
     url: HOME_RPC_URL
   })
+  nonce++
+  console.log('[Home] Transferring ownership of Bridgeable token to Bridge Mediator contract - Done')
+
+  console.log('\n[Home] Deploying Limits Contract')
+  const LimitsContract = RELATIVE_DAILY_LIMIT ? RelativeDailyLimit : AbsoluteDailyLimit
+  const limitsContract = await deployContract(LimitsContract, [], {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    nonce
+  })
+  console.log('[Home] Limits Contract: ', limitsContract.options.address)
 
   console.log('\nHome part of ERC677-to-ERC677 bridge deployed\n')
   return {
     homeBridgeMediator: { address: homeBridgeStorage.options.address },
-    bridgeableErc677: { address: erc677token.options.address }
+    bridgeableErc677: { address: erc677token.options.address },
+    homeLimitsContract: { address: limitsContract.options.address }
   }
 }
 

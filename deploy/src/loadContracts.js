@@ -35,7 +35,10 @@ function getContracts(evmVersion) {
     HomeAMB: require(`../../build/${buildPath}/HomeAMB.json`),
     ForeignAMB: require(`../../build/${buildPath}/ForeignAMB`),
     HomeAMBErc677ToErc677: require(`../../build/${buildPath}/HomeAMBErc677ToErc677.json`),
-    ForeignAMBErc677ToErc677: require(`../../build/${buildPath}/ForeignAMBErc677ToErc677.json`)
+    ForeignAMBErc677ToErc677: require(`../../build/${buildPath}/ForeignAMBErc677ToErc677.json`),
+    AbsoluteDailyLimit: require(`../../build/${buildPath}/AbsoluteDailyLimit.json`),
+    RelativeDailyLimit: require(`../../build/${buildPath}/RelativeDailyLimit.json`),
+    RelativeExecutionDailyLimit: require(`../../build/${buildPath}/RelativeExecutionDailyLimit.json`)
   }
 }
 

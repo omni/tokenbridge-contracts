@@ -2,7 +2,7 @@ const path = require('path')
 require('dotenv').config({
   path: path.join(__dirname, '..', '.env')
 })
-const { isAddress, toBN } = require('web3').utils
+const { isAddress, toBN, toWei } = require('web3').utils
 const envalid = require('envalid')
 const { ZERO_ADDRESS, EVM_TYPES } = require('./constants')
 
@@ -59,11 +59,19 @@ function checkBlockConfirmations(confirmations, prefix) {
   }
 }
 
-function checkLimits(min, max, daily, prefix) {
-  if (min.isZero() || min.gte(max) || max.gte(daily)) {
-    throw new Error(
-      `Limit parameters should be defined as 0 < ${prefix}_MIN_AMOUNT_PER_TX < ${prefix}_MAX_AMOUNT_PER_TX < ${prefix}_DAILY_LIMIT`
-    )
+function checkLimits(min, max, daily, isRelativeDailyLimit, targetLimit, threshold, prefix) {
+  if (isRelativeDailyLimit) {
+    if (min.isZero() || min.gte(max) || min.gt(threshold) || targetLimit.gt(toBN(toWei('1', 'ether')))) {
+      throw new Error(
+        `Limit parameters should be defined as 0 < ${prefix}_MIN_AMOUNT_PER_TX < ${prefix}_MAX_AMOUNT_PER_TX and THRESHOLD >= ${prefix}_MIN_AMOUNT_PER_TX and TARGET_LIMIT <= 1 ether`
+      )
+    }
+  } else {
+    if (min.isZero() || min.gte(max) || max.gte(daily)) {
+      throw new Error(
+        `Limit parameters should be defined as 0 < ${prefix}_MIN_AMOUNT_PER_TX < ${prefix}_MAX_AMOUNT_PER_TX < ${prefix}_DAILY_LIMIT`
+      )
+    }
   }
 }
 
@@ -76,7 +84,8 @@ const {
   DEPLOY_REWARDABLE_TOKEN,
   HOME_FEE_MANAGER_TYPE,
   HOME_EVM_VERSION,
-  FOREIGN_EVM_VERSION
+  FOREIGN_EVM_VERSION,
+  RELATIVE_DAILY_LIMIT,
 } = process.env
 
 // Types validations
@@ -110,7 +119,7 @@ let validations = {
   FOREIGN_RPC_URL: envalid.str(),
   FOREIGN_BRIDGE_OWNER: addressValidator(),
   FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
-  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator()
+  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
 }
 
 if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
@@ -126,7 +135,7 @@ if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool()
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -155,7 +164,15 @@ if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
     ...validations,
     HOME_DAILY_LIMIT: bigNumValidator(),
     HOME_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    FOREIGN_DAILY_LIMIT: bigNumValidator()
+    FOREIGN_DAILY_LIMIT: bigNumValidator(),
+    RELATIVE_DAILY_LIMIT: envalid.bool()
+  }
+  if (RELATIVE_DAILY_LIMIT === 'true') {
+    validations = {
+      ...validations,
+      TARGET_LIMIT: bigNumValidator(),
+      THRESHOLD: bigNumValidator()
+    }
   }
 
   if (BRIDGE_MODE !== 'AMB_ERC_TO_ERC') {
@@ -202,7 +219,7 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool()
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -264,12 +281,28 @@ if (env.BRIDGE_MODE === 'ARBITRARY_MESSAGE') {
     throw new Error(`FOREIGN_MAX_AMOUNT_PER_TX should be greater than 0`)
   }
 } else {
-  checkLimits(env.HOME_MIN_AMOUNT_PER_TX, env.HOME_MAX_AMOUNT_PER_TX, env.HOME_DAILY_LIMIT, homePrefix)
+  checkLimits(
+    env.HOME_MIN_AMOUNT_PER_TX,
+    env.HOME_MAX_AMOUNT_PER_TX,
+    env.HOME_DAILY_LIMIT,
+    env.RELATIVE_DAILY_LIMIT,
+    env.TARGET_LIMIT,
+    env.THRESHOLD,
+    homePrefix
+  )
 }
 
 if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
   checkGasPrices(env.HOME_GAS_PRICE, homePrefix)
-  checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
+  checkLimits(
+    env.FOREIGN_MIN_AMOUNT_PER_TX,
+    env.FOREIGN_MAX_AMOUNT_PER_TX,
+    env.FOREIGN_DAILY_LIMIT,
+    env.RELATIVE_DAILY_LIMIT,
+    env.TARGET_LIMIT,
+    env.THRESHOLD,
+    foreignPrefix
+  )
   if (env.FOREIGN_REWARDABLE === 'BOTH_DIRECTIONS') {
     throw new Error(`FOREIGN_REWARDABLE: ${env.FOREIGN_REWARDABLE} is not supported on ${env.BRIDGE_MODE} bridge mode`)
   }
@@ -282,7 +315,15 @@ if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
 }
 
 if (env.BRIDGE_MODE === 'ERC_TO_ERC') {
-  checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
+  checkLimits(
+    env.FOREIGN_MIN_AMOUNT_PER_TX,
+    env.FOREIGN_MAX_AMOUNT_PER_TX,
+    env.FOREIGN_DAILY_LIMIT,
+    env.RELATIVE_DAILY_LIMIT,
+    env.TARGET_LIMIT,
+    env.THRESHOLD,
+    foreignPrefix
+  )
 
   if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS' && env.BLOCK_REWARD_ADDRESS === ZERO_ADDRESS) {
     throw new Error(
@@ -296,7 +337,15 @@ if (env.BRIDGE_MODE === 'ERC_TO_ERC') {
 }
 
 if (env.BRIDGE_MODE === 'ERC_TO_NATIVE') {
-  checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
+  checkLimits(
+    env.FOREIGN_MIN_AMOUNT_PER_TX,
+    env.FOREIGN_MAX_AMOUNT_PER_TX,
+    env.FOREIGN_DAILY_LIMIT,
+    env.RELATIVE_DAILY_LIMIT,
+    env.TARGET_LIMIT,
+    env.THRESHOLD,
+    foreignPrefix
+  )
 
   if (HOME_REWARDABLE === 'ONE_DIRECTION') {
     throw new Error(
@@ -318,7 +367,15 @@ if (env.BRIDGE_MODE === 'ERC_TO_NATIVE') {
 }
 
 if (env.BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
-  checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
+  checkLimits(
+    env.FOREIGN_MIN_AMOUNT_PER_TX,
+    env.FOREIGN_MAX_AMOUNT_PER_TX,
+    env.FOREIGN_DAILY_LIMIT,
+    env.RELATIVE_DAILY_LIMIT,
+    env.TARGET_LIMIT,
+    env.THRESHOLD,
+    foreignPrefix
+  )
 }
 
 module.exports = env

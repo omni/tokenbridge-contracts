@@ -20,8 +20,9 @@ contract BaseERC677Bridge is BasicTokenBridge, ERC677Receiver, ERC677Storage {
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
         ERC677 token = erc677token();
         require(msg.sender == address(token));
+        _updateTodayLimit();
         require(withinLimit(_value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        _increaseTotalSpentPerDay(_value);
         bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
         return true;
     }

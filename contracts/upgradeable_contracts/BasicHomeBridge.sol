@@ -23,6 +23,7 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     );
 
     function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
+        _updateTodayLimit();
         if (withinExecutionLimit(value)) {
             bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
             bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));

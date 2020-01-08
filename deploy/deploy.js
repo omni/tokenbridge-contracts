@@ -128,9 +128,16 @@ async function deployAMBErcToErc() {
   const deployForeign = require('./src/amb_erc677_to_erc677/foreign')
   const initialize = require('./src/amb_erc677_to_erc677/initialize')
   await preDeploy()
-  const { homeBridgeMediator, bridgeableErc677 } = await deployHome()
-  const { foreignBridgeMediator } = await deployForeign()
-  await initialize({ homeBridge: homeBridgeMediator.address, foreignBridge: foreignBridgeMediator.address, homeErc677: bridgeableErc677.address })
+  const { homeBridgeMediator, bridgeableErc677, homeLimitsContract } = await deployHome()
+  const { foreignBridgeMediator, foreignLimitsContract } = await deployForeign()
+  await initialize({
+    homeBridge: homeBridgeMediator.address,
+    foreignBridge:
+    foreignBridgeMediator.address,
+    homeErc677: bridgeableErc677.address,
+    homeLimitsContract: homeLimitsContract.address,
+    foreignLimitsContract: foreignLimitsContract.address
+  })
   console.log('\nDeployment has been completed.\n\n')
   console.log(`[   Home  ] Bridge Mediator: ${homeBridgeMediator.address}`)
   console.log(`[   Home  ] ERC677 Bridgeable Token: ${bridgeableErc677.address}`)

@@ -22,4 +22,8 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
     function executeActionOnFixedTokens(address _recipient, uint256 _value) internal {
         erc677token().transfer(_recipient, _value);
     }
+
+    function _getTokenBalance() internal view returns (uint256) {
+        return erc677token().balanceOf(address(this));
+    }
 }

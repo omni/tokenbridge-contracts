@@ -19,10 +19,12 @@ const {
     EternalStorageProxy,
     BridgeValidators,
     RewardableValidators,
-    ForeignBridgeNativeToErc: ForeignBridge,
+    ForeignBridgeNativeToErc,
     ERC677BridgeToken,
     ERC677BridgeTokenRewardable,
-    FeeManagerNativeToErc
+    FeeManagerNativeToErc,
+    AbsoluteDailyLimit,
+    RelativeDailyLimit
   }
 } = require('../loadContracts')
 
@@ -44,12 +46,16 @@ const {
   BRIDGEABLE_TOKEN_DECIMALS,
   HOME_DAILY_LIMIT,
   HOME_MAX_AMOUNT_PER_TX,
+  HOME_MIN_AMOUNT_PER_TX,
   DEPLOY_REWARDABLE_TOKEN,
   BLOCK_REWARD_ADDRESS,
   DPOS_STAKING_ADDRESS,
   FOREIGN_REWARDABLE,
   HOME_TRANSACTIONS_FEE,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT
+  FOREIGN_TO_HOME_DECIMAL_SHIFT,
+  RELATIVE_DAILY_LIMIT,
+  TARGET_LIMIT,
+  THRESHOLD,
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -64,9 +70,28 @@ if (isRewardableBridge) {
   VALIDATORS_REWARD_ACCOUNTS = env.VALIDATORS_REWARD_ACCOUNTS.split(' ')
 }
 
-async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, initialNonce, homeBridgeAddress }) {
+async function initializeBridge({
+  validatorsBridge,
+  bridge,
+  erc677bridgeToken,
+  limitsContract,
+  initialNonce,
+  homeBridgeAddress
+}) {
   let nonce = initialNonce
   let initializeFBridgeData
+
+  const requestLimitsArray = RELATIVE_DAILY_LIMIT
+    ? [TARGET_LIMIT, THRESHOLD, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX]
+    : [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX]
+
+  let RELATIVE_DAILY_LIMIT_PARAMS
+  if (RELATIVE_DAILY_LIMIT) {
+    RELATIVE_DAILY_LIMIT_PARAMS = `TARGET_LIMIT: ${TARGET_LIMIT} which is ${
+      Web3Utils.fromWei(Web3Utils.toBN(TARGET_LIMIT).mul(Web3Utils.toBN(100)))
+    }%,
+    THRESHOLD: ${THRESHOLD} which is ${Web3Utils.fromWei(THRESHOLD)} in eth,`
+  }
 
   if (isRewardableBridge) {
     console.log('\ndeploying implementation for fee manager')
@@ -82,7 +107,11 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
 
     console.log('\ninitializing Foreign Bridge with fee contract:\n')
     console.log(`Foreign Validators: ${validatorsBridge.options.address},
-  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
+  ${
+    RELATIVE_DAILY_LIMIT
+      ? RELATIVE_DAILY_LIMIT_PARAMS
+      : `FOREIGN_DAILY_LIMIT: ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,`
+  }
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
@@ -90,33 +119,40 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
       FOREIGN_MIN_AMOUNT_PER_TX
     )} in eth,
   FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
-    HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
   Fee Manager: ${feeManager.options.address},
   Home Fee: ${homeFeeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+  LIMITS_CONTRACT: ${limitsContract.options.address},
   Home bridge Address: ${homeBridgeAddress}`)
 
     initializeFBridgeData = await bridge.methods
       .rewardableInitialize(
         validatorsBridge.options.address,
         erc677bridgeToken.options.address,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
+        requestLimitsArray,
         FOREIGN_GAS_PRICE,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         FOREIGN_BRIDGE_OWNER,
         feeManager.options.address,
         homeFeeInWei,
         foreignToHomeDecimalShift,
-        homeBridgeAddress
+        homeBridgeAddress,
+        limitsContract.options.address
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   } else {
     console.log('\ninitializing Foreign Bridge with following parameters:\n')
     console.log(`Foreign Validators: ${validatorsBridge.options.address},
-  FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
+  ${
+    RELATIVE_DAILY_LIMIT
+      ? RELATIVE_DAILY_LIMIT_PARAMS
+      : `FOREIGN_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,`
+  }
   FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
       FOREIGN_MAX_AMOUNT_PER_TX
     )} in eth,
@@ -124,10 +160,12 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
       FOREIGN_MIN_AMOUNT_PER_TX
     )} in eth,
   FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS},
-    HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
+  HOME_DAILY_LIMIT: ${HOME_DAILY_LIMIT} which is ${Web3Utils.fromWei(HOME_DAILY_LIMIT)} in eth,
   HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
+  HOME_MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
   FOREIGN_BRIDGE_OWNER: ${FOREIGN_BRIDGE_OWNER},
-  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift}
+  FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
+  LIMITS_CONTRACT: ${limitsContract.options.address},
   Home bridge Address: ${homeBridgeAddress}
   `)
 
@@ -135,13 +173,14 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
       .initialize(
         validatorsBridge.options.address,
         erc677bridgeToken.options.address,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
+        requestLimitsArray,
         FOREIGN_GAS_PRICE,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
+        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX, HOME_MIN_AMOUNT_PER_TX],
         FOREIGN_BRIDGE_OWNER,
         foreignToHomeDecimalShift,
-        homeBridgeAddress
+        homeBridgeAddress,
+        limitsContract.options.address
       )
       .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   }
@@ -230,6 +269,16 @@ async function deployForeign(homeBridgeAddress) {
   })
   nonce++
 
+  console.log('\ndeploying limits contract')
+  const LimitsContract = RELATIVE_DAILY_LIMIT ? RelativeDailyLimit : AbsoluteDailyLimit
+  const limitsContract = await deployContract(LimitsContract, [], {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    network: 'foreign',
+    nonce
+  })
+  nonce++
+  console.log('[Foreign] Limits Contract: ', limitsContract.options.address)
+
   console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
@@ -240,7 +289,7 @@ async function deployForeign(homeBridgeAddress) {
   console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
   console.log('\ndeploying foreignBridge implementation\n')
-  const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
+  const foreignBridgeImplementation = await deployContract(ForeignBridgeNativeToErc, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce
@@ -263,6 +312,7 @@ async function deployForeign(homeBridgeAddress) {
     validatorsBridge: storageValidatorsForeign,
     bridge: foreignBridgeImplementation,
     erc677bridgeToken,
+    limitsContract,
     initialNonce: nonce,
     homeBridgeAddress
   })

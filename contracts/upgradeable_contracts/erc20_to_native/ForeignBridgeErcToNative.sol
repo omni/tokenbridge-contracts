@@ -164,8 +164,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         require(tokenBalance(fdToken).sub(curFDTokenBalance) == curHDTokenBalance);
 
-        mintRToken(_getTokenBalance());
-
         emit TokensSwapped(hdToken, fdToken, curHDTokenBalance);
     }
 

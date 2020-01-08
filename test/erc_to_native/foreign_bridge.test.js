@@ -1260,87 +1260,58 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
     })
     describe('swapTokens', () => {
-      const shouldBeAbleToSwapTokensCallingSwapTokens = isRTokenUsed =>
-        async function() {
-          expect(await saiTop.caged()).to.be.bignumber.equal(ZERO)
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-          expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      it('should be able to swap tokens calling swapTokens', async () => {
+        expect(await saiTop.caged()).to.be.bignumber.equal(ZERO)
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
 
-          let rToken
-          if (isRTokenUsed) {
-            rToken = await createRToken(dai)
-            await foreignBridge.initializeRToken(rToken.address, [owner], [1])
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-          }
+        // should have sai balance
+        await foreignBridge.swapTokens().should.be.rejectedWith(ERROR_MSG)
 
-          // should have sai balance
-          await foreignBridge.swapTokens().should.be.rejectedWith(ERROR_MSG)
+        // mint sai tokens to bridge
+        await sai.mint(foreignBridge.address, oneEther)
 
-          // mint sai tokens to bridge
-          await sai.mint(foreignBridge.address, oneEther)
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
 
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-          expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        const { logs } = await foreignBridge.swapTokens()
 
-          const { logs } = await foreignBridge.swapTokens()
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await foreignBridge.erc20token()).to.be.equal(dai.address)
+        expectEventInLogs(logs, 'TokensSwapped', {
+          from: sai.address,
+          to: dai.address,
+          value: oneEther
+        })
 
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-          if (isRTokenUsed) {
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-          } else {
-            expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-          }
-          expect(await foreignBridge.erc20token()).to.be.equal(dai.address)
-          expectEventInLogs(logs, 'TokensSwapped', {
-            from: sai.address,
-            to: dai.address,
-            value: oneEther
-          })
+        // mint more sai tokens to bridge
+        await sai.mint(foreignBridge.address, oneEther)
 
-          // mint more sai tokens to bridge
-          await sai.mint(foreignBridge.address, oneEther)
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
 
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-          if (isRTokenUsed) {
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-          } else {
-            expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-          }
+        await foreignBridge.swapTokens().should.be.fulfilled
 
-          await foreignBridge.swapTokens().should.be.fulfilled
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
 
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-          if (isRTokenUsed) {
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
-          } else {
-            expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
-          }
+        const block = await web3.eth.getBlock('latest')
+        // Trigger Emergency Shutdown
+        await saiTop.setCaged(block.number)
 
-          const block = await web3.eth.getBlock('latest')
-          // Trigger Emergency Shutdown
-          await saiTop.setCaged(block.number)
+        // mint sai tokens to bridge
+        await sai.mint(foreignBridge.address, oneEther)
 
-          // mint sai tokens to bridge
-          await sai.mint(foreignBridge.address, oneEther)
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
 
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-          if (isRTokenUsed) {
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
-          } else {
-            expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
-          }
+        // should not be able to swap tokens after Emergency Shutdown
+        await foreignBridge.swapTokens().should.be.rejectedWith(ERROR_MSG)
 
-          // should not be able to swap tokens after Emergency Shutdown
-          await foreignBridge.swapTokens().should.be.rejectedWith(ERROR_MSG)
-
-          // reset the caged value
-          await saiTop.setCaged(0)
-        }
-      it('should be able to swap tokens calling swapTokens', shouldBeAbleToSwapTokensCallingSwapTokens(false))
-      it(
-        'should be able to swap tokens calling swapTokens (with rToken)',
-        shouldBeAbleToSwapTokensCallingSwapTokens(true)
-      )
+        // reset the caged value
+        await saiTop.setCaged(0)
+      })
     })
     describe('relayTokens', () => {
       const value = ether('0.25')
@@ -1411,50 +1382,36 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         })
         expect(await dai.balanceOf(user)).to.be.bignumber.equal(balance.sub(value))
       })
-      const shouldSwapTokenIfHalfDuplexTokenIsUsed = isRTokenUsed =>
-        async function() {
-          let rToken
-          if (isRTokenUsed) {
-            rToken = await createRToken(dai)
-            await foreignBridge.initializeRToken(rToken.address, [owner], [1])
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-          }
-          // Given
-          const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
+      it('should swap token if half duplex token is used', async () => {
+        // Given
+        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
 
-          const userBalance = await sai.balanceOf(user)
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-          expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-          const currentDay = await foreignBridge.getCurrentDay()
-          expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+        const userBalance = await sai.balanceOf(user)
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        const currentDay = await foreignBridge.getCurrentDay()
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
-          await sai.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+        await sai.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
 
-          // When
-          const { logs } = await relayTokens(recipient, value, sai.address, { from: user }).should.be.fulfilled
+        // When
+        const { logs } = await relayTokens(recipient, value, sai.address, { from: user }).should.be.fulfilled
 
-          // Then
-          expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
-          expectEventInLogs(logs, 'UserRequestForAffirmation', {
-            recipient,
-            value
-          })
-          expectEventInLogs(logs, 'TokensSwapped', {
-            from: sai.address,
-            to: dai.address,
-            value
-          })
-          expect(await sai.balanceOf(user)).to.be.bignumber.equal(userBalance.sub(value))
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-
-          if (isRTokenUsed) {
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
-          } else {
-            expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
-          }
-        }
-      it('should swap token if half duplex token is used', shouldSwapTokenIfHalfDuplexTokenIsUsed(false))
-      it('should swap token if half duplex token is used (with rToken)', shouldSwapTokenIfHalfDuplexTokenIsUsed(true))
+        // Then
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+        expectEventInLogs(logs, 'UserRequestForAffirmation', {
+          recipient,
+          value
+        })
+        expectEventInLogs(logs, 'TokensSwapped', {
+          from: sai.address,
+          to: dai.address,
+          value
+        })
+        expect(await sai.balanceOf(user)).to.be.bignumber.equal(userBalance.sub(value))
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+      })
       it('should fail if token address is unknown', async () => {
         const otherToken = await ERC20Mock.new('token', 'TOK', 18)
         await otherToken.mint(user, twoEthers)
@@ -1529,56 +1486,39 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
     })
     describe('onExecuteMessage', () => {
-      const shouldSwapTokensInExecuteSignatures = isRTokenUsed =>
-        async function() {
-          const value = ether('0.25')
-          const recipientAccount = accounts[3]
-          const balanceBefore = await dai.balanceOf(recipientAccount)
+      it('should swapTokens in executeSignatures', async () => {
+        const value = ether('0.25')
+        const recipientAccount = accounts[3]
+        const balanceBefore = await dai.balanceOf(recipientAccount)
 
-          // fund dai tokens
-          await dai.transfer(foreignBridge.address, value, { from: user })
+        // fund dai tokens
+        await dai.transfer(foreignBridge.address, value, { from: user })
 
-          // mint sai tokens to bridge
-          await sai.mint(foreignBridge.address, halfEther)
+        // mint sai tokens to bridge
+        await sai.mint(foreignBridge.address, halfEther)
 
-          let rToken
-          if (isRTokenUsed) {
-            rToken = await createRToken(dai)
-            await foreignBridge.initializeRToken(rToken.address, [owner], [1])
-            await foreignBridge.mintRToken(ether('0.1'))
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
-            expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value.sub(ether('0.1')))
-          }
+        const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+        const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+        const signature = await sign(authorities[0], message)
+        const vrs = signatureToVRS(signature)
+        expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(false)
 
-          const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
-          const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
-          const signature = await sign(authorities[0], message)
-          const vrs = signatureToVRS(signature)
-          expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(false)
+        const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
 
-          const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
-
-          expectEventInLogs(logs, 'RelayedMessage', {
-            recipient: recipientAccount,
-            value
-          })
-          expectEventInLogs(logs, 'TokensSwapped', {
-            from: sai.address,
-            to: dai.address,
-            value: halfEther
-          })
-          expect(await dai.balanceOf(recipientAccount)).to.be.bignumber.equal(balanceBefore.add(value))
-          expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-          expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(true)
-
-          if (isRTokenUsed) {
-            expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
-          } else {
-            expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
-          }
-        }
-      it('should swapTokens in executeSignatures', shouldSwapTokensInExecuteSignatures(false))
-      it('should swapTokens in executeSignatures (with rToken)', shouldSwapTokensInExecuteSignatures(true))
+        expectEventInLogs(logs, 'RelayedMessage', {
+          recipient: recipientAccount,
+          value
+        })
+        expectEventInLogs(logs, 'TokensSwapped', {
+          from: sai.address,
+          to: dai.address,
+          value: halfEther
+        })
+        expect(await dai.balanceOf(recipientAccount)).to.be.bignumber.equal(balanceBefore.add(value))
+        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(true)
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      })
     })
     describe('claimTokens', async () => {
       it('can send erc20', async () => {

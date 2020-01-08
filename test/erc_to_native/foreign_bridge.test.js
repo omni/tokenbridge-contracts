@@ -1681,6 +1681,22 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     it('should fail if not an owner', async () => {
       await foreignBridge.initializeRToken(rToken.address, [owner], [1], { from: accounts[1] }).should.be.rejected
     })
+    it('should redeem all current rTokens and remove current rToken', async () => {
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1]).should.be.fulfilled
+
+      await token.mint(foreignBridge.address, halfEther)
+      await foreignBridge.mintRToken(halfEther)
+
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+
+      const newRToken = await createRToken(token)
+      await foreignBridge.initializeRToken(newRToken.address, [owner], [1]).should.be.fulfilled
+
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await newRToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+    })
   })
   describe('removeRToken', () => {
     let token
@@ -1707,12 +1723,29 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
     it('should be removed', async () => {
       expect(await foreignBridge.rToken()).to.be.equal(rToken.address)
-      await foreignBridge.removeRToken().should.be.fulfilled
+      // empty balance, fails at redeem
+      await foreignBridge.removeRToken().should.be.rejected
+      // forced removing
+      await foreignBridge.removeRToken(true).should.be.fulfilled
       expect(await foreignBridge.rToken()).to.be.equal(ZERO_ADDRESS)
     })
     it('should fail if not an owner', async () => {
-      await foreignBridge.removeRToken({ from: accounts[1] }).should.be.rejected
-      await foreignBridge.removeRToken({ from: owner }).should.be.fulfilled
+      await foreignBridge.removeRToken(true, { from: accounts[1] }).should.be.rejected
+      await foreignBridge.removeRToken(true).should.be.fulfilled
+    })
+    it('should redeem all rTokens before removing', async () => {
+      await token.mint(foreignBridge.address, halfEther)
+      await foreignBridge.mintRToken(halfEther)
+
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+
+      expect(await foreignBridge.rToken()).to.be.equal(rToken.address)
+      await foreignBridge.removeRToken().should.be.fulfilled
+      expect(await foreignBridge.rToken()).to.be.equal(ZERO_ADDRESS)
+
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
     })
   })
   describe('mintRToken', () => {

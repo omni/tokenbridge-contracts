@@ -24,13 +24,27 @@ contract RTokenConnector is Ownable, ERC20Bridge {
         onlyOwner
         returns (uint256)
     {
+        if (rToken() != address(0)) {
+            removeRToken();
+        }
         require(AddressUtils.isContract(_rToken));
         addressStorage[RTOKEN] = _rToken;
         return createAndChangeRTokenHat(_recipients, _proportions);
     }
 
     /// @dev Removes rToken
-    function removeRToken() external onlyOwner {
+    function removeRToken() public {
+        removeRToken(false);
+    }
+
+    /**
+    * @dev Removes rToken
+    * @param _forced If true then we don't try to redeem all rTokens
+    */
+    function removeRToken(bool _forced) public onlyOwner {
+        if (!_forced) {
+            redeemAllRToken();
+        }
         addressStorage[RTOKEN] = address(0);
     }
 
@@ -40,6 +54,11 @@ contract RTokenConnector is Ownable, ERC20Bridge {
     */
     function redeemRToken(uint256 _redeemTokens) external onlyOwner {
         _redeemRToken(_redeemTokens);
+    }
+
+    /// @dev Swaps all rTokens to bridge's tokens
+    function redeemAllRToken() public onlyOwner {
+        IRToken(rToken()).redeemAll();
     }
 
     /**

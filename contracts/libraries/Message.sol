@@ -104,7 +104,7 @@ library Message {
         IBridgeValidators _validatorContract,
         bool isAMBMessage
     ) internal view {
-        require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
+        require(isAMBMessage || isMessageValid(_message));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         // It is not necessary to check that arrays have the same length since it will be handled
         // during attempt to access to the corresponding elements in the loop and the call will be reverted.
@@ -127,7 +127,7 @@ library Message {
         IBridgeValidators _validatorContract,
         bool isAMBMessage
     ) internal view {
-        require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
+        require(isAMBMessage || isMessageValid(_message));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         uint256 amount;
         assembly {

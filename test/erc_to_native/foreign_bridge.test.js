@@ -1337,7 +1337,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           // When
           await relayTokens(ZERO_ADDRESS, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
           await relayTokens(foreignBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
-          await relayTokens(otherSideBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+          await relayTokens(otherSideBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(
+            ERROR_MSG
+          )
           await relayTokens(recipient, 0, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
           const { logs } = await relayTokens(recipient, value, dai.address, { from: user }).should.be.fulfilled
 

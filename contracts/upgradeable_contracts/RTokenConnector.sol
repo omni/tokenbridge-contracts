@@ -19,11 +19,11 @@ contract RTokenConnector is Ownable, ERC20Bridge {
     * @param _proportions Array of interest proportions
     * @return Returns ID of the created hat
     */
-    function initializeRToken(
-        address _rToken,
-        address[] _recipients,
-        uint32[] _proportions
-    ) external onlyOwner returns (uint256) {
+    function initializeRToken(address _rToken, address[] _recipients, uint32[] _proportions)
+        external
+        onlyOwner
+        returns (uint256)
+    {
         require(AddressUtils.isContract(_rToken));
         addressStorage[RTOKEN] = _rToken;
         return createAndChangeRTokenHat(_recipients, _proportions);
@@ -59,10 +59,7 @@ contract RTokenConnector is Ownable, ERC20Bridge {
     * @param _proportions Array of interest proportions
     * @return Returns ID of the created hat
     */
-    function createAndChangeRTokenHat(
-        address[] _recipients,
-        uint32[] _proportions
-    ) public onlyOwner returns (uint256) {
+    function createAndChangeRTokenHat(address[] _recipients, uint32[] _proportions) public onlyOwner returns (uint256) {
         return IRToken(rToken()).createHat(_recipients, _proportions, true);
     }
 

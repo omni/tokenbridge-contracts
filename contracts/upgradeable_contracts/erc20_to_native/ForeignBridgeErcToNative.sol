@@ -4,8 +4,9 @@ import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 import "../OtherSideBridgeStorage.sol";
 import "../../interfaces/IScdMcdMigration.sol";
+import "../RTokenConnector.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage {
+contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, RTokenConnector {
     event TokensSwapped(address indexed from, address indexed to, uint256 value);
 
     bytes32 internal constant MIN_HDTOKEN_BALANCE = 0x48649cf195feb695632309f41e61252b09f537943654bde13eb7bb1bca06964e; // keccak256(abi.encodePacked("minHDTokenBalance"))
@@ -79,6 +80,12 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     ) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         uint256 amount = _amount.div(10**decimalShift());
+
+        uint256 currentBalance = tokenBalance(erc20token());
+        if (currentBalance < amount) {
+            _redeemRToken(amount.sub(currentBalance));
+        }
+
         bool res = erc20token().transfer(_recipient, amount);
 
         if (tokenBalance(halfDuplexErc20token()) > 0) {
@@ -171,7 +178,11 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         emit TokensSwapped(hdToken, fdToken, curHDTokenBalance);
     }
 
-    function relayTokens(address _from, address _receiver, uint256 _amount, address _token) external {
+    function relayTokens(address _sender, address _receiver, uint256 _amount) external {
+        relayTokens(_sender, _receiver, _amount, erc20token());
+    }
+
+    function relayTokens(address _from, address _receiver, uint256 _amount, address _token) public {
         require(_from == msg.sender || _from == _receiver);
         _relayTokens(_from, _receiver, _amount, _token);
     }
@@ -204,6 +215,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         if (tokenToOperate == hdToken) {
             swapTokens();
+        } else {
+            mintRToken(tokenBalance(fdToken));
         }
     }
 }

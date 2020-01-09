@@ -20,6 +20,7 @@ const {
   getEvents,
   createFullAccounts
 } = require('../helpers/helpers')
+const { createRToken } = require('../helpers/rToken')
 
 const halfEther = ether('0.5')
 const requireBlockConfirmations = 8
@@ -346,6 +347,36 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const vrs3 = signatureToVRS(signature3)
 
       await foreignBridge.executeSignatures([vrs3.v], [vrs3.r], [vrs3.s], message3).should.be.rejectedWith(ERROR_MSG)
+    })
+
+    it('should executeSignatures with enabled rToken', async () => {
+      const rToken = await createRToken(token, owner)
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+      await foreignBridge.mintRToken(ether('0.1'))
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value.sub(ether('0.1')))
+
+      const recipientAccount = accounts[3]
+      const balanceBefore = await token.balanceOf(recipientAccount)
+
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+
+      logs[0].event.should.be.equal('RelayedMessage')
+      logs[0].args.recipient.should.be.equal(recipientAccount)
+      logs[0].args.value.should.be.bignumber.equal(value)
+      const balanceAfter = await token.balanceOf(recipientAccount)
+      const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      balanceAfterBridge.should.be.bignumber.equal(ZERO)
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
     })
   })
   describe('#withdraw with 2 minimum signatures', async () => {
@@ -911,6 +942,42 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         value
       })
     })
+    it('should allow to bridge tokens with rToken enabled', async () => {
+      const rToken = await createRToken(token, owner)
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+      const currentDay = await foreignBridge.getCurrentDay()
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, recipient, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+
+      await token.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, ZERO_ADDRESS, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, foreignBridge.address, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, user, 0, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await foreignBridge.methods['relayTokens(address,address,uint256)'](user, user, value, {
+        from: user
+      }).should.be.fulfilled
+
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+      expectEventInLogs(logs, 'UserRequestForAffirmation', {
+        recipient: user,
+        value
+      })
+
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+    })
   })
   describe('migrateToMCD', () => {
     let foreignBridge
@@ -1232,6 +1299,38 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         // Then
         expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
       })
+      it('should allow to bridge tokens specifying the token address with rToken enabled', async () => {
+        // Given
+        const rToken = await createRToken(dai, owner)
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+        const balance = await dai.balanceOf(user)
+        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
+
+        const currentDay = await foreignBridge.getCurrentDay()
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+        await relayTokens(recipient, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+        await dai.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+        // When
+        await relayTokens(ZERO_ADDRESS, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(foreignBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(otherSideBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(recipient, 0, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        const { logs } = await relayTokens(recipient, value, dai.address, { from: user }).should.be.fulfilled
+
+        // Then
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+        expectEventInLogs(logs, 'UserRequestForAffirmation', {
+          recipient,
+          value
+        })
+        expect(await dai.balanceOf(user)).to.be.bignumber.equal(balance.sub(value))
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+      })
     })
     describe('onExecuteMessage', () => {
       it('should swapTokens in executeSignatures', async () => {
@@ -1310,6 +1409,163 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
         // reset the caged value
         await saiTop.setCaged(0)
+      })
+    })
+  })
+
+  describe('rToken', async () => {
+    let token
+    let foreignBridge
+    let rToken
+
+    beforeEach(async () => {
+      token = await ERC20Mock.new('Some ERC20', 'RSZT', 18)
+      foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address
+      )
+      rToken = await createRToken(token, owner)
+    })
+
+    describe('initializeRToken', () => {
+      it('should be initialized', async () => {
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1]).should.be.fulfilled
+      })
+
+      it('should fail if wrong param', async () => {
+        await foreignBridge.initializeRToken(ZERO_ADDRESS, [owner], [1]).should.be.rejected
+        await foreignBridge.initializeRToken(rToken.address, [], [1]).should.be.rejected
+        await foreignBridge.initializeRToken(rToken.address, [owner], []).should.be.rejected
+        await foreignBridge.initializeRToken(rToken.address, [owner], [0]).should.be.rejected
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1], { from: accounts[1] }).should.be.rejected
+      })
+    })
+
+    describe('removeRToken', () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1]).should.be.fulfilled
+      })
+
+      it('should be removed', async () => {
+        expect(await foreignBridge.rToken()).to.be.equal(rToken.address)
+        await foreignBridge.removeRToken().should.be.fulfilled
+        expect(await foreignBridge.rToken()).to.be.equal(ZERO_ADDRESS)
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.removeRToken({ from: accounts[1] }).should.be.rejected
+        await foreignBridge.removeRToken({ from: owner }).should.be.fulfilled
+      })
+    })
+
+    describe('mintRToken', () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+        await token.mint(foreignBridge.address, halfEther)
+      })
+
+      it('should mint', async () => {
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.mintRToken(halfEther).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      })
+
+      it('should fail if not enough tokens', async () => {
+        await foreignBridge.mintRToken(oneEther).should.be.rejected
+      })
+    })
+
+    describe('redeemRToken', () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+        await token.mint(foreignBridge.address, halfEther)
+        await foreignBridge.mintRToken(halfEther)
+      })
+
+      it('should redeem', async () => {
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+
+        await foreignBridge.redeemRToken(halfEther).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should fail if not enough r-tokens', async () => {
+        await foreignBridge.redeemRToken(oneEther).should.be.rejected
+        await foreignBridge.redeemRToken(halfEther).should.be.fulfilled
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.redeemRToken(halfEther, { from: accounts[1] }).should.be.rejected
+        await foreignBridge.redeemRToken(halfEther, { from: owner }).should.be.fulfilled
+      })
+    })
+
+    describe('removeRToken with minted tokens', async () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+        await token.mint(foreignBridge.address, halfEther)
+        await foreignBridge.mintRToken(halfEther)
+        expect(await foreignBridge.rToken()).to.be.equal(rToken.address)
+      })
+
+      it('should be force removed', async () => {
+        await foreignBridge.removeRToken(true).should.be.fulfilled
+        expect(await foreignBridge.rToken()).to.be.equal(ZERO_ADDRESS)
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should be removed with redeem call', async () => {
+        await foreignBridge.removeRToken(false).should.be.fulfilled
+        expect(await foreignBridge.rToken()).to.be.equal(ZERO_ADDRESS)
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      })
+    })
+
+    describe('createAndChangeRTokenHat', () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+      })
+
+      it('should create and change hat', async () => {
+        const PROPORTION_BASE = toBN('0xFFFFFFFF')
+        let data = await rToken.getHatByAddress(foreignBridge.address)
+        expect(data.recipients.length).to.be.equal(1)
+        expect(data.proportions.length).to.be.equal(1)
+        expect(data.recipients[0]).to.be.equal(owner)
+        expect(data.proportions[0]).to.be.bignumber.equal(PROPORTION_BASE)
+
+        await foreignBridge.createAndChangeRTokenHat([accounts[1], accounts[2]], [4, 6]).should.be.fulfilled
+
+        data = await rToken.getHatByAddress(foreignBridge.address)
+        expect(data.recipients.length).to.be.equal(2)
+        expect(data.proportions.length).to.be.equal(2)
+        expect(data.recipients[0]).to.be.equal(accounts[1])
+        expect(data.recipients[1]).to.be.equal(accounts[2])
+        expect(data.proportions[0]).to.be.bignumber.equal(PROPORTION_BASE.mul(toBN('4')).div(toBN('10')))
+        expect(data.proportions[1]).to.be.bignumber.equal(PROPORTION_BASE.mul(toBN('6')).div(toBN('10')))
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.createAndChangeRTokenHat([accounts[1]], [1], { from: accounts[1] }).should.be.rejected
+        await foreignBridge.createAndChangeRTokenHat([accounts[1]], [1], { from: owner }).should.be.fulfilled
       })
     })
   })

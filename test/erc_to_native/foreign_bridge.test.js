@@ -23,6 +23,7 @@ const {
 const { createRToken } = require('../helpers/rToken')
 
 const halfEther = ether('0.5')
+const minDaiLimit = ether('100')
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
 const oneEther = ether('1')
@@ -349,10 +350,39 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await foreignBridge.executeSignatures([vrs3.v], [vrs3.r], [vrs3.s], message3).should.be.rejectedWith(ERROR_MSG)
     })
 
-    it('should executeSignatures with enabled rToken', async () => {
+    it('should executeSignatures with enabled rToken, enough dai', async () => {
       const rToken = await createRToken(token, owner)
       await foreignBridge.initializeRToken(rToken.address, [owner], [1])
-      await foreignBridge.mintRToken(ether('0.1'))
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+
+      const recipientAccount = accounts[3]
+      const balanceBefore = await token.balanceOf(recipientAccount)
+
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+
+      logs[0].event.should.be.equal('RelayedMessage')
+      logs[0].args.recipient.should.be.equal(recipientAccount)
+      logs[0].args.value.should.be.bignumber.equal(value)
+      const balanceAfter = await token.balanceOf(recipientAccount)
+      const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      balanceAfterBridge.should.be.bignumber.equal(ZERO)
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+    })
+
+    it('should executeSignatures with enabled rToken, not enough dai', async () => {
+      const rToken = await createRToken(token, owner)
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+      await foreignBridge.convertDaiToRDai(ether('0.1'))
       expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
       expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value.sub(ether('0.1')))
 
@@ -975,8 +1005,29 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         value
       })
 
-      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
-      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+    })
+
+    it('should allow to bridge tokens with rToken enabled, excess tokens', async () => {
+      const rToken = await createRToken(token, owner)
+      await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+      await token.mint(foreignBridge.address, ether('101'))
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+      await token.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+      const { logs } = await foreignBridge.methods['relayTokens(address,address,uint256)'](user, user, value, {
+        from: user
+      }).should.be.fulfilled
+
+      expectEventInLogs(logs, 'UserRequestForAffirmation', {
+        recipient: user,
+        value
+      })
+
+      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('1.25'))
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(minDaiLimit)
     })
   })
   describe('migrateToMCD', () => {
@@ -1329,7 +1380,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           value
         })
         expect(await dai.balanceOf(user)).to.be.bignumber.equal(balance.sub(value))
-        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       })
     })
     describe('onExecuteMessage', () => {
@@ -1469,24 +1520,66 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
     })
 
-    describe('mintRToken', () => {
+    describe('min dai limit', () => {
+      it('should be return minDaiTokenBalance', async () => {
+        expect(await foreignBridge.minDaiTokenBalance()).to.be.bignumber.equal(minDaiLimit)
+      })
+
+      it('should update minDaiTokenBalance', async () => {
+        await foreignBridge.setMinDaiTokenBalance(ether('101'), { from: owner }).should.be.fulfilled
+        expect(await foreignBridge.minDaiTokenBalance()).to.be.bignumber.equal(ether('101'))
+      })
+
+      it('should fail to update if not an owner', async () => {
+        await foreignBridge.setMinDaiTokenBalance(ether('101'), { from: accounts[1] }).should.be.rejected
+      })
+    })
+
+    describe('convertDaiToRDai', () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeRToken(rToken.address, [owner], [1])
+        await token.mint(foreignBridge.address, oneEther)
+      })
+
+      it('should convert dai to rDai', async () => {
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.convertDaiToRDai(halfEther, { from: owner }).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      })
+
+      it('should fail if not enough tokens', async () => {
+        await foreignBridge.convertDaiToRDai(twoEthers, { from: owner }).should.be.rejected
+      })
+
+      it('should fail if not the owner', async () => {
+        await foreignBridge.convertDaiToRDai(halfEther, { from: accounts[1] }).should.be.rejected
+      })
+    })
+
+    describe('investExcessDai', () => {
       beforeEach(async () => {
         await foreignBridge.initializeRToken(rToken.address, [owner], [1])
         await token.mint(foreignBridge.address, halfEther)
       })
 
-      it('should mint', async () => {
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+      it('should invest dai', async () => {
+        await token.mint(foreignBridge.address, minDaiLimit)
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100.5'))
         expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
 
-        await foreignBridge.mintRToken(halfEther).should.be.fulfilled
+        await foreignBridge.investExcessDai({ from: accounts[1] }).should.be.fulfilled
 
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(minDaiLimit)
         expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
       })
 
       it('should fail if not enough tokens', async () => {
-        await foreignBridge.mintRToken(oneEther).should.be.rejected
+        await foreignBridge.investExcessDai({ from: accounts[1] }).should.be.rejected
       })
     })
 
@@ -1494,7 +1587,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       beforeEach(async () => {
         await foreignBridge.initializeRToken(rToken.address, [owner], [1])
         await token.mint(foreignBridge.address, halfEther)
-        await foreignBridge.mintRToken(halfEther)
+        await foreignBridge.convertDaiToRDai(halfEther)
       })
 
       it('should redeem', async () => {
@@ -1521,21 +1614,23 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     describe('removeRToken with minted tokens', async () => {
       beforeEach(async () => {
         await foreignBridge.initializeRToken(rToken.address, [owner], [1])
-        await token.mint(foreignBridge.address, halfEther)
-        await foreignBridge.mintRToken(halfEther)
+        await token.mint(foreignBridge.address, ether('200'))
+        await foreignBridge.investExcessDai()
         expect(await foreignBridge.rToken()).to.be.equal(rToken.address)
       })
 
       it('should be force removed', async () => {
         await foreignBridge.removeRToken(true).should.be.fulfilled
         expect(await foreignBridge.rToken()).to.be.equal(ZERO_ADDRESS)
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
       })
 
       it('should be removed with redeem call', async () => {
         await foreignBridge.removeRToken(false).should.be.fulfilled
         expect(await foreignBridge.rToken()).to.be.equal(ZERO_ADDRESS)
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('200'))
+        expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       })
     })
 

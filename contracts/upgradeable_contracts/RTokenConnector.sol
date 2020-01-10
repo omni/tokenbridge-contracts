@@ -60,7 +60,7 @@ contract RTokenConnector is Ownable, ERC20Bridge {
     * @dev Swaps bridge's tokens to rTokens
     * @param _mintAmount Amount to swap
     */
-    function mintRToken(uint256 _mintAmount) public {
+    function mintRToken(uint256 _mintAmount) internal {
         if (rToken() == address(0)) return;
 
         uint256 balanceBefore = erc20token().balanceOf(address(this));

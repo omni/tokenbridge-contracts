@@ -23,6 +23,7 @@ contract RTokenConnector is Ownable, ERC20Bridge {
             removeRToken();
         }
         require(AddressUtils.isContract(_rToken));
+        require(IRToken(_rToken).token() == erc20token());
         addressStorage[RTOKEN] = _rToken;
         createAndChangeRTokenHat(_recipients, _proportions);
     }

@@ -1501,6 +1501,12 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should fail if not an owner', async () => {
         await foreignBridge.initializeRToken(rToken.address, [owner], [1], { from: accounts[1] }).should.be.rejected
       })
+
+      it('should fail if rToken underlying is different from bridge token', async () => {
+        const token2 = await ERC20Mock.new('Some ERC20 2', 'RSZT2', 18)
+        const rToken2 = await createRToken(token2, owner)
+        await foreignBridge.initializeRToken(rToken2.address, [owner], [1]).should.be.rejected
+      })
     })
 
     describe('removeRToken', () => {

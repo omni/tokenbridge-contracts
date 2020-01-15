@@ -102,7 +102,7 @@ library Message {
         IBridgeValidators _validatorContract,
         bool isAMBMessage
     ) internal view {
-        require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
+        require(isAMBMessage || isMessageValid(_message));
         uint256 requiredSignatures = _validatorContract.requiredSignatures();
         uint256 amount;
         assembly {

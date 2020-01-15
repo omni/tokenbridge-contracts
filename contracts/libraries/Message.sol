@@ -98,31 +98,6 @@ library Message {
 
     function hasEnoughValidSignatures(
         bytes _message,
-        uint8[] _vs,
-        bytes32[] _rs,
-        bytes32[] _ss,
-        IBridgeValidators _validatorContract,
-        bool isAMBMessage
-    ) internal view {
-        require(isAMBMessage || (!isAMBMessage && isMessageValid(_message)));
-        uint256 requiredSignatures = _validatorContract.requiredSignatures();
-        // It is not necessary to check that arrays have the same length since it will be handled
-        // during attempt to access to the corresponding elements in the loop and the call will be reverted.
-        // It will save gas for the rational validators actions and still be safe enough from security point of view
-        require(_vs.length >= requiredSignatures);
-        bytes32 hash = hashMessage(_message, isAMBMessage);
-        address[] memory encounteredAddresses = new address[](requiredSignatures);
-
-        for (uint256 i = 0; i < requiredSignatures; i++) {
-            address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
-            require(_validatorContract.isValidator(recoveredAddress));
-            require(!addressArrayContains(encounteredAddresses, recoveredAddress));
-            encounteredAddresses[i] = recoveredAddress;
-        }
-    }
-
-    function hasEnoughValidSignatures(
-        bytes _message,
         bytes _signatures,
         IBridgeValidators _validatorContract,
         bool isAMBMessage

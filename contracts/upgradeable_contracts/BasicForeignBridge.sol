@@ -15,8 +15,9 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
     event RelayedMessage(address recipient, uint256 value, bytes32 transactionHash);
     event UserRequestForAffirmation(address recipient, uint256 value);
 
-    function executeSignatures(uint8[] vs, bytes32[] rs, bytes32[] ss, bytes message) external {
-        Message.hasEnoughValidSignatures(message, vs, rs, ss, validatorContract(), false);
+    function executeSignatures(bytes message, bytes signatures) external {
+        Message.hasEnoughValidSignatures(message, signatures, validatorContract(), false);
+
         address recipient;
         uint256 amount;
         bytes32 txHash;

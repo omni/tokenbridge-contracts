@@ -96,6 +96,19 @@ library Message {
         }
     }
 
+    /**
+    * @dev Validates provided signatures, only first requiredSignatures() number
+    * of signatures are going to be validated, these signatures should be from different validators.
+    * @param _message bytes message used to generate signatures
+    * @param _signatures bytes blob with signatures to be validated.
+    * First byte X is a number of signatures in a blob,
+    * next X bytes are v components of signatures,
+    * next 32 * X bytes are r components of signatures,
+    * next 32 * X bytes are s components of signatures.
+    * @param _validatorContract contract, which conforms to the IBridgeValidators interface,
+    * where info about current validators and required signatures is stored.
+    * @param isAMBMessage true if _message is an AMB message with arbitrary length.
+    */
     function hasEnoughValidSignatures(
         bytes _message,
         bytes _signatures,

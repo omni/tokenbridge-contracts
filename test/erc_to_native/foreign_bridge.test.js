@@ -8,6 +8,10 @@ const ScdMcdMigrationMock = artifacts.require('ScdMcdMigrationMock.sol')
 const DaiAdapterMock = artifacts.require('DaiAdapterMock.sol')
 const SaiTopMock = artifacts.require('SaiTopMock.sol')
 const ForeignBridgeErcToNativeMock = artifacts.require('ForeignBridgeErcToNativeMock.sol')
+const VatMock = artifacts.require('VatMock')
+const DaiJoinMock = artifacts.require('DaiJoinMock')
+const PotMock = artifacts.require('PotMock')
+const ChaiMock = artifacts.require('ChaiMock')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -20,7 +24,6 @@ const {
   getEvents,
   createFullAccounts
 } = require('../helpers/helpers')
-const { createRToken } = require('../helpers/rToken')
 
 const halfEther = ether('0.5')
 const minDaiLimit = ether('100')
@@ -38,6 +41,15 @@ const MAX_VALIDATORS = 50
 const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
 const decimalShiftZero = 0
+
+async function createChaiToken(token, owner) {
+  const vat = await VatMock.new({ from: owner })
+  const daiJoin = await DaiJoinMock.new(vat.address, token.address, { from: owner })
+  const pot = await PotMock.new(vat.address, { from: owner })
+  await vat.rely(pot.address)
+  await vat.rely(daiJoin.address)
+  return await ChaiMock.new(vat.address, pot.address, daiJoin.address, token.address, { from: owner })
+}
 
 contract('ForeignBridge_ERC20_to_Native', async accounts => {
   let validatorContract
@@ -350,10 +362,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       await foreignBridge.executeSignatures([vrs3.v], [vrs3.r], [vrs3.s], message3).should.be.rejectedWith(ERROR_MSG)
     })
 
-    it('should executeSignatures with enabled rToken, enough dai', async () => {
-      const rToken = await createRToken(token, owner)
-      await foreignBridge.initializeRToken(rToken.address, [owner], [1])
-      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+    it('should executeSignatures with enabled chai token, enough dai', async () => {
+      const chaiToken = await createChaiToken(token, owner)
+      await foreignBridge.initializeChaiToken(chaiToken.address)
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
 
       const recipientAccount = accounts[3]
@@ -376,14 +388,17 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       balanceAfterBridge.should.be.bignumber.equal(ZERO)
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
     })
 
-    it('should executeSignatures with enabled rToken, not enough dai', async () => {
-      const rToken = await createRToken(token, owner)
-      await foreignBridge.initializeRToken(rToken.address, [owner], [1])
-      await foreignBridge.convertDaiToRDai(ether('0.1'))
-      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
+    it('should executeSignatures with enabled chai token, not enough dai', async () => {
+      const chaiToken = await createChaiToken(token, owner)
+      console.log(1)
+      await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
+      console.log(2)
+      await foreignBridge.convertDaiToChai(ether('0.1'), { from: owner })
+      console.log(3)
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.above(ZERO)
       expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value.sub(ether('0.1')))
 
       const recipientAccount = accounts[3]
@@ -406,7 +421,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       balanceAfterBridge.should.be.bignumber.equal(ZERO)
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      expect(await rToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
     })
   })
   describe('#withdraw with 2 minimum signatures', async () => {

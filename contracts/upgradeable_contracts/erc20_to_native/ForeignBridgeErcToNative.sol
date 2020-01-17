@@ -4,9 +4,9 @@ import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 import "../OtherSideBridgeStorage.sol";
 import "../../interfaces/IScdMcdMigration.sol";
-import "../RTokenConnector.sol";
+import "../ChaiConnector.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, RTokenConnector {
+contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, ChaiConnector {
     event TokensSwapped(address indexed from, address indexed to, uint256 value);
 
     bytes32 internal constant MIN_HDTOKEN_BALANCE = 0x48649cf195feb695632309f41e61252b09f537943654bde13eb7bb1bca06964e; // keccak256(abi.encodePacked("minHDTokenBalance"))
@@ -85,13 +85,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         uint256 currentBalance = tokenBalance(erc20token());
         if (currentBalance < amount) {
-            uint256 totalRDaiBalance = rTokenBalance();
-            uint256 redeemAmount = amount.sub(currentBalance).add(minDaiTokenBalance());
-            if (totalRDaiBalance < redeemAmount) {
-                _redeemRToken(totalRDaiBalance);
-            } else {
-                _redeemRToken(redeemAmount);
-            }
+            exit(amount.sub(currentBalance).add(minDaiTokenBalance()));
         }
 
         bool res = erc20token().transfer(_recipient, amount);
@@ -189,15 +183,16 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         return uintStorage[MIN_DAI_TOKEN_BALANCE];
     }
 
-    function investExcessDai() public {
-        uint256 curDaiBalance = tokenBalance(erc20token());
-        require(curDaiBalance > minDaiTokenBalance());
-
-        mintRToken(curDaiBalance.sub(minDaiTokenBalance()));
+    function convertDaiToChai() external onlyOwner {
+        join(tokenBalance(erc20token()).sub(minDaiTokenBalance()));
     }
 
-    function convertDaiToRDai(uint256 _amount) external onlyOwner {
-        mintRToken(_amount);
+    function convertDaiToChai(uint256 _amount) external onlyOwner {
+        join(_amount);
+    }
+
+    function convertChaiToDai(uint256 _amount) external onlyOwner {
+        exit(_amount);
     }
 
     function relayTokens(address _receiver, uint256 _amount) external {
@@ -242,7 +237,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         if (tokenToOperate == hdToken) {
             swapTokens();
         } else if (tokenBalance(fdToken) > minDaiTokenBalance()) {
-            investExcessDai();
+            join(tokenBalance(fdToken).sub(minDaiTokenBalance()));
         }
     }
 }

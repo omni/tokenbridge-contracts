@@ -96,31 +96,19 @@ library Message {
         }
     }
 
-    function hasEnoughValidSignatures(
-        bytes _message,
-        uint8[] _vs,
-        bytes32[] _rs,
-        bytes32[] _ss,
-        IBridgeValidators _validatorContract,
-        bool isAMBMessage
-    ) internal view {
-        require(isAMBMessage || isMessageValid(_message));
-        uint256 requiredSignatures = _validatorContract.requiredSignatures();
-        // It is not necessary to check that arrays have the same length since it will be handled
-        // during attempt to access to the corresponding elements in the loop and the call will be reverted.
-        // It will save gas for the rational validators actions and still be safe enough from security point of view
-        require(_vs.length >= requiredSignatures);
-        bytes32 hash = hashMessage(_message, isAMBMessage);
-        address[] memory encounteredAddresses = new address[](requiredSignatures);
-
-        for (uint256 i = 0; i < requiredSignatures; i++) {
-            address recoveredAddress = ecrecover(hash, _vs[i], _rs[i], _ss[i]);
-            require(_validatorContract.isValidator(recoveredAddress));
-            require(!addressArrayContains(encounteredAddresses, recoveredAddress));
-            encounteredAddresses[i] = recoveredAddress;
-        }
-    }
-
+    /**
+    * @dev Validates provided signatures, only first requiredSignatures() number
+    * of signatures are going to be validated, these signatures should be from different validators.
+    * @param _message bytes message used to generate signatures
+    * @param _signatures bytes blob with signatures to be validated.
+    * First byte X is a number of signatures in a blob,
+    * next X bytes are v components of signatures,
+    * next 32 * X bytes are r components of signatures,
+    * next 32 * X bytes are s components of signatures.
+    * @param _validatorContract contract, which conforms to the IBridgeValidators interface,
+    * where info about current validators and required signatures is stored.
+    * @param isAMBMessage true if _message is an AMB message with arbitrary length.
+    */
     function hasEnoughValidSignatures(
         bytes _message,
         bytes _signatures,

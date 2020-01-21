@@ -33,7 +33,18 @@ function strip0x(input) {
 module.exports.strip0x = strip0x
 
 // extracts and returns the `v`, `r` and `s` values from a `signature`.
+// all inputs and outputs are hex strings with leading '0x'.
 function signatureToVRS(rawSignature) {
+  assert.equal(rawSignature.length, 2 + 32 * 2 + 32 * 2 + 2)
+  const signature = strip0x(rawSignature)
+  const v = parseInt(signature.substr(64 * 2), 16)
+  const r = `0x${signature.substr(0, 32 * 2)}`
+  const s = `0x${signature.substr(32 * 2, 32 * 2)}`
+  return { v, r, s }
+}
+module.exports.signatureToVRS = signatureToVRS
+
+function signatureToVRSAMB(rawSignature) {
   assert.equal(rawSignature.length, 2 + 32 * 2 + 32 * 2 + 2)
   const signature = strip0x(rawSignature)
   const v = signature.substr(64 * 2)
@@ -41,7 +52,7 @@ function signatureToVRS(rawSignature) {
   const s = signature.substr(32 * 2, 32 * 2)
   return { v, r, s }
 }
-module.exports.signatureToVRS = signatureToVRS
+module.exports.signatureToVRSAMB = signatureToVRSAMB
 
 function packSignatures(array) {
   const length = strip0x(web3.utils.toHex(array.length))

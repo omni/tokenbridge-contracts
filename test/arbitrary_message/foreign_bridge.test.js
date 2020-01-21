@@ -9,7 +9,7 @@ const {
   ether,
   expectEventInLogs,
   addTxHashToAMBData,
-  signatureToVRS,
+  signatureToVRSAMB,
   packSignatures,
   createFullAccounts
 } = require('../helpers/helpers')
@@ -244,7 +244,7 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
       const signatures = packSignatures([vrs])
 
       const { logs } = await foreignBridge.executeSignatures(message, signatures, {
@@ -300,13 +300,13 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature1 = await sign(authoritiesFiveAccs[0], message)
-      const vrs = signatureToVRS(signature1)
+      const vrs = signatureToVRSAMB(signature1)
 
       const signature2 = await sign(authoritiesFiveAccs[1], message)
-      const vrs2 = signatureToVRS(signature2)
+      const vrs2 = signatureToVRSAMB(signature2)
 
       const signature3 = await sign(authoritiesFiveAccs[2], message)
-      const vrs3 = signatureToVRS(signature3)
+      const vrs3 = signatureToVRSAMB(signature3)
       const oneSignature = packSignatures([vrs])
       const twoSignatures = packSignatures([vrs, vrs2])
       const threeSignatures = packSignatures([vrs, vrs2, vrs3])
@@ -376,7 +376,7 @@ contract('ForeignAMB', async accounts => {
       const vrsList = []
       for (let i = 0; i < MAX_SIGNATURES; i++) {
         const { signature } = await authorities[i].sign(message)
-        vrsList[i] = signatureToVRS(signature)
+        vrsList[i] = signatureToVRSAMB(signature)
       }
 
       const signatures = packSignatures(vrsList)
@@ -400,7 +400,7 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
       const signatures = packSignatures([vrs])
 
       const { logs } = await foreignBridge.executeSignatures(message, signatures, {
@@ -434,7 +434,7 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
       const signatures = packSignatures([vrs])
 
       const { logs } = await foreignBridge.executeSignatures(message, signatures, {
@@ -467,7 +467,7 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
       const signatures = packSignatures([vrs])
 
       const { logs } = await foreignBridge.executeSignatures(message, signatures, {
@@ -509,7 +509,7 @@ contract('ForeignAMB', async accounts => {
       const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
 
       const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
+      const vrs = signatureToVRSAMB(signature)
       const signatures = packSignatures([vrs])
 
       const { logs } = await foreignBridge.executeSignatures(message, signatures, {

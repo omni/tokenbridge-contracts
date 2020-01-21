@@ -36,7 +36,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
   console.log('\ninitializing Home Bridge with following parameters:\n')
   console.log(`Home Validators: ${validatorsBridge.options.address},
-  HOME_MAX_AMOUNT_PER_TX (gas limit per call): ${HOME_MAX_AMOUNT_PER_TX},
+  HOME_MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}
   `)
   const initializeHomeBridgeData = await bridge.methods
@@ -67,7 +67,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
 
 async function deployHome() {
   console.log('========================================')
-  console.log('Deploying Arbitrary Message Bridge at Home')
+  console.log('Deploying HomeBridge')
   console.log('========================================\n')
 
   let nonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
@@ -121,23 +121,23 @@ async function deployHome() {
   })
   nonce++
 
-  console.log('\ndeploying HomeAMBridge storage\n')
+  console.log('\ndeploying homeBridge storage\n')
   const homeBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
   })
   nonce++
-  console.log('[Home] HomeAMBridge Storage: ', homeBridgeStorage.options.address)
+  console.log('[Home] HomeBridge Storage: ', homeBridgeStorage.options.address)
 
-  console.log('\ndeploying HomeAMBridge implementation\n')
+  console.log('\ndeploying homeBridge implementation\n')
   const homeBridgeImplementation = await deployContract(HomeBridge, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
   })
   nonce++
-  console.log('[Home] HomeAMBridge Implementation: ', homeBridgeImplementation.options.address)
+  console.log('[Home] HomeBridge Implementation: ', homeBridgeImplementation.options.address)
 
-  console.log('\nhooking up HomeAMBridge storage to HomeAMBridge implementation')
+  console.log('\nhooking up HomeBridge storage to HomeBridge implementation')
   await upgradeProxy({
     proxy: homeBridgeStorage,
     implementationAddress: homeBridgeImplementation.options.address,
@@ -162,7 +162,7 @@ async function deployHome() {
     url: HOME_RPC_URL
   })
 
-  console.log('\nDeployment of Arbitrary Message Bridge at Home completed\n')
+  console.log('\nHome Deployment Bridge completed\n')
   return {
     homeBridge: {
       address: homeBridgeStorage.options.address,

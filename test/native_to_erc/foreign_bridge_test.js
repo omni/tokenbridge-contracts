@@ -18,8 +18,7 @@ const {
   ether,
   expectEventInLogs,
   createAccounts,
-  createFullAccounts,
-  packSignatures
+  createFullAccounts
 } = require('../helpers/helpers')
 
 const oneEther = ether('1')
@@ -207,9 +206,8 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
-      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
       logs[0].args.value.should.be.bignumber.equal(value)
@@ -228,9 +226,8 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, accounts[0])
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
-      await foreignBridge.executeSignatures(message, oneSignature).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
     })
     it('should allow second deposit with different transactionHash but same recipient and value', async () => {
       const recipientAccount = accounts[3]
@@ -241,17 +238,15 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
-      await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
       const transactionHash2 = '0x77a496628a776a03d58d7e6059a5937f04bebd8ba4ff89f76dd4bb8ba7e291ee'
       const message2 = createMessage(recipientAccount, value, transactionHash2, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)
       const vrs2 = signatureToVRS(signature2)
-      const oneSignature2 = packSignatures([vrs2])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
-      const { logs } = await foreignBridge.executeSignatures(message2, oneSignature2).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
 
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
@@ -273,16 +268,14 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
-      await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       // tx 2
       const message2 = createMessage(accounts[4], value, transactionHash, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)
       const vrs2 = signatureToVRS(signature2)
-      const oneSignature2 = packSignatures([vrs2])
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
-      await foreignBridge.executeSignatures(message2, oneSignature2).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.rejectedWith(ERROR_MSG)
     })
 
     it('should not allow withdraw over home max tx limit', async () => {
@@ -293,9 +286,8 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, invalidValue, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
 
-      await foreignBridge.executeSignatures(message, oneSignature).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
     })
 
     it('should not allow withdraw over daily home limit', async () => {
@@ -305,25 +297,22 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, halfEther, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
 
-      await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
 
       const transactionHash2 = '0x69debd8fd1923c9cb3cd8ef6461e2740b2d037943b941729d5a47671a2bb8712'
       const message2 = createMessage(recipientAccount, halfEther, transactionHash2, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)
       const vrs2 = signatureToVRS(signature2)
-      const oneSignature2 = packSignatures([vrs2])
 
-      await foreignBridge.executeSignatures(message2, oneSignature2).should.be.fulfilled
+      await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
 
       const transactionHash3 = '0x022695428093bb292db8e48bd1417c5e1b84c0bf673bd0fff23ed0fb6495b872'
       const message3 = createMessage(recipientAccount, halfEther, transactionHash3, foreignBridge.address)
       const signature3 = await sign(authorities[0], message3)
       const vrs3 = signatureToVRS(signature3)
-      const oneSignature3 = packSignatures([vrs3])
 
-      await foreignBridge.executeSignatures(message3, oneSignature3).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.executeSignatures([vrs3.v], [vrs3.r], [vrs3.s], message3).should.be.rejectedWith(ERROR_MSG)
     })
   })
 
@@ -363,15 +352,19 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address)
       const signature = await sign(twoAuthorities[0], message)
       const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
-      await foreignBridgeWithMultiSignatures.executeSignatures(message, oneSignature).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridgeWithMultiSignatures
+        .executeSignatures([vrs.v], [vrs.r], [vrs.s], message)
+        .should.be.rejectedWith(ERROR_MSG)
       // msg 2
       const signature2 = await sign(twoAuthorities[1], message)
       const vrs2 = signatureToVRS(signature2)
-      const twoSignatures = packSignatures([vrs, vrs2])
-      const { logs } = await foreignBridgeWithMultiSignatures.executeSignatures(message, twoSignatures).should.be
-        .fulfilled
+      const { logs } = await foreignBridgeWithMultiSignatures.executeSignatures(
+        [vrs.v, vrs2.v],
+        [vrs.r, vrs2.r],
+        [vrs.s, vrs2.s],
+        message
+      ).should.be.fulfilled
 
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
@@ -387,9 +380,10 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address)
       const signature = await sign(twoAuthorities[0], message)
       const vrs = signatureToVRS(signature)
-      const twoSignatures = packSignatures([vrs, vrs])
       false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
-      await foreignBridgeWithMultiSignatures.executeSignatures(message, twoSignatures).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridgeWithMultiSignatures
+        .executeSignatures([vrs.v, vrs.v], [vrs.r, vrs.r], [vrs.s, vrs.s], message)
+        .should.be.rejectedWith(ERROR_MSG)
     })
     it('works with 5 validators and 3 required signatures', async () => {
       const recipient = accounts[8]
@@ -429,9 +423,12 @@ contract('ForeignBridge', async accounts => {
       const signature3 = await sign(authoritiesFiveAccs[2], message)
       const vrs3 = signatureToVRS(signature3)
 
-      const thressSignature = packSignatures([vrs, vrs2, vrs3])
-
-      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(message, thressSignature).should.be.fulfilled
+      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(
+        [vrs.v, vrs2.v, vrs3.v],
+        [vrs.r, vrs2.r, vrs3.r],
+        [vrs.s, vrs2.s, vrs3.s],
+        message
+      ).should.be.fulfilled
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipient)
       logs[0].args.value.should.be.bignumber.equal(value)
@@ -471,12 +468,15 @@ contract('ForeignBridge', async accounts => {
         vrsList[i] = signatureToVRS(signature)
       }
 
-      const maxSignatures = packSignatures(vrsList)
-
-      const { receipt } = await foreignBridgeWithMaxSigs.executeSignatures(message, maxSignatures).should.be.fulfilled
+      const { receipt } = await foreignBridgeWithMaxSigs.executeSignatures(
+        vrsList.map(vrs => vrs.v),
+        vrsList.map(vrs => vrs.r),
+        vrsList.map(vrs => vrs.s),
+        message
+      ).should.be.fulfilled
       expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
-    it('Should fail if length of signatures is wrong', async () => {
+    it('Should fail if length of signatures is not equal', async () => {
       const recipient = accounts[8]
       const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
       const ownerOfValidators = accounts[0]
@@ -513,12 +513,15 @@ contract('ForeignBridge', async accounts => {
       // signature 3
       const signature3 = await sign(authoritiesFiveAccs[2], message)
       const vrs3 = signatureToVRS(signature3)
-
-      const threeSignatures = packSignatures([vrs, vrs2, vrs3])
       await foreignBridgeWithThreeSigs
-        .executeSignatures(message, `0x04${threeSignatures.slice(4)}`)
+        .executeSignatures([vrs.v, vrs2.v], [vrs.r], [vrs.s, vrs2.s, vrs3.s], message)
         .should.be.rejectedWith(ERROR_MSG)
-      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(message, threeSignatures).should.be.fulfilled
+      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(
+        [vrs.v, vrs2.v, vrs3.v],
+        [vrs.r, vrs2.r, vrs3.r],
+        [vrs.s, vrs2.s, vrs3.s],
+        message
+      ).should.be.fulfilled
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipient)
       logs[0].args.value.should.be.bignumber.equal(value)
@@ -1230,9 +1233,8 @@ contract('ForeignBridge', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(validators[0], message)
       const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
 
-      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
 
       logs[0].event.should.be.equal('FeeDistributedFromSignatures')
       logs[0].args.feeAmount.should.be.bignumber.equal(feeAmount)
@@ -1299,10 +1301,13 @@ contract('ForeignBridge', async accounts => {
       const vrs2 = signatureToVRS(signature2)
       const vrs3 = signatureToVRS(signature3)
 
-      const threeSignatures = packSignatures([vrs, vrs2, vrs3])
-
       // When
-      const { logs } = await foreignBridge.executeSignatures(message, threeSignatures).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures(
+        [vrs.v, vrs2.v, vrs3.v],
+        [vrs.r, vrs2.r, vrs3.r],
+        [vrs.s, vrs2.s, vrs3.s],
+        message
+      ).should.be.fulfilled
 
       // Then
       logs[0].event.should.be.equal('FeeDistributedFromSignatures')
@@ -1385,10 +1390,13 @@ contract('ForeignBridge', async accounts => {
       const vrs2 = signatureToVRS(signature2)
       const vrs3 = signatureToVRS(signature3)
 
-      const threeSignatures = packSignatures([vrs, vrs2, vrs3])
-
       // When
-      const { logs } = await foreignBridge.executeSignatures(message, threeSignatures).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures(
+        [vrs.v, vrs2.v, vrs3.v],
+        [vrs.r, vrs2.r, vrs3.r],
+        [vrs.s, vrs2.s, vrs3.s],
+        message
+      ).should.be.fulfilled
 
       // Then
       logs[0].event.should.be.equal('FeeDistributedFromSignatures')
@@ -1450,10 +1458,8 @@ contract('ForeignBridge', async accounts => {
       const signature = await sign(validators[0], message)
       const vrs = signatureToVRS(signature)
 
-      const oneSignature = packSignatures([vrs])
-
       // When
-      const { receipt } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+      const { receipt } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
       expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
   })
@@ -1499,9 +1505,12 @@ contract('ForeignBridge', async accounts => {
       const signature3 = await sign(authoritiesFiveAccs[2], message)
       const vrs3 = signatureToVRS(signature3)
 
-      const threeSignatures = packSignatures([vrs, vrs2, vrs3])
-
-      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(message, threeSignatures).should.be.fulfilled
+      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(
+        [vrs.v, vrs2.v, vrs3.v],
+        [vrs.r, vrs2.r, vrs3.r],
+        [vrs.s, vrs2.s, vrs3.s],
+        message
+      ).should.be.fulfilled
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipient)
       logs[0].args.value.should.be.bignumber.equal(valueOnHome)

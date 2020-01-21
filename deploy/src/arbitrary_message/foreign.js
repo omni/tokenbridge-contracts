@@ -36,8 +36,10 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
 
   console.log(`Foreign Validators: ${validatorsBridge.options.address},
-  FOREIGN_MAX_AMOUNT_PER_TX (gas limit per call): ${FOREIGN_MAX_AMOUNT_PER_TX},
-  FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS}
+  FOREIGN_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+    FOREIGN_MAX_AMOUNT_PER_TX
+  )} in eth,
+    HOME_GAS_PRICE: ${FOREIGN_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS}
   `)
   const initializeFBridgeData = await bridge.methods
     .initialize(
@@ -67,7 +69,7 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
 
 async function deployForeign() {
   console.log('========================================')
-  console.log('Deploying Arbitrary Message Bridge at Foreign')
+  console.log('deploying ForeignBridge')
   console.log('========================================\n')
 
   let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
@@ -123,25 +125,25 @@ async function deployForeign() {
   })
   nonce++
 
-  console.log('\ndeploying ForeignAMBridge storage\n')
+  console.log('\ndeploying foreignBridge storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce
   })
   nonce++
-  console.log('[Foreign] ForeignAMBridge Storage: ', foreignBridgeStorage.options.address)
+  console.log('[Foreign] ForeignBridge Storage: ', foreignBridgeStorage.options.address)
 
-  console.log('\ndeploying ForeignAMBridge implementation\n')
+  console.log('\ndeploying foreignBridge implementation\n')
   const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'foreign',
     nonce
   })
   nonce++
-  console.log('[Foreign] ForeignAMBridge Implementation: ', foreignBridgeImplementation.options.address)
+  console.log('[Foreign] ForeignBridge Implementation: ', foreignBridgeImplementation.options.address)
 
-  console.log('\nhooking up ForeignAMBridge storage to ForeignAMBridge implementation')
+  console.log('\nhooking up ForeignBridge storage to ForeignBridge implementation')
   await upgradeProxy({
     proxy: foreignBridgeStorage,
     implementationAddress: foreignBridgeImplementation.options.address,
@@ -167,7 +169,7 @@ async function deployForeign() {
     url: FOREIGN_RPC_URL
   })
 
-  console.log('\nDeployment of Arbitrary Message Bridge at Foreign completed\n')
+  console.log('\nForeign Deployment Bridge completed\n')
 
   return {
     foreignBridge: {

@@ -126,7 +126,7 @@ if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool({default: false})
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool()
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -202,7 +202,7 @@ if (BRIDGE_MODE === 'NATIVE_TO_ERC') {
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool({default: false})
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool()
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -221,8 +221,8 @@ if (BRIDGE_MODE === 'ERC_TO_ERC') {
     BRIDGEABLE_TOKEN_NAME: envalid.str(),
     BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
     BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool({default: false}),
-    ERC20_EXTENDED_BY_ERC677: envalid.bool({default: false}),
+    DEPLOY_REWARDABLE_TOKEN: envalid.bool(),
+    ERC20_EXTENDED_BY_ERC677: envalid.bool(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
   }
 

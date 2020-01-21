@@ -469,8 +469,10 @@ BRIDGE_MODE=ARBITRARY_MESSAGE
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
-# The "gas" parameter set in every deployment/configuration transaction.
-DEPLOYMENT_GAS_LIMIT=5000000
+# Extra gas added to the estimated gas of a particular deployment/configuration transaction
+# E.g. if estimated gas returns 100000 and the parameter is 0.2,
+# the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
+DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on
 # Home network (in Wei).
 HOME_DEPLOYMENT_GAS_PRICE=10000000000
@@ -484,17 +486,16 @@ GET_RECEIPT_INTERVAL_IN_MILLISECONDS=3000
 # The RPC channel to a Home node able to handle deployment/configuration
 # transactions.
 HOME_RPC_URL=https://poa.infura.io
-# The address of an administrator on the Home network who can change bridge
-# parameters and a validator's contract. For extra security we recommended using
-# a multi-sig wallet contract address here.
-HOME_OWNER_MULTISIG=0x
-# The address from which a validator's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_VALIDATORS=0x
-# The address from which the bridge's contract can be upgraded on Home.
-HOME_UPGRADEABLE_ADMIN_BRIDGE=0x
-
-# The maximum value of estimated gas for one transaction in Wei.
-HOME_MAX_AMOUNT_PER_TX=1500000000000000000000000
+# Address on Home network with permissions to change parameters of the bridge contract.
+# For extra security we recommended using a multi-sig wallet contract address here.
+HOME_BRIDGE_OWNER=0x
+# Address on Home network with permissions to change parameters of bridge validator contract.
+HOME_VALIDATORS_OWNER=0x
+# Address on Home network with permissions to upgrade the bridge contract and the
+# bridge validator contract.
+HOME_UPGRADEABLE_ADMIN=0x
+# The maximum value of gas for one call to be allowed for relaying.
+HOME_MAX_AMOUNT_PER_TX=20000000
 # The finalization threshold. The number of blocks issued after the block with
 # the corresponding deposit transaction to guarantee the transaction will not be
 # rolled back.
@@ -507,16 +508,16 @@ HOME_GAS_PRICE=1000000000
 # The RPC channel to a Foreign node able to handle deployment/configuration
 # transactions.
 FOREIGN_RPC_URL=https://mainnet.infura.io
-# The address of an administrator on the Foreign network who can change bridge
-# parameters and the validator's contract. For extra security we recommended
-# using a multi-sig wallet contract address here.
-FOREIGN_OWNER_MULTISIG=0x
-# The address from which a validator's contract can be upgraded on Foreign.
-FOREIGN_UPGRADEABLE_ADMIN_VALIDATORS=0x
-# The address from which the bridge's contract can be upgraded on Foreign.
-FOREIGN_UPGRADEABLE_ADMIN_BRIDGE=0x
-# The maximum value of estimated gas for one transaction in Wei.
-FOREIGN_MAX_AMOUNT_PER_TX=1500000000000000000000000
+# Address on Foreign network with permissions to change parameters of the bridge contract.
+# For extra security we recommended using a multi-sig wallet contract address here.
+FOREIGN_BRIDGE_OWNER=0x
+# Address on Foreign network with permissions to change parameters of bridge validator contract.
+FOREIGN_VALIDATORS_OWNER=0x
+# Address on Foreign network with permissions to upgrade the bridge contract and the
+# bridge validator contract.
+FOREIGN_UPGRADEABLE_ADMIN=0x
+# The maximum value of gas for one call to be allowed for relaying.
+FOREIGN_MAX_AMOUNT_PER_TX=20000000
 # The finalization threshold. The number of blocks issued after the block with
 # the corresponding deposit transaction to guarantee the transaction will not be
 # rolled back.
@@ -534,7 +535,7 @@ REQUIRED_NUMBER_OF_VALIDATORS=1
 # addresses are collected on the Home side. The same addresses will be used on
 # the Foreign network to confirm that the finalized agreement was transferred
 # correctly to the Foreign network.
-VALIDATORS="0x 0x 0x"
+VALIDATORS=0x 0x 0x
 
 # The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
 #HOME_EXPLORER_URL=https://blockscout.com/poa/core/api

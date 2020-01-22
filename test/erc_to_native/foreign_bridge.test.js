@@ -24,7 +24,8 @@ const {
   expectEventInLogs,
   getEvents,
   createFullAccounts,
-  delay
+  delay,
+  packSignatures
 } = require('../helpers/helpers')
 
 const halfEther = ether('0.5')
@@ -257,9 +258,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
@@ -281,9 +283,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
       // tx 2
       await token.mint(foreignBridge.address, value)
@@ -291,9 +294,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message2 = createMessage(recipientAccount, value, transactionHash2, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)
       const vrs2 = signatureToVRS(signature2)
+      const oneSignature2 = packSignatures([vrs2])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash2))
 
-      const { logs } = await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures(message2, oneSignature2).should.be.fulfilled
 
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
@@ -312,18 +316,20 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
       // tx 2
       await token.mint(foreignBridge.address, value)
       const message2 = createMessage(accounts[4], value, transactionHash, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)
       const vrs2 = signatureToVRS(signature2)
+      const oneSignature2 = packSignatures([vrs2])
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.executeSignatures(message2, oneSignature2).should.be.rejectedWith(ERROR_MSG)
     })
 
     it('should not allow withdraw over home max tx limit', async () => {
@@ -335,8 +341,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, invalidValue, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
 
-      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.executeSignatures(message, oneSignature).should.be.rejectedWith(ERROR_MSG)
     })
 
     it('should not allow withdraw over daily home limit', async () => {
@@ -347,22 +354,25 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, halfEther, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
 
-      await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
       const transactionHash2 = '0x69debd8fd1923c9cb3cd8ef6461e2740b2d037943b941729d5a47671a2bb8712'
       const message2 = createMessage(recipientAccount, halfEther, transactionHash2, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)
       const vrs2 = signatureToVRS(signature2)
+      const oneSignature2 = packSignatures([vrs2])
 
-      await foreignBridge.executeSignatures([vrs2.v], [vrs2.r], [vrs2.s], message2).should.be.fulfilled
+      await foreignBridge.executeSignatures(message2, oneSignature2).should.be.fulfilled
 
       const transactionHash3 = '0x022695428093bb292db8e48bd1417c5e1b84c0bf673bd0fff23ed0fb6495b872'
       const message3 = createMessage(recipientAccount, halfEther, transactionHash3, foreignBridge.address)
       const signature3 = await sign(authorities[0], message3)
       const vrs3 = signatureToVRS(signature3)
+      const oneSignature3 = packSignatures([vrs3])
 
-      await foreignBridge.executeSignatures([vrs3.v], [vrs3.r], [vrs3.s], message3).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.executeSignatures(message3, oneSignature3).should.be.rejectedWith(ERROR_MSG)
     })
   })
   describe('#executeSignatures with chai', async () => {
@@ -399,9 +409,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
@@ -428,12 +439,13 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
       // wait for a small interest in DSR
       await delay(1500)
 
-      const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
@@ -483,22 +495,18 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address)
       const signature = await sign(twoAuthorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
 
-      await foreignBridgeWithMultiSignatures
-        .executeSignatures([vrs.v], [vrs.r], [vrs.s], message)
-        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridgeWithMultiSignatures.executeSignatures(message, oneSignature).should.be.rejectedWith(ERROR_MSG)
 
       // msg 2
       const signature2 = await sign(twoAuthorities[1], message)
       const vrs2 = signatureToVRS(signature2)
+      const twoSignatures = packSignatures([vrs, vrs2])
 
-      const { logs } = await foreignBridgeWithMultiSignatures.executeSignatures(
-        [vrs.v, vrs2.v],
-        [vrs.r, vrs2.r],
-        [vrs.s, vrs2.s],
-        message
-      ).should.be.fulfilled
+      const { logs } = await foreignBridgeWithMultiSignatures.executeSignatures(message, twoSignatures).should.be
+        .fulfilled
 
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
@@ -512,11 +520,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, value, transactionHash, foreignBridgeWithMultiSignatures.address)
       const signature = await sign(twoAuthorities[0], message)
       const vrs = signatureToVRS(signature)
+      const twoSignatures = packSignatures([vrs, vrs])
       false.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(transactionHash))
 
-      await foreignBridgeWithMultiSignatures
-        .executeSignatures([vrs.v, vrs.v], [vrs.r, vrs.r], [vrs.s, vrs.s], message)
-        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridgeWithMultiSignatures.executeSignatures(message, twoSignatures).should.be.rejectedWith(ERROR_MSG)
     })
     it('works with 5 validators and 3 required signatures', async () => {
       const recipient = accounts[8]
@@ -556,12 +563,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const signature3 = await sign(authoritiesFiveAccs[2], message)
       const vrs3 = signatureToVRS(signature3)
 
-      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(
-        [vrs.v, vrs2.v, vrs3.v],
-        [vrs.r, vrs2.r, vrs3.r],
-        [vrs.s, vrs2.s, vrs3.s],
-        message
-      ).should.be.fulfilled
+      const threeSignatures = packSignatures([vrs, vrs2, vrs3])
+
+      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(message, threeSignatures).should.be.fulfilled
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipient)
       logs[0].args.value.should.be.bignumber.equal(value)
@@ -601,12 +605,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         vrsList[i] = signatureToVRS(signature)
       }
 
-      const { receipt } = await foreignBridgeWithMaxSigs.executeSignatures(
-        vrsList.map(vrs => vrs.v),
-        vrsList.map(vrs => vrs.r),
-        vrsList.map(vrs => vrs.s),
-        message
-      ).should.be.fulfilled
+      const maxSignatures = packSignatures(vrsList)
+
+      const { receipt } = await foreignBridgeWithMaxSigs.executeSignatures(message, maxSignatures).should.be.fulfilled
       expect(receipt.gasUsed).to.be.lte(MAX_GAS)
     })
   })
@@ -750,9 +751,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const message = createMessage(recipientAccount, valueOnHome, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipientAccount)
@@ -804,12 +806,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const signature2 = await sign(twoAuthorities[1], message)
       const vrs2 = signatureToVRS(signature2)
 
-      const { logs } = await foreignBridgeWithMultiSignatures.executeSignatures(
-        [vrs.v, vrs2.v],
-        [vrs.r, vrs2.r],
-        [vrs.s, vrs2.s],
-        message
-      ).should.be.fulfilled
+      const twoSignatures = packSignatures([vrs, vrs2])
+
+      const { logs } = await foreignBridgeWithMultiSignatures.executeSignatures(message, twoSignatures).should.be
+        .fulfilled
       logs[0].event.should.be.equal('RelayedMessage')
       logs[0].args.recipient.should.be.equal(recipient)
       logs[0].args.value.should.be.bignumber.equal(valueOnHome)
@@ -1483,9 +1483,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
         const signature = await sign(authorities[0], message)
         const vrs = signatureToVRS(signature)
+        const oneSignature = packSignatures([vrs])
         expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(false)
 
-        const { logs } = await foreignBridge.executeSignatures([vrs.v], [vrs.r], [vrs.s], message).should.be.fulfilled
+        const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
         expectEventInLogs(logs, 'RelayedMessage', {
           recipient: recipientAccount,

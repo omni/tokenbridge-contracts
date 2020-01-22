@@ -27,18 +27,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
 
     /**
     * @dev Fixed point division
-    * @return Truncated value of x / y
-    */
-    function rdiv(uint256 x, uint256 y) internal pure returns (uint256) {
-        return x.mul(RAY) / y;
-    }
-
-    /**
-    * @dev Fixed point division
     * @return Ceiled value of x / y
     */
     function rdivup(uint256 x, uint256 y) internal pure returns (uint256) {
-        // always rounds up
         return x.mul(RAY).add(y.sub(1)) / y;
     }
 
@@ -47,10 +38,11 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @param _chai Chai token contract address
     */
     function initializeChaiToken(address _chai) external onlyOwner {
+        require(address(chaiToken()) == address(0));
         require(address(IChai(_chai).daiToken()) == address(erc20token()));
         addressStorage[CHAI_TOKEN] = _chai;
         erc20token().approve(_chai, uint256(-1));
-    } // 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa
+    }
 
     /**
     * @dev Withdraws all invested tokens, pays remaining interest, removes chai token from contrac storage
@@ -63,7 +55,37 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         delete addressStorage[CHAI_TOKEN];
     }
 
-    function chaiToken() public returns (IChai) {
+    /**
+    * @dev Pays all available interest, in Chai tokens
+    * @param recipient Account address to receive available interest
+    */
+    function payInterest(address recipient) external onlyOwner {
+        // since investedAmountInChai() returns a ceiled value,
+        // the value of chaiBalance() - investedAmountInChai() will be floored,
+        // leading to excess remaining chai balance
+        chaiToken().transfer(recipient, chaiBalance() - investedAmountInChai());
+
+        require(dsrBalance() >= investedAmountInDai());
+    }
+
+    /**
+    * @dev Pays interest, in Chai tokens
+    * @param recipient Account address to receive available interest
+    * @param amount Amount of Chai tokens to transfer
+    */
+    function payInterest(address recipient, uint256 amount) external onlyOwner {
+        // check that the remaining chai balance will be sufficient to cover all invested DAI tokens
+        require(chaiBalance() - amount >= investedAmountInChai());
+        chaiToken().transfer(recipient, amount);
+
+        require(dsrBalance() >= investedAmountInDai());
+    }
+
+    /**
+    * @dev Returns current used chai contract
+    * @return chai contract address
+    */
+    function chaiToken() public view returns (IChai) {
         return IChai(addressStorage[CHAI_TOKEN]);
     }
 
@@ -88,6 +110,10 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         uintStorage[INVESTED_AMOUNT] = amount;
     }
 
+    /**
+    * @dev Evaluates exact current invested amount, id DAI
+    * @return Value in DAI
+    */
     function investedAmountInDai() public view returns (uint256) {
         return uintStorage[INVESTED_AMOUNT];
     }
@@ -101,7 +127,6 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @return Amount in chai, ceiled
     */
     function investedAmountInChai() internal returns (uint256) {
-        // update chi if needed
         // solhint-disable-next-line not-rely-on-time
         uint256 chi = (now > pot().rho()) ? pot().drip() : pot().chi();
         return rdivup(investedAmountInDai(), chi);
@@ -121,38 +146,15 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @param amount Amount of DAI to redeem
     */
     function exit(uint256 amount) internal {
-        if (amount > investedAmountInDai()) {
-            chaiToken().draw(address(this), investedAmountInDai());
+        uint256 invested = investedAmountInDai();
+        if (amount >= invested) {
+            chaiToken().draw(address(this), invested);
             setInvestedAmointInDai(0);
-        } else {
+        } else if (amount > 0) {
             uint256 initialDaiBalance = erc20token().balanceOf(address(this));
             chaiToken().draw(address(this), amount);
             uint256 redeemed = erc20token().balanceOf(address(this)) - initialDaiBalance;
-            setInvestedAmointInDai(redeemed < investedAmountInDai() ? investedAmountInDai() - redeemed : 0);
+            setInvestedAmointInDai(redeemed < invested ? invested - redeemed : 0);
         }
-    }
-
-    /**
-    * @dev Pays all available interest, in Chai tokens
-    * @param recipient Account address to receive available interest
-    */
-    function payInterest(address recipient) external onlyOwner {
-        // since investedAmountInChai() is ceiled, the value of chaiBalance() - investedAmountInChai() will be floored
-        chaiToken().transfer(recipient, chaiBalance() - investedAmountInChai());
-
-        require(dsrBalance() >= investedAmountInDai());
-    }
-
-    /**
-    * @dev Pays interest, in Chai tokens
-    * @param recipient Account address to receive available interest
-    * @param amount Amount of Chai tokens to transfer
-    */
-    function payInterest(address recipient, uint256 amount) external onlyOwner {
-        // check that the remaining chai balance will be sufficient to cover all invested DAI tokens
-        require(chaiBalance() - amount >= investedAmountInChai());
-        chaiToken().transfer(recipient, amount);
-
-        require(dsrBalance() >= investedAmountInDai());
     }
 }

@@ -15,23 +15,30 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/* solhint-disable */
 pragma solidity 0.4.24;
 
 contract DSTokenLike {
-    function mint(address,uint) external;
-    function burn(address,uint) external;
+    function mint(address, uint256) external;
+    function burn(address, uint256) external;
+    function allowance(address, address) external returns (uint256);
 }
 
 contract VatLike {
-    function slip(bytes32,address,int) external;
-    function move(address,address,uint) external;
+    function slip(bytes32, address, int256) external;
+    function move(address, address, uint256) external;
+    function setDai(address, uint256) external;
 }
 
-contract DaiJoin {
+contract DaiJoinMock {
     // --- Auth ---
-    mapping (address => uint) public wards;
-    function rely(address usr) external auth { wards[usr] = 1; }
-    function deny(address usr) external auth { wards[usr] = 0; }
+    mapping(address => uint256) public wards;
+    function rely(address usr) external auth {
+        wards[usr] = 1;
+    }
+    function deny(address usr) external auth {
+        wards[usr] = 0;
+    }
     modifier auth {
         require(wards[msg.sender] == 1, "DaiJoin/not-authorized");
         _;
@@ -39,26 +46,27 @@ contract DaiJoin {
 
     VatLike public vat;
     DSTokenLike public dai;
-    uint    public live;  // Access Flag
+    uint256 public live; // Access Flag
 
     constructor(address vat_, address dai_) public {
         wards[msg.sender] = 1;
         live = 1;
         vat = VatLike(vat_);
         dai = DSTokenLike(dai_);
+        vat.setDai(address(this), mul(ONE, ONE));
     }
     function cage() external auth {
         live = 0;
     }
-    uint constant ONE = 10 ** 27;
-    function mul(uint x, uint y) internal pure returns (uint z) {
+    uint256 constant ONE = 10**27;
+    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require(y == 0 || (z = x * y) / y == x);
     }
-    function join(address usr, uint wad) external {
+    function join(address usr, uint256 wad) external {
         vat.move(address(this), usr, mul(ONE, wad));
         dai.burn(msg.sender, wad);
     }
-    function exit(address usr, uint wad) external {
+    function exit(address usr, uint256 wad) external {
         require(live == 1, "DaiJoin/not-live");
         vat.move(msg.sender, address(this), mul(ONE, wad));
         dai.mint(usr, wad);

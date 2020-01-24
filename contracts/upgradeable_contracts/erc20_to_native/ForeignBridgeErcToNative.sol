@@ -181,11 +181,23 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
     /**
     * @dev Evaluates edge DAI token balance, which has an impact on the invest amounts
-    * Bridge will automatically save DAI in DSR, when DAI balance reachs 2 * x, x DAI will be left as a buffer
     * @return Value in DAI
     */
     function minDaiTokenBalance() public view returns (uint256) {
         return uintStorage[MIN_DAI_TOKEN_BALANCE];
+    }
+
+    /**
+    * @dev Checks if DAI balance is high enough to be partially converted to Chai
+    * Twice limit is used in order to decrease frequency of convertDaiToChai calls,
+    * In case of high bridge utilization in DAI => xDAI direction,
+    * convertDaiToChai() will be called as soon as DAI balance reaches 2 * limit,
+    * limit DAI will be left as a buffer for future operations.
+    * @return true if convertDaiToChai() call is needed to be performed by the oracle
+    */
+    function isDaiNeedsToBeInvested() public view returns (bool) {
+        // chai token needs to be initialized, DAI balance should be at least twice greater than minDaiTokenBalance
+        return address(chaiToken()) != address(0) && tokenBalance(erc20token()) > 2 * minDaiTokenBalance();
     }
 
     /**
@@ -250,11 +262,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         if (tokenToOperate == hdToken) {
             swapTokens();
-        } else {
-            uint256 daiBalance = tokenBalance(fdToken);
-            if (daiBalance > 2 * minDaiTokenBalance()) {
-                convertDaiToChai();
-            }
+        } else if (isDaiNeedsToBeInvested()) {
+            convertDaiToChai();
         }
     }
 }

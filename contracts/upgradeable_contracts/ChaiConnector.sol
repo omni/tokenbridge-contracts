@@ -41,7 +41,6 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         require(address(chaiToken()) == address(0));
         require(address(IChai(_chai).daiToken()) == address(erc20token()));
         addressStorage[CHAI_TOKEN] = _chai;
-        erc20token().approve(_chai, uint256(-1));
     }
 
     /**
@@ -51,7 +50,6 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     function removeChaiToken(address recipient) external onlyOwner {
         exit(investedAmountInDai());
         chaiToken().transfer(recipient, chaiBalance());
-        erc20token().approve(chaiToken(), 0);
         delete addressStorage[CHAI_TOKEN];
     }
 
@@ -138,6 +136,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     */
     function join(uint256 amount) internal {
         setInvestedAmointInDai(investedAmountInDai() + amount);
+        erc20token().approve(chaiToken(), amount);
         chaiToken().join(address(this), amount);
     }
 

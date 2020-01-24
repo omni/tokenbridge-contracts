@@ -85,7 +85,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         uint256 currentBalance = tokenBalance(erc20token());
         if (currentBalance < amount) {
-            exit(amount.sub(currentBalance).add(minDaiTokenBalance()));
+            _convertChaiToDai(amount.sub(currentBalance).add(minDaiTokenBalance()));
         }
 
         bool res = erc20token().transfer(_recipient, amount);
@@ -204,21 +204,21 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     * @dev Converts all DAI into Chai tokens, keeping minDaiTokenBalance() DAI as a buffer
     */
     function convertDaiToChai() public {
-        join(tokenBalance(erc20token()).sub(minDaiTokenBalance()));
+        _convertDaiToChai(tokenBalance(erc20token()).sub(minDaiTokenBalance()));
     }
 
     /**
     * @dev Converts specified amount of DAI into Chai tokens
     */
     function convertDaiToChai(uint256 _amount) external onlyOwner {
-        join(_amount);
+        _convertDaiToChai(_amount);
     }
 
     /**
     * @dev Redeems specified amount of DAI from Chai token contract
     */
     function convertChaiToDai(uint256 _amount) external onlyOwner {
-        exit(_amount);
+        _convertChaiToDai(_amount);
     }
 
     function relayTokens(address _receiver, uint256 _amount) external {

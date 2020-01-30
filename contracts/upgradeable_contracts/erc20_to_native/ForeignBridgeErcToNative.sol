@@ -262,7 +262,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         if (tokenToOperate == hdToken) {
             swapTokens();
-        } else if (isDaiNeedsToBeInvested()) {
+        }
+        if (isDaiNeedsToBeInvested()) {
             convertDaiToChai();
         }
     }

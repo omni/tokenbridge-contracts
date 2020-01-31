@@ -2,7 +2,6 @@ pragma solidity 0.4.24;
 
 import "../../interfaces/IAMB.sol";
 import "../Ownable.sol";
-import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../Initializable.sol";
 import "../BaseERC677Bridge.sol";
 import "../BaseOverdrawManagement.sol";
@@ -10,11 +9,11 @@ import "../ReentrancyGuard.sol";
 import "../Upgradeable.sol";
 import "../Claimable.sol";
 import "../VersionableBridge.sol";
-import "../../libraries/Bytes.sol";
+import "../BasicAMBMediator.sol";
 
 contract BasicAMBErc677ToErc677 is
     Initializable,
-    Ownable,
+    BasicAMBMediator,
     ReentrancyGuard,
     Upgradeable,
     Claimable,
@@ -23,11 +22,6 @@ contract BasicAMBErc677ToErc677 is
     BaseERC677Bridge
 {
     event FailedMessageFixed(bytes32 indexed dataHash, address recipient, uint256 value);
-
-    bytes32 internal constant BRIDGE_CONTRACT = 0x811bbb11e8899da471f0e69a3ed55090fc90215227fc5fb1cb0d6e962ea7b74f; // keccak256(abi.encodePacked("bridgeContract"))
-    bytes32 internal constant MEDIATOR_CONTRACT = 0x98aa806e31e94a687a31c65769cb99670064dd7f5a87526da075c5fb4eab9880; // keccak256(abi.encodePacked("mediatorContract"))
-    bytes32 internal constant REQUEST_GAS_LIMIT = 0x2dfd6c9f781bb6bbb5369c114e949b69ebb440ef3d4dd6b2836225eb1dc3a2be; // keccak256(abi.encodePacked("requestGasLimit"))
-    bytes32 internal constant NONCE = 0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759; // keccak256(abi.encodePacked("nonce"))
 
     function initialize(
         address _bridgeContract,
@@ -125,64 +119,6 @@ contract BasicAMBErc677ToErc677 is
 
     function getBridgeMode() external pure returns (bytes4 _data) {
         return 0x76595b56; // bytes4(keccak256(abi.encodePacked("erc-to-erc-amb")))
-    }
-
-    function setBridgeContract(address _bridgeContract) external onlyOwner {
-        _setBridgeContract(_bridgeContract);
-    }
-
-    function _setBridgeContract(address _bridgeContract) internal {
-        require(AddressUtils.isContract(_bridgeContract));
-        addressStorage[BRIDGE_CONTRACT] = _bridgeContract;
-    }
-
-    function bridgeContract() public view returns (IAMB) {
-        return IAMB(addressStorage[BRIDGE_CONTRACT]);
-    }
-
-    function setMediatorContractOnOtherSide(address _mediatorContract) external onlyOwner {
-        _setMediatorContractOnOtherSide(_mediatorContract);
-    }
-
-    function _setMediatorContractOnOtherSide(address _mediatorContract) internal {
-        addressStorage[MEDIATOR_CONTRACT] = _mediatorContract;
-    }
-
-    function mediatorContractOnOtherSide() public view returns (address) {
-        return addressStorage[MEDIATOR_CONTRACT];
-    }
-
-    function setRequestGasLimit(uint256 _requestGasLimit) external onlyOwner {
-        _setRequestGasLimit(_requestGasLimit);
-    }
-
-    function _setRequestGasLimit(uint256 _requestGasLimit) internal {
-        require(_requestGasLimit <= maxGasPerTx());
-        uintStorage[REQUEST_GAS_LIMIT] = _requestGasLimit;
-    }
-
-    function requestGasLimit() public view returns (uint256) {
-        return uintStorage[REQUEST_GAS_LIMIT];
-    }
-
-    function messageSender() internal view returns (address) {
-        return bridgeContract().messageSender();
-    }
-
-    function transactionHash() internal view returns (bytes32) {
-        return bridgeContract().transactionHash();
-    }
-
-    function maxGasPerTx() internal view returns (uint256) {
-        return bridgeContract().maxGasPerTx();
-    }
-
-    function nonce() internal view returns (bytes32) {
-        return Bytes.bytesToBytes32(bytesStorage[NONCE]);
-    }
-
-    function setNonce(bytes32 _hash) internal {
-        bytesStorage[NONCE] = abi.encodePacked(_hash);
     }
 
     function setMessageHashValue(bytes32 _hash, uint256 _value) internal {

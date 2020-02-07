@@ -120,7 +120,7 @@ contract TokenBridgeMediator is BasicAMBMediator, BasicTokenBridge {
 
     /**
     * @dev Handles the request to fix transferred assets which bridged message execution failed on the other network.
-    * It uses the information stored by passMessage method when the assets where initially transferred
+    * It uses the information stored by passMessage method when the assets were initially transferred
     * @param _dataHash hash of the message which execution failed on the other network.
     */
     function fixFailedMessage(bytes32 _dataHash) external {

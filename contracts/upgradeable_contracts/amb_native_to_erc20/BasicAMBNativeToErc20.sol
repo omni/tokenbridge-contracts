@@ -7,12 +7,20 @@ import "../Upgradeable.sol";
 import "../Claimable.sol";
 import "../VersionableBridge.sol";
 import "../TokenBridgeMediator.sol";
+import "../RewardableMediator.sol";
 
 /**
 * @title BasicAMBNativeToErc20
 * @dev Common mediator functionality for native-to-erc20 bridge intended to work on top of AMB bridge.
 */
-contract BasicAMBNativeToErc20 is Initializable, Upgradeable, Claimable, VersionableBridge, TokenBridgeMediator {
+contract BasicAMBNativeToErc20 is
+    Initializable,
+    Upgradeable,
+    Claimable,
+    VersionableBridge,
+    TokenBridgeMediator,
+    RewardableMediator
+{
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -43,6 +51,9 @@ contract BasicAMBNativeToErc20 is Initializable, Upgradeable, Claimable, Version
         require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // foreignMaxPerTx < foreignDailyLimit
         require(_owner != address(0));
 
+        _setBridgeContract(_bridgeContract);
+        _setMediatorContractOnOtherSide(_mediatorContract);
+        _setRequestGasLimit(_requestGasLimit);
         uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
@@ -76,10 +87,11 @@ contract BasicAMBNativeToErc20 is Initializable, Upgradeable, Claimable, Version
 
     /**
     * @dev Execute the action to be performed when the bridge tokens are out of execution limits.
-    * @param _recipient address intended to receive the tokens
-    * @param _value amount of tokens to be received
     */
-    function executeActionOnBridgedTokensOutOfLimit(address _recipient, uint256 _value) internal {
+    function executeActionOnBridgedTokensOutOfLimit(
+        address, /* _recipient */
+        uint256 /* _value */
+    ) internal {
         revert();
     }
 

@@ -18,6 +18,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
 
     uint256 internal constant ONE = 10**27;
 
+    /**
+    * @dev Throws if chai token is not enabled
+    */
     modifier chaiTokenEnabled {
         require(isChaiTokenEnabled());
         _;
@@ -39,6 +42,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         return x.mul(ONE).add(y.sub(1)) / y;
     }
 
+    /**
+    * @return true, if chai token is enabled
+    */
     function isChaiTokenEnabled() public view returns (bool) {
         return boolStorage[CHAI_TOKEN_ENABLED];
     }

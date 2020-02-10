@@ -426,9 +426,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
     })
 
-    it('should executeSignatures with enabled chai token, not enough dai, low limit', async () => {
+    it('should executeSignatures with enabled chai token, not enough dai, low dai limit', async () => {
       await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
       await token.mint(foreignBridge.address, ether('1'), { from: owner })
+      // in case of low limit, bridge should withdraw tokens up to specified DAI limit
       await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
       await foreignBridge.convertDaiToChai()
       expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
@@ -459,11 +460,12 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
     })
 
-    it('should executeSignatures with enabled chai token, not enough dai, high limit', async () => {
+    it('should executeSignatures with enabled chai token, not enough dai, high dai limit', async () => {
       await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
       await token.mint(foreignBridge.address, ether('1'), { from: owner })
       await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
       await foreignBridge.convertDaiToChai()
+      // in case of high limit, bridge should withdraw all invested tokens
       await foreignBridge.setMinDaiTokenBalance(ether('5'), { from: owner })
       expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
       expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(ether('0.1'))

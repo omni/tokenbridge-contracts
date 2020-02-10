@@ -78,7 +78,11 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // since investedAmountInChai() returns a ceiled value,
         // the value of chaiBalance() - investedAmountInChai() will be floored,
         // leading to excess remaining chai balance
-        chaiToken().transfer(recipient, chaiBalance() - investedAmountInChai());
+        uint256 balanceBefore = erc20token().balanceOf(address(this));
+        chaiToken().exit(address(this), chaiBalance() - investedAmountInChai());
+        uint256 interestInDai = erc20token().balanceOf(address(this)) - balanceBefore;
+
+        erc20token().transfer(recipient, interestInDai);
 
         require(dsrBalance() >= investedAmountInDai());
     }

@@ -1730,10 +1730,11 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should pay full interest', async () => {
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient)).to.be.bignumber.equal(ZERO)
 
         await foreignBridge.payInterest(interestRecipient, { from: owner }).should.be.fulfilled
 
-        expect(await chaiToken.balanceOf(interestRecipient)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient)).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })

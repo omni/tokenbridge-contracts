@@ -1665,6 +1665,11 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridge.removeChaiToken(interestRecipient, { from: accounts[1] }).should.be.rejected
         await foreignBridge.removeChaiToken(interestRecipient, { from: owner }).should.be.fulfilled
       })
+
+      it('should fail if chai token is not enabled', async () => {
+        await foreignBridge.removeChaiToken(interestRecipient, { from: owner }).should.be.fulfilled
+        await foreignBridge.removeChaiToken(interestRecipient, { from: owner }).should.be.rejected
+      })
     })
 
     describe('min dai limit', () => {
@@ -1719,6 +1724,11 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
       })
+
+      it('should not allow to convert if chai token is disabled', async () => {
+        await token.mint(foreignBridge.address, ether('101'))
+        await foreignBridge.convertDaiToChai({ from: owner }).should.be.rejected
+      })
     })
 
     describe('payInterest', () => {
@@ -1741,6 +1751,12 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await token.balanceOf(interestRecipient)).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
+      })
+
+      it('should not allow to pay interest if chaiToken is disabled', async () => {
+        await foreignBridge.removeChaiToken(interestRecipient)
+
+        await foreignBridge.payInterest(interestRecipient, { from: owner }).should.be.rejected
       })
 
       it('should not allow too high interest', async () => {

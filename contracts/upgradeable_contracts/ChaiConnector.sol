@@ -61,7 +61,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
-    * @dev Withdraws all invested tokens, pays remaining interest, removes chai token from contrac storage
+    * @dev Withdraws all invested tokens, pays remaining interest, removes chai token from contract storage
     * @param recipient Account address to receive remaining interest
     */
     function removeChaiToken(address recipient) external onlyOwner {
@@ -79,7 +79,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // the value of chaiBalance() - investedAmountInChai() will be floored,
         // leading to excess remaining chai balance
         uint256 balanceBefore = erc20token().balanceOf(address(this));
-        chaiToken().exit(address(this), chaiBalance() - investedAmountInChai());
+        chaiToken().exit(address(this), chaiBalance().sub(investedAmountInChai()));
         uint256 interestInDai = erc20token().balanceOf(address(this)) - balanceBefore;
 
         erc20token().transfer(recipient, interestInDai);

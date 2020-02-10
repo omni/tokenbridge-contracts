@@ -45,14 +45,16 @@ const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
 const decimalShiftZero = 0
 
-async function createChaiToken(token, owner) {
+async function createChaiToken(token, bridge, owner) {
   const vat = await VatMock.new({ from: owner })
   const daiJoin = await DaiJoinMock.new(vat.address, token.address, { from: owner })
   const pot = await PotMock.new(vat.address, { from: owner })
   await vat.rely(pot.address)
   await vat.rely(daiJoin.address)
   await token.rely(daiJoin.address)
-  return ChaiMock.new(vat.address, pot.address, daiJoin.address, token.address, { from: owner })
+  const chaiToken = await ChaiMock.new(vat.address, pot.address, daiJoin.address, token.address, { from: owner })
+  await bridge.setChaiToken(chaiToken.address)
+  return chaiToken
 }
 
 contract('ForeignBridge_ERC20_to_Native', async accounts => {
@@ -382,7 +384,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridgeErcToNativeMock.new()
       token = await DaiMock.new({ from: owner })
-      chaiToken = await createChaiToken(token, owner)
+      chaiToken = await createChaiToken(token, foreignBridge, owner)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -398,7 +400,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
 
     it('should executeSignatures with enabled chai token, enough dai', async () => {
-      await foreignBridge.initializeChaiToken(chaiToken.address)
+      await foreignBridge.initializeChaiToken()
       expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
 
@@ -427,7 +429,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
 
     it('should executeSignatures with enabled chai token, not enough dai, low dai limit', async () => {
-      await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
+      await foreignBridge.initializeChaiToken({ from: owner })
       await token.mint(foreignBridge.address, ether('1'), { from: owner })
       // in case of low limit, bridge should withdraw tokens up to specified DAI limit
       await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
@@ -461,7 +463,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
 
     it('should executeSignatures with enabled chai token, not enough dai, high dai limit', async () => {
-      await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
+      await foreignBridge.initializeChaiToken({ from: owner })
       await token.mint(foreignBridge.address, ether('1'), { from: owner })
       await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
       await foreignBridge.convertDaiToChai()
@@ -1057,7 +1059,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridgeErcToNativeMock.new()
       token = await DaiMock.new({ from: owner })
-      chaiToken = await createChaiToken(token, owner)
+      chaiToken = await createChaiToken(token, foreignBridge, owner)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -1073,7 +1075,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
 
     it('should allow to bridge tokens with chai token enabled', async () => {
-      await foreignBridge.initializeChaiToken(chaiToken.address)
+      await foreignBridge.initializeChaiToken()
       expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
 
       const currentDay = await foreignBridge.getCurrentDay()
@@ -1109,7 +1111,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
 
     it('should allow to bridge tokens with chai token enabled, excess tokens', async () => {
-      await foreignBridge.initializeChaiToken(chaiToken.address)
+      await foreignBridge.initializeChaiToken()
       await token.mint(foreignBridge.address, ether('201'))
       expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
 
@@ -1475,8 +1477,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       it('should allow to bridge tokens specifying the token address with chai token enabled', async () => {
         // Given
-        const chaiToken = await createChaiToken(dai, owner)
-        await foreignBridge.initializeChaiToken(chaiToken.address)
+        const chaiToken = await createChaiToken(dai, foreignBridge, owner)
+        await foreignBridge.initializeChaiToken()
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
 
         const balance = await dai.balanceOf(user)
@@ -1596,7 +1598,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     beforeEach(async () => {
       token = await DaiMock.new({ from: owner })
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -1608,39 +1610,39 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         decimalShiftZero,
         otherSideBridge.address
       )
-      chaiToken = await createChaiToken(token, owner)
+      chaiToken = await createChaiToken(token, foreignBridge, owner)
     })
 
     describe('initializeChaiToken', () => {
       it('should be initialized', async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address).should.be.fulfilled
-      })
-
-      it('should fail if wrong param', async () => {
-        await foreignBridge.initializeChaiToken(ZERO_ADDRESS).should.be.rejected
-        await foreignBridge.initializeChaiToken(token.address).should.be.rejected
+        await foreignBridge.initializeChaiToken().should.be.fulfilled
       })
 
       it('should fail if not an owner', async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address, { from: accounts[1] }).should.be.rejected
+        await foreignBridge.initializeChaiToken({ from: accounts[1] }).should.be.rejected
+      })
+    })
+
+    describe('chaiTokenEnabled', () => {
+      it('should return false', async () => {
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
       })
 
-      it('should fail if rToken underlying is different from bridge token', async () => {
-        const token2 = await DaiMock.new({ from: owner })
-        const chaiToken2 = await createChaiToken(token2, owner)
-        await foreignBridge.initializeChaiToken(chaiToken2.address).should.be.rejected
+      it('should return true', async () => {
+        await foreignBridge.initializeChaiToken().should.be.fulfilled
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(true)
       })
     })
 
     describe('removeChaiToken', () => {
       beforeEach(async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address).should.be.fulfilled
+        await foreignBridge.initializeChaiToken().should.be.fulfilled
       })
 
       it('should be removed', async () => {
-        expect(await foreignBridge.chaiToken()).to.be.equal(chaiToken.address)
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(true)
         await foreignBridge.removeChaiToken(interestRecipient).should.be.fulfilled
-        expect(await foreignBridge.chaiToken()).to.be.equal(ZERO_ADDRESS)
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       })
 
@@ -1648,14 +1650,14 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await token.mint(foreignBridge.address, oneEther, { from: owner })
         await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
         await foreignBridge.convertDaiToChai()
-        expect(await foreignBridge.chaiToken()).to.be.equal(chaiToken.address)
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(true)
 
         await delay(1500)
 
         await foreignBridge.removeChaiToken(interestRecipient).should.be.fulfilled
-        expect(await foreignBridge.chaiToken()).to.be.equal(ZERO_ADDRESS)
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        expect(await chaiToken.balanceOf(interestRecipient)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient)).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(halfEther)
       })
 
@@ -1667,7 +1669,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     describe('min dai limit', () => {
       beforeEach(async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
+        await foreignBridge.initializeChaiToken({ from: owner })
       })
 
       it('should return minDaiTokenBalance', async () => {
@@ -1686,18 +1688,18 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     describe('isDaiNeedsToBeInvested', () => {
       it('should return false on empty balance', async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address)
+        await foreignBridge.initializeChaiToken()
         expect(await foreignBridge.isDaiNeedsToBeInvested()).to.be.equal(false)
       })
 
       it('should return false on insufficient balance', async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address)
+        await foreignBridge.initializeChaiToken()
         await token.mint(foreignBridge.address, ether('101'), { from: owner })
         expect(await foreignBridge.isDaiNeedsToBeInvested()).to.be.equal(false)
       })
 
       it('should return true on sufficient balance', async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address)
+        await foreignBridge.initializeChaiToken()
         await token.mint(foreignBridge.address, ether('201'), { from: owner })
         expect(await foreignBridge.isDaiNeedsToBeInvested()).to.be.equal(true)
       })
@@ -1710,7 +1712,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     describe('convertDaiToChai', () => {
       it('should convert all dai except defined limit', async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address)
+        await foreignBridge.initializeChaiToken()
         await token.mint(foreignBridge.address, ether('101'))
         await foreignBridge.convertDaiToChai({ from: accounts[1] }).should.be.fulfilled
 
@@ -1721,7 +1723,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
     describe('payInterest', () => {
       beforeEach(async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address)
+        await foreignBridge.initializeChaiToken()
         await token.mint(foreignBridge.address, halfEther)
         await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
         await foreignBridge.convertDaiToChai()

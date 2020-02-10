@@ -17,4 +17,14 @@ contract ForeignBridgeErcToNativeMock is ForeignBridgeErcToNative {
         // Address generated in unit test
         return ISaiTop(0x96bc48adACdB60E6536E55a6727919a397F14540);
     }
+
+    IChai internal chaiTokenContract;
+
+    function setChaiToken(IChai _chaiToken) external {
+        chaiTokenContract = _chaiToken;
+    }
+
+    function chaiToken() public view returns (IChai) {
+        return chaiTokenContract;
+    }
 }

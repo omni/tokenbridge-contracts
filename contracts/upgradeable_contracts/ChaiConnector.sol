@@ -12,11 +12,16 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract ChaiConnector is Ownable, ERC20Bridge {
     using SafeMath for uint256;
 
-    bytes32 internal constant CHAI_TOKEN = 0xe529dd1fa310362a861f9a51ed0d07b46ef28d89054300cd2734814ddfcfd449; // keccak256(abi.encodePacked("chaiToken"))
+    bytes32 internal constant CHAI_TOKEN_ENABLED = 0x2ae87563606f93f71ad2adf4d62661ccdfb63f3f508f94700934d5877fb92278; // keccak256(abi.encodePacked("chaiTokenEnabled"))
     bytes32 internal constant INVESTED_AMOUNT = 0xb6afb3323c9d7dc0e9dab5d34c3a1d1ae7739d2224c048d4ee7675d3c759dd1b; // keccak256(abi.encodePacked("investedAmount"))
     bytes32 internal constant MIN_DAI_TOKEN_BALANCE = 0xce70e1dac97909c26a87aa4ada3d490673a153b3a75b22ea3364c4c7df7c551f; // keccak256(abi.encodePacked("minDaiTokenBalance"))
 
     uint256 internal constant ONE = 10**27;
+
+    modifier chaiTokenEnabled {
+        require(isChaiTokenEnabled());
+        _;
+    }
 
     /**
     * @dev Fixed point multiplication
@@ -34,14 +39,24 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         return x.mul(ONE).add(y.sub(1)) / y;
     }
 
+    function isChaiTokenEnabled() public view returns (bool) {
+        return boolStorage[CHAI_TOKEN_ENABLED];
+    }
+
+    /**
+    * @return Chai token contract address
+    */
+    function chaiToken() public view returns (IChai) {
+        return IChai(0x06AF07097C9Eeb7fD685c692751D5C66dB49c215);
+    }
+
     /**
     * @dev Initializes chai token
-    * @param _chai Chai token contract address
     */
-    function initializeChaiToken(address _chai) external onlyOwner {
-        require(address(chaiToken()) == address(0));
-        require(address(IChai(_chai).daiToken()) == address(erc20token()));
-        addressStorage[CHAI_TOKEN] = _chai;
+    function initializeChaiToken() external onlyOwner {
+        require(!isChaiTokenEnabled());
+        require(address(chaiToken().daiToken()) == address(erc20token()));
+        boolStorage[CHAI_TOKEN_ENABLED] = true;
         uintStorage[MIN_DAI_TOKEN_BALANCE] = 100 ether;
     }
 
@@ -64,17 +79,25 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @dev Withdraws all invested tokens, pays remaining interest, removes chai token from contract storage
     * @param recipient Account address to receive remaining interest
     */
-    function removeChaiToken(address recipient) external onlyOwner {
+    function removeChaiToken(address recipient) external onlyOwner chaiTokenEnabled {
         _convertChaiToDai(investedAmountInDai());
-        chaiToken().transfer(recipient, chaiBalance());
-        delete addressStorage[CHAI_TOKEN];
+        _payInterest(recipient);
+        delete boolStorage[CHAI_TOKEN_ENABLED];
     }
 
     /**
-    * @dev Pays all available interest, in Chai tokens
+    * @dev Pays all available interest, in Dai tokens
     * @param recipient Account address to receive available interest
     */
-    function payInterest(address recipient) external onlyOwner {
+    function payInterest(address recipient) external onlyOwner chaiTokenEnabled {
+        _payInterest(recipient);
+    }
+
+    /**
+    * @dev Internal function for paying all available interest, in Dai tokens
+    * @param recipient Account address to receive available interest
+    */
+    function _payInterest(address recipient) internal {
         // since investedAmountInChai() returns a ceiled value,
         // the value of chaiBalance() - investedAmountInChai() will be floored,
         // leading to excess remaining chai balance
@@ -85,14 +108,6 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         erc20token().transfer(recipient, interestInDai);
 
         require(dsrBalance() >= investedAmountInDai());
-    }
-
-    /**
-    * @dev Returns current used chai contract
-    * @return chai contract address
-    */
-    function chaiToken() public view returns (IChai) {
-        return IChai(addressStorage[CHAI_TOKEN]);
     }
 
     /**

@@ -188,13 +188,13 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     */
     function isDaiNeedsToBeInvested() public view returns (bool) {
         // chai token needs to be initialized, DAI balance should be at least twice greater than minDaiTokenBalance
-        return address(chaiToken()) != address(0) && tokenBalance(erc20token()) > 2 * minDaiTokenBalance();
+        return isChaiTokenEnabled() && tokenBalance(erc20token()) > 2 * minDaiTokenBalance();
     }
 
     /**
     * @dev Converts all DAI into Chai tokens, keeping minDaiTokenBalance() DAI as a buffer
     */
-    function convertDaiToChai() public {
+    function convertDaiToChai() public chaiTokenEnabled {
         _convertDaiToChai(tokenBalance(erc20token()).sub(minDaiTokenBalance()));
     }
 

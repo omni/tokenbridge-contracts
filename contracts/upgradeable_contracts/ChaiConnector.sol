@@ -14,6 +14,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
 
     bytes32 internal constant CHAI_TOKEN = 0xe529dd1fa310362a861f9a51ed0d07b46ef28d89054300cd2734814ddfcfd449; // keccak256(abi.encodePacked("chaiToken"))
     bytes32 internal constant INVESTED_AMOUNT = 0xb6afb3323c9d7dc0e9dab5d34c3a1d1ae7739d2224c048d4ee7675d3c759dd1b; // keccak256(abi.encodePacked("investedAmount"))
+    bytes32 internal constant MIN_DAI_TOKEN_BALANCE = 0xce70e1dac97909c26a87aa4ada3d490673a153b3a75b22ea3364c4c7df7c551f; // keccak256(abi.encodePacked("minDaiTokenBalance"))
 
     uint256 internal constant ONE = 10**27;
 
@@ -41,6 +42,22 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         require(address(chaiToken()) == address(0));
         require(address(IChai(_chai).daiToken()) == address(erc20token()));
         addressStorage[CHAI_TOKEN] = _chai;
+        uintStorage[MIN_DAI_TOKEN_BALANCE] = 100 ether;
+    }
+
+    /**
+    * @dev Sets minimum DAI limit, needed for converting DAI into CHAI
+    */
+    function setMinDaiTokenBalance(uint256 _minBalance) external onlyOwner {
+        uintStorage[MIN_DAI_TOKEN_BALANCE] = _minBalance;
+    }
+
+    /**
+    * @dev Evaluates edge DAI token balance, which has an impact on the invest amounts
+    * @return Value in DAI
+    */
+    function minDaiTokenBalance() public view returns (uint256) {
+        return uintStorage[MIN_DAI_TOKEN_BALANCE];
     }
 
     /**
@@ -62,19 +79,6 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // the value of chaiBalance() - investedAmountInChai() will be floored,
         // leading to excess remaining chai balance
         chaiToken().transfer(recipient, chaiBalance() - investedAmountInChai());
-
-        require(dsrBalance() >= investedAmountInDai());
-    }
-
-    /**
-    * @dev Pays interest, in Chai tokens
-    * @param recipient Account address to receive available interest
-    * @param amount Amount of Chai tokens to transfer
-    */
-    function payInterest(address recipient, uint256 amount) external onlyOwner {
-        // check that the remaining chai balance will be sufficient to cover all invested DAI tokens
-        require(chaiBalance() - amount >= investedAmountInChai());
-        chaiToken().transfer(recipient, amount);
 
         require(dsrBalance() >= investedAmountInDai());
     }
@@ -112,6 +116,10 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         return uintStorage[INVESTED_AMOUNT];
     }
 
+    /**
+    * @dev Updates current invested amount, id DAI
+    * @return Value in DAI
+    */
     function setInvestedAmointInDai(uint256 amount) internal {
         uintStorage[INVESTED_AMOUNT] = amount;
     }
@@ -144,6 +152,8 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     function _convertChaiToDai(uint256 amount) internal {
         uint256 invested = investedAmountInDai();
         if (amount >= invested) {
+            // onExecuteMessage can call a convert operation with argument greater than the current invested amount,
+            // in this case bridge should withdraw all invested funds
             chaiToken().draw(address(this), invested);
             setInvestedAmointInDai(0);
         } else if (amount > 0) {

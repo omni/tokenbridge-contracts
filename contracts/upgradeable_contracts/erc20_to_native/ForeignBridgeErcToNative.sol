@@ -10,7 +10,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     event TokensSwapped(address indexed from, address indexed to, uint256 value);
 
     bytes32 internal constant MIN_HDTOKEN_BALANCE = 0x48649cf195feb695632309f41e61252b09f537943654bde13eb7bb1bca06964e; // keccak256(abi.encodePacked("minHDTokenBalance"))
-    bytes32 internal constant MIN_DAI_TOKEN_BALANCE = 0xce70e1dac97909c26a87aa4ada3d490673a153b3a75b22ea3364c4c7df7c551f; // keccak256(abi.encodePacked("minDaiTokenBalance"))
     bytes4 internal constant SWAP_TOKENS = 0x73d00224; // swapTokens()
 
     function initialize(
@@ -48,7 +47,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        uintStorage[MIN_DAI_TOKEN_BALANCE] = 100 ether;
         setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
         setInitialize();
@@ -84,6 +82,11 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uint256 amount = _amount.div(10**decimalShift());
 
         uint256 currentBalance = tokenBalance(erc20token());
+
+        // Convert part of Chai tokens back to DAI, is DAI balance is insufficient.
+        // If Chai token is disabled, bridge will keep all funds directly in DAI token,
+        // so it will have enough funds to cover any xDai => Dai transfer,
+        // and currentBalance >= amount will always hold.
         if (currentBalance < amount) {
             _convertChaiToDai(amount.sub(currentBalance).add(minDaiTokenBalance()));
         }
@@ -175,18 +178,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         emit TokensSwapped(hdToken, fdToken, curHDTokenBalance);
     }
 
-    function setMinDaiTokenBalance(uint256 _minBalance) external onlyOwner {
-        uintStorage[MIN_DAI_TOKEN_BALANCE] = _minBalance;
-    }
-
-    /**
-    * @dev Evaluates edge DAI token balance, which has an impact on the invest amounts
-    * @return Value in DAI
-    */
-    function minDaiTokenBalance() public view returns (uint256) {
-        return uintStorage[MIN_DAI_TOKEN_BALANCE];
-    }
-
     /**
     * @dev Checks if DAI balance is high enough to be partially converted to Chai
     * Twice limit is used in order to decrease frequency of convertDaiToChai calls,
@@ -205,20 +196,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     */
     function convertDaiToChai() public {
         _convertDaiToChai(tokenBalance(erc20token()).sub(minDaiTokenBalance()));
-    }
-
-    /**
-    * @dev Converts specified amount of DAI into Chai tokens
-    */
-    function convertDaiToChai(uint256 _amount) external onlyOwner {
-        _convertDaiToChai(_amount);
-    }
-
-    /**
-    * @dev Redeems specified amount of DAI from Chai token contract
-    */
-    function convertChaiToDai(uint256 _amount) external onlyOwner {
-        _convertChaiToDai(_amount);
     }
 
     function relayTokens(address _receiver, uint256 _amount) external {

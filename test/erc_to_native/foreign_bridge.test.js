@@ -426,11 +426,13 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
     })
 
-    it('should executeSignatures with enabled chai token, not enough dai', async () => {
+    it('should executeSignatures with enabled chai token, not enough dai, low limit', async () => {
       await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
-      await foreignBridge.convertDaiToChai(ether('0.1'), { from: owner })
+      await token.mint(foreignBridge.address, ether('1'), { from: owner })
+      await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+      await foreignBridge.convertDaiToChai()
       expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
-      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value.sub(ether('0.1')))
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
 
       const recipientAccount = accounts[3]
       const balanceBefore = await token.balanceOf(recipientAccount)
@@ -453,7 +455,42 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const balanceAfter = await token.balanceOf(recipientAccount)
       const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
-      balanceAfterBridge.should.be.bignumber.equal(ZERO)
+      balanceAfterBridge.should.be.bignumber.equal(ether('0.1'))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+    })
+
+    it('should executeSignatures with enabled chai token, not enough dai, high limit', async () => {
+      await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
+      await token.mint(foreignBridge.address, ether('1'), { from: owner })
+      await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+      await foreignBridge.convertDaiToChai()
+      await foreignBridge.setMinDaiTokenBalance(ether('5'), { from: owner })
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(ether('0.1'))
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.lte(ether('0.11'))
+
+      const recipientAccount = accounts[3]
+      const balanceBefore = await token.balanceOf(recipientAccount)
+
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      // wait for a small interest in DSR
+      await delay(1500)
+
+      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+
+      logs[0].event.should.be.equal('RelayedMessage')
+      logs[0].args.recipient.should.be.equal(recipientAccount)
+      logs[0].args.value.should.be.bignumber.equal(value)
+      const balanceAfter = await token.balanceOf(recipientAccount)
+      const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      balanceAfterBridge.should.be.bignumber.gte(ether('1'))
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
     })
   })
@@ -1607,7 +1644,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       it('should be removed with tokens withdraw', async () => {
         await token.mint(foreignBridge.address, oneEther, { from: owner })
-        await foreignBridge.methods['convertDaiToChai(uint256)'](halfEther, { from: owner })
+        await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+        await foreignBridge.convertDaiToChai()
         expect(await foreignBridge.chaiToken()).to.be.equal(chaiToken.address)
 
         await delay(1500)
@@ -1626,7 +1664,11 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
 
     describe('min dai limit', () => {
-      it('should be return minDaiTokenBalance', async () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeChaiToken(chaiToken.address, { from: owner })
+      })
+
+      it('should return minDaiTokenBalance', async () => {
         expect(await foreignBridge.minDaiTokenBalance()).to.be.bignumber.equal(minDaiLimit)
       })
 
@@ -1665,64 +1707,13 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
 
     describe('convertDaiToChai', () => {
-      beforeEach(async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address)
-        await token.mint(foreignBridge.address, oneEther)
-      })
-
-      it('should convert dai to chai', async () => {
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-
-        await foreignBridge.methods['convertDaiToChai(uint256)'](halfEther, { from: owner }).should.be.fulfilled
-
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
-        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
-      })
-
-      it('should fail if not enough tokens', async () => {
-        await foreignBridge.methods['convertDaiToChai(uint256)'](twoEthers, { from: owner }).should.be.rejected
-      })
-
-      it('should fail if not the owner', async () => {
-        await foreignBridge.methods['convertDaiToChai(uint256)'](halfEther, { from: accounts[1] }).should.be.rejected
-      })
-
       it('should convert all dai except defined limit', async () => {
-        await token.mint(foreignBridge.address, ether('100'))
-        await foreignBridge.methods['convertDaiToChai()']({ from: accounts[1] }).should.be.fulfilled
+        await foreignBridge.initializeChaiToken(chaiToken.address)
+        await token.mint(foreignBridge.address, ether('101'))
+        await foreignBridge.convertDaiToChai({ from: accounts[1] }).should.be.fulfilled
 
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
-      })
-    })
-
-    describe('convertChaiToDai', () => {
-      beforeEach(async () => {
-        await foreignBridge.initializeChaiToken(chaiToken.address)
-        await token.mint(foreignBridge.address, halfEther)
-        await foreignBridge.methods['convertDaiToChai(uint256)'](halfEther, { from: owner })
-
-        await delay(1500)
-      })
-
-      it('should redeem token', async () => {
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
-
-        await foreignBridge.convertChaiToDai(halfEther, { from: owner }).should.be.fulfilled
-
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(halfEther)
-      })
-
-      it('should redeem max amount', async () => {
-        await foreignBridge.convertChaiToDai(oneEther).should.be.fulfilled
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(halfEther)
-      })
-
-      it('should fail if not an owner', async () => {
-        await foreignBridge.convertChaiToDai(halfEther, { from: accounts[1] }).should.be.rejected
-        await foreignBridge.convertChaiToDai(halfEther, { from: owner }).should.be.fulfilled
       })
     })
 
@@ -1730,30 +1721,21 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       beforeEach(async () => {
         await foreignBridge.initializeChaiToken(chaiToken.address)
         await token.mint(foreignBridge.address, halfEther)
-        await foreignBridge.methods['convertDaiToChai(uint256)'](halfEther, { from: owner })
+        await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+        await foreignBridge.convertDaiToChai()
 
         await delay(1500)
       })
 
       it('should pay full interest', async () => {
-        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
 
-        await foreignBridge.methods['payInterest(address)'](interestRecipient, { from: owner }).should.be.fulfilled
+        await foreignBridge.payInterest(interestRecipient, { from: owner }).should.be.fulfilled
 
         expect(await chaiToken.balanceOf(interestRecipient)).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
-        expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(halfEther)
-      })
-
-      it('should pay partial interest', async () => {
-        const initialChaiBalance = await chaiToken.balanceOf(foreignBridge.address)
-
-        await foreignBridge.payInterest(interestRecipient, '100', { from: owner }).should.be.fulfilled
-
-        expect(await chaiToken.balanceOf(interestRecipient)).to.be.bignumber.equal('100')
-        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(initialChaiBalance.subn(100))
-        expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(halfEther)
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })
 
       it('should not allow too high interest', async () => {
@@ -1763,8 +1745,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
 
       it('should fail if not an owner', async () => {
-        await foreignBridge.methods['payInterest(address)'](interestRecipient, { from: accounts[1] }).should.be.rejected
-        await foreignBridge.methods['payInterest(address)'](interestRecipient, { from: owner }).should.be.fulfilled
+        await foreignBridge.payInterest(interestRecipient, { from: accounts[1] }).should.be.rejected
+        await foreignBridge.payInterest(interestRecipient, { from: owner }).should.be.fulfilled
       })
     })
   })

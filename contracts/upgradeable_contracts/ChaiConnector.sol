@@ -239,14 +239,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @dev Converts all DAI into Chai tokens, keeping minDaiTokenBalance() DAI as a buffer
     */
     function convertDaiToChai() public chaiTokenEnabled {
-        _convertDaiToChai(daiBalance().sub(minDaiTokenBalance()));
-    }
-
-    /**
-    * @dev Invests DAI into Chai
-    * @param amount Amount of DAI to invest
-    */
-    function _convertDaiToChai(uint256 amount) internal {
+        // there is not need to consider overflow when performing a + operation,
+        // since both values are controlled by the bridge and can't take extremely high values
+        uint256 amount = daiBalance().sub(minDaiTokenBalance());
         setInvestedAmointInDai(investedAmountInDai() + amount);
         erc20token().approve(chaiToken(), amount);
         chaiToken().join(address(this), amount);

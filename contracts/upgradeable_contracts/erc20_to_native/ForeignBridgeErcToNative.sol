@@ -178,26 +178,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         emit TokensSwapped(hdToken, fdToken, curHDTokenBalance);
     }
 
-    /**
-    * @dev Checks if DAI balance is high enough to be partially converted to Chai
-    * Twice limit is used in order to decrease frequency of convertDaiToChai calls,
-    * In case of high bridge utilization in DAI => xDAI direction,
-    * convertDaiToChai() will be called as soon as DAI balance reaches 2 * limit,
-    * limit DAI will be left as a buffer for future operations.
-    * @return true if convertDaiToChai() call is needed to be performed by the oracle
-    */
-    function isDaiNeedsToBeInvested() public view returns (bool) {
-        // chai token needs to be initialized, DAI balance should be at least twice greater than minDaiTokenBalance
-        return isChaiTokenEnabled() && tokenBalance(erc20token()) > 2 * minDaiTokenBalance();
-    }
-
-    /**
-    * @dev Converts all DAI into Chai tokens, keeping minDaiTokenBalance() DAI as a buffer
-    */
-    function convertDaiToChai() public chaiTokenEnabled {
-        _convertDaiToChai(tokenBalance(erc20token()).sub(minDaiTokenBalance()));
-    }
-
     function relayTokens(address _receiver, uint256 _amount) external {
         _relayTokens(msg.sender, _receiver, _amount, erc20token());
     }

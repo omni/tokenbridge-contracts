@@ -107,9 +107,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // since investedAmountInChai() returns a ceiled value,
         // the value of chaiBalance() - investedAmountInChai() will be floored,
         // leading to excess remaining chai balance
-        uint256 balanceBefore = erc20token().balanceOf(address(this));
+        uint256 balanceBefore = daiBalance();
         chaiToken().exit(address(this), chaiBalance().sub(investedAmountInChai()));
-        uint256 interestInDai = erc20token().balanceOf(address(this)) - balanceBefore;
+        uint256 interestInDai = daiBalance() - balanceBefore;
 
         erc20token().transfer(recipient, interestInDai);
 
@@ -131,6 +131,14 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     */
     function chaiBalance() public view returns (uint256) {
         return chaiToken().balanceOf(address(this));
+    }
+
+    /**
+    * @dev Evaluates bridge balance in Dai tokens
+    * @return Balance in Dai
+    */
+    function daiBalance() internal view returns (uint256) {
+        return erc20token().balanceOf(address(this));
     }
 
     /**
@@ -161,6 +169,26 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
+    * @dev Checks if DAI balance is high enough to be partially converted to Chai
+    * Twice limit is used in order to decrease frequency of convertDaiToChai calls,
+    * In case of high bridge utilization in DAI => xDAI direction,
+    * convertDaiToChai() will be called as soon as DAI balance reaches 2 * limit,
+    * limit DAI will be left as a buffer for future operations.
+    * @return true if convertDaiToChai() call is needed to be performed by the oracle
+    */
+    function isDaiNeedsToBeInvested() public view returns (bool) {
+        // chai token needs to be initialized, DAI balance should be at least twice greater than minDaiTokenBalance
+        return isChaiTokenEnabled() && daiBalance() > 2 * minDaiTokenBalance();
+    }
+
+    /**
+    * @dev Converts all DAI into Chai tokens, keeping minDaiTokenBalance() DAI as a buffer
+    */
+    function convertDaiToChai() public chaiTokenEnabled {
+        _convertDaiToChai(daiBalance().sub(minDaiTokenBalance()));
+    }
+
+    /**
     * @dev Invests DAI into Chai
     * @param amount Amount of DAI to invest
     */
@@ -182,9 +210,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
             chaiToken().draw(address(this), invested);
             setInvestedAmointInDai(0);
         } else if (amount > 0) {
-            uint256 initialDaiBalance = erc20token().balanceOf(address(this));
+            uint256 initialDaiBalance = daiBalance();
             chaiToken().draw(address(this), amount);
-            uint256 redeemed = erc20token().balanceOf(address(this)) - initialDaiBalance;
+            uint256 redeemed = daiBalance() - initialDaiBalance;
             setInvestedAmointInDai(redeemed < invested ? invested - redeemed : 0);
         }
     }

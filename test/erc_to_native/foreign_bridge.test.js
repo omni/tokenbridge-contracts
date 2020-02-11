@@ -13,6 +13,7 @@ const DaiJoinMock = artifacts.require('DaiJoinMock')
 const PotMock = artifacts.require('PotMock')
 const ChaiMock = artifacts.require('ChaiMock')
 const DaiMock = artifacts.require('DaiMock')
+const ERC677ReceiverMock = artifacts.require('ERC677ReceiverTest.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -1594,7 +1595,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     let token
     let foreignBridge
     let chaiToken
-    const interestRecipient = accounts[7]
+    let interestRecipient
 
     beforeEach(async () => {
       token = await DaiMock.new({ from: owner })
@@ -1611,6 +1612,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         otherSideBridge.address
       )
       chaiToken = await createChaiToken(token, foreignBridge, owner)
+      interestRecipient = await ERC677ReceiverMock.new()
     })
 
     describe('initializeChaiToken', () => {
@@ -1637,11 +1639,12 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     describe('removeChaiToken', () => {
       beforeEach(async () => {
         await foreignBridge.initializeChaiToken().should.be.fulfilled
+        await foreignBridge.setInterestReceiver(interestRecipient.address).should.be.fulfilled
       })
 
       it('should be removed', async () => {
         expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(true)
-        await foreignBridge.removeChaiToken(interestRecipient).should.be.fulfilled
+        await foreignBridge.removeChaiToken().should.be.fulfilled
         expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       })
@@ -1654,21 +1657,21 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
         await delay(1500)
 
-        await foreignBridge.removeChaiToken(interestRecipient).should.be.fulfilled
+        await foreignBridge.removeChaiToken().should.be.fulfilled
         expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(interestRecipient)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(halfEther)
       })
 
       it('should fail if not an owner', async () => {
-        await foreignBridge.removeChaiToken(interestRecipient, { from: accounts[1] }).should.be.rejected
-        await foreignBridge.removeChaiToken(interestRecipient, { from: owner }).should.be.fulfilled
+        await foreignBridge.removeChaiToken({ from: accounts[1] }).should.be.rejected
+        await foreignBridge.removeChaiToken({ from: owner }).should.be.fulfilled
       })
 
       it('should fail if chai token is not enabled', async () => {
-        await foreignBridge.removeChaiToken(interestRecipient, { from: owner }).should.be.fulfilled
-        await foreignBridge.removeChaiToken(interestRecipient, { from: owner }).should.be.rejected
+        await foreignBridge.removeChaiToken({ from: owner }).should.be.fulfilled
+        await foreignBridge.removeChaiToken({ from: owner }).should.be.rejected
       })
     })
 
@@ -1742,32 +1745,28 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
 
       it('should pay full interest', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
-        expect(await token.balanceOf(interestRecipient)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
 
-        await foreignBridge.payInterest(interestRecipient, { from: owner }).should.be.fulfilled
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
 
-        expect(await token.balanceOf(interestRecipient)).to.be.bignumber.gt(ZERO)
+        expect(await interestRecipient.from()).to.not.be.equal(ZERO_ADDRESS)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })
 
       it('should not allow to pay interest if chaiToken is disabled', async () => {
-        await foreignBridge.removeChaiToken(interestRecipient)
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
+        await foreignBridge.removeChaiToken({ from: owner })
 
-        await foreignBridge.payInterest(interestRecipient, { from: owner }).should.be.rejected
+        await foreignBridge.payInterest().should.be.rejected
       })
 
-      it('should not allow too high interest', async () => {
-        const initialChaiBalance = await chaiToken.balanceOf(foreignBridge.address)
-
-        await foreignBridge.payInterest(interestRecipient, initialChaiBalance, { from: owner }).should.be.rejected
-      })
-
-      it('should fail if not an owner', async () => {
-        await foreignBridge.payInterest(interestRecipient, { from: accounts[1] }).should.be.rejected
-        await foreignBridge.payInterest(interestRecipient, { from: owner }).should.be.fulfilled
+      it('should not pay interest on empty address', async () => {
+        await foreignBridge.payInterest().should.be.rejected
       })
     })
   })

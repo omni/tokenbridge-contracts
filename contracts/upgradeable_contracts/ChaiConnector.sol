@@ -1,6 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../interfaces/IChai.sol";
+import "../interfaces/ERC677Receiver.sol";
 import "./Ownable.sol";
 import "./ERC20Bridge.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
@@ -13,6 +14,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     using SafeMath for uint256;
 
     bytes32 internal constant CHAI_TOKEN_ENABLED = 0x2ae87563606f93f71ad2adf4d62661ccdfb63f3f508f94700934d5877fb92278; // keccak256(abi.encodePacked("chaiTokenEnabled"))
+    bytes32 internal constant INTEREST_RECEIVER = 0xd88509eb1a8da5d5a2fc7b9bad1c72874c9818c788e81d0bc46b29bfaa83adf6; // keccak256(abi.encodePacked("interestReceiver"))
+    bytes32 internal constant INTEREST_COLLECTION_PERIOD = 0x68a6a652d193e5d6439c4309583048050a11a4cfb263a220f4cd798c61c3ad6e; // keccak256(abi.encodePacked("interestCollectionPeriod"))
+    bytes32 internal constant LAST_TIME_INTEREST_PAYED = 0x120db89f168bb39d737b6a1d240da847e2ead5ecca5b2e4c5e94edbe39d614d9; // keccak256(abi.encodePacked("lastTimeInterestPayed"))
     bytes32 internal constant INVESTED_AMOUNT = 0xb6afb3323c9d7dc0e9dab5d34c3a1d1ae7739d2224c048d4ee7675d3c759dd1b; // keccak256(abi.encodePacked("investedAmount"))
     bytes32 internal constant MIN_DAI_TOKEN_BALANCE = 0xce70e1dac97909c26a87aa4ada3d490673a153b3a75b22ea3364c4c7df7c551f; // keccak256(abi.encodePacked("minDaiTokenBalance"))
 
@@ -64,6 +68,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         require(address(chaiToken().daiToken()) == address(erc20token()));
         boolStorage[CHAI_TOKEN_ENABLED] = true;
         uintStorage[MIN_DAI_TOKEN_BALANCE] = 100 ether;
+        uintStorage[INTEREST_COLLECTION_PERIOD] = 1 weeks;
     }
 
     /**
@@ -83,27 +88,74 @@ contract ChaiConnector is Ownable, ERC20Bridge {
 
     /**
     * @dev Withdraws all invested tokens, pays remaining interest, removes chai token from contract storage
-    * @param recipient Account address to receive remaining interest
     */
-    function removeChaiToken(address recipient) external onlyOwner chaiTokenEnabled {
+    function removeChaiToken() external onlyOwner chaiTokenEnabled {
         _convertChaiToDai(investedAmountInDai());
-        _payInterest(recipient);
+        _payInterest();
         delete boolStorage[CHAI_TOKEN_ENABLED];
     }
 
     /**
-    * @dev Pays all available interest, in Dai tokens
-    * @param recipient Account address to receive available interest
+     * @return Configured address of a receiver
+     */
+    function interestReceiver() public view returns (ERC677Receiver) {
+        return ERC677Receiver(addressStorage[INTEREST_RECEIVER]);
+    }
+
+    /**
+     * Updates interest receiver contract address
+     * @param receiver New receiver contract address
+     */
+    function setInterestReceiver(address receiver) external onlyOwner {
+        require(AddressUtils.isContract(receiver));
+        addressStorage[INTEREST_RECEIVER] = receiver;
+    }
+
+    /**
+     * @return Timestamp of last interest payment
+     */
+    function lastInterestPayment() public view returns (uint256) {
+        return uintStorage[LAST_TIME_INTEREST_PAYED];
+    }
+
+    /**
+     * @return Configured minimum interest collection period
+     */
+    function interestCollectionPeriod() public view returns (uint256) {
+        return uintStorage[INTEREST_COLLECTION_PERIOD];
+    }
+
+    /**
+     * @dev Configures minimum interest collection period
+     * @param period collection period
+     */
+    function setInterestCollectionPeriod(uint256 period) external onlyOwner {
+        uintStorage[INTEREST_COLLECTION_PERIOD] = period;
+    }
+
+    /**
+    * @dev Pays all available interest, in Dai tokens.
+    * Upgradeability owner can call this method without time restrictions,
+    * for others, the method can be called only once a specified period.
     */
-    function payInterest(address recipient) external onlyOwner chaiTokenEnabled {
-        _payInterest(recipient);
+    function payInterest() external chaiTokenEnabled {
+        // solhint-disable not-rely-on-time
+        if (
+            lastInterestPayment() + interestCollectionPeriod() < now ||
+            IUpgradeabilityOwnerStorage(this).upgradeabilityOwner() == msg.sender
+        ) {
+            uintStorage[LAST_TIME_INTEREST_PAYED] = now;
+            _payInterest();
+        }
+        // solhint-enable not-rely-on-time
     }
 
     /**
     * @dev Internal function for paying all available interest, in Dai tokens
-    * @param recipient Account address to receive available interest
     */
-    function _payInterest(address recipient) internal {
+    function _payInterest() internal {
+        require(address(interestReceiver()) != address(0));
+
         // since investedAmountInChai() returns a ceiled value,
         // the value of chaiBalance() - investedAmountInChai() will be floored,
         // leading to excess remaining chai balance
@@ -111,7 +163,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         chaiToken().exit(address(this), chaiBalance().sub(investedAmountInChai()));
         uint256 interestInDai = daiBalance() - balanceBefore;
 
-        erc20token().transfer(recipient, interestInDai);
+        erc20token().transfer(interestReceiver(), interestInDai);
+
+        interestReceiver().onTokenTransfer(address(this), interestInDai, "");
 
         require(dsrBalance() >= investedAmountInDai());
     }

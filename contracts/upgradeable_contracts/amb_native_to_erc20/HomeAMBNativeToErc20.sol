@@ -140,6 +140,17 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     }
 
     /**
+    * @dev Transfers back the amount of locked native tokens that were bridged to the other network but failed.
+    * @param _receiver address that will receive the native tokens
+    * @param _value amount of native tokens to be received
+    */
+    function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
+        if (!_receiver.send(_value)) {
+            (new Sacrifice).value(_value)(_receiver);
+        }
+    }
+
+    /**
     * @dev Allows to transfer any locked token on this contract that is not part of the bridge operations.
     * Native tokens are not allowed to be claimed.
     * @param _token address of the token.

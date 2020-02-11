@@ -1,7 +1,8 @@
 pragma solidity 0.4.24;
 
 import "./BasicAMBNativeToErc20.sol";
-import "../ERC677BridgeForBurnableMintableToken.sol";
+import "../BaseERC677Bridge.sol";
+import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../ReentrancyGuard.sol";
 
 /**
@@ -9,7 +10,7 @@ import "../ReentrancyGuard.sol";
 * @dev Foreign mediator implementation for native-to-erc20 bridge intended to work on top of AMB bridge.
 * It is design to be used as implementation contract of EternalStorageProxy contract.
 */
-contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, ERC677BridgeForBurnableMintableToken {
+contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, BaseERC677Bridge {
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -97,8 +98,8 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, ERC6
     /**
     * @dev Mint the amount of tokens that were bridged from the other network.
     * If configured, it calculates, subtract and distribute the fees among the reward accounts.
-    * @param _receiver address that will receive the native tokens
-    * @param _value amount of native tokens to be received
+    * @param _receiver address that will receive the tokens
+    * @param _value amount of tokens to be received
     */
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
         uint256 valueToMint = _value.div(10**decimalShift());
@@ -114,6 +115,15 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, ERC6
         }
 
         IBurnableMintableERC677Token(erc677token()).mint(_receiver, valueToMint);
+    }
+
+    /**
+    * @dev Mint back the amount of tokens that were bridged to the other network but failed.
+    * @param _receiver address that will receive the tokens
+    * @param _value amount of tokens to be received
+    */
+    function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
+        IBurnableMintableERC677Token(erc677token()).mint(_receiver, _value);
     }
 
     /**

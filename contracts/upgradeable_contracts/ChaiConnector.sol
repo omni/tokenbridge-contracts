@@ -107,7 +107,6 @@ contract ChaiConnector is Ownable, ERC20Bridge {
      * @param receiver New receiver contract address
      */
     function setInterestReceiver(address receiver) external onlyOwner {
-        require(AddressUtils.isContract(receiver));
         addressStorage[INTEREST_RECEIVER] = receiver;
     }
 
@@ -165,7 +164,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
 
         erc20token().transfer(interestReceiver(), interestInDai);
 
-        interestReceiver().onTokenTransfer(address(this), interestInDai, "");
+        if (AddressUtils.isContract(interestReceiver())) {
+            interestReceiver().onTokenTransfer(address(this), interestInDai, "");
+        }
 
         require(dsrBalance() >= investedAmountInDai());
     }

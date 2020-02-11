@@ -1711,10 +1711,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should fail to setInterestReceiver if not an owner', async () => {
         await foreignBridge.setInterestReceiver(interestRecipient.address, { from: accounts[1] }).should.be.rejected
       })
-
-      it('should fail to setInterestReceiver if not a contract', async () => {
-        await foreignBridge.setInterestReceiver(accounts[1], { from: owner }).should.be.rejected
-      })
     })
 
     describe('interestCollectionPeriod', () => {
@@ -1786,7 +1782,22 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await delay(1500)
       })
 
-      it('should pay full interest', async () => {
+      it('should pay full interest to regular account', async () => {
+        await foreignBridge.setInterestReceiver(accounts[2], { from: owner })
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(accounts[2])).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+
+        expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(accounts[2])).to.be.bignumber.gt(ZERO)
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
+      })
+
+      it('should pay full interest to contract', async () => {
         await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)

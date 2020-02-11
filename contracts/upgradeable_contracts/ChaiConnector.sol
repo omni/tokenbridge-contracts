@@ -161,7 +161,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // leading to excess remaining chai balance
         uint256 balanceBefore = daiBalance();
         chaiToken().exit(address(this), chaiBalance().sub(investedAmountInChai()));
-        uint256 interestInDai = daiBalance() - balanceBefore;
+        uint256 interestInDai = daiBalance().sub(balanceBefore);
 
         erc20token().transfer(interestReceiver(), interestInDai);
 

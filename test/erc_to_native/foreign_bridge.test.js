@@ -1694,6 +1694,48 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
     })
 
+    describe('interestReceiver', () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeChaiToken({ from: owner })
+      })
+
+      it('should return interestReceiver', async () => {
+        expect(await foreignBridge.interestReceiver()).to.be.equal(ZERO_ADDRESS)
+      })
+
+      it('should update interestReceiver', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner }).should.be.fulfilled
+        expect(await foreignBridge.interestReceiver()).to.be.equal(interestRecipient.address)
+      })
+
+      it('should fail to setInterestReceiver if not an owner', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: accounts[1] }).should.be.rejected
+      })
+
+      it('should fail to setInterestReceiver if not a contract', async () => {
+        await foreignBridge.setInterestReceiver(accounts[1], { from: owner }).should.be.rejected
+      })
+    })
+
+    describe('interestCollectionPeriod', () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeChaiToken({ from: owner })
+      })
+
+      it('should return interestCollectionPeriod', async () => {
+        expect(await foreignBridge.interestCollectionPeriod()).to.be.bignumber.gt(ZERO)
+      })
+
+      it('should update interestCollectionPeriod', async () => {
+        await foreignBridge.setInterestCollectionPeriod('100', { from: owner }).should.be.fulfilled
+        expect(await foreignBridge.interestCollectionPeriod()).to.be.bignumber.equal('100')
+      })
+
+      it('should fail to setInterestCollectionPeriod if not an owner', async () => {
+        await foreignBridge.setInterestCollectionPeriod('100', { from: accounts[1] }).should.be.rejected
+      })
+    })
+
     describe('isDaiNeedsToBeInvested', () => {
       it('should return false on empty balance', async () => {
         await foreignBridge.initializeChaiToken()
@@ -1749,13 +1791,25 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.equal(ZERO)
 
         await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
 
+        expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.gt(ZERO)
         expect(await interestRecipient.from()).to.not.be.equal(ZERO_ADDRESS)
         expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
+      })
+
+      it('should not allow not pay interest twice within short time period', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+
+        await delay(1500)
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.rejected
       })
 
       it('should not allow to pay interest if chaiToken is disabled', async () => {
@@ -1767,6 +1821,47 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       it('should not pay interest on empty address', async () => {
         await foreignBridge.payInterest().should.be.rejected
+      })
+    })
+
+    describe('payInterest for upgradeabilityOwner', () => {
+      it('should allow to pay interest without time restrictions', async () => {
+        let foreignBridgeProxy = await EternalStorageProxy.new({ from: accounts[2] }).should.be.fulfilled
+        await foreignBridgeProxy.upgradeTo('1', foreignBridge.address, { from: accounts[2] }).should.be.fulfilled
+        foreignBridgeProxy = await ForeignBridgeErcToNativeMock.at(foreignBridgeProxy.address)
+        foreignBridgeProxy.setChaiToken(chaiToken.address)
+        await foreignBridgeProxy.initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero,
+          otherSideBridge.address,
+          { from: accounts[2] }
+        )
+
+        await foreignBridge.initializeChaiToken()
+        await foreignBridgeProxy.initializeChaiToken()
+        await token.mint(foreignBridgeProxy.address, halfEther)
+        await foreignBridgeProxy.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+        await foreignBridgeProxy.convertDaiToChai()
+        await foreignBridgeProxy.setInterestReceiver(interestRecipient.address, { from: owner })
+
+        await delay(1500)
+
+        await foreignBridgeProxy.payInterest({ from: accounts[2] }).should.be.fulfilled
+
+        await delay(1500)
+
+        await foreignBridgeProxy.payInterest({ from: accounts[2] }).should.be.fulfilled
+
+        expect(await foreignBridgeProxy.lastInterestPayment()).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
+        expect(await chaiToken.balanceOf(foreignBridgeProxy.address)).to.be.bignumber.gt(ZERO)
+        expect(await foreignBridgeProxy.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })
     })
   })

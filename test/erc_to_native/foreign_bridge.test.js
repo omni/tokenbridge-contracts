@@ -497,6 +497,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
       balanceAfterBridge.should.be.bignumber.gte(ether('1'))
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
     })
   })
   describe('#withdraw with 2 minimum signatures', async () => {
@@ -1620,6 +1621,11 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridge.initializeChaiToken().should.be.fulfilled
       })
 
+      it('should fail to initialize twice', async () => {
+        await foreignBridge.initializeChaiToken().should.be.fulfilled
+        await foreignBridge.initializeChaiToken().should.be.rejected
+      })
+
       it('should fail if not an owner', async () => {
         await foreignBridge.initializeChaiToken({ from: accounts[1] }).should.be.rejected
       })
@@ -1854,7 +1860,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           { from: accounts[2] }
         )
 
-        await foreignBridge.initializeChaiToken()
         await foreignBridgeProxy.initializeChaiToken()
         await token.mint(foreignBridgeProxy.address, halfEther)
         await foreignBridgeProxy.setMinDaiTokenBalance(ether('0.1'), { from: owner })

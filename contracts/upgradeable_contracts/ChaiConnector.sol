@@ -27,6 +27,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     */
     modifier chaiTokenEnabled {
         require(isChaiTokenEnabled());
+        /* solcov ignore next */
         _;
     }
 

@@ -1809,6 +1809,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
         expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.equal(ZERO)
+        expect(await interestRecipient.from()).to.be.equal(ZERO_ADDRESS)
 
         await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
 

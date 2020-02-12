@@ -64,20 +64,24 @@ contract RewardableMediator is Ownable {
     * @return the list of reward accounts
     */
     function rewardAccounts() external view returns (address[]) {
-        address[] memory accounts;
         address feeManager = feeManagerContract();
         bytes memory callData = abi.encodeWithSelector(REWARD_ACCOUNTS);
 
+        // In this case the implementation is similar to Proxy.sol fallback method because the result data is variable
         assembly {
+            let ptr := mload(0x40)
             let result := delegatecall(gas, feeManager, add(callData, 0x20), mload(callData), 0, 0)
-            returndatacopy(accounts, 0, returndatasize)
+            mstore(0x40, add(ptr, returndatasize))
+            returndatacopy(ptr, 0, returndatasize)
 
             switch result
                 case 0 {
                     revert(0, 0)
                 }
+                default {
+                    return(ptr, returndatasize)
+                }
         }
-        return accounts;
     }
 
     /**

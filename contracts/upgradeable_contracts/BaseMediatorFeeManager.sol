@@ -35,6 +35,7 @@ contract BaseMediatorFeeManager is EternalStorage {
     * @param _accounts list of accounts
     */
     function initializeRewardAccounts(address[] _accounts) public {
+        require(_accounts.length > 0);
         for (uint256 i = 0; i < _accounts.length; i++) {
             require(_accounts[i] != address(0) && _accounts[i] != F_ADDR);
             require(!isRewardAccount(_accounts[i]));

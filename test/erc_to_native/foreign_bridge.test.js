@@ -497,7 +497,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
       balanceAfterBridge.should.be.bignumber.gte(ether('1'))
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
-      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+      // small remaining interest, collected between calls to convertDaiToChai() and executeSignatures()
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.lt(ether('0.0001'))
     })
   })
   describe('#withdraw with 2 minimum signatures', async () => {

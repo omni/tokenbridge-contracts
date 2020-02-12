@@ -1829,6 +1829,21 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridge.payInterest({ from: accounts[1] }).should.be.rejected
       })
 
+      it('should allow to pay interest after some time', async () => {
+        await foreignBridge.setInterestCollectionPeriod('5', { from: owner }) // 5 seconds
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+
+        await delay(1500)
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.rejected
+
+        await delay(5000)
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+      })
+
       it('should not allow to pay interest if chaiToken is disabled', async () => {
         await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
         await foreignBridge.removeChaiToken({ from: owner })

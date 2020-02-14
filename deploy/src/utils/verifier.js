@@ -7,8 +7,8 @@ const promiseRetry = require('promise-retry')
 
 const basePath = path.join(__dirname, '..', '..', '..', 'flats')
 
-const isBridgeToken = (name) => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol'
-const isValidators = (name) => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
+const isBridgeToken = name => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol'
+const isValidators = name => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
 
 const flat = async contractPath => {
   const pathArray = contractPath.split('/')
@@ -73,15 +73,19 @@ const getExplorerType = apiUrl => {
 }
 
 const verifyContract = async (contract, params, type) => {
-  let result
-  if (type === EXPLORER_TYPES.ETHERSCAN) {
-    result = await sendVerifyRequestEtherscan(contract, params)
-  } else {
-    result = await sendVerifyRequestBlockscout(contract, params)
-  }
-  if (result.data.message === REQUEST_STATUS.OK) {
-    console.log(`${params.address} verified in ${type}`)
-    return true
+  try {
+    let result
+    if (type === EXPLORER_TYPES.ETHERSCAN) {
+      result = await sendVerifyRequestEtherscan(contract, params)
+    } else {
+      result = await sendVerifyRequestBlockscout(contract, params)
+    }
+    if (result.data.message === REQUEST_STATUS.OK) {
+      console.log(`${params.address} verified in ${type}`)
+      return true
+    }
+  } catch {
+    return false
   }
   return false
 }

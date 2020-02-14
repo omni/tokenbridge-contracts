@@ -246,6 +246,13 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         setInvestedAmointInDai(investedAmountInDai() + amount);
         erc20token().approve(chaiToken(), amount);
         chaiToken().join(address(this), amount);
+
+        // When evaluating the amount of DAI kept in Chai using dsrBalance(), there are some fixed point truncations.
+        // The dependency between invested amount of DAI - value and returned value of dsrBalance() - res is the following:
+        // res = floor(floor(value / chi) * chi)), where chi is the coefficient from MakerDAO Pot contract
+        // This can lead up to losses of ceil(chi) DAI in this balance evaluation.
+        // The negative constant is needed here for making sure that everything works fine, and this error is small enough
+        require(dsrBalance() >= investedAmountInDai() - 10000);
     }
 
     /**
@@ -265,5 +272,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
             uint256 redeemed = daiBalance() - initialDaiBalance;
             setInvestedAmointInDai(redeemed < invested ? invested - redeemed : 0);
         }
+
+        require(dsrBalance() >= investedAmountInDai());
     }
 }

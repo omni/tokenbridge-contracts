@@ -270,6 +270,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
             uint256 initialDaiBalance = daiBalance();
             chaiToken().draw(address(this), amount);
             uint256 redeemed = daiBalance() - initialDaiBalance;
+
+            require(redeemed >= amount);
+
             setInvestedAmointInDai(redeemed < invested ? invested - redeemed : 0);
         }
 

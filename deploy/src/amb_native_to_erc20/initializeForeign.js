@@ -141,7 +141,7 @@ async function initializeMediator({ homeBridge, foreignBridge, foreignFeeManager
   console.log('\n[Foreign] Initializing Bridge Mediator with following parameters:')
 
   if (isRewardableBridge) {
-    let rewardList = FOREIGN_MEDIATOR_REWARD_ACCOUNTS.split(' ')
+    const rewardList = FOREIGN_MEDIATOR_REWARD_ACCOUNTS.split(' ')
 
     initializeData = await rewardableInitialize({
       contract,

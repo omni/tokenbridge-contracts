@@ -302,7 +302,9 @@ if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
 
   if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS' && env.FOREIGN_REWARDABLE === 'ONE_DIRECTION') {
     throw new Error(
-      `Combination of HOME_REWARDABLE: ${env.HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${env.FOREIGN_REWARDABLE} should be avoided on ${env.BRIDGE_MODE} bridge mode.`
+      `Combination of HOME_REWARDABLE: ${env.HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${
+        env.FOREIGN_REWARDABLE
+      } should be avoided on ${env.BRIDGE_MODE} bridge mode.`
     )
   }
 }

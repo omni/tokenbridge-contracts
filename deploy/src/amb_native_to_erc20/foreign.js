@@ -7,7 +7,8 @@ const {
   upgradeProxy,
   setBridgeContract,
   sendRawTxForeign,
-  transferOwnership
+  transferOwnership,
+  assertStateWithRetry
 } = require('../deploymentUtils')
 const {
   foreignContracts: {

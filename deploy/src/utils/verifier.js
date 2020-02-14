@@ -2,8 +2,8 @@ const axios = require('axios')
 const querystring = require('querystring')
 const fs = require('fs')
 const path = require('path')
-const { EXPLORER_TYPES, REQUEST_STATUS } = require('../constants')
 const promiseRetry = require('promise-retry')
+const { EXPLORER_TYPES, REQUEST_STATUS } = require('../constants')
 
 const basePath = path.join(__dirname, '..', '..', '..', 'flats')
 
@@ -68,9 +68,8 @@ const sendVerifyRequestBlockscout = async (contractPath, options) => {
   return sendRequest(options.apiUrl, postQueries)
 }
 
-const getExplorerType = apiUrl => {
-  return apiUrl && apiUrl.includes('etherscan') ? EXPLORER_TYPES.ETHERSCAN : EXPLORER_TYPES.BLOCKSCOUT
-}
+const getExplorerType = apiUrl =>
+  apiUrl && apiUrl.includes('etherscan') ? EXPLORER_TYPES.ETHERSCAN : EXPLORER_TYPES.BLOCKSCOUT
 
 const verifyContract = async (contract, params, type) => {
   try {
@@ -84,7 +83,7 @@ const verifyContract = async (contract, params, type) => {
       console.log(`${params.address} verified in ${type}`)
       return true
     }
-  } catch {
+  } catch (e) {
     return false
   }
   return false

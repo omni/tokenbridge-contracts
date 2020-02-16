@@ -250,8 +250,8 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // The dependency between invested amount of DAI - value and returned value of dsrBalance() - res is the following:
         // res = floor(floor(value / chi) * chi)), where chi is the coefficient from MakerDAO Pot contract
         // This can lead up to losses of ceil(chi) DAI in this balance evaluation.
-        // The negative constant is needed here for making sure that everything works fine, and this error is small enough
-        require(dsrBalance() >= investedAmountInDai() - 10000);
+        // The constant is needed here for making sure that everything works fine, and this error is small enough
+        require(dsrBalance() + 10000 >= investedAmountInDai());
     }
 
     /**
@@ -260,16 +260,20 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     */
     function _convertChaiToDai(uint256 amount) internal {
         uint256 invested = investedAmountInDai();
+        uint256 initialDaiBalance = daiBalance();
         if (amount >= invested) {
             // onExecuteMessage can call a convert operation with argument greater than the current invested amount,
             // in this case bridge should withdraw all invested funds
             chaiToken().draw(address(this), invested);
             setInvestedAmointInDai(0);
+
+            // Make sure all invested tokens were withdrawn
+            require(daiBalance() - initialDaiBalance >= invested);
         } else if (amount > 0) {
-            uint256 initialDaiBalance = daiBalance();
             chaiToken().draw(address(this), amount);
             uint256 redeemed = daiBalance() - initialDaiBalance;
 
+            // Make sure that at least requested amount was withdrawn
             require(redeemed >= amount);
 
             setInvestedAmointInDai(redeemed < invested ? invested - redeemed : 0);

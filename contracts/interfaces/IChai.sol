@@ -7,6 +7,7 @@ interface IChai {
     function pot() external view returns (IPot);
     function daiToken() external view returns (ERC20);
     function balanceOf(address) external view returns (uint256);
+    function dai(address) external view returns (uint256);
     function join(address, uint256) external;
     function draw(address, uint256) external;
     function exit(address, uint256) external;

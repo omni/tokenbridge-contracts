@@ -176,8 +176,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @return Balance in dai, truncated
     */
     function dsrBalance() public view returns (uint256) {
-        uint256 chi = chaiToken().pot().chi();
-        return rmul(chi, chaiBalance());
+        return chaiToken().dai(address(this));
     }
 
     /**

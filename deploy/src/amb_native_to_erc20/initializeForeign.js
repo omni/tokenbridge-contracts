@@ -24,7 +24,7 @@ const {
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
   FOREIGN_TO_HOME_DECIMAL_SHIFT,
   FOREIGN_REWARDABLE,
-  FOREIGN_TRANSACTIONS_FEE,
+  HOME_TRANSACTIONS_FEE,
   FOREIGN_MEDIATOR_REWARD_ACCOUNTS
 } = require('../loadEnv')
 
@@ -158,7 +158,7 @@ async function initializeMediator({ homeBridge, foreignBridge, foreignFeeManager
         foreignToHomeDecimalShift,
         owner: FOREIGN_BRIDGE_OWNER,
         feeManager: foreignFeeManager,
-        fee: FOREIGN_TRANSACTIONS_FEE,
+        fee: HOME_TRANSACTIONS_FEE,
         rewardList
       }
     })

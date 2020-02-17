@@ -33,14 +33,6 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
-    * @dev Fixed point multiplication
-    * @return Truncated value of x * y
-    */
-    function rmul(uint256 x, uint256 y) internal pure returns (uint256) {
-        return x.mul(y) / ONE;
-    }
-
-    /**
     * @dev Fixed point division
     * @return Ceiled value of x / y
     */

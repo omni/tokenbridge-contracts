@@ -57,6 +57,7 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/ForeignAMBErc677ToErc6
 
 echo "Flattening contracts related to native-to-erc on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/HomeAMBNativeToErc20.sol > flats/amb_native_to_erc20/HomeAMBNativeToErc20_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/ClassicHomeAMBNativeToErc20.sol > flats/amb_native_to_erc20/ClassicHomeAMBNativeToErc20_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/ForeignAMBNativeToErc20.sol > flats/amb_native_to_erc20/ForeignAMBNativeToErc20_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/HomeFeeManagerAMBNativeToErc20.sol > flats/amb_native_to_erc20/HomeFeeManagerAMBNativeToErc20_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/ForeignFeeManagerAMBNativeToErc20.sol > flats/amb_native_to_erc20/ForeignFeeManagerAMBNativeToErc20_flat.sol

@@ -5,6 +5,8 @@ const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.sol')
 const HomeFeeManagerAMBNativeToErc20 = artifacts.require('HomeFeeManagerAMBNativeToErc20.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
+const ClassicEternalStorageProxy = artifacts.require('ClassicEternalStorageProxy.sol')
+const ClassicHomeAMBNativeToErc20 = artifacts.require('ClassicHomeAMBNativeToErc20.sol')
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
@@ -1156,6 +1158,72 @@ contract('HomeAMBNativeToErc20', async accounts => {
       expect(rewardAccounts.length).to.be.equal(2)
       expect(rewardAccounts[0]).to.be.equal(rewardAccountList[0])
       expect(rewardAccounts[1]).to.be.equal(rewardAccountList[2])
+    })
+    it('classic proxy does not work with regular mediator', async () => {
+      const feeManager = await HomeFeeManagerAMBNativeToErc20.new()
+      const storageClassicProxy = await ClassicEternalStorageProxy.new()
+      await storageClassicProxy.upgradeTo('1', contract.address).should.be.fulfilled
+      contract = await HomeAMBNativeToErc20.at(storageClassicProxy.address)
+      await contract.rewardableInitialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        feeManager.address,
+        fee,
+        rewardAccountList
+      ).should.be.fulfilled
+
+      await contract.rewardAccounts().should.be.rejected
+    })
+    it('classic proxy works with classic mediator', async () => {
+      const feeManager = await HomeFeeManagerAMBNativeToErc20.new()
+      const classicContract = await ClassicHomeAMBNativeToErc20.new()
+      const storageClassicProxy = await ClassicEternalStorageProxy.new()
+      await storageClassicProxy.upgradeTo('1', classicContract.address).should.be.fulfilled
+      contract = await ClassicHomeAMBNativeToErc20.at(storageClassicProxy.address)
+      await contract.rewardableInitialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        feeManager.address,
+        fee,
+        rewardAccountList
+      ).should.be.fulfilled
+
+      const rewardAccountsBefore = await contract.rewardAccounts()
+      expect(rewardAccountsBefore.length).to.be.equal(3)
+      expect(rewardAccountsBefore[0]).to.be.equal(rewardAccountList[0])
+      expect(rewardAccountsBefore[1]).to.be.equal(rewardAccountList[1])
+      expect(rewardAccountsBefore[2]).to.be.equal(rewardAccountList[2])
+
+      // Add new account
+      const newAccount = accounts[6]
+      await contract.addRewardAccount(newAccount, { from: owner }).should.be.fulfilled
+
+      const rewardAccountsAfterAdd = await contract.rewardAccounts()
+      expect(rewardAccountsAfterAdd.length).to.be.equal(4)
+      expect(rewardAccountsAfterAdd[0]).to.be.equal(newAccount)
+      expect(rewardAccountsAfterAdd[1]).to.be.equal(rewardAccountList[0])
+      expect(rewardAccountsAfterAdd[2]).to.be.equal(rewardAccountList[1])
+      expect(rewardAccountsAfterAdd[3]).to.be.equal(rewardAccountList[2])
+
+      // Remove account
+      const accountToRemove = rewardAccountList[1]
+      await contract.removeRewardAccount(accountToRemove, { from: owner }).should.be.fulfilled
+
+      const rewardAccountsAfterRemove = await contract.rewardAccounts()
+      expect(rewardAccountsAfterRemove.length).to.be.equal(3)
+      expect(rewardAccountsAfterRemove[0]).to.be.equal(newAccount)
+      expect(rewardAccountsAfterRemove[1]).to.be.equal(rewardAccountList[0])
+      expect(rewardAccountsAfterRemove[2]).to.be.equal(rewardAccountList[2])
     })
   })
   describe('fee', () => {

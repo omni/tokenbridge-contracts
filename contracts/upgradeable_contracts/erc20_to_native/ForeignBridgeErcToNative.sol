@@ -65,6 +65,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
     function claimTokens(address _token, address _to) public {
         require(_token != address(erc20token()));
+        // Chai token is not claimable if investing into Chai is enabled
+        require(_token != address(chaiToken()) || !isChaiTokenEnabled());
         if (_token == address(halfDuplexErc20token())) {
             // SCD is not claimable if the bridge accepts deposits of this token
             // solhint-disable-next-line not-rely-on-time

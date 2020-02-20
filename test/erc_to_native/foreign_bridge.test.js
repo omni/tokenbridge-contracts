@@ -1897,5 +1897,47 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await foreignBridgeProxy.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })
     })
+
+    describe('claimTokens', async () => {
+      let foreignBridgeProxy
+
+      beforeEach(async () => {
+        foreignBridgeProxy = await EternalStorageProxy.new({ from: accounts[2] }).should.be.fulfilled
+        await foreignBridgeProxy.upgradeTo('1', foreignBridge.address, { from: accounts[2] }).should.be.fulfilled
+        foreignBridgeProxy = await ForeignBridgeErcToNativeMock.at(foreignBridgeProxy.address)
+        foreignBridgeProxy.setChaiToken(chaiToken.address)
+        await foreignBridgeProxy.initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero,
+          otherSideBridge.address,
+          { from: accounts[2] }
+        )
+      })
+
+      it('should not allow to claim Chai, if it is enabled', async () => {
+        await foreignBridgeProxy.initializeChaiToken({ from: owner })
+        await token.mint(foreignBridgeProxy.address, halfEther)
+        await foreignBridgeProxy.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+        await foreignBridgeProxy.convertDaiToChai()
+        expect(await foreignBridgeProxy.isChaiTokenEnabled()).to.be.equal(true)
+
+        await foreignBridgeProxy.claimTokens(chaiToken.address, accounts[2], { from: accounts[2] }).should.be.rejected
+      })
+
+      it('should allow to claim chai after it is disabled', async () => {
+        expect(await foreignBridgeProxy.isChaiTokenEnabled()).to.be.equal(false)
+        await token.mint(accounts[3], halfEther)
+        await token.approve(chaiToken.address, halfEther, { from: accounts[3] })
+        await chaiToken.join(accounts[3], halfEther, { from: accounts[3] }).should.be.fulfilled
+
+        await foreignBridgeProxy.claimTokens(chaiToken.address, accounts[2], { from: accounts[2] }).should.be.fulfilled
+      })
+    })
   })
 })

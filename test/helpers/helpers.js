@@ -202,3 +202,9 @@ function addTxHashToAMBData(encodedData, transactionHash) {
 }
 
 module.exports.addTxHashToAMBData = addTxHashToAMBData
+
+async function delay(ms) {
+  return new Promise(res => setTimeout(res, ms))
+}
+
+module.exports.delay = delay

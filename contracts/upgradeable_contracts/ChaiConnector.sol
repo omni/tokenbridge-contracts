@@ -234,7 +234,8 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // there is not need to consider overflow when performing a + operation,
         // since both values are controlled by the bridge and can't take extremely high values
         uint256 amount = daiBalance().sub(minDaiTokenBalance());
-        setInvestedAmountInDai(investedAmountInDai() + amount);
+        uint256 newInvestedAmountInDai = investedAmountInDai() + amount;
+        setInvestedAmountInDai(newInvestedAmountInDai);
         erc20token().approve(chaiToken(), amount);
         chaiToken().join(address(this), amount);
 
@@ -246,7 +247,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // The constant is needed here for making sure that everything works fine, and this error is small enough
         // The 10000 constant is considered to be small enough when decimals = 18, however,
         // it is not recommended to use it for smaller values of decimals, since it won't be negligible anymore
-        require(dsrBalance() + 10000 >= investedAmountInDai());
+        require(dsrBalance() + 10000 >= newInvestedAmountInDai);
     }
 
     /**
@@ -255,12 +256,14 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     */
     function _convertChaiToDai(uint256 amount) internal {
         uint256 invested = investedAmountInDai();
+        uint256 newInvestedAmountInDai;
         uint256 initialDaiBalance = daiBalance();
         if (amount >= invested) {
             // onExecuteMessage can call a convert operation with argument greater than the current invested amount,
             // in this case bridge should withdraw all invested funds
             chaiToken().draw(address(this), invested);
-            setInvestedAmountInDai(0);
+
+            newInvestedAmountInDai = 0;
 
             // Make sure all invested tokens were withdrawn
             require(daiBalance() - initialDaiBalance >= invested);
@@ -268,12 +271,13 @@ contract ChaiConnector is Ownable, ERC20Bridge {
             chaiToken().draw(address(this), amount);
             uint256 redeemed = daiBalance() - initialDaiBalance;
 
+            newInvestedAmountInDai = redeemed < invested ? invested - redeemed : 0;
             // Make sure that at least requested amount was withdrawn
             require(redeemed >= amount);
-
-            setInvestedAmountInDai(redeemed < invested ? invested - redeemed : 0);
         }
 
-        require(dsrBalance() >= investedAmountInDai());
+        setInvestedAmountInDai(newInvestedAmountInDai);
+
+        require(dsrBalance() >= newInvestedAmountInDai);
     }
 }

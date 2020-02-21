@@ -199,7 +199,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @dev Updates current invested amount, id DAI
     * @return Value in DAI
     */
-    function setInvestedAmointInDai(uint256 amount) internal {
+    function setInvestedAmountInDai(uint256 amount) internal {
         uintStorage[INVESTED_AMOUNT] = amount;
     }
 
@@ -234,7 +234,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // there is not need to consider overflow when performing a + operation,
         // since both values are controlled by the bridge and can't take extremely high values
         uint256 amount = daiBalance().sub(minDaiTokenBalance());
-        setInvestedAmointInDai(investedAmountInDai() + amount);
+        setInvestedAmountInDai(investedAmountInDai() + amount);
         erc20token().approve(chaiToken(), amount);
         chaiToken().join(address(this), amount);
 
@@ -257,7 +257,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
             // onExecuteMessage can call a convert operation with argument greater than the current invested amount,
             // in this case bridge should withdraw all invested funds
             chaiToken().draw(address(this), invested);
-            setInvestedAmointInDai(0);
+            setInvestedAmountInDai(0);
 
             // Make sure all invested tokens were withdrawn
             require(daiBalance() - initialDaiBalance >= invested);
@@ -268,7 +268,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
             // Make sure that at least requested amount was withdrawn
             require(redeemed >= amount);
 
-            setInvestedAmointInDai(redeemed < invested ? invested - redeemed : 0);
+            setInvestedAmountInDai(redeemed < invested ? invested - redeemed : 0);
         }
 
         require(dsrBalance() >= investedAmountInDai());

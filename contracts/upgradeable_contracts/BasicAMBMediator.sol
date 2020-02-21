@@ -96,7 +96,7 @@ contract BasicAMBMediator is Ownable {
     * @param _hash representing the next message unique identifier.
     */
     function setNonce(bytes32 _hash) internal {
-        bytesStorage[NONCE] = abi.encodePacked(_hash);
+        uintStorage[NONCE] = uint256(_hash);
     }
 
     /**
@@ -104,7 +104,7 @@ contract BasicAMBMediator is Ownable {
     * @return the next message unique identifier.
     */
     function nonce() internal view returns (bytes32) {
-        return Bytes.bytesToBytes32(bytesStorage[NONCE]);
+        return bytes32(uintStorage[NONCE]);
     }
 
     /**

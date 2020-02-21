@@ -240,9 +240,12 @@ contract ChaiConnector is Ownable, ERC20Bridge {
 
         // When evaluating the amount of DAI kept in Chai using dsrBalance(), there are some fixed point truncations.
         // The dependency between invested amount of DAI - value and returned value of dsrBalance() - res is the following:
-        // res = floor(floor(value / chi) * chi)), where chi is the coefficient from MakerDAO Pot contract
-        // This can lead up to losses of ceil(chi) DAI in this balance evaluation.
+        // res = floor(floor(value / K) * K)), where K is the fixed-point coefficient
+        // from MakerDAO Pot contract (K = pot.chi() / 10**27).
+        // This can lead up to losses of ceil(K) DAI in this balance evaluation.
         // The constant is needed here for making sure that everything works fine, and this error is small enough
+        // The 10000 constant is considered to be small enough when decimals = 18, however,
+        // it is not recommended to use it for smaller values of decimals, since it won't be negligible anymore
         require(dsrBalance() + 10000 >= investedAmountInDai());
     }
 

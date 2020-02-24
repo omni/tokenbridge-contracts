@@ -132,15 +132,13 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * for others, the method can be called only once a specified period.
     */
     function payInterest() external chaiTokenEnabled {
-        // solhint-disable not-rely-on-time
         if (
+            // solhint-disable-next-line not-rely-on-time
             lastInterestPayment() + interestCollectionPeriod() < now ||
             IUpgradeabilityOwnerStorage(this).upgradeabilityOwner() == msg.sender
         ) {
-            uintStorage[LAST_TIME_INTEREST_PAID] = now;
             _payInterest();
         }
-        // solhint-enable not-rely-on-time
     }
 
     /**
@@ -155,6 +153,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         uint256 balanceBefore = daiBalance();
         chaiToken().exit(address(this), chaiBalance().sub(investedAmountInChai()));
         uint256 interestInDai = daiBalance().sub(balanceBefore);
+
+        // solhint-disable-next-line not-rely-on-time
+        uintStorage[LAST_TIME_INTEREST_PAID] = now;
 
         erc20token().transfer(interestReceiver(), interestInDai);
 

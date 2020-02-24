@@ -57,12 +57,23 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     /**
     * @dev Initializes chai token
     */
-    function initializeChaiToken() external onlyOwner {
+    function initializeChaiToken() public onlyOwner {
         require(!isChaiTokenEnabled());
         require(address(chaiToken().daiToken()) == address(erc20token()));
         boolStorage[CHAI_TOKEN_ENABLED] = true;
         uintStorage[MIN_DAI_TOKEN_BALANCE] = 100 ether;
         uintStorage[INTEREST_COLLECTION_PERIOD] = 1 weeks;
+    }
+
+    /**
+    * @dev Initializes chai token, with interestReceiver
+    * @param _interestReceiver Receiver address
+    */
+    function initializeChaiToken(address _interestReceiver) external {
+        require(_interestReceiver != address(0));
+        // onlyOwner condition is checked inside this call, so it can be excluded from function definition
+        initializeChaiToken();
+        addressStorage[INTEREST_RECEIVER] = _interestReceiver;
     }
 
     /**
@@ -97,8 +108,8 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
-     * Updates interest receiver contract address
-     * @param receiver New receiver contract address
+     * Updates interest receiver address
+     * @param receiver New receiver address
      */
     function setInterestReceiver(address receiver) external onlyOwner {
         addressStorage[INTEREST_RECEIVER] = receiver;

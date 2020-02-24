@@ -1809,6 +1809,14 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.lt(ether('0.1'))
       })
 
+      it('should handle amount == invested', async () => {
+        await foreignBridge.convertChaiToDai(ether('4'), { from: accounts[1] }).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('5'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('0'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.lt(ether('0.1'))
+      })
+
       it('should handle 0 < amount < invested', async () => {
         await foreignBridge.convertChaiToDai(ether('3'), { from: accounts[1] }).should.be.fulfilled
 

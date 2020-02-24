@@ -1779,6 +1779,45 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
     })
 
+    describe('_convertChaiToDai', async () => {
+      beforeEach(async () => {
+        await foreignBridge.initializeChaiToken()
+        await token.mint(foreignBridge.address, ether('5'))
+        await foreignBridge.setMinDaiTokenBalance(ether('1'), { from: owner })
+        await foreignBridge.convertDaiToChai()
+
+        await delay(1500)
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('1'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('4'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ether('3.9'))
+      })
+
+      it('should handle 0 amount', async () => {
+        await foreignBridge.convertChaiToDai('0', { from: accounts[1] }).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('1'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('4'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ether('3.9'))
+      })
+
+      it('should handle overestimated amount', async () => {
+        await foreignBridge.convertChaiToDai(ether('10'), { from: accounts[1] }).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('5'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('0'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.lt(ether('0.1'))
+      })
+
+      it('should handle 0 < amount < invested', async () => {
+        await foreignBridge.convertChaiToDai(ether('3'), { from: accounts[1] }).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('4'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('1'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ether('0.9'))
+      })
+    })
+
     describe('payInterest', () => {
       beforeEach(async () => {
         await foreignBridge.initializeChaiToken()

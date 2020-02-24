@@ -27,4 +27,8 @@ contract ForeignBridgeErcToNativeMock is ForeignBridgeErcToNative {
     function chaiToken() public view returns (IChai) {
         return IChai(addressStorage[CHAI_TOKEN_MOCK]);
     }
+
+    function convertChaiToDai(uint256 amount) external {
+        _convertChaiToDai(amount);
+    }
 }

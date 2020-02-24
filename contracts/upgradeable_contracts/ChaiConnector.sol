@@ -255,30 +255,24 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @param amount Amount of DAI to redeem
     */
     function _convertChaiToDai(uint256 amount) internal {
-        if (amount > 0) {
-            uint256 invested = investedAmountInDai();
-            uint256 newInvestedAmountInDai;
-            uint256 initialDaiBalance = daiBalance();
-            if (amount >= invested) {
-                // onExecuteMessage can call a convert operation with argument greater than the current invested amount,
-                // in this case bridge should withdraw all invested funds
-                chaiToken().draw(address(this), invested);
+        if (amount == 0) return;
 
-                newInvestedAmountInDai = 0;
-                // Make sure all invested tokens were withdrawn
-                require(daiBalance() - initialDaiBalance >= invested);
-            } else {
-                chaiToken().draw(address(this), amount);
-                uint256 redeemed = daiBalance() - initialDaiBalance;
+        uint256 invested = investedAmountInDai();
+        uint256 initialDaiBalance = daiBalance();
 
-                newInvestedAmountInDai = redeemed < invested ? invested - redeemed : 0;
-                // Make sure that at least requested amount was withdrawn
-                require(redeemed >= amount);
-            }
+        // onExecuteMessage can call a convert operation with argument greater than the current invested amount,
+        // in this case bridge should withdraw all invested funds
+        uint256 withdrawal = amount >= invested ? invested : amount;
 
-            setInvestedAmountInDai(newInvestedAmountInDai);
+        chaiToken().draw(address(this), withdrawal);
+        uint256 redeemed = daiBalance() - initialDaiBalance;
 
-            require(dsrBalance() >= newInvestedAmountInDai);
-        }
+        // Make sure that at least withdrawal amount was withdrawn
+        require(redeemed >= withdrawal);
+
+        uint256 newInvested = invested > redeemed ? invested - redeemed : 0;
+        setInvestedAmountInDai(newInvested);
+
+        require(dsrBalance() >= newInvested);
     }
 }

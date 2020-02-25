@@ -85,7 +85,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         uint256 currentBalance = tokenBalance(erc20token());
 
-        // Convert part of Chai tokens back to DAI, is DAI balance is insufficient.
+        // Convert part of Chai tokens back to DAI, if DAI balance is insufficient.
         // If Chai token is disabled, bridge will keep all funds directly in DAI token,
         // so it will have enough funds to cover any xDai => Dai transfer,
         // and currentBalance >= amount will always hold.

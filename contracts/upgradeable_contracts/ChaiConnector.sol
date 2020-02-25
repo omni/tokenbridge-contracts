@@ -200,7 +200,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
-    * @dev Evaluates exact current invested amount, id DAI
+    * @dev Evaluates exact current invested amount, in DAI
     * @return Value in DAI
     */
     function investedAmountInDai() public view returns (uint256) {
@@ -208,7 +208,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
-    * @dev Updates current invested amount, id DAI
+    * @dev Updates current invested amount, in DAI
     * @return Value in DAI
     */
     function setInvestedAmountInDai(uint256 amount) internal {

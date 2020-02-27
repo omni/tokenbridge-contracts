@@ -5,7 +5,7 @@ interface IBlockReward {
     function mintedTotally() external view returns (uint256);
     function mintedTotallyByBridge(address _bridge) external view returns (uint256);
     function bridgesAllowedLength() external view returns (uint256);
-    function addBridgeTokenFeeReceivers(uint256 _amount) external;
-    function addBridgeNativeFeeReceivers(uint256 _amount) external;
+    function addBridgeTokenRewardReceivers(uint256 _amount) external;
+    function addBridgeNativeRewardReceivers(uint256 _amount) external;
     function blockRewardContractId() external pure returns (bytes4);
 }

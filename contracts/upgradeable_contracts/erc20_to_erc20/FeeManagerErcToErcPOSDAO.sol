@@ -17,6 +17,6 @@ contract FeeManagerErcToErcPOSDAO is BlockRewardFeeManager {
 
     function distributeFeeFromBlockReward(uint256 _fee) internal {
         IBlockReward blockReward = _blockRewardContract();
-        blockReward.addBridgeTokenFeeReceivers(_fee);
+        blockReward.addBridgeTokenRewardReceivers(_fee);
     }
 }

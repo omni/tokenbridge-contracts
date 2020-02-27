@@ -16,7 +16,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     bytes32 internal constant CHAI_TOKEN_ENABLED = 0x2ae87563606f93f71ad2adf4d62661ccdfb63f3f508f94700934d5877fb92278; // keccak256(abi.encodePacked("chaiTokenEnabled"))
     bytes32 internal constant INTEREST_RECEIVER = 0xd88509eb1a8da5d5a2fc7b9bad1c72874c9818c788e81d0bc46b29bfaa83adf6; // keccak256(abi.encodePacked("interestReceiver"))
     bytes32 internal constant INTEREST_COLLECTION_PERIOD = 0x68a6a652d193e5d6439c4309583048050a11a4cfb263a220f4cd798c61c3ad6e; // keccak256(abi.encodePacked("interestCollectionPeriod"))
-    bytes32 internal constant LAST_TIME_INTEREST_PAYED = 0x120db89f168bb39d737b6a1d240da847e2ead5ecca5b2e4c5e94edbe39d614d9; // keccak256(abi.encodePacked("lastTimeInterestPayed"))
+    bytes32 internal constant LAST_TIME_INTEREST_PAID = 0xcabd46177a706f95f4bb3e2c2ba45ac4aa1eac9c545425a19c62ab6de4aeea26; // keccak256(abi.encodePacked("lastTimeInterestPaid"))
     bytes32 internal constant INVESTED_AMOUNT = 0xb6afb3323c9d7dc0e9dab5d34c3a1d1ae7739d2224c048d4ee7675d3c759dd1b; // keccak256(abi.encodePacked("investedAmount"))
     bytes32 internal constant MIN_DAI_TOKEN_BALANCE = 0xce70e1dac97909c26a87aa4ada3d490673a153b3a75b22ea3364c4c7df7c551f; // keccak256(abi.encodePacked("minDaiTokenBalance"))
     bytes4 internal constant ON_TOKEN_TRANSFER = 0xa4c0ed36; // onTokenTransfer(address,uint256,bytes)
@@ -57,12 +57,23 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     /**
     * @dev Initializes chai token
     */
-    function initializeChaiToken() external onlyOwner {
+    function initializeChaiToken() public onlyOwner {
         require(!isChaiTokenEnabled());
         require(address(chaiToken().daiToken()) == address(erc20token()));
         boolStorage[CHAI_TOKEN_ENABLED] = true;
         uintStorage[MIN_DAI_TOKEN_BALANCE] = 100 ether;
         uintStorage[INTEREST_COLLECTION_PERIOD] = 1 weeks;
+    }
+
+    /**
+    * @dev Initializes chai token, with interestReceiver
+    * @param _interestReceiver Receiver address
+    */
+    function initializeChaiToken(address _interestReceiver) external {
+        require(_interestReceiver != address(0));
+        // onlyOwner condition is checked inside this call, so it can be excluded from function definition
+        initializeChaiToken();
+        addressStorage[INTEREST_RECEIVER] = _interestReceiver;
     }
 
     /**
@@ -97,8 +108,8 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
-     * Updates interest receiver contract address
-     * @param receiver New receiver contract address
+     * Updates interest receiver address
+     * @param receiver New receiver address
      */
     function setInterestReceiver(address receiver) external onlyOwner {
         addressStorage[INTEREST_RECEIVER] = receiver;
@@ -108,7 +119,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
      * @return Timestamp of last interest payment
      */
     function lastInterestPayment() public view returns (uint256) {
-        return uintStorage[LAST_TIME_INTEREST_PAYED];
+        return uintStorage[LAST_TIME_INTEREST_PAID];
     }
 
     /**
@@ -132,15 +143,13 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * for others, the method can be called only once a specified period.
     */
     function payInterest() external chaiTokenEnabled {
-        // solhint-disable not-rely-on-time
         if (
+            // solhint-disable-next-line not-rely-on-time
             lastInterestPayment() + interestCollectionPeriod() < now ||
             IUpgradeabilityOwnerStorage(this).upgradeabilityOwner() == msg.sender
         ) {
-            uintStorage[LAST_TIME_INTEREST_PAYED] = now;
             _payInterest();
         }
-        // solhint-enable not-rely-on-time
     }
 
     /**
@@ -155,6 +164,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         uint256 balanceBefore = daiBalance();
         chaiToken().exit(address(this), chaiBalance().sub(investedAmountInChai()));
         uint256 interestInDai = daiBalance().sub(balanceBefore);
+
+        // solhint-disable-next-line not-rely-on-time
+        uintStorage[LAST_TIME_INTEREST_PAID] = now;
 
         erc20token().transfer(interestReceiver(), interestInDai);
 
@@ -188,7 +200,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
-    * @dev Evaluates exact current invested amount, id DAI
+    * @dev Evaluates exact current invested amount, in DAI
     * @return Value in DAI
     */
     function investedAmountInDai() public view returns (uint256) {
@@ -196,10 +208,10 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     }
 
     /**
-    * @dev Updates current invested amount, id DAI
+    * @dev Updates current invested amount, in DAI
     * @return Value in DAI
     */
-    function setInvestedAmointInDai(uint256 amount) internal {
+    function setInvestedAmountInDai(uint256 amount) internal {
         uintStorage[INVESTED_AMOUNT] = amount;
     }
 
@@ -234,16 +246,20 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // there is not need to consider overflow when performing a + operation,
         // since both values are controlled by the bridge and can't take extremely high values
         uint256 amount = daiBalance().sub(minDaiTokenBalance());
-        setInvestedAmointInDai(investedAmountInDai() + amount);
+        uint256 newInvestedAmountInDai = investedAmountInDai() + amount;
+        setInvestedAmountInDai(newInvestedAmountInDai);
         erc20token().approve(chaiToken(), amount);
         chaiToken().join(address(this), amount);
 
         // When evaluating the amount of DAI kept in Chai using dsrBalance(), there are some fixed point truncations.
         // The dependency between invested amount of DAI - value and returned value of dsrBalance() - res is the following:
-        // res = floor(floor(value / chi) * chi)), where chi is the coefficient from MakerDAO Pot contract
-        // This can lead up to losses of ceil(chi) DAI in this balance evaluation.
+        // res = floor(floor(value / K) * K)), where K is the fixed-point coefficient
+        // from MakerDAO Pot contract (K = pot.chi() / 10**27).
+        // This can lead up to losses of ceil(K) DAI in this balance evaluation.
         // The constant is needed here for making sure that everything works fine, and this error is small enough
-        require(dsrBalance() + 10000 >= investedAmountInDai());
+        // The 10000 constant is considered to be small enough when decimals = 18, however,
+        // it is not recommended to use it for smaller values of decimals, since it won't be negligible anymore
+        require(dsrBalance() + 10000 >= newInvestedAmountInDai);
     }
 
     /**
@@ -251,26 +267,24 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @param amount Amount of DAI to redeem
     */
     function _convertChaiToDai(uint256 amount) internal {
+        if (amount == 0) return;
+
         uint256 invested = investedAmountInDai();
         uint256 initialDaiBalance = daiBalance();
-        if (amount >= invested) {
-            // onExecuteMessage can call a convert operation with argument greater than the current invested amount,
-            // in this case bridge should withdraw all invested funds
-            chaiToken().draw(address(this), invested);
-            setInvestedAmointInDai(0);
 
-            // Make sure all invested tokens were withdrawn
-            require(daiBalance() - initialDaiBalance >= invested);
-        } else if (amount > 0) {
-            chaiToken().draw(address(this), amount);
-            uint256 redeemed = daiBalance() - initialDaiBalance;
+        // onExecuteMessage can call a convert operation with argument greater than the current invested amount,
+        // in this case bridge should withdraw all invested funds
+        uint256 withdrawal = amount >= invested ? invested : amount;
 
-            // Make sure that at least requested amount was withdrawn
-            require(redeemed >= amount);
+        chaiToken().draw(address(this), withdrawal);
+        uint256 redeemed = daiBalance() - initialDaiBalance;
 
-            setInvestedAmointInDai(redeemed < invested ? invested - redeemed : 0);
-        }
+        // Make sure that at least withdrawal amount was withdrawn
+        require(redeemed >= withdrawal);
 
-        require(dsrBalance() >= investedAmountInDai());
+        uint256 newInvested = invested > redeemed ? invested - redeemed : 0;
+        setInvestedAmountInDai(newInvested);
+
+        require(dsrBalance() >= newInvested);
     }
 }

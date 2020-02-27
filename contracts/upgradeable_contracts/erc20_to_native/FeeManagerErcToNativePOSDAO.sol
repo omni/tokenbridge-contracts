@@ -10,7 +10,7 @@ contract FeeManagerErcToNativePOSDAO is BlockRewardFeeManager {
 
     function distributeFeeFromBlockReward(uint256 _fee) internal {
         IBlockReward blockReward = _blockRewardContract();
-        blockReward.addBridgeNativeFeeReceivers(_fee);
+        blockReward.addBridgeNativeRewardReceivers(_fee);
     }
 
     function getAmountToBurn(uint256 _value) public view returns (uint256) {

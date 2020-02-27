@@ -714,55 +714,63 @@ contract('ForeignAMB', async accounts => {
       })
     })
 
-    describe('executeSignatures with gas token', () => {
+    describe('requireToPassMessage with gas token', () => {
       let setValueData
       let box
+      const user = accounts[8]
 
       beforeEach(async () => {
         box = await Box.new()
         // Generate data for method we want to call on Box contract
         setValueData = await box.contract.methods.setValue(3).encodeABI()
 
-        await foreignBridge.setGasTokenParameters(3, receiver)
+        await foreignBridge.setGasTokenParameters(5, receiver)
+        await gasTokenContract.freeUpTo('100', { from: receiver })
       })
 
-      it('should succeed on Subsidized mode', async () => {
-        const user = accounts[8]
-
-        const boxInitialValue = await box.value()
-        boxInitialValue.should.be.bignumber.equal(ZERO)
-
+      it('should mint gas tokens on Subsidized mode', async () => {
         // Use these calls to simulate home bridge on Home network
-        const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
+        await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
           from: user
-        })
-
-        // Validator on token-bridge add txHash to message
-        const { encodedData } = resultPassMessageTx.logs[0].args
-        const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
-
-        const signature = await sign(authorities[0], message)
-        const vrs = signatureToVRS(signature)
-        const signatures = packSignatures([vrs])
-
-        const { logs } = await foreignBridge.executeSignatures(message, signatures, {
-          from: authorities[0]
         }).should.be.fulfilled
-        expectEventInLogs(logs, 'RelayedMessage', {
-          sender: user,
-          executor: box.address,
-          transactionHash: resultPassMessageTx.tx,
-          status: true
-        })
 
-        expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(true)
-        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
+      })
 
-        // check Box value
-        expect(await box.value()).to.be.bignumber.equal('3')
-        expect(await box.lastSender()).to.be.equal(user)
-        expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
-        expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
+      it('should spend partial allowance and mint tokens on Subsidized mode', async () => {
+        await gasTokenContract.mint(3, { from: user })
+        await gasTokenContract.approve(foreignBridge.address, 3, { from: user })
+        // Use these calls to simulate home bridge on Home network
+        await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
+          from: user
+        }).should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(user)).to.be.bignumber.equal(ZERO)
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
+      })
+
+      it('should spend full allowance on Subsidized mode', async () => {
+        await gasTokenContract.mint(5, { from: user })
+        await gasTokenContract.approve(foreignBridge.address, 5, { from: user })
+        // Use these calls to simulate home bridge on Home network
+        await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
+          from: user
+        }).should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(user)).to.be.bignumber.equal(ZERO)
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
+      })
+
+      it('should spend partial allowance on Subsidized mode', async () => {
+        await gasTokenContract.mint(7, { from: user })
+        await gasTokenContract.approve(foreignBridge.address, 7, { from: user })
+        // Use these calls to simulate home bridge on Home network
+        await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
+          from: user
+        }).should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(user)).to.be.bignumber.equal('2')
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
       })
     })
   })

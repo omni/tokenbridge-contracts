@@ -13,7 +13,7 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery, MessageProc
     * @param _data bytes to be relayed
     * @param _signatures bytes blob with signatures to be validated
     */
-    function executeSignatures(bytes _data, bytes _signatures) public {
+    function executeSignatures(bytes _data, bytes _signatures) external {
         Message.hasEnoughValidSignatures(_data, _signatures, validatorContract(), true);
 
         address sender;

@@ -4,8 +4,8 @@ import "./ForeignAMB.sol";
 import "../GasTokenConnector.sol";
 
 contract ForeignAMBWithGasToken is ForeignAMB, GasTokenConnector {
-    function executeSignatures(bytes _data, bytes _signatures) public {
-        super.executeSignatures(_data, _signatures);
+    function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public {
+        super.requireToPassMessage(_contract, _data, _gas);
         _collectGasTokens();
     }
 }

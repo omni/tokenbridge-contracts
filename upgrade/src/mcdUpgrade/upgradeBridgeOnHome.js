@@ -1,9 +1,9 @@
 require('dotenv').config()
 const Web3 = require('web3')
-const multiSigWalletAbi = require('../abi/multiSigwallet')
-const proxyAbi = require('../../build/contracts/EternalStorageProxy').abi
-const confirmTransaction = require('./confirmTransaction')
-const validatorState = require('./validatorState')
+const multiSigWalletAbi = require('../../abi/multiSigwallet')
+const proxyAbi = require('../../../build/contracts/EternalStorageProxy').abi
+const confirmTransaction = require('../utils/confirmTransaction')
+const validatorState = require('../utils/validatorState')
 
 const {
   HOME_PRIVKEY,

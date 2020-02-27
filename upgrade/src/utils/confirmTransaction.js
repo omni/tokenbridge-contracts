@@ -39,8 +39,8 @@ const confirmTransaction = async ({ contract, fromBlock = 0, destination, data, 
   console.log(`Confirmation status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
 }
 
-function addExtraGas(gas) {
-  gas = toBN(gas)
+function addExtraGas(initialGas) {
+  const gas = toBN(initialGas)
   const extraPercentage = toBN(4)
 
   return gas.mul(extraPercentage)

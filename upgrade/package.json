@@ -4,10 +4,11 @@
     "main": "index.js",
     "license": "GPLv3",
     "scripts": {
-        "upgradeBridgeOnHome": "node src/upgradeBridgeOnHome.js",
-        "upgradeValidatorsOnForeign": "node src/upgradeValidatorsOnForeign.js",
-        "upgradeBridgeOnForeign": "node src/upgradeBridgeOnForeign.js",
-        "migrateToMCD": "node src/migrateToMCD.js"
+        "mcdUpgrade:upgradeBridgeOnHome": "node src/mcdUpgrade/upgradeBridgeOnHome.js",
+        "mcdUpgrade:upgradeValidatorsOnForeign": "node src/mcdUpgrade/upgradeValidatorsOnForeign.js",
+        "mcdUpgrade:upgradeBridgeOnForeign": "node src/mcdUpgrade/upgradeBridgeOnForeign.js",
+        "mcdUpgrade:migrateToMCD": "node src/mcdUpgrade/migrateToMCD.js",
+        "lint": "eslint ."
     },
     "dependencies": {
         "dotenv": "^8.2.0",

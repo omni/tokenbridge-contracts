@@ -46,4 +46,23 @@ function addExtraGas(initialGas) {
   return gas.mul(extraPercentage)
 }
 
-module.exports = confirmTransaction
+const callMultiSigWallet = async ({ role, contract, destination, fromBlock, gasPrice, address, data }) => {
+  if (role === 'leader') {
+    const gas = await contract.methods.submitTransaction(destination, 0, data).estimateGas({ from: address })
+    const receipt = await contract.methods
+      .submitTransaction(destination, 0, data)
+      .send({ from: address, gas, gasPrice })
+    console.log(`Submission status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
+  } else {
+    await confirmTransaction({
+      fromBlock,
+      contract,
+      destination,
+      data,
+      address,
+      gasPrice
+    })
+  }
+}
+
+module.exports = callMultiSigWallet

@@ -12,13 +12,14 @@ const {
   FOREING_BRIDGE_ADDRESS,
   ROLE,
   FOREIGN_START_BLOCK,
-  FOREIGN_GAS_PRICE
+  FOREIGN_GAS_PRICE,
+  CHAI_INTEREST_RECEIVER
 } = process.env
 
 const web3 = new Web3(new Web3.providers.HttpProvider(FOREIGN_RPC_URL))
 const { address } = web3.eth.accounts.wallet.add(FOREIGN_PRIVKEY)
 
-const migrateToMCD = async () => {
+const initializeChai = async () => {
   try {
     const proxy = new web3.eth.Contract(proxyAbi, FOREING_BRIDGE_ADDRESS)
     const bridge = new web3.eth.Contract(foreignBridgeAbi, FOREING_BRIDGE_ADDRESS)
@@ -28,7 +29,7 @@ const migrateToMCD = async () => {
 
     await validatorState(web3, address, multiSigWallet)
 
-    const data = bridge.methods.migrateToMCD().encodeABI()
+    const data = bridge.methods.initializeChaiToken(CHAI_INTEREST_RECEIVER).encodeABI()
 
     await callMultiSigWallet({
       role: ROLE,
@@ -44,4 +45,4 @@ const migrateToMCD = async () => {
   }
 }
 
-migrateToMCD()
+initializeChai()

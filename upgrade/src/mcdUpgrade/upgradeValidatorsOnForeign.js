@@ -3,7 +3,7 @@ const Web3 = require('web3')
 const multiSigWalletAbi = require('../../abi/multiSigwallet')
 const proxyAbi = require('../../../build/contracts/EternalStorageProxy').abi
 const foreignBridgeAbi = require('../../../build/contracts/ForeignBridgeErcToNative').abi
-const confirmTransaction = require('../utils/confirmTransaction')
+const callMultiSigWallet = require('../utils/callMultiSigWallet')
 const validatorState = require('../utils/validatorState')
 
 const migrationMethodAbi = [
@@ -49,24 +49,15 @@ const upgradeValidatorsOnForeign = async () => {
 
     const data = proxy.methods.upgradeToAndCall('2', NEW_IMPLEMENTATION_ETH_VALIDATORS, upgradeData).encodeABI()
 
-    if (ROLE === 'leader') {
-      const gas = await multiSigWallet.methods
-        .submitTransaction(validatorsAddress, 0, data)
-        .estimateGas({ from: address })
-      const receipt = await multiSigWallet.methods
-        .submitTransaction(validatorsAddress, 0, data)
-        .send({ from: address, gas, gasPrice: FOREIGN_GAS_PRICE })
-      console.log(`Submission status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
-    } else {
-      await confirmTransaction({
-        fromBlock: FOREIGN_START_BLOCK,
-        contract: multiSigWallet,
-        destination: validatorsAddress,
-        data,
-        address,
-        gasPrice: FOREIGN_GAS_PRICE
-      })
-    }
+    await callMultiSigWallet({
+      role: ROLE,
+      contract: multiSigWallet,
+      destination: FOREING_BRIDGE_ADDRESS,
+      fromBlock: FOREIGN_START_BLOCK,
+      gasPrice: FOREIGN_GAS_PRICE,
+      address,
+      data
+    })
   } catch (e) {
     console.log(e.message)
   }

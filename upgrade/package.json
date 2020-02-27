@@ -8,6 +8,9 @@
         "mcdUpgrade:upgradeValidatorsOnForeign": "node src/mcdUpgrade/upgradeValidatorsOnForeign.js",
         "mcdUpgrade:upgradeBridgeOnForeign": "node src/mcdUpgrade/upgradeBridgeOnForeign.js",
         "mcdUpgrade:migrateToMCD": "node src/mcdUpgrade/migrateToMCD.js",
+        "chaiUpgrade:upgradeBridgeOnForeign": "node src/chaiUpgrade/upgradeBridgeOnForeign.js",
+        "chaiUpgrade:initializeChai": "node src/chaiUpgrade/initializeChai.js",
+        "setHomeDailyLimit": "node src/setHomeDailyLimit.js",
         "lint": "eslint ."
     },
     "dependencies": {

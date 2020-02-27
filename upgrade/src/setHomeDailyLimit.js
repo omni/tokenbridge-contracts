@@ -1,9 +1,10 @@
 require('dotenv').config()
 const Web3 = require('web3')
-const multiSigWalletAbi = require('../../abi/multiSigwallet')
-const proxyAbi = require('../../../build/contracts/EternalStorageProxy').abi
-const callMultiSigWallet = require('../utils/callMultiSigWallet')
-const validatorState = require('../utils/validatorState')
+const multiSigWalletAbi = require('../abi/multiSigwallet')
+const proxyAbi = require('../../build/contracts/EternalStorageProxy').abi
+const homeBridgeAbi = require('../../build/contracts/HomeBridgeErcToNative').abi
+const validatorState = require('./utils/validatorState')
+const callMultiSigWallet = require('./utils/callMultiSigWallet')
 
 const {
   HOME_PRIVKEY,
@@ -12,22 +13,23 @@ const {
   ROLE,
   HOME_START_BLOCK,
   HOME_GAS_PRICE,
-  NEW_IMPLEMENTATION_XDAI_BRIDGE
+  HOME_DAILY_LIMIT
 } = process.env
 
 const web3 = new Web3(new Web3.providers.HttpProvider(HOME_RPC_URL))
 const { address } = web3.eth.accounts.wallet.add(HOME_PRIVKEY)
 
-const proxy = new web3.eth.Contract(proxyAbi, HOME_BRIDGE_ADDRESS)
-
-const upgradeBridgeOnHome = async () => {
+const setHomeDailyLimit = async () => {
   try {
+    const proxy = new web3.eth.Contract(proxyAbi, HOME_BRIDGE_ADDRESS)
+    const bridge = new web3.eth.Contract(homeBridgeAbi, HOME_BRIDGE_ADDRESS)
+
     const ownerAddress = await proxy.methods.upgradeabilityOwner().call()
     const multiSigWallet = new web3.eth.Contract(multiSigWalletAbi, ownerAddress)
 
     await validatorState(web3, address, multiSigWallet)
 
-    const data = proxy.methods.upgradeTo('3', NEW_IMPLEMENTATION_XDAI_BRIDGE).encodeABI()
+    const data = bridge.methods.setDailyLimit(HOME_DAILY_LIMIT).encodeABI()
 
     await callMultiSigWallet({
       role: ROLE,
@@ -43,4 +45,4 @@ const upgradeBridgeOnHome = async () => {
   }
 }
 
-upgradeBridgeOnHome()
+setHomeDailyLimit()

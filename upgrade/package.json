@@ -6,7 +6,6 @@
     "scripts": {
         "upgradeBridgeOnForeign": "node src/upgradeBridgeOnForeign.js",
         "initializeChai": "node src/initializeChai.js",
-        "setHomeDailyLimit": "node src/setHomeDailyLimit.js",
         "lint": "eslint ."
     },
     "dependencies": {

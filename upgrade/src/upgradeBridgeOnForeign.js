@@ -1,9 +1,9 @@
 require('dotenv').config()
 const Web3 = require('web3')
-const multiSigWalletAbi = require('../../abi/multiSigwallet')
-const proxyAbi = require('../../../build/contracts/EternalStorageProxy').abi
-const callMultiSigWallet = require('../utils/callMultiSigWallet')
-const validatorState = require('../utils/validatorState')
+const multiSigWalletAbi = require('../abi/multiSigwallet')
+const proxyAbi = require('../../build/contracts/EternalStorageProxy').abi
+const callMultiSigWallet = require('./utils/callMultiSigWallet')
+const validatorState = require('./utils/validatorState')
 
 const {
   FOREIGN_PRIVKEY,
@@ -14,18 +14,6 @@ const {
   FOREIGN_GAS_PRICE,
   NEW_IMPLEMENTATION_ETH_BRIDGE
 } = process.env
-
-const migrationMethodAbi = [
-  {
-    constant: false,
-    inputs: [],
-    name: 'upgradeToV250',
-    outputs: [],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function'
-  }
-]
 
 const web3 = new Web3(new Web3.providers.HttpProvider(FOREIGN_RPC_URL))
 const { address } = web3.eth.accounts.wallet.add(FOREIGN_PRIVKEY)
@@ -38,9 +26,7 @@ const upgradeBridgeOnForeign = async () => {
 
     await validatorState(web3, address, multiSigWallet)
 
-    const bridge = new web3.eth.Contract(migrationMethodAbi, FOREING_BRIDGE_ADDRESS)
-    const upgradeData = bridge.methods.upgradeToV250().encodeABI()
-    const data = proxy.methods.upgradeToAndCall('3', NEW_IMPLEMENTATION_ETH_BRIDGE, upgradeData).encodeABI()
+    const data = proxy.methods.upgradeTo('4', NEW_IMPLEMENTATION_ETH_BRIDGE).encodeABI()
 
     await callMultiSigWallet({
       role: ROLE,

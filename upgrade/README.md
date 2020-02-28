@@ -22,12 +22,6 @@ Complete the variables in `.env` file. The `ROLE` variable indicates if the vali
 
 Run the script. The following are available:
 
-Scripts related to MCD migration upgrade:
-* `npm run mcdUpgrade:upgradeBridgeOnHome`
-* `npm run mcdUpgrade:upgradeValidatorsOnForeign`
-* `npm run mcdUpgrade:upgradeBridgeOnForeign`
-* `npm run mcdUpgrade:migrateToMCD`
-
 Scripts related to Chai upgrade:
 * `npm run chaiUpgrade:upgradeBridgeOnForeign` (Requires `NEW_IMPLEMENTATION_ETH_BRIDGE` .env param)
 * `npm run chaiUpgrade:initializeChai` (Requires `CHAI_INTEREST_RECEIVER` .env param)

@@ -4,12 +4,8 @@
     "main": "index.js",
     "license": "GPLv3",
     "scripts": {
-        "mcdUpgrade:upgradeBridgeOnHome": "node src/mcdUpgrade/upgradeBridgeOnHome.js",
-        "mcdUpgrade:upgradeValidatorsOnForeign": "node src/mcdUpgrade/upgradeValidatorsOnForeign.js",
-        "mcdUpgrade:upgradeBridgeOnForeign": "node src/mcdUpgrade/upgradeBridgeOnForeign.js",
-        "mcdUpgrade:migrateToMCD": "node src/mcdUpgrade/migrateToMCD.js",
-        "chaiUpgrade:upgradeBridgeOnForeign": "node src/chaiUpgrade/upgradeBridgeOnForeign.js",
-        "chaiUpgrade:initializeChai": "node src/chaiUpgrade/initializeChai.js",
+        "upgradeBridgeOnForeign": "node src/upgradeBridgeOnForeign.js",
+        "initializeChai": "node src/initializeChai.js",
         "setHomeDailyLimit": "node src/setHomeDailyLimit.js",
         "lint": "eslint ."
     },

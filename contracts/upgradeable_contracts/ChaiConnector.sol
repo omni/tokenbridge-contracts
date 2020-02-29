@@ -13,6 +13,11 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract ChaiConnector is Ownable, ERC20Bridge {
     using SafeMath for uint256;
 
+    event SkipTransfer(address from);
+    event PaidInterest(address to, uint256 value);
+    event ConvertedToChai(uint256 value);
+    event ConvertedFromChai(uint256 value);
+
     bytes32 internal constant CHAI_TOKEN_ENABLED = 0x2ae87563606f93f71ad2adf4d62661ccdfb63f3f508f94700934d5877fb92278; // keccak256(abi.encodePacked("chaiTokenEnabled"))
     bytes32 internal constant INTEREST_RECEIVER = 0xd88509eb1a8da5d5a2fc7b9bad1c72874c9818c788e81d0bc46b29bfaa83adf6; // keccak256(abi.encodePacked("interestReceiver"))
     bytes32 internal constant INTEREST_COLLECTION_PERIOD = 0x68a6a652d193e5d6439c4309583048050a11a4cfb263a220f4cd798c61c3ad6e; // keccak256(abi.encodePacked("interestCollectionPeriod"))
@@ -173,6 +178,9 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         interestReceiver().call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, address(this), interestInDai, ""));
 
         require(dsrBalance() >= investedAmountInDai());
+
+        emit SkipTransfer(chaiToken());
+        emit PaidInterest(interestReceiver(), interestInDai);
     }
 
     /**
@@ -260,6 +268,8 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // The 10000 constant is considered to be small enough when decimals = 18, however,
         // it is not recommended to use it for smaller values of decimals, since it won't be negligible anymore
         require(dsrBalance() + 10000 >= newInvestedAmountInDai);
+
+        emit ConvertedToChai(amount);
     }
 
     /**
@@ -286,5 +296,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         setInvestedAmountInDai(newInvested);
 
         require(dsrBalance() >= newInvested);
+
+        emit ConvertedFromChai(redeemed);
     }
 }

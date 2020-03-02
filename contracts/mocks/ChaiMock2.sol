@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 contract GemLike {
-    function transfer(address, uint256) external returns (bool);
+    function mint(address, uint256) external returns (bool);
     function transferFrom(address, address, uint256) external returns (bool);
 }
 
@@ -22,7 +22,11 @@ contract ChaiMock2 {
     }
 
     function exit(address, uint256 wad) external {
-        daiToken.transfer(msg.sender, wad);
+        daiToken.mint(msg.sender, wad);
+    }
+
+    function draw(address, uint256 wad) external {
+        daiToken.mint(msg.sender, wad);
     }
 
     function dai(address) external view returns (uint256) {

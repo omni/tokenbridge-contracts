@@ -7,8 +7,6 @@ import "../../interfaces/IScdMcdMigration.sol";
 import "../ChaiConnector.sol";
 
 contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, ChaiConnector {
-    event TokensSwapped(address indexed from, address indexed to, uint256 value);
-
     bytes32 internal constant MIN_HDTOKEN_BALANCE = 0x48649cf195feb695632309f41e61252b09f537943654bde13eb7bb1bca06964e; // keccak256(abi.encodePacked("minHDTokenBalance"))
     bytes4 internal constant SWAP_TOKENS = 0x73d00224; // swapTokens()
 

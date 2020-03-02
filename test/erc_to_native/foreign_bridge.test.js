@@ -13,7 +13,7 @@ const DaiJoinMock = artifacts.require('DaiJoinMock')
 const PotMock = artifacts.require('PotMock')
 const ChaiMock = artifacts.require('ChaiMock')
 const DaiMock = artifacts.require('DaiMock')
-const ERC677ReceiverMock = artifacts.require('ERC677ReceiverTest.sol')
+const InterestReceiverMock = artifacts.require('InterestReceiverMock.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -453,7 +453,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
-      logs[0].event.should.be.equal('ConvertedFromChai')
+      logs[0].event.should.be.equal('TokensSwapped')
+      logs[0].args.from.should.be.equal(chaiToken.address)
+      logs[0].args.to.should.be.equal(token.address)
       logs[0].args.value.should.be.bignumber.equal(value)
       logs[1].event.should.be.equal('RelayedMessage')
       logs[1].args.recipient.should.be.equal(recipientAccount)
@@ -491,7 +493,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
-      logs[0].event.should.be.equal('ConvertedFromChai')
+      logs[0].event.should.be.equal('TokensSwapped')
+      logs[0].args.from.should.be.equal(chaiToken.address)
+      logs[0].args.to.should.be.equal(token.address)
       logs[0].args.value.should.be.bignumber.equal(ether('1.15'))
       logs[1].event.should.be.equal('RelayedMessage')
       logs[1].args.recipient.should.be.equal(recipientAccount)
@@ -1618,7 +1622,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         otherSideBridge.address
       )
       chaiToken = await createChaiToken(token, foreignBridge, owner)
-      interestRecipient = await ERC677ReceiverMock.new()
+      interestRecipient = await InterestReceiverMock.new({ from: owner })
+      await interestRecipient.initialize(accounts[3], { from: owner })
+      await interestRecipient.setChaiToken(chaiToken.address)
+      await token.transfer(ZERO_ADDRESS, await token.balanceOf(accounts[3]))
     })
 
     describe('initializeChaiToken', () => {
@@ -1692,7 +1699,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridge.removeChaiToken().should.be.fulfilled
         expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(accounts[3])).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(halfEther)
       })
 
@@ -1794,7 +1802,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await token.mint(foreignBridge.address, ether('101'))
         const { logs } = await foreignBridge.convertDaiToChai({ from: accounts[1] }).should.be.fulfilled
 
-        logs[0].event.should.be.equal('ConvertedToChai')
+        logs[0].event.should.be.equal('TokensSwapped')
+        logs[0].args.from.should.be.equal(token.address)
+        logs[0].args.to.should.be.equal(chaiToken.address)
         logs[0].args.value.should.be.bignumber.equal(ether('1'))
 
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
@@ -1834,7 +1844,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should handle overestimated amount', async () => {
         const { logs } = await foreignBridge.convertChaiToDai(ether('10'), { from: accounts[1] }).should.be.fulfilled
 
-        logs[0].event.should.be.equal('ConvertedFromChai')
+        logs[0].event.should.be.equal('TokensSwapped')
+        logs[0].args.from.should.be.equal(chaiToken.address)
+        logs[0].args.to.should.be.equal(token.address)
         logs[0].args.value.should.be.bignumber.equal(ether('4'))
 
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('5'))
@@ -1845,7 +1857,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should handle amount == invested', async () => {
         const { logs } = await foreignBridge.convertChaiToDai(ether('4'), { from: accounts[1] }).should.be.fulfilled
 
-        logs[0].event.should.be.equal('ConvertedFromChai')
+        logs[0].event.should.be.equal('TokensSwapped')
+        logs[0].args.from.should.be.equal(chaiToken.address)
+        logs[0].args.to.should.be.equal(token.address)
         logs[0].args.value.should.be.bignumber.equal(ether('4'))
 
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('5'))
@@ -1856,7 +1870,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should handle 0 < amount < invested', async () => {
         const { logs } = await foreignBridge.convertChaiToDai(ether('3'), { from: accounts[1] }).should.be.fulfilled
 
-        logs[0].event.should.be.equal('ConvertedFromChai')
+        logs[0].event.should.be.equal('TokensSwapped')
+        logs[0].args.from.should.be.equal(chaiToken.address)
+        logs[0].args.to.should.be.equal(token.address)
         logs[0].args.value.should.be.bignumber.equal(ether('3'))
 
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('4'))
@@ -1886,12 +1902,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expectEventInLogs(logs, 'PaidInterest', {
           to: accounts[2]
         })
-        expectEventInLogs(logs, 'SkipTransfer', {
-          from: chaiToken.address
-        })
 
         expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.gt(ZERO)
-        expect(await token.balanceOf(accounts[2])).to.be.bignumber.gt(ZERO)
+        expect(await chaiToken.balanceOf(accounts[2])).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })
@@ -1902,7 +1915,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
         expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.equal(ZERO)
-        expect(await interestRecipient.from()).to.be.equal(ZERO_ADDRESS)
 
         const { logs } = await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
         expectEventInLogs(logs, 'PaidInterest', {
@@ -1910,8 +1922,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         })
 
         expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.gt(ZERO)
-        expect(await interestRecipient.from()).to.not.be.equal(ZERO_ADDRESS)
-        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(accounts[3])).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })
@@ -1987,7 +1999,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridgeProxy.payInterest({ from: accounts[2] }).should.be.fulfilled
 
         expect(await foreignBridgeProxy.lastInterestPayment()).to.be.bignumber.gt(ZERO)
-        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(accounts[3])).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridgeProxy.address)).to.be.bignumber.gt(ZERO)
         expect(await foreignBridgeProxy.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })

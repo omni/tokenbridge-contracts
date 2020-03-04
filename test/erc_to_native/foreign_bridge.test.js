@@ -1625,7 +1625,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       interestRecipient = await InterestReceiverMock.new({ from: owner })
       await interestRecipient.initialize(accounts[3], { from: owner })
       await interestRecipient.setChaiToken(chaiToken.address)
-      await token.transfer(ZERO_ADDRESS, await token.balanceOf(accounts[3]))
+      await token.transfer(ZERO_ADDRESS, await token.balanceOf(accounts[3]), { from: accounts[3] })
     })
 
     describe('initializeChaiToken', () => {
@@ -1699,8 +1699,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridge.removeChaiToken().should.be.fulfilled
         expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(accounts[3])).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(halfEther)
       })
 
@@ -1921,6 +1920,8 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           to: interestRecipient.address
         })
 
+        await interestRecipient.withdraw(accounts[3], { from: accounts[3] })
+
         expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(accounts[3])).to.be.bignumber.gt(ZERO)
@@ -1999,8 +2000,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridgeProxy.payInterest({ from: accounts[2] }).should.be.fulfilled
 
         expect(await foreignBridgeProxy.lastInterestPayment()).to.be.bignumber.gt(ZERO)
-        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(accounts[3])).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
         expect(await chaiToken.balanceOf(foreignBridgeProxy.address)).to.be.bignumber.gt(ZERO)
         expect(await foreignBridgeProxy.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
       })

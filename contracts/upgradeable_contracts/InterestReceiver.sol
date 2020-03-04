@@ -36,6 +36,13 @@ contract InterestReceiver is ERC677Receiver, Initializable, Ownable {
         require(_value == chaiToken().balanceOf(address(this)));
 
         chaiToken().exit(address(this), _value);
-        chaiToken().daiToken().transfer(owner(), chaiToken().daiToken().balanceOf(address(this)));
+    }
+
+    /**
+    * @dev Withdraws DAI tokens from the receiver contract
+    * @param _to address of tokens receiver
+    */
+    function withdraw(address _to) external onlyOwner {
+        chaiToken().daiToken().transfer(_to, chaiToken().daiToken().balanceOf(address(this)));
     }
 }

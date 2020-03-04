@@ -8,9 +8,11 @@ contract GemLike {
 /**
  * @title ChaiMock2
  * @dev This contract is used for e2e tests only,
- * bridge contract requires non-empty chai stub with correct daiToken value and possibility to call join
+ * this mock represents a simplified version of Chai, which does not require other MakerDAO contracts to be deployed in e2e tests
  */
 contract ChaiMock2 {
+    event Transfer(address indexed src, address indexed dst, uint256 wad);
+
     GemLike public daiToken;
     uint256 internal daiBalance;
     address public pot;
@@ -21,11 +23,21 @@ contract ChaiMock2 {
         daiBalance += wad;
     }
 
+    function transfer(address to, uint256 wad) external {
+        require(daiBalance >= wad);
+        daiBalance -= wad;
+        emit Transfer(msg.sender, to, wad);
+    }
+
     function exit(address, uint256 wad) external {
+        require(daiBalance >= wad);
+        daiBalance -= wad;
         daiToken.mint(msg.sender, wad);
     }
 
     function draw(address, uint256 wad) external {
+        require(daiBalance >= wad);
+        daiBalance -= wad;
         daiToken.mint(msg.sender, wad);
     }
 

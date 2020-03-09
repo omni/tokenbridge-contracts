@@ -4,16 +4,14 @@ import "../interfaces/IChai.sol";
 import "../interfaces/ERC677Receiver.sol";
 import "./Ownable.sol";
 import "./ERC20Bridge.sol";
+import "./TokenSwapper.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
 * @title ChaiConnector
 * @dev This logic allows to use Chai token (https://github.com/dapphub/chai)
 */
-contract ChaiConnector is Ownable, ERC20Bridge {
-    // emitted when two tokens is swapped (e. g. Sai to Dai, Chai to Dai)
-    event TokensSwapped(address indexed from, address indexed to, uint256 value);
-
+contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
     using SafeMath for uint256;
 
     // emitted when specified value of Chai tokens is transfered to interest receiver

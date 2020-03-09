@@ -116,6 +116,14 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
      * @param receiver New receiver address
      */
     function setInterestReceiver(address receiver) external onlyOwner {
+        // the bridge account is not allowed to receive an interest by the following reason:
+        // during the Chai to Dai convertion, the Dai is minted to the receiver account,
+        // the Transfer(address(0), bridgeAddress, value) is emitted during this process,
+        // something can go wrong in the oracle logic, so that it will process this event as a request to the bridge
+        // Instead, the interest can be transfered to any other account, and then converted to Dai,
+        // which won't be related to the oracle logic anymore
+        require(receiver != address(this));
+
         addressStorage[INTEREST_RECEIVER] = receiver;
     }
 
@@ -171,6 +179,8 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
         uintStorage[LAST_TIME_INTEREST_PAID] = now;
 
         uint256 interest = chaiBalance().sub(investedAmountInChai());
+        // interest is paid in Chai, paying interest directly in Dai can cause an unwanter Transfer event
+        // see a comment in setInterestReceiver describing why we cannot pay interest to the bridge directly
         chaiToken().transfer(receiver, interest);
 
         receiver.call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, address(this), interest, ""));

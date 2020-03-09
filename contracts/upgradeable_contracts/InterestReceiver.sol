@@ -36,6 +36,9 @@ contract InterestReceiver is ERC677Receiver, Initializable, Ownable {
         require(_value == chaiToken().balanceOf(address(this)));
 
         chaiToken().exit(address(this), _value);
+
+        // chi is always >= 10**27, so chai/dai rate is always >= 1
+        require(chaiToken().daiToken().balanceOf(address(this)) >= _value);
     }
 
     /**
@@ -43,6 +46,8 @@ contract InterestReceiver is ERC677Receiver, Initializable, Ownable {
     * @param _to address of tokens receiver
     */
     function withdraw(address _to) external onlyOwner {
+        require(isInitialized());
+
         chaiToken().daiToken().transfer(_to, chaiToken().daiToken().balanceOf(address(this)));
     }
 }

@@ -1750,6 +1750,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should fail to setInterestReceiver if not an owner', async () => {
         await foreignBridge.setInterestReceiver(interestRecipient.address, { from: accounts[1] }).should.be.rejected
       })
+
+      it('should fail to setInterestReceiver if receiver is bridge address', async () => {
+        await foreignBridge.setInterestReceiver(foreignBridge.address, { from: owner }).should.be.rejected
+      })
     })
 
     describe('interestCollectionPeriod', () => {

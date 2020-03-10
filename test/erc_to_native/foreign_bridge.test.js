@@ -1924,7 +1924,9 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           to: interestRecipient.address
         })
 
-        await interestRecipient.withdraw(accounts[3], { from: accounts[3] })
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
+
+        await interestRecipient.withdraw(accounts[3], { from: accounts[3] }).should.be.fulfilled
 
         expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.gt(ZERO)
         expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
@@ -2049,6 +2051,36 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await chaiToken.join(accounts[3], halfEther, { from: accounts[3] }).should.be.fulfilled
 
         await foreignBridgeProxy.claimTokens(chaiToken.address, accounts[2], { from: accounts[2] }).should.be.fulfilled
+      })
+    })
+
+    describe('interestReceiver', async () => {
+      describe('claimTokens', async () => {
+        it('should allow to claim tokens from recipient account', async () => {
+          const tokenSecond = await ERC677BridgeToken.new('Second token', 'TST2', 18)
+
+          await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
+          expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+          await tokenSecond.transfer(interestRecipient.address, halfEther)
+          expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+          expect(await tokenSecond.balanceOf(interestRecipient.address)).to.be.bignumber.equal(halfEther)
+
+          await interestRecipient.claimTokens(tokenSecond.address, accounts[3], { from: accounts[1] }).should.be
+            .rejected
+          await interestRecipient.claimTokens(tokenSecond.address, accounts[3], { from: accounts[3] }).should.be
+            .fulfilled
+          expect(await tokenSecond.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
+          expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+        })
+
+        it('should not allow to claim tokens for chai token', async () => {
+          await interestRecipient.claimTokens(chaiToken.address, accounts[3], { from: accounts[3] }).should.be.rejected
+        })
+
+        it('should not allow to claim tokens for dai token', async () => {
+          await interestRecipient.claimTokens(token.address, accounts[3], { from: accounts[3] }).should.be.rejected
+        })
       })
     })
   })

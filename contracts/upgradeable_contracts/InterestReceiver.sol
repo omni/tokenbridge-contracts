@@ -69,7 +69,7 @@ contract InterestReceiver is ERC677Receiver, Initializable, Ownable, Claimable, 
     }
 
     /**
-    * @dev Claims tokens from bridge account
+    * @dev Claims tokens from receiver account
     * @param _token address of claimed token, address(0) for native
     * @param _to address of tokens receiver
     */

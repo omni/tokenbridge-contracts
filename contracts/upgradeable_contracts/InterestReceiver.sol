@@ -43,11 +43,14 @@ contract InterestReceiver is ERC677Receiver, Initializable, Ownable, Claimable, 
     */
     function onTokenTransfer(address, uint256 _value, bytes) external returns (bool) {
         require(isInitialized());
-        require(_value <= chaiToken().balanceOf(address(this)));
+
+        uint256 chaiBalance = chaiToken().balanceOf(address(this));
+
+        require(_value <= chaiBalance);
 
         uint256 initialDaiBalance = daiToken().balanceOf(address(this));
 
-        chaiToken().exit(address(this), chaiToken().balanceOf(address(this)));
+        chaiToken().exit(address(this), chaiBalance);
 
         // Dai balance cannot decrease here, so SafeMath is not needed
         uint256 redeemed = daiToken().balanceOf(address(this)) - initialDaiBalance;

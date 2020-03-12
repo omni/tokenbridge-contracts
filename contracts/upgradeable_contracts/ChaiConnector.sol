@@ -4,14 +4,18 @@ import "../interfaces/IChai.sol";
 import "../interfaces/ERC677Receiver.sol";
 import "./Ownable.sol";
 import "./ERC20Bridge.sol";
+import "./TokenSwapper.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
 * @title ChaiConnector
 * @dev This logic allows to use Chai token (https://github.com/dapphub/chai)
 */
-contract ChaiConnector is Ownable, ERC20Bridge {
+contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
     using SafeMath for uint256;
+
+    // emitted when specified value of Chai tokens is transfered to interest receiver
+    event PaidInterest(address to, uint256 value);
 
     bytes32 internal constant CHAI_TOKEN_ENABLED = 0x2ae87563606f93f71ad2adf4d62661ccdfb63f3f508f94700934d5877fb92278; // keccak256(abi.encodePacked("chaiTokenEnabled"))
     bytes32 internal constant INTEREST_RECEIVER = 0xd88509eb1a8da5d5a2fc7b9bad1c72874c9818c788e81d0bc46b29bfaa83adf6; // keccak256(abi.encodePacked("interestReceiver"))
@@ -112,6 +116,14 @@ contract ChaiConnector is Ownable, ERC20Bridge {
      * @param receiver New receiver address
      */
     function setInterestReceiver(address receiver) external onlyOwner {
+        // the bridge account is not allowed to receive an interest by the following reason:
+        // during the Chai to Dai convertion, the Dai is minted to the receiver account,
+        // the Transfer(address(0), bridgeAddress, value) is emitted during this process,
+        // something can go wrong in the oracle logic, so that it will process this event as a request to the bridge
+        // Instead, the interest can be transfered to any other account, and then converted to Dai,
+        // which won't be related to the oracle logic anymore
+        require(receiver != address(this));
+
         addressStorage[INTEREST_RECEIVER] = receiver;
     }
 
@@ -156,23 +168,26 @@ contract ChaiConnector is Ownable, ERC20Bridge {
     * @dev Internal function for paying all available interest, in Dai tokens
     */
     function _payInterest() internal {
-        require(address(interestReceiver()) != address(0));
+        address receiver = address(interestReceiver());
+        require(receiver != address(0));
 
         // since investedAmountInChai() returns a ceiled value,
         // the value of chaiBalance() - investedAmountInChai() will be floored,
         // leading to excess remaining chai balance
-        uint256 balanceBefore = daiBalance();
-        chaiToken().exit(address(this), chaiBalance().sub(investedAmountInChai()));
-        uint256 interestInDai = daiBalance().sub(balanceBefore);
 
         // solhint-disable-next-line not-rely-on-time
         uintStorage[LAST_TIME_INTEREST_PAID] = now;
 
-        erc20token().transfer(interestReceiver(), interestInDai);
+        uint256 interest = chaiBalance().sub(investedAmountInChai());
+        // interest is paid in Chai, paying interest directly in Dai can cause an unwanter Transfer event
+        // see a comment in setInterestReceiver describing why we cannot pay interest to the bridge directly
+        chaiToken().transfer(receiver, interest);
 
-        interestReceiver().call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, address(this), interestInDai, ""));
+        receiver.call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, address(this), interest, ""));
 
         require(dsrBalance() >= investedAmountInDai());
+
+        emit PaidInterest(receiver, interest);
     }
 
     /**
@@ -260,6 +275,8 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         // The 10000 constant is considered to be small enough when decimals = 18, however,
         // it is not recommended to use it for smaller values of decimals, since it won't be negligible anymore
         require(dsrBalance() + 10000 >= newInvestedAmountInDai);
+
+        emit TokensSwapped(erc20token(), chaiToken(), amount);
     }
 
     /**
@@ -286,5 +303,7 @@ contract ChaiConnector is Ownable, ERC20Bridge {
         setInvestedAmountInDai(newInvested);
 
         require(dsrBalance() >= newInvested);
+
+        emit TokensSwapped(chaiToken(), erc20token(), redeemed);
     }
 }

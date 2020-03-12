@@ -45,6 +45,7 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/HomeBridgeErcToNative.sol >
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/ForeignBridgeErcToNative.sol > flats/erc20_to_native/ForeignBridgeErcToNative_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/FeeManagerErcToNative.sol > flats/erc20_to_native/FeeManagerErcToNative_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/erc20_to_native/FeeManagerErcToNativePOSDAO.sol > flats/erc20_to_native/FeeManagerErcToNativePOSDAO_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/InterestReceiver.sol > flats/InterestReceiver_flat.sol
 
 echo "Flattening contracts related to arbitrary-message bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/arbitrary_message/HomeAMB.sol > flats/arbitrary_message/HomeAMB_flat.sol

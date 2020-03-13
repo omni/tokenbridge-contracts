@@ -21,7 +21,5 @@ cp .env.example .env
 Complete the variables in `.env` file. The `ROLE` variable indicates if the validator will send the creation transaction on the multisig wallet or if it will send the confirmation.
 
 Run the script. The following are available:
-* `npm run upgradeBridgeOnHome`
-* `npm run upgradeValidatorsOnForeign`
-* `npm run upgradeBridgeOnForeign`
-* `npm run migrateToMCD`
+* `npm run chaiUpgrade:upgradeBridgeOnForeign` (Requires `NEW_IMPLEMENTATION_ETH_BRIDGE` .env param)
+* `npm run chaiUpgrade:initializeChai` (Requires `CHAI_INTEREST_RECEIVER` .env param)

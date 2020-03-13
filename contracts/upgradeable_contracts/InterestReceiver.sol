@@ -1,10 +1,9 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "../interfaces/IChai.sol";
 import "../interfaces/ERC677Receiver.sol";
-import "./Initializable.sol";
-import "./Ownable.sol";
 import "./Claimable.sol";
 import "./TokenSwapper.sol";
 
@@ -12,15 +11,13 @@ import "./TokenSwapper.sol";
 * @title InterestReceiver
 * @dev Example contract for receiving Chai interest and immediatly converting it into Dai
 */
-contract InterestReceiver is ERC677Receiver, Initializable, Ownable, Claimable, TokenSwapper {
+contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
     /**
     * @dev Initializes interest receiver, sets an owner of a contract
     * @param _owner address of owner account, only owner can withdraw Dai tokens from contract
     */
-    function initialize(address _owner) external onlyRelevantSender {
-        require(!isInitialized());
-        setOwner(_owner);
-        setInitialize();
+    constructor(address _owner) public {
+        _transferOwnership(_owner);
     }
 
     /**
@@ -42,8 +39,6 @@ contract InterestReceiver is ERC677Receiver, Initializable, Ownable, Claimable, 
     * @param _value amount of transferred tokens
     */
     function onTokenTransfer(address, uint256 _value, bytes) external returns (bool) {
-        require(isInitialized());
-
         uint256 chaiBalance = chaiToken().balanceOf(address(this));
 
         require(_value <= chaiBalance);
@@ -66,8 +61,6 @@ contract InterestReceiver is ERC677Receiver, Initializable, Ownable, Claimable, 
     * @param _to address of tokens receiver
     */
     function withdraw(address _to) external onlyOwner {
-        require(isInitialized());
-
         daiToken().transfer(_to, daiToken().balanceOf(address(this)));
     }
 

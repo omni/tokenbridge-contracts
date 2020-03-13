@@ -1622,8 +1622,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         otherSideBridge.address
       )
       chaiToken = await createChaiToken(token, foreignBridge, owner)
-      interestRecipient = await InterestReceiverMock.new({ from: owner })
-      await interestRecipient.initialize(accounts[3], { from: owner })
+      interestRecipient = await InterestReceiverMock.new(accounts[3], { from: owner })
       await interestRecipient.setChaiToken(chaiToken.address)
       await token.transfer(ZERO_ADDRESS, await token.balanceOf(accounts[3]), { from: accounts[3] })
     })

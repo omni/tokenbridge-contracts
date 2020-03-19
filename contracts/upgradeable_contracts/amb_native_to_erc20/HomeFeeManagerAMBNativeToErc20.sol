@@ -1,21 +1,36 @@
 pragma solidity 0.4.24;
 
-import "../BaseMediatorFeeManager.sol";
 import "../Sacrifice.sol";
+import "../BaseMediatorFeeManager.sol";
 
 /**
 * @title HomeFeeManagerAMBNativeToErc20
 * @dev Implements the logic to distribute fees from the native to erc20 mediator contract operations.
 * The fees are distributed in the form of native tokens to the list of reward accounts.
-* This contract is intended to be used as a logic contract only. The address of this contract should be stored in the
-* mediator contract and the methods should be invoked by using delegatecall or callcode so it can access the state
-* of the mediator contracts.
 */
 contract HomeFeeManagerAMBNativeToErc20 is BaseMediatorFeeManager {
     /**
-    * @dev Transfer the fee as native coins to the reward account.
-    * If the send operation fails because the account is not able to receive the native tokens, a selfdestruct contract
-    * is deployed with the fee amount and sets the reward account as recipient to receive its native tokens.
+    * @dev Stores the initial parameters of the fee manager.
+    * @param _owner address of the owner of the fee manager contract.
+    * @param _fee the fee percentage amount.
+    * @param _rewardAccountList list of addresses that will receive the fee rewards.
+    */
+    constructor(address _owner, uint256 _fee, address[] _rewardAccountList)
+        public
+        BaseMediatorFeeManager(_owner, _fee, _rewardAccountList)
+    {
+        // solhint-disable-previous-line no-empty-blocks
+    }
+
+    /**
+    * @dev Fallback method to receive the fees.
+    */
+    function() public payable {
+        // solhint-disable-previous-line no-empty-blocks
+    }
+
+    /**
+    * @dev Transfer the fee as native tokens to the reward account.
     * @param _rewardAddress address that will receive the native tokens.
     * @param _fee amount of native tokens to be distribute.
     */

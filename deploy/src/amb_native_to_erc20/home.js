@@ -1,6 +1,14 @@
+const Web3Utils = require('web3-utils')
 const { web3Home, HOME_RPC_URL } = require('../web3')
 const { deployContract, privateKeyToAddress, upgradeProxy } = require('../deploymentUtils')
-const { DEPLOYMENT_ACCOUNT_PRIVATE_KEY, HOME_REWARDABLE } = require('../loadEnv')
+const {
+  DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
+  HOME_REWARDABLE,
+  HOME_MEDIATOR_REWARD_ACCOUNTS,
+  HOME_BRIDGE_OWNER,
+  FOREIGN_TRANSACTIONS_FEE
+} = require('../loadEnv')
+const { ZERO_ADDRESS } = require('../constants')
 
 const {
   homeContracts: { EternalStorageProxy, HomeAMBNativeToErc20: HomeBridge, HomeFeeManagerAMBNativeToErc20 }
@@ -12,7 +20,7 @@ const isRewardableBridge = HOME_REWARDABLE === 'ONE_DIRECTION'
 
 async function deployHome() {
   let nonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
-  let feeManagerAddress
+  let feeManagerAddress = ZERO_ADDRESS
 
   console.log('\n[Home] Deploying Bridge Mediator storage\n')
   const homeBridgeStorage = await deployContract(EternalStorageProxy, [], {
@@ -41,13 +49,27 @@ async function deployHome() {
   nonce++
 
   if (isRewardableBridge) {
+    const feeInWei = Web3Utils.toWei(FOREIGN_TRANSACTIONS_FEE.toString(), 'ether')
+    const rewardList = HOME_MEDIATOR_REWARD_ACCOUNTS.split(' ')
+
     console.log('\n[Home] Deploying Fee Manager')
-    const feeManager = await deployContract(HomeFeeManagerAMBNativeToErc20, [], {
-      from: DEPLOYMENT_ACCOUNT_ADDRESS,
-      nonce
+    console.log(`
+    OWNER: ${HOME_BRIDGE_OWNER},
+    Fee: ${feeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%
+  `)
+    rewardList.forEach((account, index) => {
+      console.log(`${index + 1}: ${account}`)
     })
-    feeManagerAddress = feeManager.options.address
-    console.log('[Home] feeManager Implementation: ', feeManagerAddress)
+    const feeManagerImpl = await deployContract(
+      HomeFeeManagerAMBNativeToErc20,
+      [HOME_BRIDGE_OWNER, feeInWei, rewardList],
+      {
+        from: DEPLOYMENT_ACCOUNT_ADDRESS,
+        nonce
+      }
+    )
+    console.log('[Home] Fee Manager: ', feeManagerImpl.options.address)
+    feeManagerAddress = feeManagerImpl.options.address
     nonce++
   }
 

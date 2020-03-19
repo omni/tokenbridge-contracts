@@ -22,59 +22,12 @@ const {
   FOREIGN_AMB_BRIDGE,
   FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT,
-  FOREIGN_REWARDABLE,
-  HOME_TRANSACTIONS_FEE,
-  FOREIGN_MEDIATOR_REWARD_ACCOUNTS
+  FOREIGN_TO_HOME_DECIMAL_SHIFT
 } = require('../loadEnv')
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
-async function initialize({
-  contract,
-  params: {
-    bridgeContract,
-    mediatorContract,
-    erc677token,
-    dailyLimit,
-    maxPerTx,
-    minPerTx,
-    executionDailyLimit,
-    executionMaxPerTx,
-    requestGasLimit,
-    foreignToHomeDecimalShift,
-    owner
-  }
-}) {
-  console.log(`
-    AMB contract: ${bridgeContract},
-    Mediator contract: ${mediatorContract},
-    Token contract: ${erc677token},
-    DAILY_LIMIT : ${dailyLimit} which is ${Web3Utils.fromWei(dailyLimit)} in eth,
-    MAX_AMOUNT_PER_TX: ${maxPerTx} which is ${Web3Utils.fromWei(maxPerTx)} in eth,
-    MIN_AMOUNT_PER_TX: ${minPerTx} which is ${Web3Utils.fromWei(minPerTx)} in eth,
-    EXECUTION_DAILY_LIMIT : ${executionDailyLimit} which is ${Web3Utils.fromWei(executionDailyLimit)} in eth,
-    EXECUTION_MAX_AMOUNT_PER_TX: ${executionMaxPerTx} which is ${Web3Utils.fromWei(executionMaxPerTx)} in eth,
-    FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
-    MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
-    OWNER: ${owner}
-  `)
-
-  return contract.methods
-    .initialize(
-      bridgeContract,
-      mediatorContract,
-      [dailyLimit, maxPerTx, minPerTx],
-      [executionDailyLimit, executionMaxPerTx],
-      requestGasLimit,
-      foreignToHomeDecimalShift,
-      owner,
-      erc677token
-    )
-    .encodeABI()
-}
-
-async function rewardableInitialize({
+async function initializeMediator({
   contract,
   params: {
     bridgeContract,
@@ -88,13 +41,9 @@ async function rewardableInitialize({
     requestGasLimit,
     foreignToHomeDecimalShift,
     owner,
-    feeManager,
-    fee,
-    rewardList
+    feeManager
   }
 }) {
-  const feeInWei = Web3Utils.toWei(fee.toString(), 'ether')
-
   console.log(`
     AMB contract: ${bridgeContract},
     Mediator contract: ${mediatorContract},
@@ -108,14 +57,10 @@ async function rewardableInitialize({
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
     OWNER: ${owner},
     Fee Manager: ${feeManager},
-    Fee: ${feeInWei} which is ${fee * 100}%
   `)
-  rewardList.forEach((account, index) => {
-    console.log(`${index + 1}: ${account}`)
-  })
 
   return contract.methods
-    .rewardableInitialize(
+    .initialize(
       bridgeContract,
       mediatorContract,
       [dailyLimit, maxPerTx, minPerTx],
@@ -124,62 +69,35 @@ async function rewardableInitialize({
       foreignToHomeDecimalShift,
       owner,
       erc677token,
-      feeManager,
-      feeInWei,
-      rewardList
+      feeManager
     )
     .encodeABI()
 }
 
-async function initializeMediator({ homeBridge, foreignBridge, foreignFeeManager, foreignErc677 }) {
-  const isRewardableBridge = FOREIGN_REWARDABLE === 'ONE_DIRECTION'
+async function initialize({ homeBridge, foreignBridge, foreignFeeManager, foreignErc677 }) {
   const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
   let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
-  let initializeData
   const contract = new web3Home.eth.Contract(ForeignAMBNativeToErc20.abi, foreignBridge)
 
   console.log('\n[Foreign] Initializing Bridge Mediator with following parameters:')
 
-  if (isRewardableBridge) {
-    const rewardList = FOREIGN_MEDIATOR_REWARD_ACCOUNTS.split(' ')
-
-    initializeData = await rewardableInitialize({
-      contract,
-      params: {
-        bridgeContract: FOREIGN_AMB_BRIDGE,
-        mediatorContract: homeBridge,
-        erc677token: foreignErc677,
-        dailyLimit: FOREIGN_DAILY_LIMIT,
-        maxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
-        minPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
-        executionDailyLimit: HOME_DAILY_LIMIT,
-        executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX,
-        requestGasLimit: FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
-        foreignToHomeDecimalShift,
-        owner: FOREIGN_BRIDGE_OWNER,
-        feeManager: foreignFeeManager,
-        fee: HOME_TRANSACTIONS_FEE,
-        rewardList
-      }
-    })
-  } else {
-    initializeData = await initialize({
-      contract,
-      params: {
-        bridgeContract: FOREIGN_AMB_BRIDGE,
-        mediatorContract: homeBridge,
-        erc677token: foreignErc677,
-        dailyLimit: FOREIGN_DAILY_LIMIT,
-        maxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
-        minPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
-        executionDailyLimit: HOME_DAILY_LIMIT,
-        executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX,
-        requestGasLimit: FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
-        foreignToHomeDecimalShift,
-        owner: FOREIGN_BRIDGE_OWNER
-      }
-    })
-  }
+  const initializeData = await initializeMediator({
+    contract,
+    params: {
+      bridgeContract: FOREIGN_AMB_BRIDGE,
+      mediatorContract: homeBridge,
+      erc677token: foreignErc677,
+      dailyLimit: FOREIGN_DAILY_LIMIT,
+      maxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
+      minPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
+      executionDailyLimit: HOME_DAILY_LIMIT,
+      executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX,
+      requestGasLimit: FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
+      foreignToHomeDecimalShift,
+      owner: FOREIGN_BRIDGE_OWNER,
+      feeManager: foreignFeeManager
+    }
+  })
 
   const txInitialize = await sendRawTxForeign({
     data: initializeData,
@@ -206,4 +124,4 @@ async function initializeMediator({ homeBridge, foreignBridge, foreignFeeManager
   })
 }
 
-module.exports = initializeMediator
+module.exports = initialize

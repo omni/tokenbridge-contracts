@@ -23,6 +23,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     * @param _decimalShift number of decimals shift required to adjust the amount of tokens bridged.
     * @param _owner address of the owner of the mediator contract
     * @param _erc677token address of the erc677 token contract
+    * @param _feeManager address of the fee manager contract
     */
     function initialize(
         address _bridgeContract,
@@ -32,50 +33,8 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
         uint256 _requestGasLimit,
         uint256 _decimalShift,
         address _owner,
-        address _erc677token
-    ) external onlyRelevantSender returns (bool) {
-        _initialize(
-            _bridgeContract,
-            _mediatorContract,
-            _dailyLimitMaxPerTxMinPerTxArray,
-            _executionDailyLimitExecutionMaxPerTxArray,
-            _requestGasLimit,
-            _decimalShift,
-            _owner
-        );
-        setErc677token(_erc677token);
-        setInitialize();
-        return isInitialized();
-    }
-
-    /**
-    * @dev Stores the initial parameters of the mediator.
-    * @param _bridgeContract the address of the AMB bridge contract.
-    * @param _mediatorContract the address of the mediator contract on the other network.
-    * @param _dailyLimitMaxPerTxMinPerTxArray array with limit values for the assets to be bridged to the other network.
-    *   [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-    * @param _executionDailyLimitExecutionMaxPerTxArray array with limit values for the assets bridged from the other network.
-    *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
-    * @param _requestGasLimit the gas limit for the message execution.
-    * @param _decimalShift number of decimals shift required to adjust the amount of tokens bridged.
-    * @param _owner address of the owner of the mediator contract
-    * @param _erc677token address of the erc677 token contract
-    * @param _feeManager address of the fee manager contract
-    * @param _fee value of the fee for tokens transfer from the home network.
-    * @param _rewardAccountList list of addresses that will receive the fee rewards.
-    */
-    function rewardableInitialize(
-        address _bridgeContract,
-        address _mediatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
-        uint256 _requestGasLimit,
-        uint256 _decimalShift,
-        address _owner,
         address _erc677token,
-        address _feeManager,
-        uint256 _fee,
-        address[] _rewardAccountList
+        address _feeManager
     ) external onlyRelevantSender returns (bool) {
         _initialize(
             _bridgeContract,
@@ -84,13 +43,10 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
             _executionDailyLimitExecutionMaxPerTxArray,
             _requestGasLimit,
             _decimalShift,
-            _owner
+            _owner,
+            _feeManager
         );
         setErc677token(_erc677token);
-        require(AddressUtils.isContract(_feeManager));
-        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
-        _setFee(_feeManager, _fee);
-        _initializeRewardAccounts(_rewardAccountList);
         setInitialize();
         return isInitialized();
     }
@@ -104,9 +60,9 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
         uint256 valueToMint = _value.div(10**decimalShift());
 
-        address feeManager = feeManagerContract();
+        IMediatorFeeManager feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(feeManager, valueToMint);
+            uint256 fee = feeManager.calculateFee(valueToMint);
             if (fee != 0) {
                 bytes32 txHash = transactionHash();
                 distributeFee(feeManager, fee, txHash);
@@ -205,6 +161,15 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
             IBurnableMintableERC677Token(_token).burn(_value);
             passMessage(chooseReceiver(_from, _data), _value);
         }
+    }
+
+    /**
+    * @dev Mint the fee amount of tokens to the fee manager contract.
+    * @param _feeManager address that will receive the minted tokens.
+    * @param _fee amount of tokens to be minted.
+    */
+    function onFeeDistribution(address _feeManager, uint256 _fee) internal {
+        IBurnableMintableERC677Token(erc677token()).mint(_feeManager, _fee);
     }
 
     /**

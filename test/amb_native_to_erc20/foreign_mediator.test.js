@@ -6,9 +6,10 @@ const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.s
 const ForeignFeeManagerAMBNativeToErc20 = artifacts.require('ForeignFeeManagerAMBNativeToErc20.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
+const ERC20Mock = artifacts.require('ERC20Mock.sol')
 
 const { expect } = require('chai')
-const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
+const { getEvents, expectEventInLogs, ether, strip0x, createAccounts } = require('../helpers/helpers')
 const { ZERO_ADDRESS, ERROR_MSG, toBN } = require('../setup')
 
 const ZERO = toBN(0)
@@ -47,6 +48,10 @@ contract('ForeignAMBNativeToErc20', async accounts => {
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
   })
   describe('initialize', () => {
+    let feeManager
+    beforeEach(async () => {
+      feeManager = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+    })
     it('should initialize parameters', async () => {
       // Given
       expect(await contract.isInitialized()).to.be.equal(false)
@@ -61,6 +66,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.erc677token()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.feeManagerContract()).to.be.equal(ZERO_ADDRESS)
 
       // When
       // not valid bridge address
@@ -73,7 +79,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
           maxGasPerTx,
           decimalShiftZero,
           owner,
-          token.address
+          token.address,
+          feeManager.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -87,7 +94,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
           maxGasPerTx,
           decimalShiftZero,
           owner,
-          token.address
+          token.address,
+          feeManager.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -101,7 +109,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
           maxGasPerTx,
           decimalShiftZero,
           owner,
-          token.address
+          token.address,
+          feeManager.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -115,7 +124,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
           maxGasPerTx,
           decimalShiftZero,
           owner,
-          token.address
+          token.address,
+          feeManager.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -129,7 +139,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
           twoEthers,
           decimalShiftZero,
           owner,
-          token.address
+          token.address,
+          feeManager.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -143,7 +154,38 @@ contract('ForeignAMBNativeToErc20', async accounts => {
           maxGasPerTx,
           decimalShiftZero,
           owner,
-          ZERO_ADDRESS
+          ZERO_ADDRESS,
+          feeManager.address
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+
+      // not valid owner
+      await contract
+        .initialize(
+          ambBridgeContract.address,
+          otherSideMediatorContract.address,
+          [dailyLimit, maxPerTx, minPerTx],
+          [executionDailyLimit, executionMaxPerTx],
+          maxGasPerTx,
+          decimalShiftZero,
+          ZERO_ADDRESS,
+          token.address,
+          feeManager.address
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+
+      // not valid fee manager address
+      await contract
+        .initialize(
+          ambBridgeContract.address,
+          otherSideMediatorContract.address,
+          [dailyLimit, maxPerTx, minPerTx],
+          [executionDailyLimit, executionMaxPerTx],
+          maxGasPerTx,
+          decimalShiftZero,
+          owner,
+          token.address,
+          user
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -155,7 +197,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        feeManager.address
       ).should.be.fulfilled
 
       // already initialized
@@ -168,7 +211,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
           maxGasPerTx,
           decimalShiftZero,
           owner,
-          token.address
+          token.address,
+          feeManager.address
         )
         .should.be.rejectedWith(ERROR_MSG)
 
@@ -185,9 +229,31 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(owner)
       expect(await contract.erc677token()).to.be.equal(token.address)
+      expect(await contract.feeManagerContract()).to.be.equal(feeManager.address)
 
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })
       expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })
+    })
+    it('should initialize with zero fee manager address', async () => {
+      // Given
+      expect(await contract.feeManagerContract()).to.be.equal(ZERO_ADDRESS)
+
+      // When
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        token.address,
+        ZERO_ADDRESS
+      ).should.be.fulfilled
+
+      // Then
+      expect(await contract.isInitialized()).to.be.equal(true)
+      expect(await contract.feeManagerContract()).to.be.equal(ZERO_ADDRESS)
     })
   })
   describe('set amb bridge params', () => {
@@ -200,7 +266,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
     })
     it('only owner can set bridge contract', async () => {
@@ -257,7 +324,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
     })
     it('setMaxPerTx allows to set only to owner and cannot be more than daily limit', async () => {
@@ -332,7 +400,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
     })
     it('should work with token that return bool on transfer', async () => {
@@ -375,182 +444,9 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(toBN(await web3.eth.getBalance(accounts[3]))).to.be.bignumber.equal(balanceBefore.add(oneEther))
     })
   })
-  describe('rewardableInitialize', () => {
-    let feeManager
+  describe('owner', () => {
     beforeEach(async () => {
-      feeManager = await ForeignFeeManagerAMBNativeToErc20.new()
-    })
-    it('should initialize parameters', async () => {
-      // Given
-      expect(await contract.isInitialized()).to.be.equal(false)
-      expect(await contract.bridgeContract()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.mediatorContractOnOtherSide()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.dailyLimit()).to.be.bignumber.equal(ZERO)
-      expect(await contract.maxPerTx()).to.be.bignumber.equal(ZERO)
-      expect(await contract.minPerTx()).to.be.bignumber.equal(ZERO)
-      expect(await contract.executionDailyLimit()).to.be.bignumber.equal(ZERO)
-      expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(ZERO)
-      expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
-      expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
-      expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.erc677token()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.feeManagerContract()).to.be.equal(ZERO_ADDRESS)
-
-      // When
-      // not valid bridge address
-      await contract
-        .rewardableInitialize(
-          ZERO_ADDRESS,
-          otherSideMediatorContract.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          token.address,
-          feeManager.address,
-          fee,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // dailyLimit > maxPerTx
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [maxPerTx, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          token.address,
-          feeManager.address,
-          fee,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // maxPerTx > minPerTx
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [dailyLimit, minPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          token.address,
-          feeManager.address,
-          fee,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // executionDailyLimit > executionMaxPerTx
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionDailyLimit],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          token.address,
-          feeManager.address,
-          fee,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // maxGasPerTx > bridge maxGasPerTx
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          twoEthers,
-          decimalShiftZero,
-          owner,
-          token.address,
-          feeManager.address,
-          fee,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // not a valid token address
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          ZERO_ADDRESS,
-          feeManager.address,
-          fee,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // not a valid fee manager address
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          token.address,
-          ZERO_ADDRESS,
-          fee,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // not a valid fee. Fee > max fee
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          token.address,
-          feeManager.address,
-          twoEthers,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // not a valid reward account list
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          token.address,
-          feeManager.address,
-          fee,
-          []
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      const { logs } = await contract.rewardableInitialize(
+      await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,
         [dailyLimit, maxPerTx, minPerTx],
@@ -559,171 +455,30 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         decimalShiftZero,
         owner,
         token.address,
-        feeManager.address,
-        fee,
-        rewardAccountList
+        ZERO_ADDRESS
       ).should.be.fulfilled
-
-      // already initialized
-      await contract
-        .rewardableInitialize(
-          ambBridgeContract.address,
-          otherSideMediatorContract.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftZero,
-          owner,
-          token.address,
-          feeManager.address,
-          fee,
-          rewardAccountList
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-
-      // Then
-      expect(await contract.isInitialized()).to.be.equal(true)
-      expect(await contract.bridgeContract()).to.be.equal(ambBridgeContract.address)
-      expect(await contract.mediatorContractOnOtherSide()).to.be.equal(otherSideMediatorContract.address)
-      expect(await contract.dailyLimit()).to.be.bignumber.equal(dailyLimit)
-      expect(await contract.maxPerTx()).to.be.bignumber.equal(maxPerTx)
-      expect(await contract.minPerTx()).to.be.bignumber.equal(minPerTx)
-      expect(await contract.executionDailyLimit()).to.be.bignumber.equal(executionDailyLimit)
-      expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(executionMaxPerTx)
-      expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
-      expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
+    })
+    it('should transfer ownership', async () => {
+      // Given
       expect(await contract.owner()).to.be.equal(owner)
-      expect(await contract.erc677token()).to.be.equal(token.address)
-      expect(await contract.feeManagerContract()).to.be.equal(feeManager.address)
-      expect(await contract.getFee()).to.be.bignumber.equal(fee)
-      const rewardAccounts = await contract.rewardAccounts()
-      expect(rewardAccounts.length).to.be.equal(3)
-      expect(rewardAccounts[0]).to.be.equal(rewardAccountList[0])
-      expect(rewardAccounts[1]).to.be.equal(rewardAccountList[1])
-      expect(rewardAccounts[2]).to.be.equal(rewardAccountList[2])
-
-      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })
-      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })
-      const feeManagerAtMediatorAddress = await ForeignFeeManagerAMBNativeToErc20.at(contract.address)
-      const events = await getEvents(feeManagerAtMediatorAddress, { event: 'FeeUpdated' })
-      expect(events.length).to.be.equal(1)
-      expect(toBN(events[0].returnValues.fee)).to.be.bignumber.equal(fee)
-    })
-  })
-  describe('rewardAccounts', () => {
-    beforeEach(async () => {
-      const feeManager = await ForeignFeeManagerAMBNativeToErc20.new()
-      await contract.rewardableInitialize(
-        ambBridgeContract.address,
-        otherSideMediatorContract.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        decimalShiftZero,
-        owner,
-        token.address,
-        feeManager.address,
-        fee,
-        rewardAccountList
-      ).should.be.fulfilled
-    })
-    it('should allow to add accounts', async () => {
-      // Given
-      const rewardAccountsBefore = await contract.rewardAccounts()
-      expect(rewardAccountsBefore.length).to.be.equal(3)
-      expect(rewardAccountsBefore[0]).to.be.equal(rewardAccountList[0])
-      expect(rewardAccountsBefore[1]).to.be.equal(rewardAccountList[1])
-      expect(rewardAccountsBefore[2]).to.be.equal(rewardAccountList[2])
-
-      const newAccount = accounts[6]
 
       // When
-      // only owner can add new accounts
-      await contract.addRewardAccount(newAccount, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      const newOwner = accounts[7]
 
-      await contract.addRewardAccount(newAccount, { from: owner }).should.be.fulfilled
-
-      // Can't add an account that already is part of the list
-      await contract.addRewardAccount(newAccount, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      await contract.transferOwnership(newOwner, { from: accounts[2] }).should.be.rejectedWith(ERROR_MSG)
+      await contract.transferOwnership(ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await contract.transferOwnership(newOwner, { from: owner }).should.be.fulfilled
 
       // Then
-      const rewardAccounts = await contract.rewardAccounts()
-      expect(rewardAccounts.length).to.be.equal(4)
-      expect(rewardAccounts[0]).to.be.equal(newAccount)
-      expect(rewardAccounts[1]).to.be.equal(rewardAccountList[0])
-      expect(rewardAccounts[2]).to.be.equal(rewardAccountList[1])
-      expect(rewardAccounts[3]).to.be.equal(rewardAccountList[2])
-    })
-    it('should allow to remove an existing account', async () => {
-      // Given
-      const rewardAccountsBefore = await contract.rewardAccounts()
-      expect(rewardAccountsBefore.length).to.be.equal(3)
-      expect(rewardAccountsBefore[0]).to.be.equal(rewardAccountList[0])
-      expect(rewardAccountsBefore[1]).to.be.equal(rewardAccountList[1])
-      expect(rewardAccountsBefore[2]).to.be.equal(rewardAccountList[2])
-
-      const accountToRemove = rewardAccountList[1]
-      // When
-      // only owner can revomve accounts
-      await contract.removeRewardAccount(accountToRemove, { from: user }).should.be.rejectedWith(ERROR_MSG)
-
-      // Onlye accounts that are in the list can be removed
-      await contract.removeRewardAccount(accounts[7], { from: owner }).should.be.rejectedWith(ERROR_MSG)
-
-      await contract.removeRewardAccount(accountToRemove, { from: owner }).should.be.fulfilled
-
-      // not in the list anymore
-      await contract.removeRewardAccount(accountToRemove, { from: owner }).should.be.rejectedWith(ERROR_MSG)
-
-      // Then
-      const rewardAccounts = await contract.rewardAccounts()
-      expect(rewardAccounts.length).to.be.equal(2)
-      expect(rewardAccounts[0]).to.be.equal(rewardAccountList[0])
-      expect(rewardAccounts[1]).to.be.equal(rewardAccountList[2])
-    })
-  })
-  describe('fee', () => {
-    beforeEach(async () => {
-      const feeManager = await ForeignFeeManagerAMBNativeToErc20.new()
-      await contract.rewardableInitialize(
-        ambBridgeContract.address,
-        otherSideMediatorContract.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        decimalShiftZero,
-        owner,
-        token.address,
-        feeManager.address,
-        fee,
-        rewardAccountList
-      ).should.be.fulfilled
-    })
-    it('should allow to get and set the fee', async () => {
-      // Given
-      expect(await contract.getFee()).to.be.bignumber.equal(fee)
-
-      const newFee = ether('0.02')
-      const bigFee = twoEthers
-
-      // When
-      // Only owner can set fee
-      await contract.setFee(newFee, { from: user }).should.be.rejectedWith(ERROR_MSG)
-
-      // should be a valid fee
-      await contract.setFee(bigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
-
-      await contract.setFee(newFee, { from: owner }).should.be.fulfilled
-
-      // Then
-      expect(await contract.getFee()).to.be.bignumber.equal(newFee)
+      expect(await contract.owner()).to.be.equal(newOwner)
+      expectEventInLogs(logs, 'OwnershipTransferred', { previousOwner: owner, newOwner })
     })
   })
   describe('feeManager', () => {
     let feeManager
     beforeEach(async () => {
-      feeManager = await ForeignFeeManagerAMBNativeToErc20.new()
-      await contract.rewardableInitialize(
+      feeManager = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+      await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,
         [dailyLimit, maxPerTx, minPerTx],
@@ -732,16 +487,14 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         decimalShiftZero,
         owner,
         token.address,
-        feeManager.address,
-        fee,
-        rewardAccountList
+        feeManager.address
       ).should.be.fulfilled
     })
     it('should allow to get and set the feeManager', async () => {
       // Given
       expect(await contract.feeManagerContract()).to.be.equal(feeManager.address)
 
-      const newFeeManager = await ForeignFeeManagerAMBNativeToErc20.new()
+      const newFeeManager = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
       // When
       // Only owner can set feeManager
       await contract.setFeeManagerContract(newFeeManager.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
@@ -758,6 +511,146 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       await contract.setFeeManagerContract(ZERO_ADDRESS, { from: owner }).should.be.fulfilled
       expect(await contract.feeManagerContract()).to.be.equal(ZERO_ADDRESS)
     })
+    describe('ForeignFeeManagerAMBNativeToErc20', () => {
+      describe('constructor', () => {
+        it('should validate parameters', async () => {
+          // invalid owner
+          await ForeignFeeManagerAMBNativeToErc20.new(
+            ZERO_ADDRESS,
+            fee,
+            rewardAccountList,
+            token.address
+          ).should.be.rejectedWith(ERROR_MSG)
+          // invalid fee value
+          await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            twoEthers,
+            rewardAccountList,
+            token.address
+          ).should.be.rejectedWith(ERROR_MSG)
+          const bigRewardAccountList = createAccounts(web3, 50 + 1)
+          // invalid account list
+          await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            twoEthers,
+            bigRewardAccountList,
+            token.address
+          ).should.be.rejectedWith(ERROR_MSG)
+          // invalid account list
+          await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, [], token.address).should.be.rejectedWith(ERROR_MSG)
+          await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            rewardAccountList,
+            ZERO_ADDRESS
+          ).should.be.rejectedWith(ERROR_MSG)
+          await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+        })
+      })
+      describe('rewardAccounts', () => {
+        beforeEach(async () => {
+          contract = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+        })
+        it('should allow to add accounts', async () => {
+          // Given
+          const rewardAccountsBefore = await contract.rewardAccountsList()
+          expect(rewardAccountsBefore.length).to.be.equal(3)
+          expect(rewardAccountsBefore[0]).to.be.equal(rewardAccountList[0])
+          expect(rewardAccountsBefore[1]).to.be.equal(rewardAccountList[1])
+          expect(rewardAccountsBefore[2]).to.be.equal(rewardAccountList[2])
+
+          const newAccount = accounts[6]
+
+          // When
+          // only owner can add new accounts
+          await contract.addRewardAccount(newAccount, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+          await contract.addRewardAccount(newAccount, { from: owner }).should.be.fulfilled
+
+          // Can't add an account that already is part of the list
+          await contract.addRewardAccount(newAccount, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+          // Then
+          const rewardAccounts = await contract.rewardAccountsList()
+          expect(rewardAccounts.length).to.be.equal(4)
+          expect(rewardAccounts[0]).to.be.equal(rewardAccountList[0])
+          expect(rewardAccounts[1]).to.be.equal(rewardAccountList[1])
+          expect(rewardAccounts[2]).to.be.equal(rewardAccountList[2])
+          expect(rewardAccounts[3]).to.be.equal(newAccount)
+        })
+        it('should allow to remove an existing account', async () => {
+          // Given
+          const rewardAccountsBefore = await contract.rewardAccountsList()
+          expect(rewardAccountsBefore.length).to.be.equal(3)
+          expect(rewardAccountsBefore[0]).to.be.equal(rewardAccountList[0])
+          expect(rewardAccountsBefore[1]).to.be.equal(rewardAccountList[1])
+          expect(rewardAccountsBefore[2]).to.be.equal(rewardAccountList[2])
+
+          const accountToRemove = rewardAccountList[1]
+          // When
+          // only owner can revomve accounts
+          await contract.removeRewardAccount(accountToRemove, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+          // Onlye accounts that are in the list can be removed
+          await contract.removeRewardAccount(accounts[7], { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+          await contract.removeRewardAccount(accountToRemove, { from: owner }).should.be.fulfilled
+
+          // not in the list anymore
+          await contract.removeRewardAccount(accountToRemove, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+          // Then
+          const rewardAccounts = await contract.rewardAccountsList()
+          expect(rewardAccounts.length).to.be.equal(2)
+          expect(rewardAccounts[0]).to.be.equal(rewardAccountList[0])
+          expect(rewardAccounts[1]).to.be.equal(rewardAccountList[2])
+        })
+      })
+      describe('fee', () => {
+        beforeEach(async () => {
+          contract = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+        })
+        it('should allow to get and set the fee', async () => {
+          // Given
+          expect(await contract.fee()).to.be.bignumber.equal(fee)
+
+          const newFee = ether('0.02')
+          const bigFee = twoEthers
+
+          // When
+          // Only owner can set fee
+          await contract.setFee(newFee, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+          // should be a valid fee
+          await contract.setFee(bigFee, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+          await contract.setFee(newFee, { from: owner }).should.be.fulfilled
+
+          // Then
+          expect(await contract.fee()).to.be.bignumber.equal(newFee)
+        })
+      })
+      describe('owner', () => {
+        beforeEach(async () => {
+          contract = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+        })
+        it('should transfer ownership', async () => {
+          // Given
+          expect(await contract.owner()).to.be.equal(owner)
+
+          // When
+          const newOwner = accounts[7]
+
+          await contract.transferOwnership(newOwner, { from: accounts[2] }).should.be.rejectedWith(ERROR_MSG)
+          await contract.transferOwnership(ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+          const { logs } = await contract.transferOwnership(newOwner, { from: owner }).should.be.fulfilled
+
+          // Then
+          expect(await contract.owner()).to.be.equal(newOwner)
+          expectEventInLogs(logs, 'OwnershipTransferred', { previousOwner: owner, newOwner })
+        })
+      })
+    })
   })
   describe('onTokenTransfer', () => {
     beforeEach(async () => {
@@ -772,7 +665,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
     })
     it('should call AMB bridge and burnt tokens', async () => {
@@ -849,7 +743,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
     })
     it('should allow to bridge tokens using approve and transferFrom', async () => {
@@ -985,7 +880,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
     })
     it('should mint tokens on message from amb', async () => {
@@ -1044,7 +940,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftTwo,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
 
       await token.transferOwnership(contract.address)
@@ -1130,7 +1027,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
     })
     it('should allow to request a failed message fix', async () => {
@@ -1249,7 +1147,8 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        token.address
+        token.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
 
       expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
@@ -1338,10 +1237,10 @@ contract('ForeignAMBNativeToErc20', async accounts => {
   })
   describe('handleBridgedTokens with fees', () => {
     beforeEach(async () => {
-      const feeManager = await ForeignFeeManagerAMBNativeToErc20.new()
+      const feeManager = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
       await token.transferOwnership(contract.address)
 
-      await contract.rewardableInitialize(
+      await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,
         [dailyLimit, maxPerTx, minPerTx],
@@ -1350,9 +1249,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         decimalShiftZero,
         owner,
         token.address,
-        feeManager.address,
-        fee,
-        rewardAccountList
+        feeManager.address
       ).should.be.fulfilled
     })
     it('should mint tokens and distribute fees on message from amb', async () => {
@@ -1407,7 +1304,13 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       // Then
       expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(value)
       const events = await getEvents(token, { event: 'Mint' })
-      expect(events.length).to.be.equal(4)
+      // 1 Mint to user, 1 Mint to fee manager
+      expect(events.length).to.be.equal(2)
+      // Use ERC20 contract so there is no conflict on getting the regular event Transfer and the generated by transferAndCall
+      const erc20Token = await ERC20Mock.at(token.address)
+      const transferEvents = await getEvents(erc20Token, { event: 'Transfer' })
+      // 5 transfer events: 1 Mint to user, 1 Mint to fee manager, fee manager 1 transfer to each reward account
+      expect(transferEvents.length).to.be.equal(5)
       expect(await token.totalSupply()).to.be.bignumber.equal(value)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(finalUserValue)
 

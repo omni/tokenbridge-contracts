@@ -19,6 +19,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _decimalShift number of decimals shift required to adjust the amount of tokens bridged.
     * @param _owner address of the owner of the mediator contract
+    * @param _feeManager address of the fee manager contract
     */
     function initialize(
         address _bridgeContract,
@@ -27,47 +28,8 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
         uint256 _requestGasLimit,
         uint256 _decimalShift,
-        address _owner
-    ) external onlyRelevantSender returns (bool) {
-        _initialize(
-            _bridgeContract,
-            _mediatorContract,
-            _dailyLimitMaxPerTxMinPerTxArray,
-            _executionDailyLimitExecutionMaxPerTxArray,
-            _requestGasLimit,
-            _decimalShift,
-            _owner
-        );
-        setInitialize();
-        return isInitialized();
-    }
-
-    /**
-    * @dev Stores the initial parameters of the mediator.
-    * @param _bridgeContract the address of the AMB bridge contract.
-    * @param _mediatorContract the address of the mediator contract on the other network.
-    * @param _dailyLimitMaxPerTxMinPerTxArray array with limit values for the assets to be bridged to the other network.
-    *   [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-    * @param _executionDailyLimitExecutionMaxPerTxArray array with limit values for the assets bridged from the other network.
-    *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
-    * @param _requestGasLimit the gas limit for the message execution.
-    * @param _decimalShift number of decimals shift required to adjust the amount of tokens bridged.
-    * @param _owner address of the owner of the mediator contract
-    * @param _feeManager address of the fee manager contract
-    * @param _fee value of the fee for token transfers from the foreign network.
-    * @param _rewardAccountList list of addresses that will receive the fee rewards.
-    */
-    function rewardableInitialize(
-        address _bridgeContract,
-        address _mediatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
-        uint256 _requestGasLimit,
-        uint256 _decimalShift,
         address _owner,
-        address _feeManager,
-        uint256 _fee,
-        address[] _rewardAccountList
+        address _feeManager
     ) external onlyRelevantSender returns (bool) {
         _initialize(
             _bridgeContract,
@@ -76,12 +38,9 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
             _executionDailyLimitExecutionMaxPerTxArray,
             _requestGasLimit,
             _decimalShift,
-            _owner
+            _owner,
+            _feeManager
         );
-        require(AddressUtils.isContract(_feeManager));
-        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
-        _setFee(_feeManager, _fee);
-        _initializeRewardAccounts(_rewardAccountList);
         setInitialize();
         return isInitialized();
     }
@@ -124,9 +83,9 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
         uint256 valueToTransfer = _value.mul(10**decimalShift());
 
-        address feeManager = feeManagerContract();
+        IMediatorFeeManager feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(feeManager, valueToTransfer);
+            uint256 fee = feeManager.calculateFee(valueToTransfer);
             if (fee != 0) {
                 bytes32 txHash = transactionHash();
                 distributeFee(feeManager, fee, txHash);
@@ -147,6 +106,17 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
         if (!_receiver.send(_value)) {
             (new Sacrifice).value(_value)(_receiver);
+        }
+    }
+
+    /**
+    * @dev Transfer the fee amount as native tokens to the fee manager contract.
+    * @param _feeManager address that will receive the native tokens.
+    * @param _fee amount of native tokens to be distribute.
+    */
+    function onFeeDistribution(address _feeManager, uint256 _fee) internal {
+        if (!_feeManager.send(_fee)) {
+            (new Sacrifice).value(_fee)(_feeManager);
         }
     }
 

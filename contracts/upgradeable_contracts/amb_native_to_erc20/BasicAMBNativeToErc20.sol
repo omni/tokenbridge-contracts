@@ -32,6 +32,7 @@ contract BasicAMBNativeToErc20 is
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _decimalShift number of decimals shift required to adjust the amount of tokens bridged.
     * @param _owner address of the owner of the mediator contract
+    * @param _feeManager address of the fee manager contract
     */
     function _initialize(
         address _bridgeContract,
@@ -40,7 +41,8 @@ contract BasicAMBNativeToErc20 is
         uint256[] _executionDailyLimitExecutionMaxPerTxArray,
         uint256 _requestGasLimit,
         uint256 _decimalShift,
-        address _owner
+        address _owner,
+        address _feeManager
     ) internal {
         require(!isInitialized());
         require(
@@ -50,6 +52,7 @@ contract BasicAMBNativeToErc20 is
         );
         require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // foreignMaxPerTx < foreignDailyLimit
         require(_owner != address(0));
+        require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
@@ -60,6 +63,7 @@ contract BasicAMBNativeToErc20 is
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
+        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
         setOwner(_owner);
         setNonce(keccak256(abi.encodePacked(address(this))));
 

@@ -1,15 +1,13 @@
 pragma solidity 0.4.24;
 
-import "../upgradeability/EternalStorage.sol";
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
 * @title BaseMediatorFeeManager
-* @dev Common functionality of fee managers for AMB mediators to store, calculate and perform actions related to
-* fee distribution. The fee manager is used as a logic contract only, the state variables are stored in the mediator
-* contract, so methods should be invoked by using delegatecall or callcode.
+* @dev Base fee manager to handle fees for AMB mediators.
 */
-contract BaseMediatorFeeManager is EternalStorage {
+contract BaseMediatorFeeManager is Ownable {
     using SafeMath for uint256;
 
     event FeeUpdated(uint256 fee);
@@ -17,10 +15,10 @@ contract BaseMediatorFeeManager is EternalStorage {
     // This is not a real fee value but a relative value used to calculate the fee percentage.
     // 1 ether = 100% of the value.
     uint256 internal constant MAX_FEE = 1 ether;
-    bytes32 internal constant FEE_STORAGE_KEY = 0x833b9f6abf0b529613680afe2a00fa663cc95cbdc47d726d85a044462eabbf02; // keccak256(abi.encodePacked("fee"))
-    bytes32 internal constant REWARD_ACCOUNTS_COUNT = 0x7a0619a0d97f7e9c83d1a6c44be033aecca1245b900bb0e97a7dcaae387eb874; // keccak256(abi.encodePacked("rewardAccountCount"))
-    address internal constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
     uint256 internal constant MAX_REWARD_ACCOUNTS = 50;
+
+    uint256 public fee;
+    address[] internal rewardAccounts;
 
     modifier validFee(uint256 _fee) {
         require(_fee < MAX_FEE);
@@ -29,52 +27,16 @@ contract BaseMediatorFeeManager is EternalStorage {
     }
 
     /**
-    * @dev Initialize the list of accounts that receives rewards for the mediator operations.
-    * The list of accounts is stored as a Linked List where the list starts and ends at F_ADDR.
-    * Example: F_ADDR -> account1; account1 -> account2; account2 -> F_ADDR
-    * @param _accounts list of accounts
+    * @dev Stores the initial parameters of the fee manager.
+    * @param _owner address of the owner of the fee manager contract.
+    * @param _fee the fee percentage amount.
+    * @param _rewardAccountList list of addresses that will receive the fee rewards.
     */
-    function initializeRewardAccounts(address[] _accounts) public {
-        require(_accounts.length > 0);
-        for (uint256 i = 0; i < _accounts.length; i++) {
-            require(_accounts[i] != address(0) && _accounts[i] != F_ADDR);
-            require(!isRewardAccount(_accounts[i]));
-
-            if (i == 0) {
-                setNextRewardAccount(F_ADDR, _accounts[i]);
-                if (_accounts.length == 1) {
-                    setNextRewardAccount(_accounts[i], F_ADDR);
-                }
-            } else if (i == _accounts.length - 1) {
-                setNextRewardAccount(_accounts[i - 1], _accounts[i]);
-                setNextRewardAccount(_accounts[i], F_ADDR);
-            } else {
-                setNextRewardAccount(_accounts[i - 1], _accounts[i]);
-            }
-        }
-
-        setRewardAccountsCount(_accounts.length);
-    }
-
-    /**
-    * @dev Tells the list of accounts that receives rewards for the operations.
-    * @return the list of reward accounts
-    */
-    function rewardAccounts() external view returns (address[] memory) {
-        address[] memory list = new address[](rewardAccountsCount());
-        uint256 counter = 0;
-        address nextRewardAccount = getNextRewardAccount(F_ADDR);
-        require(nextRewardAccount != address(0));
-
-        while (nextRewardAccount != F_ADDR) {
-            list[counter] = nextRewardAccount;
-            nextRewardAccount = getNextRewardAccount(nextRewardAccount);
-            counter++;
-
-            require(nextRewardAccount != address(0));
-        }
-
-        return list;
+    constructor(address _owner, uint256 _fee, address[] _rewardAccountList) public {
+        require(_rewardAccountList.length > 0 && _rewardAccountList.length <= MAX_REWARD_ACCOUNTS);
+        _transferOwnership(_owner);
+        _setFee(_fee);
+        rewardAccounts = _rewardAccountList;
     }
 
     /**
@@ -82,83 +44,65 @@ contract BaseMediatorFeeManager is EternalStorage {
     * @param _value the base value from which fees are calculated
     */
     function calculateFee(uint256 _value) external view returns (uint256) {
-        uint256 fee = getFee();
         return _value.mul(fee).div(MAX_FEE);
     }
 
     /**
-    * @dev Sets the fee percentage amount for the mediator operations.
+    * @dev Stores the fee percentage amount for the mediator operations.
     * @param _fee the fee percentage
     */
-    function setFee(uint256 _fee) external validFee(_fee) {
-        uintStorage[FEE_STORAGE_KEY] = _fee;
+    function _setFee(uint256 _fee) internal validFee(_fee) {
+        fee = _fee;
         emit FeeUpdated(_fee);
     }
 
     /**
-    * @dev Tells the fee percentage amount for the mediator operations.
-    * @return the fee percentage amount
+    * @dev Sets the fee percentage amount for the mediator operations. Only the owner can call this method.
+    * @param _fee the fee percentage
     */
-    function getFee() public view returns (uint256) {
-        return uintStorage[FEE_STORAGE_KEY];
+    function setFee(uint256 _fee) external onlyOwner {
+        _setFee(_fee);
     }
 
     /**
     * @dev Adds a new account to the list of accounts to receive rewards for the operations.
+    * Only the owner can call this method.
     * @param _account new reward account
     */
-    function addRewardAccount(address _account) external {
-        require(_account != address(0) && _account != F_ADDR);
+    function addRewardAccount(address _account) external onlyOwner {
+        require(_account != address(0));
         require(!isRewardAccount(_account));
-
-        address firstAccount = getNextRewardAccount(F_ADDR);
-        // if list wasn't initialized
-        if (firstAccount == address(0)) {
-            firstAccount = F_ADDR;
-        }
-        setNextRewardAccount(_account, firstAccount);
-        setNextRewardAccount(F_ADDR, _account);
-        setRewardAccountsCount(rewardAccountsCount().add(1));
+        require(rewardAccounts.length.add(1) < MAX_REWARD_ACCOUNTS);
+        rewardAccounts.push(_account);
     }
 
     /**
     * @dev Removes an account from the list of accounts to receive rewards for the operations.
+    * Only the owner can call this method.
+    * finds the element, swaps it with the last element, and then deletes it;
     * @param _account to be removed
+    * return boolean whether the element was found and deleted
     */
-    function removeRewardAccount(address _account) external {
-        require(isRewardAccount(_account));
-        address accountNext = getNextRewardAccount(_account);
-        address index = F_ADDR;
-        address next = getNextRewardAccount(index);
-        require(next != address(0));
-
-        while (next != _account) {
-            index = next;
-            next = getNextRewardAccount(index);
-
-            require(next != F_ADDR && next != address(0));
+    function removeRewardAccount(address _account) external onlyOwner returns (bool) {
+        uint256 numOfAccounts = rewardAccountsCount();
+        for (uint256 i = 0; i < numOfAccounts; i++) {
+            if (rewardAccounts[i] == _account) {
+                rewardAccounts[i] = rewardAccounts[numOfAccounts - 1];
+                delete rewardAccounts[numOfAccounts - 1];
+                rewardAccounts.length--;
+                return true;
+            }
         }
-
-        setNextRewardAccount(index, accountNext);
-        delete addressStorage[keccak256(abi.encodePacked("rewardAccountList", _account))];
-        setRewardAccountsCount(rewardAccountsCount().sub(1));
+        // If account is not found and removed, the transactions is reverted
+        revert();
     }
 
     /**
     * @dev Tells the amount of accounts in the list of reward accounts.
     * @return amount of accounts.
     */
-    function rewardAccountsCount() internal view returns (uint256) {
-        return uintStorage[REWARD_ACCOUNTS_COUNT];
-    }
-
-    /**
-    * @dev Stores the amount of accounts in the list of reward accounts.
-    * @param _count amount of accounts.
-    */
-    function setRewardAccountsCount(uint256 _count) internal {
-        require(_count <= MAX_REWARD_ACCOUNTS);
-        uintStorage[REWARD_ACCOUNTS_COUNT] = _count;
+    function rewardAccountsCount() public view returns (uint256) {
+        return rewardAccounts.length;
     }
 
     /**
@@ -167,25 +111,29 @@ contract BaseMediatorFeeManager is EternalStorage {
     * @return true if the account is in the list
     */
     function isRewardAccount(address _account) internal view returns (bool) {
-        return _account != F_ADDR && getNextRewardAccount(_account) != address(0);
+        for (uint256 i = 0; i < rewardAccountsCount(); i++) {
+            if (rewardAccounts[i] == _account) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-    * @dev Tells the next account in the list of reward accounts.
-    * @param _address previous account in the list.
-    * @return _account next account in the list.
+    * @dev Tells the list of accounts that receives rewards for the operations.
+    * @return the list of reward accounts
     */
-    function getNextRewardAccount(address _address) internal view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("rewardAccountList", _address))];
+    function rewardAccountsList() public view returns (address[]) {
+        return rewardAccounts;
     }
 
     /**
-    * @dev Stores the next account in the list of reward accounts.
-    * @param _prevAccount previous account in the list.
-    * @param _account next account in the list.
+    * @dev ERC677 transfer callback function, received fee is distributed.
+    * @param _value amount of transferred tokens
     */
-    function setNextRewardAccount(address _prevAccount, address _account) internal {
-        addressStorage[keccak256(abi.encodePacked("rewardAccountList", _prevAccount))] = _account;
+    function onTokenTransfer(address, uint256 _value, bytes) external returns (bool) {
+        distributeFee(_value);
+        return true;
     }
 
     /**
@@ -194,32 +142,21 @@ contract BaseMediatorFeeManager is EternalStorage {
     * in a semi-random way.
     * @param _fee total amount to be distributed to the list of reward accounts.
     */
-    function distributeFee(uint256 _fee) external {
+    function distributeFee(uint256 _fee) internal {
         uint256 numOfAccounts = rewardAccountsCount();
-        if (numOfAccounts > 0) {
-            uint256 feePerValidator = _fee.div(numOfAccounts);
-            uint256 randomValidatorIndex;
-            uint256 diff = _fee.sub(feePerValidator.mul(numOfAccounts));
-            if (diff > 0) {
-                randomValidatorIndex = random(numOfAccounts);
+        uint256 feePerAccount = _fee.div(numOfAccounts);
+        uint256 randomAccountIndex;
+        uint256 diff = _fee.sub(feePerAccount.mul(numOfAccounts));
+        if (diff > 0) {
+            randomAccountIndex = random(numOfAccounts);
+        }
+
+        for (uint256 i = 0; i < numOfAccounts; i++) {
+            uint256 feeToDistribute = feePerAccount;
+            if (diff > 0 && randomAccountIndex == i) {
+                feeToDistribute = feeToDistribute.add(diff);
             }
-
-            address nextRewardAccount = getNextRewardAccount(F_ADDR);
-            require((nextRewardAccount != F_ADDR) && (nextRewardAccount != address(0)));
-
-            uint256 i = 0;
-            while (nextRewardAccount != F_ADDR) {
-                uint256 feeToDistribute = feePerValidator;
-                if (diff > 0 && randomValidatorIndex == i) {
-                    feeToDistribute = feeToDistribute.add(diff);
-                }
-
-                onFeeDistribution(nextRewardAccount, feeToDistribute);
-
-                nextRewardAccount = getNextRewardAccount(nextRewardAccount);
-                require(nextRewardAccount != address(0));
-                i = i + 1;
-            }
+            onFeeDistribution(rewardAccounts[i], feeToDistribute);
         }
     }
 

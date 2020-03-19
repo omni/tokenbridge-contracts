@@ -1,6 +1,7 @@
 const assert = require('assert')
 const Web3Utils = require('web3-utils')
 const { web3Foreign, FOREIGN_RPC_URL, deploymentPrivateKey } = require('../web3')
+const { ZERO_ADDRESS } = require('../constants')
 const {
   deployContract,
   privateKeyToAddress,
@@ -27,7 +28,10 @@ const {
   BRIDGEABLE_TOKEN_SYMBOL,
   BRIDGEABLE_TOKEN_DECIMALS,
   BLOCK_REWARD_ADDRESS,
-  DPOS_STAKING_ADDRESS
+  DPOS_STAKING_ADDRESS,
+  FOREIGN_BRIDGE_OWNER,
+  HOME_TRANSACTIONS_FEE,
+  FOREIGN_MEDIATOR_REWARD_ACCOUNTS
 } = require('../loadEnv')
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -36,7 +40,7 @@ const isRewardableBridge = FOREIGN_REWARDABLE === 'ONE_DIRECTION'
 
 async function deployForeign() {
   let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
-  let feeManagerAddress
+  let feeManagerAddress = ZERO_ADDRESS
 
   console.log('\n[Foreign] Deploying Bridge Mediator storage\n')
   const foreignBridgeStorage = await deployContract(EternalStorageProxy, [], {
@@ -65,18 +69,6 @@ async function deployForeign() {
     url: FOREIGN_RPC_URL
   })
   nonce++
-
-  if (isRewardableBridge) {
-    console.log('\n[Foreign] Deploying Fee Manager')
-    const feeManager = await deployContract(ForeignFeeManagerAMBNativeToErc20, [], {
-      from: DEPLOYMENT_ACCOUNT_ADDRESS,
-      network: 'foreign',
-      nonce
-    })
-    feeManagerAddress = feeManager.options.address
-    console.log('[Home] feeManager Implementation: ', feeManagerAddress)
-    nonce++
-  }
 
   console.log('\n[Foreign] Deploying Bridgeable token')
   const erc677Contract = DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken
@@ -140,6 +132,33 @@ async function deployForeign() {
     nonce,
     url: FOREIGN_RPC_URL
   })
+  nonce++
+
+  if (isRewardableBridge) {
+    const feeInWei = Web3Utils.toWei(HOME_TRANSACTIONS_FEE.toString(), 'ether')
+    const rewardList = FOREIGN_MEDIATOR_REWARD_ACCOUNTS.split(' ')
+
+    console.log('\n[Foreign] Deploying Fee Manager')
+    console.log(`
+    OWNER: ${FOREIGN_BRIDGE_OWNER},
+    Fee: ${feeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%
+  `)
+    rewardList.forEach((account, index) => {
+      console.log(`${index + 1}: ${account}`)
+    })
+    const feeManagerImpl = await deployContract(
+      ForeignFeeManagerAMBNativeToErc20,
+      [FOREIGN_BRIDGE_OWNER, feeInWei, rewardList, erc677token.options.address],
+      {
+        from: DEPLOYMENT_ACCOUNT_ADDRESS,
+        network: 'foreign',
+        nonce
+      }
+    )
+    console.log('[Home] Fee Manager : ', feeManagerImpl.options.address)
+    feeManagerAddress = feeManagerImpl.options.address
+    nonce++
+  }
 
   console.log('\nForeign part of Native-to-ERC20 bridge deployed\n')
   return {

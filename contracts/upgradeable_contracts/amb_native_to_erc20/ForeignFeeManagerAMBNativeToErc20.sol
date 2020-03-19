@@ -1,32 +1,55 @@
 pragma solidity 0.4.24;
 
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../BaseMediatorFeeManager.sol";
-import "../../interfaces/IBurnableMintableERC677Token.sol";
-import "../ERC677Storage.sol";
 
 /**
 * @title ForeignFeeManagerAMBNativeToErc20
 * @dev Implements the logic to distribute fees from the native to erc20 mediator contract operations.
 * The fees are distributed in the form of tokens to the list of reward accounts.
-* This contract is intended to be used as a logic contract only. The address of this contract should be stored in the
-* mediator contract and the methods should be invoked by using delegatecall or callcode so it can access the state
-* of the mediator contracts.
 */
-contract ForeignFeeManagerAMBNativeToErc20 is BaseMediatorFeeManager, ERC677Storage {
+contract ForeignFeeManagerAMBNativeToErc20 is BaseMediatorFeeManager {
+    address public token;
+
     /**
-    * @dev Mint the fee amount of tokens to the reward account.
-    * @param _rewardAddress address that will receive the minted tokens.
-    * @param _fee amount of tokens to be minted.
+    * @dev Stores the initial parameters of the fee manager.
+    * @param _owner address of the owner of the fee manager contract.
+    * @param _fee the fee percentage amount.
+    * @param _rewardAccountList list of addresses that will receive the fee rewards.
+    * @param _token address of the token in which the fees will be received.
     */
-    function onFeeDistribution(address _rewardAddress, uint256 _fee) internal {
-        erc677token().mint(_rewardAddress, _fee);
+    constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _token)
+        public
+        BaseMediatorFeeManager(_owner, _fee, _rewardAccountList)
+    {
+        _setToken(_token);
     }
 
     /**
-    * @dev Tells the erc677 token address owned by the mediator.
-    * @return the address of the erc677 token.
+    * @dev Sets the token address.
+    * Only the owner can call this method.
+    * @param _newToken address of the token in which the fees will be received.
     */
-    function erc677token() internal view returns (IBurnableMintableERC677Token) {
-        return IBurnableMintableERC677Token(addressStorage[ERC677_TOKEN]);
+    function setToken(address _newToken) external onlyOwner {
+        _setToken(_newToken);
+    }
+
+    /**
+    * @dev Stores the token address.
+    * @param _newToken address of the token in which the fees will be received.
+    */
+    function _setToken(address _newToken) internal {
+        require(AddressUtils.isContract(_newToken));
+        token = _newToken;
+    }
+
+    /**
+    * @dev Transfer the fee amount of tokens to the reward account.
+    * @param _rewardAddress address that will receive the tokens.
+    * @param _fee amount of tokens to be transferred.
+    */
+    function onFeeDistribution(address _rewardAddress, uint256 _fee) internal {
+        ERC20Basic(token).transfer(_rewardAddress, _fee);
     }
 }

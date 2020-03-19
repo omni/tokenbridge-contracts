@@ -270,7 +270,7 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
       default: ZERO_ADDRESS
     }),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    DEPLOY_INTEREST_RECEIVER: envalid.bool({default: false}),
+    DEPLOY_INTEREST_RECEIVER: envalid.bool({ default: false })
   }
 
   if (DEPLOY_INTEREST_RECEIVER === 'true') {

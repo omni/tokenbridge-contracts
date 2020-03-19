@@ -48,7 +48,7 @@ contract BlockReward {
         token = _token;
     }
 
-    function addBridgeNativeFeeReceivers(uint256 _amount) external {
+    function addBridgeNativeRewardReceivers(uint256 _amount) external {
         feeAmount = _amount;
         uint256 feePerValidator = _amount.div(validatorList.length);
 
@@ -67,7 +67,7 @@ contract BlockReward {
         }
     }
 
-    function addBridgeTokenFeeReceivers(uint256 _amount) external {
+    function addBridgeTokenRewardReceivers(uint256 _amount) external {
         validatorRewardList = new uint256[](validatorList.length);
         feeAmount = _amount;
         uint256 feePerValidator = _amount.div(validatorList.length);

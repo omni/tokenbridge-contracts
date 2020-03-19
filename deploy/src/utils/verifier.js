@@ -9,6 +9,7 @@ const basePath = path.join(__dirname, '..', '..', '..', 'flats')
 
 const isBridgeToken = name => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol'
 const isValidators = name => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
+const isInterestReceiver = (name) => name === 'InterestReceiver.sol'
 
 const flat = async contractPath => {
   const pathArray = contractPath.split('/')
@@ -19,6 +20,8 @@ const flat = async contractPath => {
     module = ''
   } else if (isValidators(name)) {
     module = 'validators'
+  } else if (isInterestReceiver(name)) {
+    module = ''
   }
 
   const flatName = name.replace('.sol', '_flat.sol')

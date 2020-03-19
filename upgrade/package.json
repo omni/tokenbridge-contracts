@@ -4,10 +4,9 @@
     "main": "index.js",
     "license": "GPLv3",
     "scripts": {
-        "upgradeBridgeOnHome": "node src/upgradeBridgeOnHome.js",
-        "upgradeValidatorsOnForeign": "node src/upgradeValidatorsOnForeign.js",
         "upgradeBridgeOnForeign": "node src/upgradeBridgeOnForeign.js",
-        "migrateToMCD": "node src/migrateToMCD.js"
+        "initializeChai": "node src/initializeChai.js",
+        "lint": "eslint ."
     },
     "dependencies": {
         "dotenv": "^8.2.0",

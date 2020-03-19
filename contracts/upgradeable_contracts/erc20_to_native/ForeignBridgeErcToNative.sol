@@ -4,10 +4,9 @@ import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 import "../OtherSideBridgeStorage.sol";
 import "../../interfaces/IScdMcdMigration.sol";
+import "../ChaiConnector.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage {
-    event TokensSwapped(address indexed from, address indexed to, uint256 value);
-
+contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, ChaiConnector {
     bytes32 internal constant MIN_HDTOKEN_BALANCE = 0x48649cf195feb695632309f41e61252b09f537943654bde13eb7bb1bca06964e; // keccak256(abi.encodePacked("minHDTokenBalance"))
     bytes4 internal constant SWAP_TOKENS = 0x73d00224; // swapTokens()
 
@@ -64,6 +63,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
     function claimTokens(address _token, address _to) public {
         require(_token != address(erc20token()));
+        // Chai token is not claimable if investing into Chai is enabled
+        require(_token != address(chaiToken()) || !isChaiTokenEnabled());
         if (_token == address(halfDuplexErc20token())) {
             // SCD is not claimable if the bridge accepts deposits of this token
             // solhint-disable-next-line not-rely-on-time
@@ -79,6 +80,17 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     ) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
         uint256 amount = _amount.div(10**decimalShift());
+
+        uint256 currentBalance = tokenBalance(erc20token());
+
+        // Convert part of Chai tokens back to DAI, if DAI balance is insufficient.
+        // If Chai token is disabled, bridge will keep all funds directly in DAI token,
+        // so it will have enough funds to cover any xDai => Dai transfer,
+        // and currentBalance >= amount will always hold.
+        if (currentBalance < amount) {
+            _convertChaiToDai(amount.sub(currentBalance).add(minDaiTokenBalance()));
+        }
+
         bool res = erc20token().transfer(_recipient, amount);
 
         if (tokenBalance(halfDuplexErc20token()) > 0) {
@@ -90,11 +102,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
     function onFailedMessage(address, uint256, bytes32) internal {
         revert();
-    }
-
-    function _relayTokens(address _sender, address _receiver, uint256 _amount) internal {
-        require(_receiver != bridgeContractOnOtherSide());
-        super._relayTokens(_sender, _receiver, _amount);
     }
 
     function migrateToMCD() external {
@@ -171,7 +178,15 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         emit TokensSwapped(hdToken, fdToken, curHDTokenBalance);
     }
 
-    function relayTokens(address _from, address _receiver, uint256 _amount, address _token) external {
+    function relayTokens(address _receiver, uint256 _amount) external {
+        _relayTokens(msg.sender, _receiver, _amount, erc20token());
+    }
+
+    function relayTokens(address _sender, address _receiver, uint256 _amount) external {
+        relayTokens(_sender, _receiver, _amount, erc20token());
+    }
+
+    function relayTokens(address _from, address _receiver, uint256 _amount, address _token) public {
         require(_from == msg.sender || _from == _receiver);
         _relayTokens(_from, _receiver, _amount, _token);
     }
@@ -204,6 +219,9 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         if (tokenToOperate == hdToken) {
             swapTokens();
+        }
+        if (isDaiNeedsToBeInvested()) {
+            convertDaiToChai();
         }
     }
 }

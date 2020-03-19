@@ -7,6 +7,9 @@ if [ -f /.dockerenv ]; then
   if [ "$1" == "token" ]; then
     echo "Deployment of token for testing environment started"
     node testenv-deploy.js token
+  elif [ "$1" == "interestReceiver" ]; then
+    echo "Deployment of interest receiver for testing environment started"
+    node testenv-deploy.js interestReceiver
   else
     echo "Bridge contract deployment started"
     npm run deploy

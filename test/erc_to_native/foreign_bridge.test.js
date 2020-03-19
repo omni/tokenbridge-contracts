@@ -8,6 +8,12 @@ const ScdMcdMigrationMock = artifacts.require('ScdMcdMigrationMock.sol')
 const DaiAdapterMock = artifacts.require('DaiAdapterMock.sol')
 const SaiTopMock = artifacts.require('SaiTopMock.sol')
 const ForeignBridgeErcToNativeMock = artifacts.require('ForeignBridgeErcToNativeMock.sol')
+const VatMock = artifacts.require('VatMock')
+const DaiJoinMock = artifacts.require('DaiJoinMock')
+const PotMock = artifacts.require('PotMock')
+const ChaiMock = artifacts.require('ChaiMock')
+const DaiMock = artifacts.require('DaiMock')
+const InterestReceiverMock = artifacts.require('InterestReceiverMock.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -19,10 +25,12 @@ const {
   expectEventInLogs,
   getEvents,
   createFullAccounts,
+  delay,
   packSignatures
 } = require('../helpers/helpers')
 
 const halfEther = ether('0.5')
+const minDaiLimit = ether('100')
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
 const oneEther = ether('1')
@@ -37,6 +45,18 @@ const MAX_VALIDATORS = 50
 const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
 const decimalShiftZero = 0
+
+async function createChaiToken(token, bridge, owner) {
+  const vat = await VatMock.new({ from: owner })
+  const daiJoin = await DaiJoinMock.new(vat.address, token.address, { from: owner })
+  const pot = await PotMock.new(vat.address, { from: owner })
+  await vat.rely(pot.address)
+  await vat.rely(daiJoin.address)
+  await token.rely(daiJoin.address)
+  const chaiToken = await ChaiMock.new(vat.address, pot.address, daiJoin.address, token.address, { from: owner })
+  await bridge.setChaiToken(chaiToken.address)
+  return chaiToken
+}
 
 contract('ForeignBridge_ERC20_to_Native', async accounts => {
   let validatorContract
@@ -356,6 +376,137 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const oneSignature3 = packSignatures([vrs3])
 
       await foreignBridge.executeSignatures(message3, oneSignature3).should.be.rejectedWith(ERROR_MSG)
+    })
+  })
+  describe('#executeSignatures with chai', async () => {
+    const value = ether('0.25')
+    let foreignBridge
+    let chaiToken
+    beforeEach(async () => {
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+      token = await DaiMock.new({ from: owner })
+      chaiToken = await createChaiToken(token, foreignBridge, owner)
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address
+      )
+      await token.mint(foreignBridge.address, value)
+    })
+
+    it('should executeSignatures with enabled chai token, enough dai', async () => {
+      await foreignBridge.methods['initializeChaiToken()']()
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+
+      const recipientAccount = accounts[3]
+      const balanceBefore = await token.balanceOf(recipientAccount)
+
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+
+      logs[0].event.should.be.equal('RelayedMessage')
+      logs[0].args.recipient.should.be.equal(recipientAccount)
+      logs[0].args.value.should.be.bignumber.equal(value)
+      const balanceAfter = await token.balanceOf(recipientAccount)
+      const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      balanceAfterBridge.should.be.bignumber.equal(ZERO)
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+    })
+
+    it('should executeSignatures with enabled chai token, not enough dai, low dai limit', async () => {
+      await foreignBridge.methods['initializeChaiToken()']({ from: owner })
+      await token.mint(foreignBridge.address, ether('1'), { from: owner })
+      // in case of low limit, bridge should withdraw tokens up to specified DAI limit
+      await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+      await foreignBridge.convertDaiToChai()
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
+
+      const recipientAccount = accounts[3]
+      const balanceBefore = await token.balanceOf(recipientAccount)
+
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      // wait for a small interest in DSR
+      await delay(1500)
+
+      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+
+      logs[0].event.should.be.equal('TokensSwapped')
+      logs[0].args.from.should.be.equal(chaiToken.address)
+      logs[0].args.to.should.be.equal(token.address)
+      logs[0].args.value.should.be.bignumber.equal(value)
+      logs[1].event.should.be.equal('RelayedMessage')
+      logs[1].args.recipient.should.be.equal(recipientAccount)
+      logs[1].args.value.should.be.bignumber.equal(value)
+      const balanceAfter = await token.balanceOf(recipientAccount)
+      const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      balanceAfterBridge.should.be.bignumber.equal(ether('0.1'))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+    })
+
+    it('should executeSignatures with enabled chai token, not enough dai, high dai limit', async () => {
+      await foreignBridge.methods['initializeChaiToken()']({ from: owner })
+      await token.mint(foreignBridge.address, ether('1'), { from: owner })
+      await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+      await foreignBridge.convertDaiToChai()
+      // in case of high limit, bridge should withdraw all invested tokens
+      await foreignBridge.setMinDaiTokenBalance(ether('5'), { from: owner })
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(ether('0.1'))
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.lte(ether('0.11'))
+
+      const recipientAccount = accounts[3]
+      const balanceBefore = await token.balanceOf(recipientAccount)
+
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+      const oneSignature = packSignatures([vrs])
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      // wait for a small interest in DSR
+      await delay(1500)
+
+      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+
+      logs[0].event.should.be.equal('TokensSwapped')
+      logs[0].args.from.should.be.equal(chaiToken.address)
+      logs[0].args.to.should.be.equal(token.address)
+      logs[0].args.value.should.be.bignumber.equal(ether('1.15'))
+      logs[1].event.should.be.equal('RelayedMessage')
+      logs[1].args.recipient.should.be.equal(recipientAccount)
+      logs[1].args.value.should.be.bignumber.equal(value)
+      const balanceAfter = await token.balanceOf(recipientAccount)
+      const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
+      balanceAfter.should.be.bignumber.equal(balanceBefore.add(value))
+      balanceAfterBridge.should.be.bignumber.gte(ether('1'))
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+      // small remaining interest, collected between calls to convertDaiToChai() and executeSignatures()
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.lt(ether('0.0001'))
     })
   })
   describe('#withdraw with 2 minimum signatures', async () => {
@@ -910,6 +1061,86 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
     })
   })
+  describe('#relayTokens with chai', async () => {
+    const user = accounts[7]
+    const recipient = accounts[8]
+    const value = ether('0.25')
+    let foreignBridge
+    let chaiToken
+    beforeEach(async () => {
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+      token = await DaiMock.new({ from: owner })
+      chaiToken = await createChaiToken(token, foreignBridge, owner)
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address
+      )
+      await token.mint(user, ether('2'))
+    })
+
+    it('should allow to bridge tokens with chai token enabled', async () => {
+      await foreignBridge.methods['initializeChaiToken()']()
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+      const currentDay = await foreignBridge.getCurrentDay()
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, recipient, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+
+      await token.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, ZERO_ADDRESS, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, foreignBridge.address, value, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, user, 0, {
+        from: user
+      }).should.be.rejectedWith(ERROR_MSG)
+      const { logs } = await foreignBridge.methods['relayTokens(address,address,uint256)'](user, user, value, {
+        from: user
+      }).should.be.fulfilled
+
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+      expectEventInLogs(logs, 'UserRequestForAffirmation', {
+        recipient: user,
+        value
+      })
+
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
+    })
+
+    it('should allow to bridge tokens with chai token enabled, excess tokens', async () => {
+      await foreignBridge.methods['initializeChaiToken()']()
+      await token.mint(foreignBridge.address, ether('201'))
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+      await token.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+      const { logs } = await foreignBridge.methods['relayTokens(address,address,uint256)'](user, user, value, {
+        from: user
+      }).should.be.fulfilled
+
+      expectEventInLogs(logs, 'UserRequestForAffirmation', {
+        recipient: user,
+        value
+      })
+
+      expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+      expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(minDaiLimit)
+    })
+  })
   describe('migrateToMCD', () => {
     let foreignBridge
     beforeEach(async () => {
@@ -1231,6 +1462,63 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
       })
     })
+    describe('relayTokens with chai token', async () => {
+      let foreignBridge
+      let dai
+      const value = ether('0.25')
+      const recipient = accounts[8]
+      beforeEach(async () => {
+        dai = await DaiMock.new({ from: owner })
+        foreignBridge = await ForeignBridgeErcToNativeMock.new()
+
+        await foreignBridge.initialize(
+          validatorContract.address,
+          dai.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero,
+          otherSideBridge.address
+        )
+
+        await dai.mint(user, twoEthers)
+      })
+
+      it('should allow to bridge tokens specifying the token address with chai token enabled', async () => {
+        // Given
+        const chaiToken = await createChaiToken(dai, foreignBridge, owner)
+        await foreignBridge.methods['initializeChaiToken()']()
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+        const balance = await dai.balanceOf(user)
+        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
+
+        const currentDay = await foreignBridge.getCurrentDay()
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+        await relayTokens(recipient, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+        await dai.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
+
+        // When
+        await relayTokens(ZERO_ADDRESS, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(foreignBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(otherSideBridge.address, value, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        await relayTokens(recipient, 0, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
+        const { logs } = await relayTokens(recipient, value, dai.address, { from: user }).should.be.fulfilled
+
+        // Then
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+        expectEventInLogs(logs, 'UserRequestForAffirmation', {
+          recipient,
+          value
+        })
+        expect(await dai.balanceOf(user)).to.be.bignumber.equal(balance.sub(value))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      })
+    })
     describe('onExecuteMessage', () => {
       it('should swapTokens in executeSignatures', async () => {
         const value = ether('0.25')
@@ -1309,6 +1597,490 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
         // reset the caged value
         await saiTop.setCaged(0)
+      })
+    })
+  })
+
+  describe('chai token', async () => {
+    let token
+    let foreignBridge
+    let chaiToken
+    let interestRecipient
+
+    beforeEach(async () => {
+      token = await DaiMock.new({ from: owner })
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address
+      )
+      chaiToken = await createChaiToken(token, foreignBridge, owner)
+      interestRecipient = await InterestReceiverMock.new({ from: owner })
+      await interestRecipient.initialize(accounts[3], { from: owner })
+      await interestRecipient.setChaiToken(chaiToken.address)
+      await token.transfer(ZERO_ADDRESS, await token.balanceOf(accounts[3]), { from: accounts[3] })
+    })
+
+    describe('initializeChaiToken', () => {
+      it('should be initialized', async () => {
+        await foreignBridge.methods['initializeChaiToken()']().should.be.fulfilled
+      })
+
+      it('should fail to initialize twice', async () => {
+        await foreignBridge.methods['initializeChaiToken()']().should.be.fulfilled
+        await foreignBridge.methods['initializeChaiToken()']().should.be.rejected
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.methods['initializeChaiToken()']({ from: accounts[1] }).should.be.rejected
+      })
+    })
+
+    describe('initializeChaiToken with interest receiver', () => {
+      it('should be initialized', async () => {
+        await foreignBridge.methods['initializeChaiToken(address)'](accounts[3]).should.be.fulfilled
+      })
+
+      it('should fail to initialize twice', async () => {
+        await foreignBridge.methods['initializeChaiToken(address)'](accounts[3]).should.be.fulfilled
+        await foreignBridge.methods['initializeChaiToken(address)'](accounts[3]).should.be.rejected
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.methods['initializeChaiToken(address)'](accounts[3], { from: accounts[1] }).should.be
+          .rejected
+      })
+
+      it('should fail if zero address', async () => {
+        await foreignBridge.methods['initializeChaiToken(address)'](ZERO_ADDRESS, { from: accounts[1] }).should.be
+          .rejected
+      })
+    })
+
+    describe('chaiTokenEnabled', () => {
+      it('should return false', async () => {
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
+      })
+
+      it('should return true', async () => {
+        await foreignBridge.methods['initializeChaiToken()']().should.be.fulfilled
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(true)
+      })
+    })
+
+    describe('removeChaiToken', () => {
+      beforeEach(async () => {
+        await foreignBridge.methods['initializeChaiToken()']().should.be.fulfilled
+        await foreignBridge.setInterestReceiver(interestRecipient.address).should.be.fulfilled
+      })
+
+      it('should be removed', async () => {
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(true)
+        await foreignBridge.removeChaiToken().should.be.fulfilled
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should be removed with tokens withdraw', async () => {
+        await token.mint(foreignBridge.address, oneEther, { from: owner })
+        await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+        await foreignBridge.convertDaiToChai()
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(true)
+
+        await delay(1500)
+
+        await foreignBridge.removeChaiToken().should.be.fulfilled
+        expect(await foreignBridge.isChaiTokenEnabled()).to.be.equal(false)
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.gte(halfEther)
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.removeChaiToken({ from: accounts[1] }).should.be.rejected
+        await foreignBridge.removeChaiToken({ from: owner }).should.be.fulfilled
+      })
+
+      it('should fail if chai token is not enabled', async () => {
+        await foreignBridge.removeChaiToken({ from: owner }).should.be.fulfilled
+        await foreignBridge.removeChaiToken({ from: owner }).should.be.rejected
+      })
+    })
+
+    describe('min dai limit', () => {
+      beforeEach(async () => {
+        await foreignBridge.methods['initializeChaiToken()']({ from: owner })
+      })
+
+      it('should return minDaiTokenBalance', async () => {
+        expect(await foreignBridge.minDaiTokenBalance()).to.be.bignumber.equal(minDaiLimit)
+      })
+
+      it('should update minDaiTokenBalance', async () => {
+        await foreignBridge.setMinDaiTokenBalance(ether('101'), { from: owner }).should.be.fulfilled
+        expect(await foreignBridge.minDaiTokenBalance()).to.be.bignumber.equal(ether('101'))
+      })
+
+      it('should fail to update if not an owner', async () => {
+        await foreignBridge.setMinDaiTokenBalance(ether('101'), { from: accounts[1] }).should.be.rejected
+      })
+    })
+
+    describe('interestReceiver', () => {
+      beforeEach(async () => {
+        await foreignBridge.methods['initializeChaiToken()']({ from: owner })
+      })
+
+      it('should return interestReceiver', async () => {
+        expect(await foreignBridge.interestReceiver()).to.be.equal(ZERO_ADDRESS)
+      })
+
+      it('should update interestReceiver', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner }).should.be.fulfilled
+        expect(await foreignBridge.interestReceiver()).to.be.equal(interestRecipient.address)
+      })
+
+      it('should fail to setInterestReceiver if not an owner', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: accounts[1] }).should.be.rejected
+      })
+
+      it('should fail to setInterestReceiver if receiver is bridge address', async () => {
+        await foreignBridge.setInterestReceiver(foreignBridge.address, { from: owner }).should.be.rejected
+      })
+    })
+
+    describe('interestCollectionPeriod', () => {
+      beforeEach(async () => {
+        await foreignBridge.methods['initializeChaiToken()']({ from: owner })
+      })
+
+      it('should return interestCollectionPeriod', async () => {
+        expect(await foreignBridge.interestCollectionPeriod()).to.be.bignumber.gt(ZERO)
+      })
+
+      it('should update interestCollectionPeriod', async () => {
+        await foreignBridge.setInterestCollectionPeriod('100', { from: owner }).should.be.fulfilled
+        expect(await foreignBridge.interestCollectionPeriod()).to.be.bignumber.equal('100')
+      })
+
+      it('should fail to setInterestCollectionPeriod if not an owner', async () => {
+        await foreignBridge.setInterestCollectionPeriod('100', { from: accounts[1] }).should.be.rejected
+      })
+    })
+
+    describe('isDaiNeedsToBeInvested', () => {
+      it('should return false on empty balance', async () => {
+        await foreignBridge.methods['initializeChaiToken()']()
+        expect(await foreignBridge.isDaiNeedsToBeInvested()).to.be.equal(false)
+      })
+
+      it('should return false on insufficient balance', async () => {
+        await foreignBridge.methods['initializeChaiToken()']()
+        await token.mint(foreignBridge.address, ether('101'), { from: owner })
+        expect(await foreignBridge.isDaiNeedsToBeInvested()).to.be.equal(false)
+      })
+
+      it('should return true on sufficient balance', async () => {
+        await foreignBridge.methods['initializeChaiToken()']()
+        await token.mint(foreignBridge.address, ether('201'), { from: owner })
+        expect(await foreignBridge.isDaiNeedsToBeInvested()).to.be.equal(true)
+      })
+
+      it('should return false if chai token is not defined', async () => {
+        await token.mint(foreignBridge.address, ether('201'), { from: owner })
+        expect(await foreignBridge.isDaiNeedsToBeInvested()).to.be.equal(false)
+      })
+    })
+
+    describe('convertDaiToChai', () => {
+      it('should convert all dai except defined limit', async () => {
+        await foreignBridge.methods['initializeChaiToken()']()
+        await token.mint(foreignBridge.address, ether('101'))
+        const { logs } = await foreignBridge.convertDaiToChai({ from: accounts[1] }).should.be.fulfilled
+
+        logs[0].event.should.be.equal('TokensSwapped')
+        logs[0].args.from.should.be.equal(token.address)
+        logs[0].args.to.should.be.equal(chaiToken.address)
+        logs[0].args.value.should.be.bignumber.equal(ether('1'))
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+      })
+
+      it('should not allow to convert if chai token is disabled', async () => {
+        await token.mint(foreignBridge.address, ether('101'))
+        await foreignBridge.convertDaiToChai({ from: owner }).should.be.rejected
+      })
+    })
+
+    describe('_convertChaiToDai', async () => {
+      beforeEach(async () => {
+        await foreignBridge.methods['initializeChaiToken()']()
+        await token.mint(foreignBridge.address, ether('5'))
+        await foreignBridge.setMinDaiTokenBalance(ether('1'), { from: owner })
+        await foreignBridge.convertDaiToChai()
+
+        await delay(1500)
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('1'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('4'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ether('3.9'))
+      })
+
+      it('should handle 0 amount', async () => {
+        const { logs } = await foreignBridge.convertChaiToDai('0', { from: accounts[1] }).should.be.fulfilled
+
+        expect(logs.length).to.be.equal(0)
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('1'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('4'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ether('3.9'))
+      })
+
+      it('should handle overestimated amount', async () => {
+        const { logs } = await foreignBridge.convertChaiToDai(ether('10'), { from: accounts[1] }).should.be.fulfilled
+
+        logs[0].event.should.be.equal('TokensSwapped')
+        logs[0].args.from.should.be.equal(chaiToken.address)
+        logs[0].args.to.should.be.equal(token.address)
+        logs[0].args.value.should.be.bignumber.equal(ether('4'))
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('5'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('0'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.lt(ether('0.1'))
+      })
+
+      it('should handle amount == invested', async () => {
+        const { logs } = await foreignBridge.convertChaiToDai(ether('4'), { from: accounts[1] }).should.be.fulfilled
+
+        logs[0].event.should.be.equal('TokensSwapped')
+        logs[0].args.from.should.be.equal(chaiToken.address)
+        logs[0].args.to.should.be.equal(token.address)
+        logs[0].args.value.should.be.bignumber.equal(ether('4'))
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('5'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('0'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.lt(ether('0.1'))
+      })
+
+      it('should handle 0 < amount < invested', async () => {
+        const { logs } = await foreignBridge.convertChaiToDai(ether('3'), { from: accounts[1] }).should.be.fulfilled
+
+        logs[0].event.should.be.equal('TokensSwapped')
+        logs[0].args.from.should.be.equal(chaiToken.address)
+        logs[0].args.to.should.be.equal(token.address)
+        logs[0].args.value.should.be.bignumber.equal(ether('3'))
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('4'))
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal(ether('1'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ether('0.9'))
+      })
+    })
+
+    describe('payInterest', () => {
+      beforeEach(async () => {
+        await foreignBridge.methods['initializeChaiToken()']()
+        await token.mint(foreignBridge.address, halfEther)
+        await foreignBridge.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+        await foreignBridge.convertDaiToChai()
+
+        await delay(1500)
+      })
+
+      it('should pay full interest to regular account', async () => {
+        await foreignBridge.setInterestReceiver(accounts[2], { from: owner })
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(accounts[2])).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.equal(ZERO)
+
+        const { logs } = await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+        expectEventInLogs(logs, 'PaidInterest', {
+          to: accounts[2]
+        })
+
+        expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.gt(ZERO)
+        expect(await chaiToken.balanceOf(accounts[2])).to.be.bignumber.gt(ZERO)
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
+      })
+
+      it('should pay full interest to contract', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.equal(ZERO)
+
+        const { logs } = await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+        expectEventInLogs(logs, 'PaidInterest', {
+          to: interestRecipient.address
+        })
+
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
+
+        await interestRecipient.withdraw(accounts[3], { from: accounts[3] }).should.be.fulfilled
+
+        expect(await foreignBridge.lastInterestPayment()).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(accounts[3])).to.be.bignumber.gt(ZERO)
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
+      })
+
+      it('should not allow not pay interest twice within short time period', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+
+        await delay(1500)
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.rejected
+      })
+
+      it('should allow to pay interest after some time', async () => {
+        await foreignBridge.setInterestCollectionPeriod('5', { from: owner }) // 5 seconds
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+
+        await delay(1500)
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.rejected
+
+        await delay(5000)
+
+        await foreignBridge.payInterest({ from: accounts[1] }).should.be.fulfilled
+      })
+
+      it('should not allow to pay interest if chaiToken is disabled', async () => {
+        await foreignBridge.setInterestReceiver(interestRecipient.address, { from: owner })
+        await foreignBridge.removeChaiToken({ from: owner })
+
+        await foreignBridge.payInterest().should.be.rejected
+      })
+
+      it('should not pay interest on empty address', async () => {
+        await foreignBridge.payInterest().should.be.rejected
+      })
+    })
+
+    describe('payInterest for upgradeabilityOwner', () => {
+      it('should allow to pay interest without time restrictions', async () => {
+        let foreignBridgeProxy = await EternalStorageProxy.new({ from: accounts[2] }).should.be.fulfilled
+        await foreignBridgeProxy.upgradeTo('1', foreignBridge.address, { from: accounts[2] }).should.be.fulfilled
+        foreignBridgeProxy = await ForeignBridgeErcToNativeMock.at(foreignBridgeProxy.address)
+        foreignBridgeProxy.setChaiToken(chaiToken.address)
+        await foreignBridgeProxy.initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero,
+          otherSideBridge.address,
+          { from: accounts[2] }
+        )
+
+        await foreignBridgeProxy.methods['initializeChaiToken()']()
+        await token.mint(foreignBridgeProxy.address, halfEther)
+        await foreignBridgeProxy.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+        await foreignBridgeProxy.convertDaiToChai()
+        await foreignBridgeProxy.setInterestReceiver(interestRecipient.address, { from: owner })
+
+        await delay(1500)
+
+        await foreignBridgeProxy.payInterest({ from: accounts[2] }).should.be.fulfilled
+
+        await delay(1500)
+
+        await foreignBridgeProxy.payInterest({ from: accounts[2] }).should.be.fulfilled
+
+        expect(await foreignBridgeProxy.lastInterestPayment()).to.be.bignumber.gt(ZERO)
+        expect(await token.balanceOf(interestRecipient.address)).to.be.bignumber.gt(ZERO)
+        expect(await chaiToken.balanceOf(foreignBridgeProxy.address)).to.be.bignumber.gt(ZERO)
+        expect(await foreignBridgeProxy.dsrBalance()).to.be.bignumber.gte(ether('0.4'))
+      })
+    })
+
+    describe('claimTokens', async () => {
+      let foreignBridgeProxy
+
+      beforeEach(async () => {
+        foreignBridgeProxy = await EternalStorageProxy.new({ from: accounts[2] }).should.be.fulfilled
+        await foreignBridgeProxy.upgradeTo('1', foreignBridge.address, { from: accounts[2] }).should.be.fulfilled
+        foreignBridgeProxy = await ForeignBridgeErcToNativeMock.at(foreignBridgeProxy.address)
+        foreignBridgeProxy.setChaiToken(chaiToken.address)
+        await foreignBridgeProxy.initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero,
+          otherSideBridge.address,
+          { from: accounts[2] }
+        )
+      })
+
+      it('should not allow to claim Chai, if it is enabled', async () => {
+        await foreignBridgeProxy.methods['initializeChaiToken()']({ from: owner })
+        await token.mint(foreignBridgeProxy.address, halfEther)
+        await foreignBridgeProxy.setMinDaiTokenBalance(ether('0.1'), { from: owner })
+        await foreignBridgeProxy.convertDaiToChai()
+        expect(await foreignBridgeProxy.isChaiTokenEnabled()).to.be.equal(true)
+
+        await foreignBridgeProxy.claimTokens(chaiToken.address, accounts[2], { from: accounts[2] }).should.be.rejected
+      })
+
+      it('should allow to claim chai after it is disabled', async () => {
+        expect(await foreignBridgeProxy.isChaiTokenEnabled()).to.be.equal(false)
+        await token.mint(accounts[3], halfEther)
+        await token.approve(chaiToken.address, halfEther, { from: accounts[3] })
+        await chaiToken.join(accounts[3], halfEther, { from: accounts[3] }).should.be.fulfilled
+
+        await foreignBridgeProxy.claimTokens(chaiToken.address, accounts[2], { from: accounts[2] }).should.be.fulfilled
+      })
+    })
+
+    describe('interestReceiver', async () => {
+      describe('claimTokens', async () => {
+        it('should allow to claim tokens from recipient account', async () => {
+          const tokenSecond = await ERC677BridgeToken.new('Second token', 'TST2', 18)
+
+          await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
+          expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
+
+          await tokenSecond.transfer(interestRecipient.address, halfEther)
+          expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(ZERO)
+          expect(await tokenSecond.balanceOf(interestRecipient.address)).to.be.bignumber.equal(halfEther)
+
+          await interestRecipient.claimTokens(tokenSecond.address, accounts[3], { from: accounts[1] }).should.be
+            .rejected
+          await interestRecipient.claimTokens(tokenSecond.address, accounts[3], { from: accounts[3] }).should.be
+            .fulfilled
+          expect(await tokenSecond.balanceOf(interestRecipient.address)).to.be.bignumber.equal(ZERO)
+          expect(await tokenSecond.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
+        })
+
+        it('should not allow to claim tokens for chai token', async () => {
+          await interestRecipient.claimTokens(chaiToken.address, accounts[3], { from: accounts[3] }).should.be.rejected
+        })
+
+        it('should not allow to claim tokens for dai token', async () => {
+          await interestRecipient.claimTokens(token.address, accounts[3], { from: accounts[3] }).should.be.rejected
+        })
       })
     })
   })

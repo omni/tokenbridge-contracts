@@ -81,6 +81,7 @@ const {
   VALIDATORS,
   VALIDATORS_REWARD_ACCOUNTS,
   DEPLOY_REWARDABLE_TOKEN,
+  DEPLOY_INTEREST_RECEIVER,
   HOME_FEE_MANAGER_TYPE,
   HOME_EVM_VERSION,
   FOREIGN_EVM_VERSION
@@ -268,7 +269,15 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
     BLOCK_REWARD_ADDRESS: addressValidator({
       default: ZERO_ADDRESS
     }),
-    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
+    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
+    DEPLOY_INTEREST_RECEIVER: envalid.bool({default: false}),
+  }
+
+  if (DEPLOY_INTEREST_RECEIVER === 'true') {
+    validations = {
+      ...validations,
+      FOREIGN_INTEREST_RECEIVER_OWNER: addressValidator()
+    }
   }
 }
 

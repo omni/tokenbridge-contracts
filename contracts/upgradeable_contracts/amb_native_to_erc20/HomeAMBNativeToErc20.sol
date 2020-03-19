@@ -93,9 +93,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
             }
         }
 
-        if (!_receiver.send(valueToTransfer)) {
-            (new Sacrifice).value(valueToTransfer)(_receiver);
-        }
+        Address.safeSendValue(_receiver, valueToTransfer);
     }
 
     /**
@@ -104,9 +102,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     * @param _value amount of native tokens to be received
     */
     function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
-        if (!_receiver.send(_value)) {
-            (new Sacrifice).value(_value)(_receiver);
-        }
+        Address.safeSendValue(_receiver, _value);
     }
 
     /**
@@ -115,9 +111,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     * @param _fee amount of native tokens to be distribute.
     */
     function onFeeDistribution(address _feeManager, uint256 _fee) internal {
-        if (!_feeManager.send(_fee)) {
-            (new Sacrifice).value(_fee)(_feeManager);
-        }
+        Address.safeSendValue(_feeManager, _fee);
     }
 
     /**

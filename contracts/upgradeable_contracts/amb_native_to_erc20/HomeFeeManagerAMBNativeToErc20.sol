@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../Sacrifice.sol";
+import "../../libraries/Address.sol";
 import "../BaseMediatorFeeManager.sol";
 
 /**
@@ -35,8 +35,6 @@ contract HomeFeeManagerAMBNativeToErc20 is BaseMediatorFeeManager {
     * @param _fee amount of native tokens to be distribute.
     */
     function onFeeDistribution(address _rewardAddress, uint256 _fee) internal {
-        if (!_rewardAddress.send(_fee)) {
-            (new Sacrifice).value(_fee)(_rewardAddress);
-        }
+        Address.safeSendValue(_rewardAddress, _fee);
     }
 }

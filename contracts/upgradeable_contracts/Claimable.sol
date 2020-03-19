@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import "./Sacrifice.sol";
+import "../libraries/Address.sol";
 
 contract Claimable {
     bytes4 internal constant TRANSFER = 0xa9059cbb; // transfer(address,uint256)
@@ -22,9 +22,7 @@ contract Claimable {
 
     function claimNativeCoins(address _to) internal {
         uint256 value = address(this).balance;
-        if (!_to.send(value)) {
-            (new Sacrifice).value(value)(_to);
-        }
+        Address.safeSendValue(_to, value);
     }
 
     function claimErc20Tokens(address _token, address _to) internal {

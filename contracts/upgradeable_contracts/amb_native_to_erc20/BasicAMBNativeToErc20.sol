@@ -1,8 +1,6 @@
 pragma solidity 0.4.24;
 
 import "../Initializable.sol";
-import "../Ownable.sol";
-import "../BasicTokenBridge.sol";
 import "../Upgradeable.sol";
 import "../Claimable.sol";
 import "../VersionableBridge.sol";

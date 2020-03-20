@@ -1111,6 +1111,25 @@ contract('HomeAMBNativeToErc20', async accounts => {
           expectEventInLogs(logs, 'OwnershipTransferred', { previousOwner: owner, newOwner })
         })
       })
+      describe('fallback', () => {
+        beforeEach(async () => {
+          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+        })
+        it('should accept native tokens', async () => {
+          // Given
+          expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
+
+          // When
+          const value = oneEther
+          await contract.sendTransaction({
+            from: user,
+            value
+          }).should.be.fulfilled
+
+          // Then
+          expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(value)
+        })
+      })
     })
   })
   describe('owner', () => {

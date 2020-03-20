@@ -694,7 +694,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       // Given
       const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
-      await erc677Token.setBridgeContract(contract.address, { from: owner }).should.be.fulfilled
+      await erc677Token.setBridgeContracts([contract.address], { from: owner }).should.be.fulfilled
       await erc677Token.transferOwnership(contract.address, { from: owner }).should.be.fulfilled
 
       contract = this.bridge

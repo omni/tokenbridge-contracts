@@ -8,7 +8,6 @@ import "./interfaces/IBurnableMintableERC677Token.sol";
 import "./upgradeable_contracts/Claimable.sol";
 
 contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, BurnableToken, MintableToken, Claimable {
-    
     address[] internal _bridgeContracts;
     mapping(address => bool) internal _isBridgeContract;
 

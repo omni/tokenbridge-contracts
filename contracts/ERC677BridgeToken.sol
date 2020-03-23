@@ -64,7 +64,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
         }
     }
 
-    function contractFallback(address _from, address _to, uint256 _value, bytes _data) private returns (bool) {
+    function contractFallback(address _from, address _to, uint256 _value, bytes _data) internal returns (bool) {
         return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)", _from, _value, _data));
     }
 

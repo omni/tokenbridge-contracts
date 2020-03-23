@@ -29,7 +29,7 @@ contract ERC677MultiBridgeToken is ERC677BridgeToken {
         require(!isBridge(_bridge));
 
         address firstBridge = bridgePointers[F_ADDR];
-        require (firstBridge != address(0));
+        require(firstBridge != address(0));
         bridgePointers[F_ADDR] = _bridge;
         bridgePointers[_bridge] = firstBridge;
         bridgeCount = bridgeCount.add(1);

@@ -8,8 +8,7 @@ import "./interfaces/IBurnableMintableERC677Token.sol";
 import "./upgradeable_contracts/Claimable.sol";
 
 contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, BurnableToken, MintableToken, Claimable {
-    address[] internal _bridgeContracts;
-    mapping(address => bool) internal _isBridgeContract;
+    address public bridgeContract;
 
     event ContractFallbackCallFailed(address from, address to, uint256 value);
 
@@ -17,30 +16,15 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
         // solhint-disable-previous-line no-empty-blocks
     }
 
-    function setBridgeContracts(address[] _contracts) external onlyOwner {
-        require(_contracts.length > 0);
-        uint256 i;
-
-        for (i = 0; i < _bridgeContracts.length; i++) {
-            _isBridgeContract[_bridgeContracts[i]] = false;
-        }
-
-        _bridgeContracts = _contracts;
-
-        for (i = 0; i < _contracts.length; i++) {
-            require(AddressUtils.isContract(_contracts[i]));
-            _isBridgeContract[_contracts[i]] = true;
-        }
+    function setBridgeContract(address _bridgeContract) external onlyOwner {
+        require(AddressUtils.isContract(_bridgeContract));
+        bridgeContract = _bridgeContract;
     }
 
     modifier validRecipient(address _recipient) {
         require(_recipient != address(0) && _recipient != address(this));
         /* solcov ignore next */
         _;
-    }
-
-    function bridgeContracts() external view returns (address[]) {
-        return _bridgeContracts;
     }
 
     function transferAndCall(address _to, uint256 _value, bytes _data) external validRecipient(_to) returns (bool) {
@@ -75,7 +59,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
 
     function callAfterTransfer(address _from, address _to, uint256 _value) internal {
         if (AddressUtils.isContract(_to) && !contractFallback(_from, _to, _value, new bytes(0))) {
-            require(!_isBridgeContract[_to]);
+            require(_to != bridgeContract);
             emit ContractFallbackCallFailed(_from, _to, _value);
         }
     }

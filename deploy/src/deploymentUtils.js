@@ -245,7 +245,7 @@ async function transferOwnership({ contract, newOwner, nonce, url }) {
 }
 
 async function setBridgeContract({ contract, bridgeAddress, nonce, url }) {
-  const data = await contract.methods.setBridgeContracts([bridgeAddress]).encodeABI()
+  const data = await contract.methods.setBridgeContract(bridgeAddress).encodeABI()
   const sendTx = getSendTxMethod(url)
   const result = await sendTx({
     data,
@@ -257,7 +257,7 @@ async function setBridgeContract({ contract, bridgeAddress, nonce, url }) {
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
   } else {
-    await assertStateWithRetry(contract.methods.bridgeContracts().call, [bridgeAddress])
+    await assertStateWithRetry(contract.methods.bridgeContract().call, bridgeAddress)
   }
 }
 
@@ -301,9 +301,7 @@ async function initializeValidators({
 async function assertStateWithRetry(fn, expected) {
   return promiseRetry(async retry => {
     const value = await fn()
-    if (Array.isArray(expected) && !value.equalsIgnoreCase(expected)) {
-      retry(`Transaction Failed. Expected: ${expected.toString()} Actual: ${value.toString()}`)
-    } else if (value !== expected && value.toString() !== expected) {
+    if (value !== expected && value.toString() !== expected) {
       retry(`Transaction Failed. Expected: ${expected} Actual: ${value}`)
     }
   })
@@ -317,14 +315,6 @@ async function isContract(web3, address) {
   const code = await web3.eth.getCode(address)
   return code !== '0x' && code !== '0x0'
 }
-
-Array.prototype.equalsIgnoreCase = function(array) {
-  return this.length == array.length && this.every((this_v, i) => { return this_v.equalsIgnoreCase(array[i]) });
-}
-
-String.prototype.equalsIgnoreCase = function(compareString) {
-  return this.toLowerCase() === compareString.toLowerCase(); 
-};
 
 module.exports = {
   deployContract,

@@ -2,15 +2,12 @@ pragma solidity 0.4.24;
 
 import "../interfaces/IGasToken.sol";
 import "../upgradeable_contracts/Ownable.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
 * @title GasTokenConnector
 * @dev This logic allows to use GasToken (https://gastoken.io)
 */
 contract GasTokenConnector is Ownable {
-    using SafeMath for uint256;
-
     bytes32 internal constant GAS_TOKEN_TARGET_MINT_VALUE = 0x7188f1264c90762deb4dbddcab803d6487a8f108fbcdec3ff08c642d35826f9f; // keccak256(abi.encodePacked("gasTokenTargetMintValue"))
     bytes32 internal constant GAS_TOKEN_RECEIVER = 0x6778a39b83358b10315b40840597142f1db77a44f312ed9c0e45ee7af3bbc552; // keccak256(abi.encodePacked("gasTokenReceiver"))
     bytes4 internal constant ON_TOKEN_TRANSFER = 0xa4c0ed36; // onTokenTransfer(address,uint256,bytes)

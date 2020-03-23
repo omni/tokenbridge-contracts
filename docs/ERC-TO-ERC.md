@@ -13,7 +13,7 @@ EternalStorageProxy|deployment|378510|378510|378510
 HomeBridgeErcToErc|deployment|3528509|3528509|3528509
 EternalStorageProxy|upgradeTo|35871|30924|30913
 ERC677BridgeToken|deployment|1498202|1499226|1498829
-ERC677BridgeToken|setBridgeContract|29432|44432|39432
+ERC677BridgeToken|setBridgeContracts|47552|86474|77323
 ERC677BridgeToken|transferOwnership|30860|30924|30913
 HomeBridgeErcToErc|initialize|212299|213195|213003
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653

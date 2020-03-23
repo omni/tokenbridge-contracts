@@ -29,7 +29,7 @@ EternalStorageProxy|deployment|378510|378510|378510
 ForeignBridgeNativeToErc|deployment|3931739|3931739|3931739
 EternalStorageProxy|upgradeTo|35871|30924|30913
 ForeignBridgeNativeToErc|initialize|281275|281339|281328
-ERC677BridgeToken|setBridgeContract|29432|44432|39432
+ERC677BridgeToken|setBridgeContracts|47552|86474|77323
 ERC677BridgeToken|transferOwnership|30860|30924|30913
 EternalStorageProxy|transferProxyOwnership|30653|30653|30653
 Total| |8189163|8291266|8250125

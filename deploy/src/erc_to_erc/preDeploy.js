@@ -37,10 +37,10 @@ async function preDeploy() {
   if (ERC20_EXTENDED_BY_ERC677) {
     const tokenContract = new web3Foreign.eth.Contract(abi, ERC20_TOKEN_ADDRESS)
     try {
-      await tokenContract.methods.bridgeContracts().call()
+      await tokenContract.methods.bridgeContract().call()
     } catch (e) {
       throw new Error(
-        `ERC20_EXTENDED_BY_ERC677 is set to TRUE but bridgeContracts method was not found on ERC677 token.`
+        `ERC20_EXTENDED_BY_ERC677 is set to TRUE but bridgeContract method was not found on ERC677 token.`
       )
     }
   }

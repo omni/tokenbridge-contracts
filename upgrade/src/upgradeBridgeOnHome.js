@@ -15,6 +15,18 @@ const {
   NEW_IMPLEMENTATION_XDAI_BRIDGE
 } = process.env
 
+const migrationMethodAbi = [
+  {
+    constant: false,
+    inputs: [],
+    name: 'prepareToPOSDAO',
+    outputs: [],
+    payable: false,
+    stateMutability: 'nonpayable',
+    type: 'function'
+  }
+]
+
 const web3 = new Web3(new Web3.providers.HttpProvider(HOME_RPC_URL))
 const { address } = web3.eth.accounts.wallet.add(HOME_PRIVKEY)
 
@@ -26,7 +38,10 @@ const upgradeBridgeOnHome = async () => {
 
     await validatorState(web3, address, multiSigWallet)
 
-    const data = proxy.methods.upgradeTo('4', NEW_IMPLEMENTATION_XDAI_BRIDGE).encodeABI()
+    const bridge = new web3.eth.Contract(migrationMethodAbi, HOME_BRIDGE_ADDRESS)
+    const upgradeData = bridge.methods.prepareToPOSDAO().encodeABI()
+
+    const data = proxy.methods.upgradeToAndCall('4', NEW_IMPLEMENTATION_XDAI_BRIDGE, upgradeData).encodeABI()
 
     await callMultiSigWallet({
       role: ROLE,

@@ -20,10 +20,24 @@ contract ERC677MultiBridgeToken is ERC677BridgeToken {
     }
 
     /**
+    * @dev Removes unused function from ERC677BridgeToken contract
+    */
+    function setBridgeContract(address) external {
+        revert();
+    }
+
+    /**
+    * @dev Removes unused getter from ERC677BridgeToken contract
+    */
+    function bridgeContract() external view returns (address) {
+        revert();
+    }
+
+    /**
     * @dev Adds one more bridge contract into the list
     * @param _bridge bridge contract address
     */
-    function setBridge(address _bridge) external onlyOwner {
+    function addBridge(address _bridge) external onlyOwner {
         require(bridgeCount < MAX_BRIDGES);
         require(AddressUtils.isContract(_bridge));
         require(!isBridge(_bridge));
@@ -41,7 +55,7 @@ contract ERC677MultiBridgeToken is ERC677BridgeToken {
     * @dev Removes one existing bridge contract from the list
     * @param _bridge bridge contract address
     */
-    function unsetBridge(address _bridge) external onlyOwner {
+    function removeBridge(address _bridge) external onlyOwner {
         require(isBridge(_bridge));
 
         address nextBridge = bridgePointers[_bridge];

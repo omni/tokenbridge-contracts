@@ -92,17 +92,4 @@ contract ERC677MultiBridgeToken is ERC677BridgeToken {
     function isBridge(address _address) public view returns (bool) {
         return _address != F_ADDR && bridgePointers[_address] != address(0);
     }
-
-    /**
-    * @dev Overrides super.callAfterTransfer, uses custom checking if an address is a known bridge contract
-    * @param _from tokens sender address
-    * @param _to tokens receiver address
-    * @param _value amount of transferred tokens
-    */
-    function callAfterTransfer(address _from, address _to, uint256 _value) internal {
-        if (AddressUtils.isContract(_to) && !contractFallback(_from, _to, _value, new bytes(0))) {
-            require(!isBridge(_to));
-            emit ContractFallbackCallFailed(_from, _to, _value);
-        }
-    }
 }

@@ -59,9 +59,13 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
 
     function callAfterTransfer(address _from, address _to, uint256 _value) internal {
         if (AddressUtils.isContract(_to) && !contractFallback(_from, _to, _value, new bytes(0))) {
-            require(_to != bridgeContract);
+            require(!isBridge(_to));
             emit ContractFallbackCallFailed(_from, _to, _value);
         }
+    }
+
+    function isBridge(address _address) public view returns (bool) {
+        return _address == bridgeContract;
     }
 
     function contractFallback(address _from, address _to, uint256 _value, bytes _data) internal returns (bool) {

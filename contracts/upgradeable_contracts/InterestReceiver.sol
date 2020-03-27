@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../interfaces/IChai.sol";
 import "../interfaces/ERC677Receiver.sol";
 import "./Claimable.sol";
@@ -9,15 +10,45 @@ import "./TokenSwapper.sol";
 
 /**
 * @title InterestReceiver
-* @dev Example contract for receiving Chai interest and immediatly converting it into Dai
+* @dev Сontract for receiving Chai interest and immediatly converting it into Dai.
+* Contract also will try to automaticaly relay tokens to configured xDai receiver
 */
 contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
+    bytes4 internal constant RELAY_TOKENS = 0x01e4f53a; // relayTokens(address,uint256)
+
+    address public bridgeContract;
+    address public receiverInXDai;
+
+    event RelayTokensFailed(address receiver, uint256 amount);
+
     /**
     * @dev Initializes interest receiver, sets an owner of a contract
-    * @param _owner address of owner account, only owner can withdraw Dai tokens from contract
+    * @param _bridgeContract address of the bridge contract in the foreign chain
+    * @param _receiverInXDai address of the receiver account, in the xDai chain
     */
-    constructor(address _owner) public {
+    constructor(address _owner, address _bridgeContract, address _receiverInXDai) public {
+        require(AddressUtils.isContract(_bridgeContract));
         _transferOwnership(_owner);
+        bridgeContract = _bridgeContract;
+        receiverInXDai = _receiverInXDai;
+    }
+
+    /**
+    * @dev Updates bridge contract from which interest is expected to come from,
+    * the incoming tokens will be relayed through this bridge also
+    * @param _bridgeContract address of new contract in the foreign chain
+    */
+    function setBridgeContract(address _bridgeContract) external onlyOwner {
+        require(AddressUtils.isContract(_bridgeContract));
+        bridgeContract = _bridgeContract;
+    }
+
+    /**
+    * @dev Updates receiver address in the xDai chain
+    * @param _receiverInXDai address of new receiver account in the xDai chain
+    */
+    function setReceiverInXDai(address _receiverInXDai) external onlyOwner {
+        receiverInXDai = _receiverInXDai;
     }
 
     /**
@@ -35,33 +66,32 @@ contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
     }
 
     /**
-    * @dev ERC677 transfer callback function, received interest from Chai token is converted into Dai and sent to owner
-    * @param _value amount of transferred tokens
+    * @dev ERC677 transfer callback function, received interest is converted from Chai token into Dai
+    * and then relayed via bridge to xDai receiver
     */
-    function onTokenTransfer(address, uint256 _value, bytes) external returns (bool) {
+    function onTokenTransfer(address, uint256, bytes) external returns (bool) {
         uint256 chaiBalance = chaiToken().balanceOf(address(this));
-
-        require(_value <= chaiBalance);
-
         uint256 initialDaiBalance = daiToken().balanceOf(address(this));
+        uint256 finalDaiBalance = initialDaiBalance;
 
-        chaiToken().exit(address(this), chaiBalance);
+        if (chaiBalance > 0) {
+            chaiToken().exit(address(this), chaiBalance);
 
-        // Dai balance cannot decrease here, so SafeMath is not needed
-        uint256 redeemed = daiToken().balanceOf(address(this)) - initialDaiBalance;
+            finalDaiBalance = daiToken().balanceOf(address(this));
+            // Dai balance cannot decrease here, so SafeMath is not needed
+            uint256 redeemed = finalDaiBalance - initialDaiBalance;
 
-        emit TokensSwapped(chaiToken(), daiToken(), redeemed);
+            emit TokensSwapped(chaiToken(), daiToken(), redeemed);
 
-        // chi is always >= 10**27, so chai/dai rate is always >= 1
-        require(redeemed >= _value);
-    }
+            // chi is always >= 10**27, so chai/dai rate is always >= 1
+            require(redeemed >= chaiBalance);
+        }
 
-    /**
-    * @dev Withdraws DAI tokens from the receiver contract
-    * @param _to address of tokens receiver
-    */
-    function withdraw(address _to) external onlyOwner {
-        daiToken().transfer(_to, daiToken().balanceOf(address(this)));
+        daiToken().approve(address(bridgeContract), finalDaiBalance);
+        if (!bridgeContract.call(abi.encodeWithSelector(RELAY_TOKENS, receiverInXDai, finalDaiBalance))) {
+            daiToken().approve(address(bridgeContract), 0);
+            emit RelayTokensFailed(receiverInXDai, finalDaiBalance);
+        }
     }
 
     /**

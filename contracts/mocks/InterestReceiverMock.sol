@@ -6,8 +6,12 @@ contract InterestReceiverMock is InterestReceiver {
     address private chaiTokenMock;
     address private daiTokenMock;
 
-    // solhint-disable-next-line no-empty-blocks
-    constructor(address _owner) public InterestReceiver(_owner) {}
+    // solhint-disable no-empty-blocks
+    constructor(address _owner, address _bridge, address _xDaiReceiver)
+        public
+        InterestReceiver(_owner, _bridge, _xDaiReceiver)
+    {}
+    // solhint-enable no-empty-blocks
 
     function setChaiToken(IChai _chaiToken) external {
         chaiTokenMock = _chaiToken;

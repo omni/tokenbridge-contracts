@@ -23,6 +23,7 @@ contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
 
     /**
     * @dev Initializes interest receiver, sets an owner of a contract
+    * @param _owner address of owner account, only owner can withdraw Dai tokens from contract
     * @param _bridgeContract address of the bridge contract in the foreign chain
     * @param _receiverInXDai address of the receiver account, in the xDai chain
     */

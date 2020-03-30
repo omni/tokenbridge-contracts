@@ -19,9 +19,9 @@ contract ForeignFeeManagerAMBNativeToErc20 is BaseMediatorFeeManager {
     * @param _rewardAccountList list of addresses that will receive the fee rewards.
     * @param _token address of the token in which the fees will be received.
     */
-    constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _token)
+    constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _mediatorContract, address _token)
         public
-        BaseMediatorFeeManager(_owner, _fee, _rewardAccountList)
+        BaseMediatorFeeManager(_owner, _fee, _rewardAccountList, _mediatorContract)
     {
         _setToken(_token);
     }

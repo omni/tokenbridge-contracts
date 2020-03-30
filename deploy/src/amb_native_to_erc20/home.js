@@ -56,13 +56,14 @@ async function deployHome() {
     console.log(`
     OWNER: ${HOME_BRIDGE_OWNER},
     Fee: ${feeInWei} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%
+    Mediator: ${homeBridgeStorage.options.address}
   `)
     rewardList.forEach((account, index) => {
       console.log(`${index + 1}: ${account}`)
     })
     const feeManagerImpl = await deployContract(
       HomeFeeManagerAMBNativeToErc20,
-      [HOME_BRIDGE_OWNER, feeInWei, rewardList],
+      [HOME_BRIDGE_OWNER, feeInWei, rewardList, homeBridgeStorage.options.address],
       {
         from: DEPLOYMENT_ACCOUNT_ADDRESS,
         nonce

@@ -50,7 +50,13 @@ contract('ForeignAMBNativeToErc20', async accounts => {
   describe('initialize', () => {
     let feeManager
     beforeEach(async () => {
-      feeManager = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+      feeManager = await ForeignFeeManagerAMBNativeToErc20.new(
+        owner,
+        fee,
+        rewardAccountList,
+        contract.address,
+        token.address
+      )
     })
     it('should initialize parameters', async () => {
       // Given
@@ -477,7 +483,13 @@ contract('ForeignAMBNativeToErc20', async accounts => {
   describe('feeManager', () => {
     let feeManager
     beforeEach(async () => {
-      feeManager = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+      feeManager = await ForeignFeeManagerAMBNativeToErc20.new(
+        owner,
+        fee,
+        rewardAccountList,
+        contract.address,
+        token.address
+      )
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,
@@ -494,7 +506,13 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       // Given
       expect(await contract.feeManagerContract()).to.be.equal(feeManager.address)
 
-      const newFeeManager = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+      const newFeeManager = await ForeignFeeManagerAMBNativeToErc20.new(
+        owner,
+        fee,
+        rewardAccountList,
+        contract.address,
+        token.address
+      )
       // When
       // Only owner can set feeManager
       await contract.setFeeManagerContract(newFeeManager.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
@@ -512,6 +530,10 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(await contract.feeManagerContract()).to.be.equal(ZERO_ADDRESS)
     })
     describe('ForeignFeeManagerAMBNativeToErc20', () => {
+      let mediator
+      before(async () => {
+        mediator = await ForeignAMBNativeToErc20.new()
+      })
       describe('constructor', () => {
         it('should validate parameters', async () => {
           // invalid owner
@@ -519,6 +541,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
             ZERO_ADDRESS,
             fee,
             rewardAccountList,
+            mediator.address,
             token.address
           ).should.be.rejectedWith(ERROR_MSG)
           // invalid fee value
@@ -526,6 +549,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
             owner,
             twoEthers,
             rewardAccountList,
+            mediator.address,
             token.address
           ).should.be.rejectedWith(ERROR_MSG)
           const bigRewardAccountList = createAccounts(web3, 50 + 1)
@@ -534,22 +558,52 @@ contract('ForeignAMBNativeToErc20', async accounts => {
             owner,
             twoEthers,
             bigRewardAccountList,
+            mediator.address,
             token.address
           ).should.be.rejectedWith(ERROR_MSG)
           // invalid account list
-          await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, [], token.address).should.be.rejectedWith(ERROR_MSG)
+          await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            [],
+            mediator.address,
+            token.address
+          ).should.be.rejectedWith(ERROR_MSG)
+          // invalid account list
+          await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            [...rewardAccountList, ZERO_ADDRESS],
+            mediator.address,
+            token.address
+          ).should.be.rejectedWith(ERROR_MSG)
+          // invalid account list
+          await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            [...rewardAccountList, mediator.address],
+            mediator.address,
+            token.address
+          ).should.be.rejectedWith(ERROR_MSG)
           await ForeignFeeManagerAMBNativeToErc20.new(
             owner,
             fee,
             rewardAccountList,
+            mediator.address,
             ZERO_ADDRESS
           ).should.be.rejectedWith(ERROR_MSG)
-          await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+          await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, mediator.address, token.address)
         })
       })
       describe('rewardAccounts', () => {
         beforeEach(async () => {
-          contract = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+          contract = await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            rewardAccountList,
+            mediator.address,
+            token.address
+          )
         })
         it('should allow to add accounts', async () => {
           // Given
@@ -564,6 +618,12 @@ contract('ForeignAMBNativeToErc20', async accounts => {
           // When
           // only owner can add new accounts
           await contract.addRewardAccount(newAccount, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+          // can't add mediator address as reward account
+          await contract.addRewardAccount(mediator.address, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+          // can't add zero address
+          await contract.addRewardAccount(ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
           await contract.addRewardAccount(newAccount, { from: owner }).should.be.fulfilled
 
@@ -608,7 +668,13 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       })
       describe('fee', () => {
         beforeEach(async () => {
-          contract = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+          contract = await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            rewardAccountList,
+            mediator.address,
+            token.address
+          )
         })
         it('should allow to get and set the fee', async () => {
           // Given
@@ -632,7 +698,13 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       })
       describe('owner', () => {
         beforeEach(async () => {
-          contract = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+          contract = await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            rewardAccountList,
+            mediator.address,
+            token.address
+          )
         })
         it('should transfer ownership', async () => {
           // Given
@@ -1237,7 +1309,13 @@ contract('ForeignAMBNativeToErc20', async accounts => {
   })
   describe('handleBridgedTokens with fees', () => {
     beforeEach(async () => {
-      const feeManager = await ForeignFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, token.address)
+      const feeManager = await ForeignFeeManagerAMBNativeToErc20.new(
+        owner,
+        fee,
+        rewardAccountList,
+        contract.address,
+        token.address
+      )
       await token.transferOwnership(contract.address)
 
       await contract.initialize(

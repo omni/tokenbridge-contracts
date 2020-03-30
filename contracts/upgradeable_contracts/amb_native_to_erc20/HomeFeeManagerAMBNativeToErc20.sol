@@ -15,9 +15,9 @@ contract HomeFeeManagerAMBNativeToErc20 is BaseMediatorFeeManager {
     * @param _fee the fee percentage amount.
     * @param _rewardAccountList list of addresses that will receive the fee rewards.
     */
-    constructor(address _owner, uint256 _fee, address[] _rewardAccountList)
+    constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _mediatorContract)
         public
-        BaseMediatorFeeManager(_owner, _fee, _rewardAccountList)
+        BaseMediatorFeeManager(_owner, _fee, _rewardAccountList, _mediatorContract)
     {
         // solhint-disable-previous-line no-empty-blocks
     }

@@ -142,13 +142,14 @@ async function deployForeign() {
     console.log(`
     OWNER: ${FOREIGN_BRIDGE_OWNER},
     Fee: ${feeInWei} which is ${HOME_TRANSACTIONS_FEE * 100}%
+    Mediator: ${foreignBridgeStorage.options.address}
   `)
     rewardList.forEach((account, index) => {
       console.log(`${index + 1}: ${account}`)
     })
     const feeManagerImpl = await deployContract(
       ForeignFeeManagerAMBNativeToErc20,
-      [FOREIGN_BRIDGE_OWNER, feeInWei, rewardList, erc677token.options.address],
+      [FOREIGN_BRIDGE_OWNER, feeInWei, rewardList, foreignBridgeStorage.options.address, erc677token.options.address],
       {
         from: DEPLOYMENT_ACCOUNT_ADDRESS,
         network: 'foreign',

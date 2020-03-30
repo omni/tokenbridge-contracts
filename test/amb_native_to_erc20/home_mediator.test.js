@@ -46,7 +46,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
   describe('initialize', () => {
     let feeManager
     beforeEach(async () => {
-      feeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+      feeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, contract.address)
     })
     it('should initialize parameters', async () => {
       // Given
@@ -954,7 +954,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
   describe('feeManager', () => {
     let feeManager
     beforeEach(async () => {
-      feeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+      feeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, contract.address)
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,
@@ -970,7 +970,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
       // Given
       expect(await contract.feeManagerContract()).to.be.equal(feeManager.address)
 
-      const newFeeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+      const newFeeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, contract.address)
       // When
       // Only owner can set feeManager
       await contract.setFeeManagerContract(newFeeManager.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
@@ -988,29 +988,56 @@ contract('HomeAMBNativeToErc20', async accounts => {
       expect(await contract.feeManagerContract()).to.be.equal(ZERO_ADDRESS)
     })
     describe('HomeFeeManagerAMBNativeToErc20', () => {
+      let mediator
+      before(async () => {
+        mediator = await HomeAMBNativeToErc20.new()
+      })
       describe('constructor', () => {
         it('should validate parameters', async () => {
           // invalid owner
-          await HomeFeeManagerAMBNativeToErc20.new(ZERO_ADDRESS, fee, rewardAccountList).should.be.rejectedWith(
-            ERROR_MSG
-          )
+          await HomeFeeManagerAMBNativeToErc20.new(
+            ZERO_ADDRESS,
+            fee,
+            rewardAccountList,
+            mediator.address
+          ).should.be.rejectedWith(ERROR_MSG)
           // invalid fee value
-          await HomeFeeManagerAMBNativeToErc20.new(owner, twoEthers, rewardAccountList).should.be.rejectedWith(
-            ERROR_MSG
-          )
+          await HomeFeeManagerAMBNativeToErc20.new(
+            owner,
+            twoEthers,
+            rewardAccountList,
+            mediator.address
+          ).should.be.rejectedWith(ERROR_MSG)
           const bigRewardAccountList = createAccounts(web3, 50 + 1)
           // invalid account list
-          await HomeFeeManagerAMBNativeToErc20.new(owner, twoEthers, bigRewardAccountList).should.be.rejectedWith(
-            ERROR_MSG
-          )
+          await HomeFeeManagerAMBNativeToErc20.new(
+            owner,
+            twoEthers,
+            bigRewardAccountList,
+            mediator.address
+          ).should.be.rejectedWith(ERROR_MSG)
           // invalid account list
-          await HomeFeeManagerAMBNativeToErc20.new(owner, fee, []).should.be.rejectedWith(ERROR_MSG)
-          await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+          await HomeFeeManagerAMBNativeToErc20.new(owner, fee, [], mediator.address).should.be.rejectedWith(ERROR_MSG)
+          // invalid account list
+          await HomeFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            [...rewardAccountList, ZERO_ADDRESS],
+            mediator.address
+          ).should.be.rejectedWith(ERROR_MSG)
+          // invalid account list
+          await HomeFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            [...rewardAccountList, mediator.address],
+            mediator.address
+          ).should.be.rejectedWith(ERROR_MSG)
+          await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, mediator.address)
         })
       })
       describe('rewardAccounts', () => {
         beforeEach(async () => {
-          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, mediator.address)
         })
         it('should allow to add accounts', async () => {
           // Given
@@ -1025,6 +1052,12 @@ contract('HomeAMBNativeToErc20', async accounts => {
           // When
           // only owner can add new accounts
           await contract.addRewardAccount(newAccount, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+          // can't add mediator address as reward account
+          await contract.addRewardAccount(mediator.address, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+          // can't add zero address
+          await contract.addRewardAccount(ZERO_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
 
           await contract.addRewardAccount(newAccount, { from: owner }).should.be.fulfilled
 
@@ -1069,7 +1102,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
       })
       describe('fee', () => {
         beforeEach(async () => {
-          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, mediator.address)
         })
         it('should allow to get and set the fee', async () => {
           // Given
@@ -1093,7 +1126,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
       })
       describe('owner', () => {
         beforeEach(async () => {
-          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, mediator.address)
         })
         it('should transfer ownership', async () => {
           // Given
@@ -1113,7 +1146,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
       })
       describe('fallback', () => {
         beforeEach(async () => {
-          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+          contract = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, mediator.address)
         })
         it('should accept native tokens', async () => {
           // Given
@@ -1134,7 +1167,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
   })
   describe('owner', () => {
     beforeEach(async () => {
-      const feeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+      const feeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, contract.address)
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,
@@ -1164,7 +1197,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
   })
   describe('handleBridgedTokens with fees', () => {
     beforeEach(async () => {
-      const feeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList)
+      const feeManager = await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, contract.address)
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,

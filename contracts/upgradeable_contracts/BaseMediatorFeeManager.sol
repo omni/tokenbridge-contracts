@@ -19,6 +19,7 @@ contract BaseMediatorFeeManager is Ownable {
 
     uint256 public fee;
     address[] internal rewardAccounts;
+    address internal mediatorContract;
 
     modifier validFee(uint256 _fee) {
         require(_fee < MAX_FEE);
@@ -32,10 +33,15 @@ contract BaseMediatorFeeManager is Ownable {
     * @param _fee the fee percentage amount.
     * @param _rewardAccountList list of addresses that will receive the fee rewards.
     */
-    constructor(address _owner, uint256 _fee, address[] _rewardAccountList) public {
+    constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _mediatorContract) public {
         require(_rewardAccountList.length > 0 && _rewardAccountList.length <= MAX_REWARD_ACCOUNTS);
         _transferOwnership(_owner);
         _setFee(_fee);
+        mediatorContract = _mediatorContract;
+
+        for (uint256 i = 0; i < _rewardAccountList.length; i++) {
+            require(isValidAccount(_rewardAccountList[i]));
+        }
         rewardAccounts = _rewardAccountList;
     }
 
@@ -64,13 +70,17 @@ contract BaseMediatorFeeManager is Ownable {
         _setFee(_fee);
     }
 
+    function isValidAccount(address _account) internal returns (bool) {
+        return _account != address(0) && _account != mediatorContract;
+    }
+
     /**
     * @dev Adds a new account to the list of accounts to receive rewards for the operations.
     * Only the owner can call this method.
     * @param _account new reward account
     */
     function addRewardAccount(address _account) external onlyOwner {
-        require(_account != address(0));
+        require(isValidAccount(_account));
         require(!isRewardAccount(_account));
         require(rewardAccounts.length.add(1) < MAX_REWARD_ACCOUNTS);
         rewardAccounts.push(_account);

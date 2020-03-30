@@ -49,7 +49,7 @@ contract('ForeignStakeTokenMediator', async accounts => {
       owner
     ).should.be.fulfilled
   })
-  
+
   describe('bridge stake to mainnet', async () => {
     it('should use tokens from bridge balance', async () => {
       await token.mint(foreignMediator.address, twoEthers)
@@ -57,8 +57,16 @@ contract('ForeignStakeTokenMediator', async accounts => {
 
       expect(await token.totalSupply()).to.be.bignumber.equal(twoEthers)
 
-      const data = foreignMediator.contract.methods.handleBridgedTokens(user, halfEther.toString(10), exampleTxHash).encodeABI()
-      await foreignBridge.executeMessageCall(foreignMediator.address, homeMediator.address, data, exampleTxHash, 1000000).should.be.fulfilled
+      const data = foreignMediator.contract.methods
+        .handleBridgedTokens(user, halfEther.toString(10), exampleTxHash)
+        .encodeABI()
+      await foreignBridge.executeMessageCall(
+        foreignMediator.address,
+        homeMediator.address,
+        data,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
 
       expect(await token.totalSupply()).to.be.bignumber.equal(twoEthers)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
@@ -71,8 +79,16 @@ contract('ForeignStakeTokenMediator', async accounts => {
 
       expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
 
-      const data = foreignMediator.contract.methods.handleBridgedTokens(user, halfEther.toString(10), exampleTxHash).encodeABI()
-      await foreignBridge.executeMessageCall(foreignMediator.address, homeMediator.address, data, exampleTxHash, 1000000).should.be.fulfilled
+      const data = foreignMediator.contract.methods
+        .handleBridgedTokens(user, halfEther.toString(10), exampleTxHash)
+        .encodeABI()
+      await foreignBridge.executeMessageCall(
+        foreignMediator.address,
+        homeMediator.address,
+        data,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
 
       expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
@@ -85,8 +101,16 @@ contract('ForeignStakeTokenMediator', async accounts => {
 
       expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
 
-      const data = foreignMediator.contract.methods.handleBridgedTokens(user, ether('0.6').toString(10), exampleTxHash).encodeABI()
-      await foreignBridge.executeMessageCall(foreignMediator.address, homeMediator.address, data, exampleTxHash, 1000000).should.be.fulfilled
+      const data = foreignMediator.contract.methods
+        .handleBridgedTokens(user, ether('0.6').toString(10), exampleTxHash)
+        .encodeABI()
+      await foreignBridge.executeMessageCall(
+        foreignMediator.address,
+        homeMediator.address,
+        data,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
 
       expect(await token.totalSupply()).to.be.bignumber.equal(ether('0.6'))
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ether('0.6'))
@@ -98,8 +122,16 @@ contract('ForeignStakeTokenMediator', async accounts => {
 
       expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
 
-      const data = foreignMediator.contract.methods.handleBridgedTokens(user, halfEther.toString(10), exampleTxHash).encodeABI()
-      await foreignBridge.executeMessageCall(foreignMediator.address, homeMediator.address, data, exampleTxHash, 1000000).should.be.fulfilled
+      const data = foreignMediator.contract.methods
+        .handleBridgedTokens(user, halfEther.toString(10), exampleTxHash)
+        .encodeABI()
+      await foreignBridge.executeMessageCall(
+        foreignMediator.address,
+        homeMediator.address,
+        data,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
 
       expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
@@ -122,9 +154,14 @@ contract('ForeignStakeTokenMediator', async accounts => {
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
 
       const data = foreignMediator.contract.methods.fixFailedMessage(dataHash).encodeABI()
-      await foreignBridge.executeMessageCall(foreignMediator.address, homeMediator.address, data, exampleTxHash, 1000000).should.be.fulfilled
-      
-      
+      await foreignBridge.executeMessageCall(
+        foreignMediator.address,
+        homeMediator.address,
+        data,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
       expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(ZERO)
@@ -140,23 +177,35 @@ contract('ForeignStakeTokenMediator', async accounts => {
 
       const events = await getEvents(foreignBridge, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
-      const dataHash = web3.utils.soliditySha3(`0x${events[0].returnValues.encodedData.substr(
-        148,
-        events[0].returnValues.encodedData.length - 148
-      )}`)
+      const dataHash = web3.utils.soliditySha3(
+        `0x${events[0].returnValues.encodedData.substr(148, events[0].returnValues.encodedData.length - 148)}`
+      )
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
 
-      const data1 = foreignMediator.contract.methods.handleBridgedTokens(user, halfEther.toString(10), exampleTxHash).encodeABI()
-      await foreignBridge.executeMessageCall(foreignMediator.address, homeMediator.address, data1, exampleTxHash, 1000000).should.be.fulfilled
+      const data1 = foreignMediator.contract.methods
+        .handleBridgedTokens(user, halfEther.toString(10), exampleTxHash)
+        .encodeABI()
+      await foreignBridge.executeMessageCall(
+        foreignMediator.address,
+        homeMediator.address,
+        data1,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
 
       expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(ZERO)
 
       const data2 = foreignMediator.contract.methods.fixFailedMessage(dataHash).encodeABI()
-      await foreignBridge.executeMessageCall(foreignMediator.address, homeMediator.address, data2, exampleTxHash, 1000000).should.be.fulfilled
-      
-      
+      await foreignBridge.executeMessageCall(
+        foreignMediator.address,
+        homeMediator.address,
+        data2,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
       expect(await token.totalSupply()).to.be.bignumber.equal(ether('1.5'))
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ether('1.5'))
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(ZERO)

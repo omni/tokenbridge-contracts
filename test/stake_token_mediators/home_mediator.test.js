@@ -19,7 +19,6 @@ const maxPerTx = oneEther
 const minPerTx = ether('0.01')
 const executionDailyLimit = dailyLimit
 const executionMaxPerTx = maxPerTx
-const exampleTxHash = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const decimalShiftZero = 0
 
 contract('HomeStakeTokenMediator', async accounts => {
@@ -73,7 +72,7 @@ contract('HomeStakeTokenMediator', async accounts => {
       await homeMediator.setBlockRewardContract(blockReward.address, { from: user }).should.be.rejected
     })
   })
-  
+
   describe('setFee', async () => {
     it('should set fee', async () => {
       const { logs } = await homeMediator.setFee(ether('0.05'), { from: owner }).should.be.fulfilled

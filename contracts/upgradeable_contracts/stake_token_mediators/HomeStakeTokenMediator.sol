@@ -70,7 +70,7 @@ contract HomeStakeTokenMediator is HomeAMBErc677ToErc677, BlockRewardBridge {
                 passMessage(chooseReceiver(_from, _data), _value.sub(fee));
                 if (fee > 0) {
                     // the fee itself is distributed later in the block reward contract
-                    _blockRewardContract().addBridgeTokenRewardReceivers(fee);//.call(abi.encodeWithSelector(ADD_BRIDGE_TOKEN_REWARD_RECEIVERS, fee));
+                    _blockRewardContract().call(abi.encodeWithSelector(ADD_BRIDGE_TOKEN_REWARD_RECEIVERS, fee));
                 }
             }
         }

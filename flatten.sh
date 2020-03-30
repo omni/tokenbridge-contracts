@@ -51,6 +51,7 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/InterestReceiver.sol > flats/InterestReceiv
 echo "Flattening contracts related to arbitrary-message bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/arbitrary_message/HomeAMB.sol > flats/arbitrary_message/HomeAMB_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/arbitrary_message/ForeignAMB.sol > flats/arbitrary_message/ForeignAMB_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/arbitrary_message/ForeignAMBWithGasToken.sol > flats/arbitrary_message/ForeignAMBWithGasToken_flat.sol
 
 echo "Flattening contracts related to erc677 to erc677 on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/HomeAMBErc677ToErc677.sol > flats/amb_erc677_to_erc677/HomeAMBErc677ToErc677_flat.sol

@@ -185,7 +185,8 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
 
         receiver.call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, address(this), interest, ""));
 
-        require(dsrBalance() >= investedAmountInDai());
+        // see comment in convertDaiToChai() for similar statement
+        require(dsrBalance() + 10000 >= investedAmountInDai());
 
         emit PaidInterest(receiver, interest);
     }
@@ -302,7 +303,8 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
         uint256 newInvested = invested > redeemed ? invested - redeemed : 0;
         setInvestedAmountInDai(newInvested);
 
-        require(dsrBalance() >= newInvested);
+        // see comment in convertDaiToChai() for similar statement
+        require(dsrBalance() + 10000 >= newInvested);
 
         emit TokensSwapped(chaiToken(), erc20token(), redeemed);
     }

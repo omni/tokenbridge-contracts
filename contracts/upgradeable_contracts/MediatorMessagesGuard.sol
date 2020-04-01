@@ -25,7 +25,7 @@ contract MediatorMessagesGuard is EternalStorage {
 
     /**
     * @dev Sets the status of the lock.
-    * @param the new status for the lock
+    * @param _lock the new status for the lock
     */
     function setBridgeMessageLock(bool _lock) private {
         boolStorage[BRIDGE_MESSAGE_LOCK] = _lock;
@@ -41,7 +41,7 @@ contract MediatorMessagesGuard is EternalStorage {
 
     /**
     * @dev Sets the number of messages that were send to the AMB bridge so far in the transaction.
-    * @return the number of messages
+    * @param _count the number of messages
     */
     function setBridgeMessageCount(uint256 _count) private {
         uintStorage[BRIDGE_MESSAGE_COUNT] = _count;

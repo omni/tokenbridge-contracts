@@ -7,6 +7,7 @@ const ForeignFeeManagerAMBNativeToErc20 = artifacts.require('ForeignFeeManagerAM
 const AMBMock = artifacts.require('AMBMock.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
 const ERC20Mock = artifacts.require('ERC20Mock.sol')
+const FeeReceiverMock = artifacts.require('FeeReceiverMock.sol')
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x, createAccounts } = require('../helpers/helpers')
@@ -39,13 +40,14 @@ contract('ForeignAMBNativeToErc20', async accounts => {
   const rewardAccount = accounts[3]
   const rewardAccount2 = accounts[4]
   const rewardAccount3 = accounts[5]
-  const rewardAccountList = [rewardAccount, rewardAccount2, rewardAccount3]
+  let rewardAccountList = [rewardAccount, rewardAccount2, rewardAccount3]
   beforeEach(async () => {
     contract = await ForeignAMBNativeToErc20.new()
     ambBridgeContract = await AMBMock.new()
     await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
     otherSideMediatorContract = await HomeAMBNativeToErc20.new()
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
+    await token.setBridgeContract(contract.address)
   })
   describe('initialize', () => {
     let feeManager
@@ -1308,10 +1310,11 @@ contract('ForeignAMBNativeToErc20', async accounts => {
     })
   })
   describe('handleBridgedTokens with fees', () => {
-    beforeEach(async () => {
+    it('should mint tokens and distribute fees on message from amb', async () => {
+      // initialize
       const feeManager = await ForeignFeeManagerAMBNativeToErc20.new(
         owner,
-        fee,
+        ether('0.001'),
         rewardAccountList,
         contract.address,
         token.address
@@ -1329,8 +1332,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         token.address,
         feeManager.address
       ).should.be.fulfilled
-    })
-    it('should mint tokens and distribute fees on message from amb', async () => {
+
       // Given
       const currentDay = await contract.getCurrentDay()
       expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
@@ -1400,6 +1402,241 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidator)) ||
           updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidatorPlusDiff))
       ).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator)) ||
+          updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))
+      ).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidator)) ||
+          updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidatorPlusDiff))
+      ).to.equal(true)
+
+      const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
+      expect(feeEvents.length).to.be.equal(1)
+      expect(toBN(feeEvents[0].returnValues.feeAmount)).to.be.bignumber.equal(feeAmount)
+      expect(feeEvents[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
+    })
+    it('should allow a fee receiver to bridge back the tokens', async () => {
+      // initialize
+      const feeReceiver = await FeeReceiverMock.new(contract.address, token.address)
+      rewardAccountList = [rewardAccount, rewardAccount2, feeReceiver.address]
+
+      const feeManager = await ForeignFeeManagerAMBNativeToErc20.new(
+        owner,
+        ether('0.001'),
+        rewardAccountList,
+        contract.address,
+        token.address
+      )
+
+      await token.transferOwnership(contract.address)
+
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [dailyLimit, maxPerTx, 1],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        token.address,
+        feeManager.address
+      ).should.be.fulfilled
+
+      // Given
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const initialEvents = await getEvents(token, { event: 'Mint' })
+      expect(initialEvents.length).to.be.equal(0)
+      expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
+
+      const value = halfEther
+      const relativeValue = 0.5
+
+      // 0.1% fee
+      const fee = 0.001
+      const feePerValidator = toBN(166666666666666)
+      const feePerValidatorPlusDiff = toBN(166666666666668)
+      const valueCalc = relativeValue * (1 - fee)
+      const finalUserValue = ether(valueCalc.toString())
+      const feeAmountCalc = relativeValue * fee
+      const feeAmount = ether(feeAmountCalc.toString())
+
+      // can't be called by user
+      await contract.handleBridgedTokens(user, value, nonce, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      // can't be called by owner
+      await contract.handleBridgedTokens(user, value, nonce, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      const data = await contract.contract.methods.handleBridgedTokens(user, value.toString(), nonce).encodeABI()
+
+      // message must be generated by mediator contract on the other network
+      const failedTxHash = '0x2ebc2ccc755acc8eaf9252e19573af708d644ab63a39619adb080a3500a4ff2e'
+
+      await ambBridgeContract.executeMessageCall(contract.address, owner, data, failedTxHash, 1000000).should.be
+        .fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(failedTxHash)).to.be.equal(false)
+
+      const initialBalanceRewardAddress1 = await token.balanceOf(rewardAccountList[0])
+      const initialBalanceRewardAddress2 = await token.balanceOf(rewardAccountList[1])
+
+      await ambBridgeContract.executeMessageCall(
+        contract.address,
+        otherSideMediatorContract.address,
+        data,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+
+      // Then
+      expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(value)
+      const events = await getEvents(token, { event: 'Mint' })
+      // 1 Mint to user, 1 Mint to fee manager
+      expect(events.length).to.be.equal(2)
+      // Use ERC20 contract so there is no conflict on getting the regular event Transfer and the generated by transferAndCall
+      const erc20Token = await ERC20Mock.at(token.address)
+      const transferEvents = await getEvents(erc20Token, { event: 'Transfer' })
+      // 5 transfer events: 1 Mint to user, 1 Mint to fee manager, fee manager 1 transfer to each reward account,
+      // 1 feeReceiver contract transfer to mediator, 1 transfer to 0 to burn the tokens
+      expect(transferEvents.length).to.be.equal(7)
+
+      const burnEvents = await getEvents(token, { event: 'Burn' })
+      expect(burnEvents.length).to.be.equal(1)
+
+      const totalSupply = await token.totalSupply()
+
+      expect(totalSupply.eq(value.sub(feePerValidator)) || totalSupply.eq(value.sub(feePerValidatorPlusDiff))).to.equal(
+        true
+      )
+
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(finalUserValue)
+
+      const updatedBalanceRewardAddress1 = await token.balanceOf(rewardAccountList[0])
+      const updatedBalanceRewardAddress2 = await token.balanceOf(rewardAccountList[1])
+      const updatedBalanceRewardAddress3 = await token.balanceOf(rewardAccountList[2])
+
+      expect(
+        updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidator)) ||
+          updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidatorPlusDiff))
+      ).to.equal(true)
+      expect(
+        updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator)) ||
+          updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))
+      ).to.equal(true)
+      expect(updatedBalanceRewardAddress3).to.be.bignumber.equal(ZERO)
+
+      const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
+      expect(feeEvents.length).to.be.equal(1)
+      expect(toBN(feeEvents[0].returnValues.feeAmount)).to.be.bignumber.equal(feeAmount)
+      expect(feeEvents[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
+    })
+
+    it('should prevent multiple fee receiver to bridge back the tokens', async () => {
+      // initialize
+      const feeReceiver = await FeeReceiverMock.new(contract.address, token.address)
+      const feeReceiver2 = await FeeReceiverMock.new(contract.address, token.address)
+      const feeReceiver3 = await FeeReceiverMock.new(contract.address, token.address)
+      rewardAccountList = [feeReceiver.address, feeReceiver2.address, feeReceiver3.address]
+
+      const feeManager = await ForeignFeeManagerAMBNativeToErc20.new(
+        owner,
+        ether('0.001'),
+        rewardAccountList,
+        contract.address,
+        token.address
+      )
+
+      await token.transferOwnership(contract.address)
+
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [dailyLimit, maxPerTx, 1],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        token.address,
+        feeManager.address
+      ).should.be.fulfilled
+
+      // Given
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const initialEvents = await getEvents(token, { event: 'Mint' })
+      expect(initialEvents.length).to.be.equal(0)
+      expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
+
+      const value = halfEther
+      const relativeValue = 0.5
+
+      // 0.1% fee
+      const fee = 0.001
+      const feePerValidator = toBN(166666666666666)
+      const feePerValidatorPlusDiff = toBN(166666666666668)
+      const valueCalc = relativeValue * (1 - fee)
+      const finalUserValue = ether(valueCalc.toString())
+      const feeAmountCalc = relativeValue * fee
+      const feeAmount = ether(feeAmountCalc.toString())
+
+      // can't be called by user
+      await contract.handleBridgedTokens(user, value, nonce, { from: user }).should.be.rejectedWith(ERROR_MSG)
+      // can't be called by owner
+      await contract.handleBridgedTokens(user, value, nonce, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      const data = await contract.contract.methods.handleBridgedTokens(user, value.toString(), nonce).encodeABI()
+
+      // message must be generated by mediator contract on the other network
+      const failedTxHash = '0x2ebc2ccc755acc8eaf9252e19573af708d644ab63a39619adb080a3500a4ff2e'
+
+      await ambBridgeContract.executeMessageCall(contract.address, owner, data, failedTxHash, 1000000).should.be
+        .fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(failedTxHash)).to.be.equal(false)
+
+      const initialBalanceRewardAddress2 = await token.balanceOf(rewardAccountList[1])
+      const initialBalanceRewardAddress3 = await token.balanceOf(rewardAccountList[2])
+
+      await ambBridgeContract.executeMessageCall(
+        contract.address,
+        otherSideMediatorContract.address,
+        data,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+
+      // Then
+      expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(value)
+      const events = await getEvents(token, { event: 'Mint' })
+      // 1 Mint to user, 1 Mint to fee manager
+      expect(events.length).to.be.equal(2)
+      // Use ERC20 contract so there is no conflict on getting the regular event Transfer and the generated by transferAndCall
+      const erc20Token = await ERC20Mock.at(token.address)
+      const transferEvents = await getEvents(erc20Token, { event: 'Transfer' })
+      // 5 transfer events: 1 Mint to user, 1 Mint to fee manager, fee manager 1 transfer to each reward account,
+      // 1 feeReceiver contract transfer to mediator, 1 transfer to 0 to burn the tokens
+      expect(transferEvents.length).to.be.equal(7)
+
+      const burnEvents = await getEvents(token, { event: 'Burn' })
+      expect(burnEvents.length).to.be.equal(1)
+
+      const totalSupply = await token.totalSupply()
+
+      expect(totalSupply.eq(value.sub(feePerValidator)) || totalSupply.eq(value.sub(feePerValidatorPlusDiff))).to.equal(
+        true
+      )
+
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(finalUserValue)
+
+      const updatedBalanceRewardAddress1 = await token.balanceOf(rewardAccountList[0])
+      const updatedBalanceRewardAddress2 = await token.balanceOf(rewardAccountList[1])
+      const updatedBalanceRewardAddress3 = await token.balanceOf(rewardAccountList[2])
+
+      expect(updatedBalanceRewardAddress1).to.be.bignumber.equal(ZERO)
       expect(
         updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator)) ||
           updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))

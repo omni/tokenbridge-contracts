@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 
-import "../amb_erc677_to_erc677/ForeignAMBErc677ToErc677.sol";
+import "./BasicStakeTokenMediator.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 
-contract ForeignStakeTokenMediator is ForeignAMBErc677ToErc677 {
+contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
     /**
      * @dev Executes action on incoming tokens from the other network
      * @param _recipient address of tokens receiver
@@ -13,6 +13,23 @@ contract ForeignStakeTokenMediator is ForeignAMBErc677ToErc677 {
         uint256 value = _value.div(10**decimalShift());
         _mintLackingTokens(value);
         erc677token().transfer(_recipient, value);
+    }
+
+    /**
+     * @dev Executes action on incoming bridged tokens
+     * @param _from address of tokens sender
+     * @param _value requsted amount of bridged tokens
+     * @param _data alternative receiver, if specified
+     */
+    function bridgeSpecificActionsOnTokenTransfer(
+        ERC677, /* _token */
+        address _from,
+        uint256 _value,
+        bytes _data
+    ) internal {
+        if (!lock()) {
+            passMessage(chooseReceiver(_from, _data), _value);
+        }
     }
 
     /**

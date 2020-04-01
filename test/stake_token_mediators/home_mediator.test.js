@@ -19,6 +19,7 @@ const maxPerTx = oneEther
 const minPerTx = ether('0.01')
 const executionDailyLimit = dailyLimit
 const executionMaxPerTx = maxPerTx
+const exampleTxHash = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const decimalShiftZero = 0
 
 contract('HomeStakeTokenMediator', async accounts => {
@@ -185,6 +186,49 @@ contract('HomeStakeTokenMediator', async accounts => {
       expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(blockReward.address)).to.be.bignumber.equal(ether('0.05'))
+    })
+  })
+
+  describe('bridge tokens to xDai chain', async () => {
+    it('should mint new tokens ', async () => {
+      await token.transferOwnership(homeMediator.address)
+
+      expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
+
+      const data = homeMediator.contract.methods
+        .handleBridgedTokens(user, halfEther.toString(10), exampleTxHash)
+        .encodeABI()
+      await homeBridge.executeMessageCall(homeMediator.address, foreignMediator.address, data, exampleTxHash, 1000000)
+        .should.be.fulfilled
+
+      expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
+      expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
+    })
+  })
+
+  describe('return fixed tokens', async () => {
+    it('should mint fixed tokens,', async () => {
+      await token.mint(user, oneEther)
+      await token.transferOwnership(homeMediator.address)
+
+      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+
+      await token.transferAndCall(homeMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
+
+      const events = await getEvents(homeBridge, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      const dataHash = web3.utils.soliditySha3(`0x${events[0].returnValues.encodedData.slice(148)}`)
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
+      expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
+
+      const data = homeMediator.contract.methods.fixFailedMessage(dataHash).encodeABI()
+      await homeBridge.executeMessageCall(homeMediator.address, foreignMediator.address, data, exampleTxHash, 1000000)
+        .should.be.fulfilled
+
+      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+      expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
     })
   })
 })

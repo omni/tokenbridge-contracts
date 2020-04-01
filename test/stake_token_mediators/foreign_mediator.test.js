@@ -50,7 +50,7 @@ contract('ForeignStakeTokenMediator', async accounts => {
     ).should.be.fulfilled
   })
 
-  describe('bridge stake to mainnet', async () => {
+  describe('bridge tokens to mainnet', async () => {
     it('should use tokens from bridge balance', async () => {
       await token.mint(foreignMediator.address, twoEthers)
       await token.transferOwnership(foreignMediator.address)
@@ -209,6 +209,28 @@ contract('ForeignStakeTokenMediator', async accounts => {
       expect(await token.totalSupply()).to.be.bignumber.equal(ether('1.5'))
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ether('1.5'))
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(ZERO)
+    })
+  })
+
+  describe('bridge tokens from mainnet', async () => {
+    it('should accept tokens within limits', async () => {
+      await token.mint(user, oneEther)
+      await token.transferOwnership(foreignMediator.address)
+
+      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+
+      await token.transferAndCall(foreignMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
+
+      const events = await getEvents(foreignBridge, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      const sender = `0x${events[0].returnValues.encodedData.slice(148 + 32, 148 + 72)}`
+      const bridgedValue = toBN(events[0].returnValues.encodedData.slice(148 + 72, 148 + 136))
+
+      expect(sender).to.be.equal(user.toLowerCase())
+      expect(bridgedValue).to.be.bignumber.equal(halfEther)
+      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+      expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(halfEther)
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
     })
   })
 })

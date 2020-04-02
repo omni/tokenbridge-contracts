@@ -8,6 +8,8 @@ import "./BasicAMBNativeToErc20.sol";
 * It is design to be used as implementation contract of EternalStorageProxy contract.
 */
 contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
+    bytes32 internal constant MEDIATOR_BALANCE = 0x3db340e280667ee926fa8c51e8f9fcf88a0ff221a66d84d63b4778127d97d139; // keccak256(abi.encodePacked("mediatorBalance"))
+
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -71,6 +73,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         require(msg.value > 0);
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        setMediatorBalance(mediatorBalance().add(msg.value));
         passMessage(_receiver, msg.value);
     }
 
@@ -82,6 +85,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     */
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
         uint256 valueToTransfer = _value.mul(10**decimalShift());
+        setMediatorBalance(mediatorBalance().sub(valueToTransfer));
 
         IMediatorFeeManager feeManager = feeManagerContract();
         if (feeManager != address(0)) {
@@ -115,6 +119,22 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     }
 
     /**
+    * @dev Tells the native balance of the contract.
+    * @return the current tracked native balance of the contract.
+    */
+    function mediatorBalance() public view returns (uint256) {
+        return uintStorage[MEDIATOR_BALANCE];
+    }
+
+    /**
+    * @dev Sets the updated native balance of the contract.
+    * @param _balance the new native balance of the contract.
+    */
+    function setMediatorBalance(uint256 _balance) internal {
+        uintStorage[MEDIATOR_BALANCE] = _balance;
+    }
+
+    /**
     * @dev Allows to transfer any locked token on this contract that is not part of the bridge operations.
     * Native tokens are not allowed to be claimed.
     * @param _token address of the token.
@@ -123,5 +143,19 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     function claimTokens(address _token, address _to) public {
         require(_token != address(0));
         super.claimTokens(_token, _to);
+    }
+
+    /**
+    * @dev Allows to send to the other network the amount of locked native tokens that can be forced into the contract
+    * without the invocation of the required methods.
+    * @param _receiver the address that will receive the tokens on the other network
+    */
+    function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
+        uint256 balance = address(this).balance;
+        require(balance > mediatorBalance());
+        uint256 diff = balance.sub(mediatorBalance());
+        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(diff));
+        setMediatorBalance(mediatorBalance().add(diff));
+        passMessage(_receiver, diff);
     }
 }

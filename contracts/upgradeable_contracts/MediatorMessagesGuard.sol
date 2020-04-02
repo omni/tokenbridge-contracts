@@ -12,8 +12,7 @@ contract MediatorMessagesGuard is EternalStorage {
     using SafeMath for uint256;
 
     bytes32 private constant BRIDGE_MESSAGE_LOCK = 0x0ee06820811e91be37ae8d7f20d6dccd5bda0f24b568acdd4e2499013b53fc5f; // keccak256(abi.encodePacked("bridgeMessageLock"))
-    bytes32 private constant BRIDGE_MESSAGE_COUNT = 0x3098c7acc05e551de5fd23fd7e98995b3075446f642aecf18368e54c9d5af3b8; // keccak256(abi.encodePacked("bridgeMessageCount"))
-    uint256 private constant BRIDGE_MESSAGE_COUNT_LIMIT = 1;
+    bytes32 private constant BRIDGE_MESSAGE_LIMIT_REACHED = 0x9fc9eb8bbe605baeeff607a74c3338dbf768244599c53ece5c90cc940a0af581; // keccak256(abi.encodePacked("bridgeMessageLimitReached"))
 
     /**
     * @dev Tells the status of the lock.
@@ -32,19 +31,19 @@ contract MediatorMessagesGuard is EternalStorage {
     }
 
     /**
-    * @dev Tells the number of messages that were send to the AMB bridge so far in the transaction.
-    * @return the number of messages
+    * @dev Tells if the limit number of messages that were sent to the AMB bridge so far in the transaction was reached
+    * @return the status of the message limit
     */
-    function bridgeMessageCount() private returns (uint256) {
-        return uintStorage[BRIDGE_MESSAGE_COUNT];
+    function bridgeMessageLimitReached() private returns (bool) {
+        return boolStorage[BRIDGE_MESSAGE_LIMIT_REACHED];
     }
 
     /**
-    * @dev Sets the number of messages that were send to the AMB bridge so far in the transaction.
-    * @param _count the number of messages
+    * @dev Sets the status of the limit of messages that were sent to the AMB bridge so far in the transaction.
+    * @param _status the new status of the message limit
     */
-    function setBridgeMessageCount(uint256 _count) private {
-        uintStorage[BRIDGE_MESSAGE_COUNT] = _count;
+    function setBridgeMessageLimitReached(bool _status) private {
+        boolStorage[BRIDGE_MESSAGE_LIMIT_REACHED] = _status;
     }
 
     /**
@@ -52,7 +51,7 @@ contract MediatorMessagesGuard is EternalStorage {
     */
     function lockBridgeMessages() internal {
         setBridgeMessageLock(true);
-        setBridgeMessageCount(0);
+        setBridgeMessageLimitReached(false);
     }
 
     /**
@@ -64,9 +63,8 @@ contract MediatorMessagesGuard is EternalStorage {
 
     modifier bridgeMessageAllowed {
         if (bridgeMessageLock()) {
-            uint256 nextMessageCount = bridgeMessageCount().add(1);
-            require(nextMessageCount <= BRIDGE_MESSAGE_COUNT_LIMIT);
-            setBridgeMessageCount(nextMessageCount);
+            require(!bridgeMessageLimitReached());
+            setBridgeMessageLimitReached(true);
         }
         /* solcov ignore next */
         _;

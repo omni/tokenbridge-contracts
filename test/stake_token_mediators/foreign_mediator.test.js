@@ -1,7 +1,6 @@
 const ForeignStakeTokenMediator = artifacts.require('ForeignStakeTokenMediator.sol')
 const HomeStakeTokenMediator = artifacts.require('HomeStakeTokenMediator.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
-const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 
 const { expect } = require('chai')
@@ -24,17 +23,13 @@ const decimalShiftZero = 0
 contract('ForeignStakeTokenMediator', async accounts => {
   const owner = accounts[0]
   const user = accounts[1]
-  const authorities = [accounts[2], accounts[3]]
   let foreignBridge
   let homeMediator
   let foreignMediator
-  let validatorContract
   let token
   beforeEach(async function() {
     foreignBridge = await AMBMock.new()
     await foreignBridge.setMaxGasPerTx(maxGasPerTx)
-    validatorContract = await BridgeValidators.new()
-    await validatorContract.initialize(1, authorities, owner)
     token = await ERC677BridgeToken.new('Test token', 'TST', 18)
     homeMediator = await HomeStakeTokenMediator.new()
     foreignMediator = await ForeignStakeTokenMediator.new()

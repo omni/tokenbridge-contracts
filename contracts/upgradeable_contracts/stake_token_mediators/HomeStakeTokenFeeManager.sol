@@ -49,6 +49,14 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
      * @param _fee the fee percentage
      */
     function setFee(uint256 _fee) external onlyOwner {
+        _setFee(_fee);
+    }
+
+    /**
+     * @dev Internal setter for fee
+     * @param _fee the fee percentage
+     */
+    function _setFee(uint256 _fee) internal {
         require(_fee < MAX_FEE);
         uintStorage[FEE] = _fee;
         emit FeeUpdated(_fee);

@@ -7,6 +7,46 @@ import "../../interfaces/IBurnableMintableERC677Token.sol";
 
 contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeManager {
     /**
+     * Initializes rewardable home mediator
+     * @param _bridgeContract HomeAMB bridge contract
+     * @param _mediatorContract address of the mediator contract in the Foreign chain
+     * @param _erc677token address of STAKE token in the Home chain
+     * @param _dailyLimitMaxPerTxMinPerTxArray Home limits for outgoing transfers
+     * @param _executionDailyLimitExecutionMaxPerTxArray Home execution limits for incoming transfers
+     * @param _requestGasLimit gas limit used for AMB operations
+     * @param _decimalShift decimal shift for bridged TAKE token
+     * @param _owner address of new bridge owner
+     * @param _blockReward address of block reward contract used for fee distribution
+     * @param _fee initial home fee
+     */
+    function rewardableInitialize(
+        address _bridgeContract,
+        address _mediatorContract,
+        address _erc677token,
+        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
+        uint256 _requestGasLimit,
+        uint256 _decimalShift,
+        address _owner,
+        address _blockReward,
+        uint256 _fee
+    ) external returns (bool) {
+        _setFee(_fee);
+        _setBlockRewardContract(_blockReward);
+        return
+            super.initialize(
+                _bridgeContract,
+                _mediatorContract,
+                _erc677token,
+                _dailyLimitMaxPerTxMinPerTxArray,
+                _executionDailyLimitExecutionMaxPerTxArray,
+                _requestGasLimit,
+                _decimalShift,
+                _owner
+            );
+    }
+
+    /**
      * @dev Executes action on fixed tokens
      * @param _recipient address of tokens receiver
      * @param _value amount of fixed tokens

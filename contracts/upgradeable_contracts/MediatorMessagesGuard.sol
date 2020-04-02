@@ -18,7 +18,7 @@ contract MediatorMessagesGuard is EternalStorage {
     * @dev Tells the status of the lock.
     * @return true if the number of messages are limited.
     */
-    function bridgeMessageLock() private returns (bool) {
+    function bridgeMessageLock() private view returns (bool) {
         return boolStorage[BRIDGE_MESSAGE_LOCK];
     }
 
@@ -34,7 +34,7 @@ contract MediatorMessagesGuard is EternalStorage {
     * @dev Tells if the limit number of messages that were sent to the AMB bridge so far in the transaction was reached
     * @return the status of the message limit
     */
-    function bridgeMessageLimitReached() private returns (bool) {
+    function bridgeMessageLimitReached() private view returns (bool) {
         return boolStorage[BRIDGE_MESSAGE_LIMIT_REACHED];
     }
 

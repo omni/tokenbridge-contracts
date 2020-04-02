@@ -11,7 +11,7 @@ const foreignPrefix = 'FOREIGN'
 
 // Validations and constants
 const evmVersions = [EVM_TYPES.BYZANTIUM, EVM_TYPES.SPURIOUSDRAGON]
-const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE', 'ARBITRARY_MESSAGE', 'AMB_ERC_TO_ERC']
+const validBridgeModes = ['NATIVE_TO_ERC', 'ERC_TO_ERC', 'ERC_TO_NATIVE', 'ARBITRARY_MESSAGE', 'AMB_ERC_TO_ERC', 'STAKE_AMB_ERC_TO_ERC']
 const validRewardModes = ['false', 'ONE_DIRECTION', 'BOTH_DIRECTIONS']
 const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
 const bigNumValidator = envalid.makeValidator(x => toBN(x))
@@ -137,6 +137,26 @@ if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
       BLOCK_REWARD_ADDRESS: addressValidator()
     }
   }
+} else if (BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC') {
+  if (HOME_REWARDABLE !== "ONE_DIRECTION") {
+    throw new Error(`Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Only ONE_DIRECTION is supported for stake bridge`)
+  }
+  if (FOREIGN_REWARDABLE !== "false") {
+    throw new Error(`Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Only false is supported for stake bridge`)
+  }
+
+  validations = {
+    ...validations,
+    HOME_AMB_BRIDGE: addressValidator(),
+    FOREIGN_AMB_BRIDGE: addressValidator(),
+    HOME_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
+    FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
+    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
+    FOREIGN_DAILY_LIMIT: bigNumValidator(),
+    HOME_STAKE_TOKEN_ADDRESS: addressValidator(),
+    FOREIGN_STAKE_TOKEN_ADDRESS: addressValidator(),
+    HOME_TRANSACTIONS_FEE: envalid.num(),
+  }
 } else {
   validations = {
     ...validations,
@@ -159,7 +179,7 @@ if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
     FOREIGN_DAILY_LIMIT: bigNumValidator()
   }
 
-  if (BRIDGE_MODE !== 'AMB_ERC_TO_ERC') {
+  if (BRIDGE_MODE !== 'AMB_ERC_TO_ERC' && BRIDGE_MODE !== 'STAKE_AMB_ERC_TO_ERC') {
     if (!validRewardModes.includes(HOME_REWARDABLE)) {
       throw new Error(`Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`)
     }
@@ -326,7 +346,7 @@ if (env.BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (env.BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
+if (env.BRIDGE_MODE === 'AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC') {
   checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
 }
 

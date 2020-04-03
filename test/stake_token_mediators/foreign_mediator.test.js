@@ -45,6 +45,18 @@ contract('ForeignStakeTokenMediator', async accounts => {
     ).should.be.fulfilled
   })
 
+  describe('getBridgeMode', () => {
+    it('should return stake bridging mode and interface', async function() {
+      const bridgeModeHash = '0x16ea01e9' // 4 bytes of keccak256('stake-erc-to-erc-amb')
+      expect(await foreignMediator.getBridgeMode()).to.be.equal(bridgeModeHash)
+
+      const { major, minor, patch } = await foreignMediator.getBridgeInterfacesVersion()
+      major.should.be.bignumber.gte(ZERO)
+      minor.should.be.bignumber.gte(ZERO)
+      patch.should.be.bignumber.gte(ZERO)
+    })
+  })
+
   describe('bridge tokens to mainnet', async () => {
     it('should use tokens from bridge balance', async () => {
       await token.mint(foreignMediator.address, twoEthers)

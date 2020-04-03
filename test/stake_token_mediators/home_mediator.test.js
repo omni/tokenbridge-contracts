@@ -122,9 +122,21 @@ contract('HomeStakeTokenMediator', async accounts => {
     })
   })
 
+  describe('getBridgeMode', () => {
+    it('should return stake bridging mode and interface', async function() {
+      const bridgeModeHash = '0x16ea01e9' // 4 bytes of keccak256('stake-erc-to-erc-amb')
+      expect(await homeMediator.getBridgeMode()).to.be.equal(bridgeModeHash)
+
+      const { major, minor, patch } = await homeMediator.getBridgeInterfacesVersion()
+      major.should.be.bignumber.gte(ZERO)
+      minor.should.be.bignumber.gte(ZERO)
+      patch.should.be.bignumber.gte(ZERO)
+    })
+  })
+
   describe('after initialization', async () => {
     beforeEach(async () => {
-      await homeMediator.rewardableInitialize(
+      await homeMediator.initialize(
         homeBridge.address,
         foreignMediator.address,
         token.address,
@@ -132,14 +144,16 @@ contract('HomeStakeTokenMediator', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         decimalShiftZero,
-        owner,
-        blockReward.address,
-        ZERO
+        owner
       ).should.be.fulfilled
     })
 
     describe('setBlockRewardContract', async () => {
       it('should set block reward contract', async () => {
+        expect(await homeMediator.blockRewardContract()).to.be.equal(ZERO_ADDRESS)
+
+        await homeMediator.setBlockRewardContract(blockReward.address, { from: owner }).should.be.fulfilled
+
         expect(await homeMediator.blockRewardContract()).to.be.equal(blockReward.address)
 
         const blockReward2 = await BlockReward.new()
@@ -153,8 +167,7 @@ contract('HomeStakeTokenMediator', async accounts => {
       })
 
       it('should fail if not an owner', async () => {
-        const blockReward2 = await BlockReward.new()
-        await homeMediator.setBlockRewardContract(blockReward2.address, { from: user }).should.be.rejected
+        await homeMediator.setBlockRewardContract(blockReward.address, { from: user }).should.be.rejected
       })
     })
 
@@ -213,6 +226,7 @@ contract('HomeStakeTokenMediator', async accounts => {
       })
 
       it('should accept tokens, no fee', async () => {
+        await homeMediator.setBlockRewardContract(blockReward.address)
         await token.transferAndCall(homeMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
         const events = await getEvents(homeBridge, { event: 'MockedEvent' })
@@ -227,6 +241,7 @@ contract('HomeStakeTokenMediator', async accounts => {
       })
 
       it('should accept tokens, configured fee', async () => {
+        await homeMediator.setBlockRewardContract(blockReward.address)
         await homeMediator.setFee(ether('0.1')).should.be.fulfilled
 
         await token.transferAndCall(homeMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
@@ -240,6 +255,22 @@ contract('HomeStakeTokenMediator', async accounts => {
         expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(blockReward.address)).to.be.bignumber.equal(ether('0.05'))
+      })
+
+      it('should accept tokens, block reward contract is not configured', async () => {
+        await homeMediator.setFee(ether('0.1')).should.be.fulfilled
+
+        await token.transferAndCall(homeMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
+
+        const events = await getEvents(homeBridge, { event: 'MockedEvent' })
+        expect(events.length).to.be.equal(1)
+        const bridgedValue = toBN(events[0].returnValues.encodedData.slice(148 + 72, 148 + 136))
+
+        expect(bridgedValue).to.be.bignumber.equal(halfEther)
+        expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
+        expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
+        expect(await token.balanceOf(blockReward.address)).to.be.bignumber.equal(ZERO)
       })
     })
 

@@ -285,5 +285,37 @@ contract('HomeStakeTokenMediator', async accounts => {
         expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
       })
     })
+
+    describe('transferTokenOwnership', async () => {
+      it('should transfer token ownership to different contract', async () => {
+        const newOwner = await AMBMock.new()
+        await token.transferOwnership(homeMediator.address)
+
+        expect(await token.owner()).to.be.equal(homeMediator.address)
+
+        await homeMediator.transferTokenOwnership(newOwner.address).should.be.fulfilled
+
+        expect(await token.owner()).to.be.equal(newOwner.address)
+      })
+
+      it('should fail if not an owner', async () => {
+        const newOwner = await AMBMock.new()
+        await token.transferOwnership(homeMediator.address)
+
+        await homeMediator.transferTokenOwnership(newOwner.address, { from: user }).should.be.rejected
+      })
+
+      it('should fail if not a contract', async () => {
+        await token.transferOwnership(homeMediator.address)
+
+        await homeMediator.transferTokenOwnership(user).should.be.rejected
+      })
+
+      it('should fail if not a current token owner', async () => {
+        const newOwner = await AMBMock.new()
+
+        await homeMediator.transferTokenOwnership(newOwner.address).should.be.rejected
+      })
+    })
   })
 })

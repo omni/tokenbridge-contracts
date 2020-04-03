@@ -47,6 +47,18 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
     }
 
     /**
+     * @dev Allows to transfer token ownership to different proxy contract.
+     * Can be called only once, when mediator is the current owner of a token.
+     * All subsequent calls to erc677 token will be done through new proxy contract.
+     * @param _owner token proxy contract address
+     */
+    function transferTokenOwnership(address _owner) external onlyOwner {
+        require(AddressUtils.isContract(_owner));
+        Ownable(erc677token()).transferOwnership(_owner);
+        setErc677token(_owner);
+    }
+
+    /**
      * @dev Executes action on fixed tokens
      * @param _recipient address of tokens receiver
      * @param _value amount of fixed tokens

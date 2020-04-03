@@ -138,13 +138,6 @@ if (BRIDGE_MODE === 'AMB_ERC_TO_ERC') {
     }
   }
 } else if (BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC') {
-  if (HOME_REWARDABLE !== "ONE_DIRECTION") {
-    throw new Error(`Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Only ONE_DIRECTION is supported for stake bridge`)
-  }
-  if (FOREIGN_REWARDABLE !== "false") {
-    throw new Error(`Invalid FOREIGN_REWARDABLE: ${FOREIGN_REWARDABLE}. Only false is supported for stake bridge`)
-  }
-
   validations = {
     ...validations,
     HOME_AMB_BRIDGE: addressValidator(),

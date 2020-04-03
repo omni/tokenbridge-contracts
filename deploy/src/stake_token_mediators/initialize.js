@@ -163,7 +163,7 @@ async function initializeBridges({ homeBridge, foreignBridge }) {
   console.log('\n[Foreign] Initializing Bridge Mediator with following parameters:\n')
   await initializeForeign(foreignBridge, homeBridge)
 
-  console.log(`\n[Home] Allow bridge mediator to mint token, by calling addBridge(${homeBridge}) on token ${HOME_STAKE_TOKEN_ADDRESS}`)
+  console.log(`\n[Home] Allow bridge mediator to mint token, by calling transferOwnership(${homeBridge}) and addBridge(${homeBridge}) on token ${HOME_STAKE_TOKEN_ADDRESS}`)
   console.log(`\n[Foreign] Allow bridge mediator to mint token, by calling addBridge(${foreignBridge}) on token ${FOREIGN_STAKE_TOKEN_ADDRESS}`)
 }
 

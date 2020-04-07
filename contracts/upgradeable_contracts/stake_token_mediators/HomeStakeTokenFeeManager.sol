@@ -13,7 +13,7 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
     bytes32 internal constant FEE = 0x241773621b963145d8e249ca69b0240df7de56fca52fb3ec9e2ddd08a968570e; // keccak256(abi.encodePacked("stakeTokenFee"));
 
     /**
-     * @dev Retrives currently used block reward contract
+     * @dev Retrieves currently used block reward contract
      * @return configured block reward contract address
      */
     function blockRewardContract() external view returns (IBlockReward) {

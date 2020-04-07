@@ -3,6 +3,7 @@ const HomeStakeTokenMediator = artifacts.require('HomeStakeTokenMediator.sol')
 const ERC677BridgeTokenRewardable = artifacts.require('ERC677BridgeTokenRewardable.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 const BlockReward = artifacts.require('BlockReward.sol')
+const MintHandlerMock = artifacts.require('MintHandlerMock.sol')
 
 const { expect } = require('chai')
 const { ether, expectEventInLogs, getEvents } = require('../helpers/helpers')
@@ -319,33 +320,65 @@ contract('HomeStakeTokenMediator', async accounts => {
 
     describe('transferTokenOwnership', async () => {
       it('should transfer token ownership to different contract', async () => {
-        const newOwner = await AMBMock.new()
         await token.transferOwnership(homeMediator.address)
 
         expect(await token.owner()).to.be.equal(homeMediator.address)
 
-        await homeMediator.transferTokenOwnership(newOwner.address).should.be.fulfilled
+        await homeMediator.transferTokenOwnership(accounts[2]).should.be.fulfilled
 
-        expect(await token.owner()).to.be.equal(newOwner.address)
+        expect(await token.owner()).to.be.equal(accounts[2])
       })
 
       it('should fail if not an owner', async () => {
-        const newOwner = await AMBMock.new()
         await token.transferOwnership(homeMediator.address)
 
-        await homeMediator.transferTokenOwnership(newOwner.address, { from: user }).should.be.rejected
-      })
-
-      it('should fail if not a contract', async () => {
-        await token.transferOwnership(homeMediator.address)
-
-        await homeMediator.transferTokenOwnership(user).should.be.rejected
+        await homeMediator.transferTokenOwnership(accounts[2], { from: user }).should.be.rejected
       })
 
       it('should fail if not a current token owner', async () => {
-        const newOwner = await AMBMock.new()
+        await homeMediator.transferTokenOwnership(accounts[2], { from: owner }).should.be.rejected
+      })
+    })
 
-        await homeMediator.transferTokenOwnership(newOwner.address).should.be.rejected
+    describe('mintHandler', async () => {
+      let mintHandler
+
+      beforeEach(async () => {
+        mintHandler = await MintHandlerMock.new(token.address)
+        await mintHandler.addBridge(homeMediator.address)
+      })
+
+      it('should allow to set different mint handler', async () => {
+        expect(await homeMediator.getMintHandler()).to.be.equal(token.address)
+
+        await homeMediator.setMintHandler(mintHandler.address, { from: owner }).should.be.fulfilled
+
+        expect(await homeMediator.getMintHandler()).to.be.equal(mintHandler.address)
+      })
+
+      it('should fail if not an owner', async () => {
+        await homeMediator.setMintHandler(mintHandler.address, { from: accounts[1] }).should.be.rejected
+      })
+
+      it('should fail if not a contract', async () => {
+        await homeMediator.setMintHandler(accounts[2], { from: owner }).should.be.rejected
+      })
+
+      it('should process bridge tokens through mint handler', async () => {
+        await homeMediator.setMintHandler(mintHandler.address, { from: owner }).should.be.fulfilled
+        await token.transferOwnership(mintHandler.address)
+
+        expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
+
+        const data = homeMediator.contract.methods
+          .handleBridgedTokens(user, halfEther.toString(10), exampleTxHash)
+          .encodeABI()
+        await homeBridge.executeMessageCall(homeMediator.address, foreignMediator.address, data, exampleTxHash, 1000000)
+          .should.be.fulfilled
+
+        expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
+        expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
+        expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
       })
     })
   })

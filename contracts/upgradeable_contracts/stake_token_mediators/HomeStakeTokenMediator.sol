@@ -1,11 +1,49 @@
 pragma solidity 0.4.24;
 
+import "../../interfaces/IMintHandler.sol";
 import "./BasicStakeTokenMediator.sol";
 import "../BlockRewardBridge.sol";
 import "./HomeStakeTokenFeeManager.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 
 contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeManager {
+    bytes32 internal constant MINT_HANDLER = 0x8a8236f871f2bbb44f59e8c68b82f7587d19c987e09aba39148cc97ea004a32e; // keccak256(abi.encodePacked("mintHandler"))
+
+    /**
+     * Initializes home mediator
+     * @param _bridgeContract HomeAMB bridge contract
+     * @param _mediatorContract address of the mediator contract in the Foreign chain
+     * @param _erc677token address of STAKE token in the Home chain
+     * @param _dailyLimitMaxPerTxMinPerTxArray Home limits for outgoing transfers
+     * @param _executionDailyLimitExecutionMaxPerTxArray Home execution limits for incoming transfers
+     * @param _requestGasLimit gas limit used for AMB operations
+     * @param _decimalShift decimal shift for bridged TAKE token
+     * @param _owner address of new bridge owner
+     */
+    function initialize(
+        address _bridgeContract,
+        address _mediatorContract,
+        address _erc677token,
+        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
+        uint256 _requestGasLimit,
+        uint256 _decimalShift,
+        address _owner
+    ) public returns (bool) {
+        addressStorage[MINT_HANDLER] = _erc677token;
+        return
+            super.initialize(
+                _bridgeContract,
+                _mediatorContract,
+                _erc677token,
+                _dailyLimitMaxPerTxMinPerTxArray,
+                _executionDailyLimitExecutionMaxPerTxArray,
+                _requestGasLimit,
+                _decimalShift,
+                _owner
+            );
+    }
+
     /**
      * Initializes rewardable home mediator
      * @param _bridgeContract HomeAMB bridge contract
@@ -34,7 +72,7 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
         _setFee(_fee);
         _setBlockRewardContract(_blockReward);
         return
-            super.initialize(
+            initialize(
                 _bridgeContract,
                 _mediatorContract,
                 _erc677token,
@@ -53,9 +91,25 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
      * @param _owner token proxy contract address
      */
     function transferTokenOwnership(address _owner) external onlyOwner {
-        require(AddressUtils.isContract(_owner));
         Ownable(erc677token()).transferOwnership(_owner);
-        setErc677token(_owner);
+    }
+
+    /**
+     * @dev Updates address of contract used for handling mint operations,
+     * all subsequent mint operations will be called through this contract
+     * @param _mintHandler address of new contract
+     */
+    function setMintHandler(address _mintHandler) external onlyOwner {
+        require(AddressUtils.isContract(_mintHandler));
+        addressStorage[MINT_HANDLER] = _mintHandler;
+    }
+
+    /**
+     * @dev Retrieves currently used contract for handling mint operations, defaults to token itself
+     * @return address of mint handler contract
+     */
+    function getMintHandler() public view returns (IMintHandler) {
+        return IMintHandler(addressStorage[MINT_HANDLER]);
     }
 
     /**
@@ -65,7 +119,7 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.mul(10**decimalShift());
-        IBurnableMintableERC677Token(erc677token()).mint(_recipient, value);
+        getMintHandler().mint(_recipient, value);
     }
 
     /**
@@ -101,6 +155,6 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
      * @param _value amount of fixed tokens
      */
     function executeActionOnFixedTokens(address _recipient, uint256 _value) internal {
-        IBurnableMintableERC677Token(erc677token()).mint(_recipient, _value);
+        getMintHandler().mint(_recipient, _value);
     }
 }

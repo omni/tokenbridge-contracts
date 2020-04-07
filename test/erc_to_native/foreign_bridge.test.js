@@ -45,6 +45,10 @@ const MAX_VALIDATORS = 50
 const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
 const decimalShiftZero = 0
+const ZERO_DSR = '1000000000000000000000000000'
+const LOW_DSR = '1000000021979553151239153028'
+const MEDIUM_DSR = '1111111111111111111111111111'
+const HIGH_DSR = '2111111111111111111111111111'
 
 async function createChaiToken(token, bridge, owner) {
   const vat = await VatMock.new({ from: owner })
@@ -1817,6 +1821,17 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
       })
 
+      it('should revert when there is nothing to convert', async () => {
+        await foreignBridge.methods['initializeChaiToken()']()
+        await token.mint(foreignBridge.address, ether('101'))
+        await foreignBridge.convertDaiToChai({ from: accounts[1] }).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+
+        await foreignBridge.convertDaiToChai({ from: accounts[1] }).should.be.rejected
+      })
+
       it('should not allow to convert if chai token is disabled', async () => {
         await token.mint(foreignBridge.address, ether('101'))
         await foreignBridge.convertDaiToChai({ from: owner }).should.be.rejected
@@ -2094,17 +2109,17 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridge.setMinDaiTokenBalance(ether('0.1')).should.be.fulfilled
         await foreignBridge.setInterestReceiver(accounts[2]).should.be.fulfilled
 
-        await pot.methods['file(bytes32,uint256)']('0x647372', '2111111111111111111111111111').should.be.fulfilled
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), HIGH_DSR).should.be.fulfilled
 
         await delay(3000) // wait for some non-trivial chi
 
-        await pot.methods['file(bytes32,uint256)']('0x647372', '1000000021979553151239153028').should.be.fulfilled
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), LOW_DSR).should.be.fulfilled
       })
 
       it('should allow to executeSignatures when DSR is zero', async () => {
         await token.mint(foreignBridge.address, ether('10')).should.be.fulfilled
 
-        await pot.methods['file(bytes32,uint256)']('0x647372', '1000000000000000000000000000').should.be.fulfilled
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), ZERO_DSR).should.be.fulfilled
         await foreignBridge.convertDaiToChai().should.be.fulfilled
 
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('9.9'))
@@ -2126,7 +2141,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should allow to executeSignatures when DSR is zero with many conversions', async () => {
         await token.mint(foreignBridge.address, halfEther).should.be.fulfilled
 
-        await pot.methods['file(bytes32,uint256)']('0x647372', '1000000000000000000000000000').should.be.fulfilled
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), ZERO_DSR).should.be.fulfilled
         await foreignBridge.convertDaiToChai().should.be.fulfilled
 
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('0.4'))
@@ -2151,7 +2166,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       it('should allow to executeSignatures after pay interest', async () => {
         await token.mint(foreignBridge.address, ether('10')).should.be.fulfilled
 
-        await pot.methods['file(bytes32,uint256)']('0x647372', '1111111111111111111111111111').should.be.fulfilled
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), MEDIUM_DSR).should.be.fulfilled
 
         await delay(1500)
 
@@ -2159,7 +2174,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
         await delay(3000) // wait for some interest
 
-        await pot.methods['file(bytes32,uint256)']('0x647372', '1000000000000000000000000000').should.be.fulfilled
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), ZERO_DSR).should.be.fulfilled
 
         expect(await foreignBridge.dsrBalance()).to.be.bignumber.gt(ether('13'))
 

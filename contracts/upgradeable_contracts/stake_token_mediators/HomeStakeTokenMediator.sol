@@ -59,9 +59,9 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
     }
 
     /**
-     * @dev Executes action on fixed tokens
+     * @dev Executes action on the request to deposit tokens relayed from the other network
      * @param _recipient address of tokens receiver
-     * @param _value amount of fixed tokens
+     * @param _value amount of bridged tokens
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.mul(10**decimalShift());
@@ -69,7 +69,7 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
     }
 
     /**
-     * @dev Executes action on incoming bridged tokens
+     * @dev Executes action on withdrawal of bridged tokens
      * @param _token address of token contract
      * @param _from address of tokens sender
      * @param _value requsted amount of bridged tokens
@@ -84,7 +84,7 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
                 // in case if block reward contract is not configured, the fee is not collected
                 passMessage(chooseReceiver(_from, _data), _value);
             } else {
-                // when block contract is defined, the calculated fee is substructed from the original value
+                // when block reward contract is defined, the calculated fee is subtracted from the original value
                 uint256 fee = calculateFee(_value);
                 passMessage(chooseReceiver(_from, _data), _value.sub(fee));
                 if (fee > 0) {
@@ -96,7 +96,7 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
     }
 
     /**
-     * @dev Executes action on fixed tokens
+     * @dev Executes action on relayed request to fix the failed transfer of tokens
      * @param _recipient address of tokens receiver
      * @param _value amount of fixed tokens
      */

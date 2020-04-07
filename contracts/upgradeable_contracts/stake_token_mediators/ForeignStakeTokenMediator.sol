@@ -5,7 +5,7 @@ import "../../interfaces/IBurnableMintableERC677Token.sol";
 
 contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
     /**
-     * @dev Executes action on incoming tokens from the other network
+     * @dev Executes action on the request to withdraw tokens relayed from the other network
      * @param _recipient address of tokens receiver
      * @param _value amount of bridged tokens
      */
@@ -15,7 +15,7 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
     }
 
     /**
-     * @dev Executes action on incoming bridged tokens
+     * @dev Executes action on deposit of bridged tokens
      * @param _from address of tokens sender
      * @param _value requsted amount of bridged tokens
      * @param _data alternative receiver, if specified
@@ -32,7 +32,7 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
     }
 
     /**
-     * @dev Executes action on fixed tokens
+     * @dev Executes action on relayed request to fix the failed transfer of tokens
      * @param _recipient address of tokens receiver
      * @param _value amount of fixed tokens
      */

@@ -46,6 +46,10 @@ const MAX_VALIDATORS = 50
 const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
 const decimalShiftZero = 0
+const ZERO_DSR = '1000000000000000000000000000'
+const LOW_DSR = '1000000021979553151239153028'
+const MEDIUM_DSR = '1111111111111111111111111111'
+const HIGH_DSR = '2111111111111111111111111111'
 
 const RELAY_TOKENS_FAILED_TOPIC = web3.utils.keccak256('RelayTokensFailed(address,uint256)')
 const TOKENS_SWAPPED_TOPIC = web3.utils.keccak256('TokensSwapped(address,address,uint256)')
@@ -59,7 +63,7 @@ async function createChaiToken(token, bridge, owner) {
   await token.rely(daiJoin.address)
   const chaiToken = await ChaiMock.new(vat.address, pot.address, daiJoin.address, token.address, { from: owner })
   await bridge.setChaiToken(chaiToken.address)
-  return chaiToken
+  return { chaiToken, pot }
 }
 
 contract('ForeignBridge_ERC20_to_Native', async accounts => {
@@ -389,7 +393,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridgeErcToNativeMock.new()
       token = await DaiMock.new({ from: owner })
-      chaiToken = await createChaiToken(token, foreignBridge, owner)
+      chaiToken = (await createChaiToken(token, foreignBridge, owner)).chaiToken
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -1074,7 +1078,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     beforeEach(async () => {
       foreignBridge = await ForeignBridgeErcToNativeMock.new()
       token = await DaiMock.new({ from: owner })
-      chaiToken = await createChaiToken(token, foreignBridge, owner)
+      chaiToken = (await createChaiToken(token, foreignBridge, owner)).chaiToken
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -1492,7 +1496,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       it('should allow to bridge tokens specifying the token address with chai token enabled', async () => {
         // Given
-        const chaiToken = await createChaiToken(dai, foreignBridge, owner)
+        const { chaiToken } = await createChaiToken(dai, foreignBridge, owner)
         await foreignBridge.methods['initializeChaiToken()']()
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
 
@@ -1609,6 +1613,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     let token
     let foreignBridge
     let chaiToken
+    let pot
     let interestRecipient
 
     beforeEach(async () => {
@@ -1625,9 +1630,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         decimalShiftZero,
         otherSideBridge.address
       )
-      chaiToken = await createChaiToken(token, foreignBridge, owner)
+      const chaiContracts = await createChaiToken(token, foreignBridge, owner)
+      chaiToken = chaiContracts.chaiToken
+      pot = chaiContracts.pot
       interestRecipient = await InterestReceiverMockWithoutRelay.new({ from: owner })
-      await token.transfer(ZERO_ADDRESS, await token.balanceOf(accounts[3]), { from: accounts[3] })
     })
 
     describe('initializeChaiToken', () => {
@@ -1814,6 +1820,17 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
         expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+      })
+
+      it('should revert when there is nothing to convert', async () => {
+        await foreignBridge.methods['initializeChaiToken()']()
+        await token.mint(foreignBridge.address, ether('101'))
+        await foreignBridge.convertDaiToChai({ from: accounts[1] }).should.be.fulfilled
+
+        expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ether('100'))
+        expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.gt(ZERO)
+
+        await foreignBridge.convertDaiToChai({ from: accounts[1] }).should.be.rejected
       })
 
       it('should not allow to convert if chai token is disabled', async () => {
@@ -2209,6 +2226,101 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         it('should not allow to claim tokens for dai token', async () => {
           await interestRecipient.claimTokens(token.address, receiverOwner, { from: receiverOwner }).should.be.rejected
         })
+      })
+    })
+
+    describe('Zero DSR', async () => {
+      beforeEach(async () => {
+        await foreignBridge.setExecutionDailyLimit(ether('100'))
+        await foreignBridge.methods['initializeChaiToken()']()
+        await foreignBridge.setMinDaiTokenBalance(ether('0.1')).should.be.fulfilled
+        await foreignBridge.setInterestReceiver(accounts[2]).should.be.fulfilled
+
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), HIGH_DSR).should.be.fulfilled
+
+        await delay(3000) // wait for some non-trivial chi
+
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), LOW_DSR).should.be.fulfilled
+      })
+
+      it('should allow to executeSignatures when DSR is zero', async () => {
+        await token.mint(foreignBridge.address, ether('10')).should.be.fulfilled
+
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), ZERO_DSR).should.be.fulfilled
+        await foreignBridge.convertDaiToChai().should.be.fulfilled
+
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('9.9'))
+
+        await delay(1500)
+
+        for (let i = 0; i < 10; i++) {
+          const transactionHash = `0x${i}045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80`
+          const message = createMessage(accounts[1], ether('0.25'), transactionHash, foreignBridge.address)
+          const signature = await sign(authorities[0], message)
+          const oneSignature = packSignatures([signatureToVRS(signature)])
+
+          await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+        }
+
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('7.4'))
+      })
+
+      it('should allow to executeSignatures when DSR is zero with many conversions', async () => {
+        await token.mint(foreignBridge.address, halfEther).should.be.fulfilled
+
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), ZERO_DSR).should.be.fulfilled
+        await foreignBridge.convertDaiToChai().should.be.fulfilled
+
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('0.4'))
+
+        await delay(1500)
+
+        for (let i = 0; i < 10; i++) {
+          await token.mint(foreignBridge.address, ether('0.25')).should.be.fulfilled
+          await foreignBridge.convertDaiToChai().should.be.fulfilled
+
+          const transactionHash = `0x${i}045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80`
+          const message = createMessage(accounts[1], ether('0.25'), transactionHash, foreignBridge.address)
+          const signature = await sign(authorities[0], message)
+          const oneSignature = packSignatures([signatureToVRS(signature)])
+
+          await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+        }
+
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('0.4'))
+      })
+
+      it('should allow to executeSignatures after pay interest', async () => {
+        await token.mint(foreignBridge.address, ether('10')).should.be.fulfilled
+
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), MEDIUM_DSR).should.be.fulfilled
+
+        await delay(1500)
+
+        await foreignBridge.convertDaiToChai().should.be.fulfilled
+
+        await delay(3000) // wait for some interest
+
+        await pot.methods['file(bytes32,uint256)'](web3.utils.utf8ToHex('dsr'), ZERO_DSR).should.be.fulfilled
+
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.gt(ether('13'))
+
+        await delay(1500)
+
+        await foreignBridge.payInterest().should.be.fulfilled
+
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.gte(ether('9.9'))
+
+        for (let i = 0; i < 10; i++) {
+          const transactionHash = `0x${i}045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80`
+          const message = createMessage(accounts[1], ether('0.25'), transactionHash, foreignBridge.address)
+          const signature = await sign(authorities[0], message)
+          const oneSignature = packSignatures([signatureToVRS(signature)])
+
+          await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+        }
+
+        expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('7.4'))
       })
     })
   })

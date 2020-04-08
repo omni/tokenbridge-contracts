@@ -185,7 +185,7 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
 
         receiver.call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, address(this), interest, ""));
 
-        // Additional constant is not needed here, since we allow to withdraw only extra part of chai balance,
+        // Additional constant to tolerate the DAI balance deposited to the Chai token is not needed here, since we allow to withdraw only extra part of chai balance,
         // which is not necessary to cover 100% dai balance.
         // It is guaranteed that the withdrawal of interest won't left the bridge balance uncovered.
         require(dsrBalance() >= investedAmountInDai());

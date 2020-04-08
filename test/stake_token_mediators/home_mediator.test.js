@@ -278,6 +278,12 @@ contract('HomeStakeTokenMediator', async accounts => {
         await token.transferAndCall(homeMediator.address, ZERO, '0x', { from: user }).should.be.rejected
         await token.transferAndCall(homeMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
       })
+
+      it('should not accept tokens if receiver is a mediator on the other side', async () => {
+        await token.transferAndCall(homeMediator.address, halfEther, foreignMediator.address, { from: user }).should.be
+          .rejected
+        await token.transferAndCall(homeMediator.address, halfEther, user, { from: user }).should.be.fulfilled
+      })
     })
 
     describe('bridge tokens to xDai chain', async () => {

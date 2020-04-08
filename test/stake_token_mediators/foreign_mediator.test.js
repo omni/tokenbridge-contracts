@@ -147,12 +147,14 @@ contract('ForeignStakeTokenMediator', async accounts => {
   })
 
   describe('return fixed tokens', async () => {
-    it('should free fixed tokens, without minting new tokens', async () => {
+    beforeEach(async () => {
       await token.mint(user, oneEther)
       await token.transferOwnership(foreignMediator.address)
 
       expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+    })
 
+    it('should free fixed tokens, without minting new tokens', async () => {
       await token.transferAndCall(foreignMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       const events = await getEvents(foreignBridge, { event: 'MockedEvent' })
@@ -175,11 +177,6 @@ contract('ForeignStakeTokenMediator', async accounts => {
     })
 
     it('should free fixed tokens, with minting new tokens', async () => {
-      await token.mint(user, oneEther)
-      await token.transferOwnership(foreignMediator.address)
-
-      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
-
       await token.transferAndCall(foreignMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       const events = await getEvents(foreignBridge, { event: 'MockedEvent' })
@@ -220,12 +217,14 @@ contract('ForeignStakeTokenMediator', async accounts => {
   })
 
   describe('bridge tokens from mainnet', async () => {
-    it('should accept tokens within limits', async () => {
+    beforeEach(async () => {
       await token.mint(user, oneEther)
       await token.transferOwnership(foreignMediator.address)
 
       expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+    })
 
+    it('should accept tokens within limits', async () => {
       await token.transferAndCall(foreignMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       const events = await getEvents(foreignBridge, { event: 'MockedEvent' })
@@ -241,13 +240,14 @@ contract('ForeignStakeTokenMediator', async accounts => {
     })
 
     it('should not accept zero tokens', async () => {
-      await token.mint(user, oneEther)
-      await token.transferOwnership(foreignMediator.address)
-
-      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
-
       await token.transferAndCall(foreignMediator.address, ZERO, '0x', { from: user }).should.be.rejected
       await token.transferAndCall(foreignMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
+    })
+
+    it('should not accept tokens if receiver is a mediator on the other side', async () => {
+      await token.transferAndCall(foreignMediator.address, halfEther, homeMediator.address, { from: user }).should.be
+        .rejected
+      await token.transferAndCall(foreignMediator.address, halfEther, user, { from: user }).should.be.fulfilled
     })
   })
 })

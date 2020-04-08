@@ -10,7 +10,6 @@ mkdir -p flats/erc20_to_native
 mkdir -p flats/validators
 mkdir -p flats/arbitrary_message
 mkdir -p flats/amb_erc677_to_erc677
-mkdir -p flats/stake_token_mediators
 mkdir -p flats/upgradeability
 
 FLATTENER=./node_modules/.bin/truffle-flattener
@@ -58,5 +57,5 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/HomeAMBErc677ToErc677.
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/ForeignAMBErc677ToErc677.sol > flats/amb_erc677_to_erc677/ForeignAMBErc677ToErc677_flat.sol
 
 echo "Flattening contracts related to stake token mediators"
-${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/stake_token_mediators/HomeStakeTokenMediator.sol > flats/stake_token_mediators/HomeStakeTokenMediator_flat.sol
-${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/stake_token_mediators/ForeignStakeTokenMediator.sol > flats/stake_token_mediators/ForeignStakeTokenMediator_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/HomeStakeTokenMediator.sol > flats/amb_erc677_to_erc677/HomeStakeTokenMediator_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/ForeignStakeTokenMediator.sol > flats/amb_erc677_to_erc677/ForeignStakeTokenMediator_flat.sol

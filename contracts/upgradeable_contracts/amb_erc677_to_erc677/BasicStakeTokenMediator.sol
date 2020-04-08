@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../amb_erc677_to_erc677/BasicAMBErc677ToErc677.sol";
+import "./BasicAMBErc677ToErc677.sol";
 
 contract BasicStakeTokenMediator is BasicAMBErc677ToErc677 {
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {

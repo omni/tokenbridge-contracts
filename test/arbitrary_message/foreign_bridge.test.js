@@ -1,6 +1,8 @@
-const ForeignBridge = artifacts.require('ForeignAMB.sol')
+const ForeignBridge = artifacts.require('ForeignAMBWithGasTokenMock.sol')
+const GasToken = artifacts.require('GasTokenMock.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const Box = artifacts.require('Box.sol')
+const ERC677ReceiverTest = artifacts.require('ERC677ReceiverTest.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
 const { expect } = require('chai')
@@ -28,9 +30,11 @@ contract('ForeignAMB', async accounts => {
   let validatorContract
   let authorities
   let owner
+  let gasTokenContract
 
   before(async () => {
     validatorContract = await BridgeValidators.new()
+    gasTokenContract = await GasToken.new()
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
@@ -534,6 +538,240 @@ contract('ForeignAMB', async accounts => {
       await foreignBridge
         .executeSignatures(message, signatures, { from: authorities[1], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
+    })
+  })
+
+  describe('gasToken functionality', async () => {
+    const receiver = accounts[1]
+    let foreignBridge
+
+    beforeEach(async () => {
+      foreignBridge = await ForeignBridge.new()
+      await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+    })
+
+    describe('setGasTokenParameters', async () => {
+      it('should initialize gas token', async () => {
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenReceiver()).to.be.equal(ZERO_ADDRESS)
+
+        await foreignBridge.setGasTokenParameters(50, receiver).should.be.fulfilled
+
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('50')
+        expect(await foreignBridge.gasTokenReceiver()).to.be.equal(receiver)
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.setGasTokenParameters(50, receiver, { from: accounts[3] }).should.be.rejected
+      })
+    })
+
+    describe('setGasTokenTargetMintValue', async () => {
+      it('should initialize gas token', async () => {
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.setGasTokenTargetMintValue('50').should.be.fulfilled
+
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('50')
+      })
+
+      it('should reset to 0', async () => {
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.setGasTokenTargetMintValue('50').should.be.fulfilled
+        await foreignBridge.setGasTokenTargetMintValue('0').should.be.fulfilled
+
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.setGasTokenTargetMintValue('50', { from: accounts[3] }).should.be.rejected
+      })
+    })
+
+    describe('setGasTokenReceiver', async () => {
+      it('should initialize gas token', async () => {
+        expect(await foreignBridge.gasTokenReceiver()).to.be.equal(ZERO_ADDRESS)
+
+        await foreignBridge.setGasTokenReceiver(receiver).should.be.fulfilled
+
+        expect(await foreignBridge.gasTokenReceiver()).to.be.equal(receiver)
+      })
+
+      it('should reset to zero address', async () => {
+        expect(await foreignBridge.gasTokenReceiver()).to.be.equal(ZERO_ADDRESS)
+
+        await foreignBridge.setGasTokenReceiver(receiver).should.be.fulfilled
+        await foreignBridge.setGasTokenReceiver(ZERO_ADDRESS).should.be.fulfilled
+
+        expect(await foreignBridge.gasTokenReceiver()).to.be.equal(ZERO_ADDRESS)
+      })
+
+      it('should fail if not an owner', async () => {
+        await foreignBridge.setGasTokenReceiver(receiver, { from: accounts[3] }).should.be.rejected
+      })
+    })
+
+    describe('_collectGasTokens', async () => {
+      beforeEach(async () => {
+        await foreignBridge.setGasTokenParameters(3, receiver)
+        await gasTokenContract.freeUpTo('100', { from: receiver })
+      })
+
+      it('should mint tokens with zero approval', async () => {
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.allowance(owner, foreignBridge.address)).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.collectGasTokens().should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('3')
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.allowance(owner, foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should mint tokens with partial approval', async () => {
+        await gasTokenContract.mint(5)
+        await gasTokenContract.approve(foreignBridge.address, 2)
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.allowance(owner, foreignBridge.address)).to.be.bignumber.equal('2')
+
+        await foreignBridge.collectGasTokens().should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('3')
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.allowance(owner, foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should transfer all approved tokens', async () => {
+        await gasTokenContract.mint(5)
+        await gasTokenContract.approve(foreignBridge.address, 3)
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.allowance(owner, foreignBridge.address)).to.be.bignumber.equal('3')
+
+        await foreignBridge.collectGasTokens().should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('3')
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.allowance(owner, foreignBridge.address)).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should transfer target approved tokens', async () => {
+        await gasTokenContract.mint(5)
+        await gasTokenContract.approve(foreignBridge.address, 10)
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.allowance(owner, foreignBridge.address)).to.be.bignumber.equal('10')
+
+        await foreignBridge.collectGasTokens().should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('3')
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal('3')
+        expect(await gasTokenContract.allowance(owner, foreignBridge.address)).to.be.bignumber.equal('7')
+      })
+
+      it('should do nothing on zero target', async () => {
+        await foreignBridge.setGasTokenTargetMintValue(0)
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.collectGasTokens().should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenTargetMintValue()).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should do nothing on empty receiver address', async () => {
+        await foreignBridge.setGasTokenReceiver(ZERO_ADDRESS)
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenReceiver()).to.be.equal(ZERO_ADDRESS)
+
+        await foreignBridge.collectGasTokens().should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.gasTokenReceiver()).to.be.equal(ZERO_ADDRESS)
+      })
+
+      it('should call onTokenTransfer', async () => {
+        const receiver = await ERC677ReceiverTest.new()
+
+        expect(await gasTokenContract.balanceOf(receiver.address)).to.be.bignumber.equal(ZERO)
+
+        await foreignBridge.setGasTokenReceiver(receiver.address)
+        await foreignBridge.collectGasTokens().should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(receiver.address)).to.be.bignumber.equal('3')
+        expect(await receiver.from()).to.be.equal(foreignBridge.address)
+        expect(await receiver.value()).to.be.bignumber.equal('3')
+        expect(await receiver.data()).to.be.equal(null)
+      })
+    })
+
+    describe('requireToPassMessage with gas token', () => {
+      let setValueData
+      let box
+      const user = accounts[8]
+
+      beforeEach(async () => {
+        box = await Box.new()
+        // Generate data for method we want to call on Box contract
+        setValueData = await box.contract.methods.setValue(3).encodeABI()
+
+        await foreignBridge.setGasTokenParameters(5, receiver)
+        await gasTokenContract.freeUpTo('100', { from: receiver })
+      })
+
+      it('should mint gas tokens on Subsidized mode', async () => {
+        // Use these calls to simulate home bridge on Home network
+        await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
+          from: user
+        }).should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
+      })
+
+      it('should spend partial allowance and mint tokens on Subsidized mode', async () => {
+        await gasTokenContract.mint(3, { from: user })
+        await gasTokenContract.approve(foreignBridge.address, 3, { from: user })
+        // Use these calls to simulate home bridge on Home network
+        await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
+          from: user
+        }).should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(user)).to.be.bignumber.equal(ZERO)
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
+      })
+
+      it('should spend full allowance on Subsidized mode', async () => {
+        await gasTokenContract.mint(5, { from: user })
+        await gasTokenContract.approve(foreignBridge.address, 5, { from: user })
+        // Use these calls to simulate home bridge on Home network
+        await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
+          from: user
+        }).should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(user)).to.be.bignumber.equal(ZERO)
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
+      })
+
+      it('should spend partial allowance on Subsidized mode', async () => {
+        await gasTokenContract.mint(7, { from: user })
+        await gasTokenContract.approve(foreignBridge.address, 7, { from: user })
+        // Use these calls to simulate home bridge on Home network
+        await foreignBridge.requireToPassMessage(box.address, setValueData, 1221254, {
+          from: user
+        }).should.be.fulfilled
+
+        expect(await gasTokenContract.balanceOf(user)).to.be.bignumber.equal('2')
+        expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
+      })
     })
   })
 })

@@ -1,12 +1,15 @@
 pragma solidity 0.4.24;
 
-import "./ERC677BridgeToken.sol";
+import "./ERC677MultiBridgeToken.sol";
 
-contract ERC677BridgeTokenRewardable is ERC677BridgeToken {
+contract ERC677BridgeTokenRewardable is ERC677MultiBridgeToken {
     address public blockRewardContract;
     address public stakingContract;
 
-    constructor(string _name, string _symbol, uint8 _decimals) public ERC677BridgeToken(_name, _symbol, _decimals) {
+    constructor(string _name, string _symbol, uint8 _decimals)
+        public
+        ERC677MultiBridgeToken(_name, _symbol, _decimals)
+    {
         // solhint-disable-previous-line no-empty-blocks
     }
 

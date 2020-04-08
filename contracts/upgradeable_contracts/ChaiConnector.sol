@@ -185,6 +185,9 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
 
         receiver.call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, address(this), interest, ""));
 
+        // Additional constant to tolerate the DAI balance deposited to the Chai token is not needed here, since we allow to withdraw only extra part of chai balance,
+        // which is not necessary to cover 100% dai balance.
+        // It is guaranteed that the withdrawal of interest won't left the bridge balance uncovered.
         require(dsrBalance() >= investedAmountInDai());
 
         emit PaidInterest(receiver, interest);
@@ -261,6 +264,9 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
         // there is not need to consider overflow when performing a + operation,
         // since both values are controlled by the bridge and can't take extremely high values
         uint256 amount = daiBalance().sub(minDaiTokenBalance());
+
+        require(amount > 0); // revert and save gas if there is nothing to convert
+
         uint256 newInvestedAmountInDai = investedAmountInDai() + amount;
         setInvestedAmountInDai(newInvestedAmountInDai);
         erc20token().approve(chaiToken(), amount);
@@ -302,7 +308,8 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
         uint256 newInvested = invested > redeemed ? invested - redeemed : 0;
         setInvestedAmountInDai(newInvested);
 
-        require(dsrBalance() >= newInvested);
+        // see comment in convertDaiToChai() for similar statement
+        require(dsrBalance() + 10000 >= newInvested);
 
         emit TokensSwapped(chaiToken(), erc20token(), redeemed);
     }

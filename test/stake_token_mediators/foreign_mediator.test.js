@@ -239,5 +239,15 @@ contract('ForeignStakeTokenMediator', async accounts => {
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
     })
+
+    it('should not accept zero tokens', async () => {
+      await token.mint(user, oneEther)
+      await token.transferOwnership(foreignMediator.address)
+
+      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+
+      await token.transferAndCall(foreignMediator.address, ZERO, '0x', { from: user }).should.be.rejected
+      await token.transferAndCall(foreignMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
+    })
   })
 })

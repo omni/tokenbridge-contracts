@@ -273,6 +273,11 @@ contract('HomeStakeTokenMediator', async accounts => {
         expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(blockReward.address)).to.be.bignumber.equal(ZERO)
       })
+
+      it('should not accept zero tokens', async () => {
+        await token.transferAndCall(homeMediator.address, ZERO, '0x', { from: user }).should.be.rejected
+        await token.transferAndCall(homeMediator.address, halfEther, '0x', { from: user }).should.be.fulfilled
+      })
     })
 
     describe('bridge tokens to xDai chain', async () => {

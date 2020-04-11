@@ -4,6 +4,7 @@ import "../BasicBridge.sol";
 
 contract BasicAMB is BasicBridge {
     bytes32 internal constant MAX_GAS_PER_TX = 0x2670ecc91ec356e32067fd27b36614132d727b84a1e03e08f412a4f2cf075974; // keccak256(abi.encodePacked("maxGasPerTx"))
+    bytes32 internal constant NONCE = 0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759; // keccak256(abi.encodePacked("nonce"))
 
     function initialize(
         address _validatorContract,
@@ -22,6 +23,7 @@ contract BasicAMB is BasicBridge {
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
         uintStorage[GAS_PRICE] = _gasPrice;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        _setNonce(keccak256(address(this)));
         setOwner(_owner);
         setInitialize();
 
@@ -29,6 +31,10 @@ contract BasicAMB is BasicBridge {
         emit GasPriceChanged(_gasPrice);
 
         return isInitialized();
+    }
+
+    function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
+        return (4, 0, 0);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -41,5 +47,13 @@ contract BasicAMB is BasicBridge {
 
     function setMaxGasPerTx(uint256 _maxGasPerTx) external onlyOwner {
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
+    }
+
+    function nonce() internal view returns (bytes32) {
+        return bytes32(uintStorage[NONCE]);
+    }
+
+    function _setNonce(bytes32 _hash) internal {
+        uintStorage[NONCE] = uint256(_hash);
     }
 }

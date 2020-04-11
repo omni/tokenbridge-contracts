@@ -8,5 +8,5 @@ interface IAMB {
     function failedMessageDataHash(bytes32 _txHash) external view returns (bytes32);
     function failedMessageReceiver(bytes32 _txHash) external view returns (address);
     function failedMessageSender(bytes32 _txHash) external view returns (address);
-    function requireToPassMessage(address _contract, bytes _data, uint256 _gas) external;
+    function requireToPassMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32);
 }

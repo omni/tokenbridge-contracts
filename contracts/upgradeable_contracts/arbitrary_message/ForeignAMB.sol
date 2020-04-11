@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "./BasicForeignAMB.sol";
 
 contract ForeignAMB is BasicForeignAMB {
-    event UserRequestForAffirmation(bytes encodedData);
+    event UserRequestForAffirmation(bytes32 indexed messageId, bytes encodedData);
     event RelayedMessage(
         address indexed sender,
         address indexed executor,
@@ -11,8 +11,8 @@ contract ForeignAMB is BasicForeignAMB {
         bool status
     );
 
-    function emitEventOnMessageRequest(bytes encodedData) internal {
-        emit UserRequestForAffirmation(encodedData);
+    function emitEventOnMessageRequest(bytes32 messageId, bytes encodedData) internal {
+        emit UserRequestForAffirmation(messageId, encodedData);
     }
 
     function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal {

@@ -6,9 +6,12 @@ import "./BasicAMB.sol";
 contract MessageDelivery is BasicAMB {
     using SafeMath for uint256;
 
-    function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public {
+    function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public returns (bytes32 messageId) {
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
-        emitEventOnMessageRequest(abi.encodePacked(msg.sender, _contract, _gas, uint8(0x00), _data));
+        messageId = nonce();
+        bytes memory eventData = abi.encodePacked(messageId, msg.sender, _contract, _gas, uint8(0x00), _data);
+        _setNonce(keccak256(eventData));
+        emitEventOnMessageRequest(messageId, eventData);
     }
 
     function getMinimumGasUsage(bytes _data) public pure returns (uint256 gas) {
@@ -19,5 +22,5 @@ contract MessageDelivery is BasicAMB {
     }
 
     /* solcov ignore next */
-    function emitEventOnMessageRequest(bytes encodedData) internal;
+    function emitEventOnMessageRequest(bytes32 messageId, bytes encodedData) internal;
 }

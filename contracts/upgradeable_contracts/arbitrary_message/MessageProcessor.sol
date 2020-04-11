@@ -15,14 +15,6 @@ contract MessageProcessor is EternalStorage {
         boolStorage[keccak256(abi.encodePacked("messageCallStatus", _txHash))] = _status;
     }
 
-    function failedMessageDataHash(bytes32 _txHash) external view returns (bytes32) {
-        return Bytes.bytesToBytes32(bytesStorage[keccak256(abi.encodePacked("failedMessageDataHash", _txHash))]);
-    }
-
-    function setFailedMessageDataHash(bytes32 _txHash, bytes data) internal {
-        bytesStorage[keccak256(abi.encodePacked("failedMessageDataHash", _txHash))] = abi.encodePacked(keccak256(data));
-    }
-
     function failedMessageReceiver(bytes32 _txHash) external view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("failedMessageReceiver", _txHash))];
     }
@@ -47,43 +39,42 @@ contract MessageProcessor is EternalStorage {
         addressStorage[MESSAGE_SENDER] = _sender;
     }
 
-    function transactionHash() external view returns (bytes32) {
-        return Bytes.bytesToBytes32(bytesStorage[TRANSACTION_HASH]);
+    function messageId() external view returns (bytes32) {
+        return bytes32(uintStorage[TRANSACTION_HASH]);
     }
 
-    function setTransactionHash(bytes32 _txHash) internal {
-        bytesStorage[TRANSACTION_HASH] = abi.encodePacked(_txHash);
+    function setMessageId(bytes32 _messageId) internal {
+        uintStorage[TRANSACTION_HASH] = uint256(_messageId);
     }
 
     function processMessage(
-        address sender,
-        address executor,
-        bytes32 txHash,
-        uint256 gasLimit,
+        address _sender,
+        address _executor,
+        bytes32 _messageId,
+        uint256 _gasLimit,
         bytes1, /* dataType */
         uint256, /* gasPrice */
-        bytes memory data
+        bytes memory _data
     ) internal {
-        bool status = _passMessage(sender, executor, data, gasLimit, txHash);
+        bool status = _passMessage(_sender, _executor, _data, _gasLimit, _messageId);
 
-        setMessageCallStatus(txHash, status);
+        setMessageCallStatus(_messageId, status);
         if (!status) {
-            setFailedMessageDataHash(txHash, data);
-            setFailedMessageReceiver(txHash, executor);
-            setFailedMessageSender(txHash, sender);
+            setFailedMessageReceiver(_messageId, _executor);
+            setFailedMessageSender(_messageId, _sender);
         }
-        emitEventOnMessageProcessed(sender, executor, txHash, status);
+        emitEventOnMessageProcessed(_sender, _executor, _messageId, status);
     }
 
-    function _passMessage(address _sender, address _contract, bytes _data, uint256 _gas, bytes32 _txHash)
+    function _passMessage(address _sender, address _contract, bytes _data, uint256 _gas, bytes32 _messageId)
         internal
         returns (bool)
     {
         setMessageSender(_sender);
-        setTransactionHash(_txHash);
+        setMessageId(_messageId);
         bool status = _contract.call.gas(_gas)(_data);
         setMessageSender(address(0));
-        setTransactionHash(bytes32(0));
+        setMessageId(bytes32(0));
         return status;
     }
 

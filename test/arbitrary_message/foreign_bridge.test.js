@@ -266,6 +266,29 @@ contract('ForeignAMB', async accounts => {
       expect(await box.messageId()).to.be.equal(messageId)
       expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
+    it('should generate different message ids', async () => {
+      const user = accounts[8]
+
+      const boxInitialValue = await box.value()
+      boxInitialValue.should.be.bignumber.equal(ZERO)
+
+      const resultPassMessageTx1 = await foreignBridge.requireToPassMessage(box.address, setValueData, 221254, {
+        from: user
+      })
+      const resultPassMessageTx2 = await foreignBridge.requireToPassMessage(box.address, setValueData, 221254, {
+        from: user
+      })
+      const resultPassMessageTx3 = await foreignBridge.requireToPassMessage(box.address, setValueData, 221254, {
+        from: user
+      })
+
+      const messageId1 = resultPassMessageTx1.logs[0].args.messageId
+      const messageId2 = resultPassMessageTx2.logs[0].args.messageId
+      const messageId3 = resultPassMessageTx3.logs[0].args.messageId
+      expect(messageId1).to.be.not.equal(messageId2)
+      expect(messageId2).to.be.not.equal(messageId3)
+      expect(messageId1).to.be.not.equal(messageId3)
+    })
     it('test with 3 signatures required', async () => {
       // set validator
       const validatorContractWith3Signatures = await BridgeValidators.new()

@@ -5,7 +5,7 @@ import "../../libraries/Bytes.sol";
 
 contract MessageProcessor is EternalStorage {
     bytes32 internal constant MESSAGE_SENDER = 0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b; // keccak256(abi.encodePacked("messageSender"))
-    bytes32 internal constant TRANSACTION_HASH = 0x7bce44346b9831b0c81437a092605c6fc51612016e2c51e62f21d829e434bcf6; // keccak256(abi.encodePacked("transactionHash"))
+    bytes32 internal constant MESSAGE_ID = 0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304; // keccak256(abi.encodePacked("messageId"))
 
     function messageCallStatus(bytes32 _messageId) external view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("messageCallStatus", _messageId))];
@@ -40,11 +40,11 @@ contract MessageProcessor is EternalStorage {
     }
 
     function messageId() external view returns (bytes32) {
-        return bytes32(uintStorage[TRANSACTION_HASH]);
+        return bytes32(uintStorage[MESSAGE_ID]);
     }
 
     function setMessageId(bytes32 _messageId) internal {
-        uintStorage[TRANSACTION_HASH] = uint256(_messageId);
+        uintStorage[MESSAGE_ID] = uint256(_messageId);
     }
 
     function processMessage(

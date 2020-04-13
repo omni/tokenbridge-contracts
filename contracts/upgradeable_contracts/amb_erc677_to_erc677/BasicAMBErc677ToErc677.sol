@@ -22,12 +22,11 @@ contract BasicAMBErc677ToErc677 is
     BaseOverdrawManagement,
     BaseERC677Bridge
 {
-    event FailedMessageFixed(bytes32 indexed dataHash, address recipient, uint256 value);
+    event FailedMessageFixed(bytes32 indexed messageId, address recipient, uint256 value);
 
     bytes32 internal constant BRIDGE_CONTRACT = 0x811bbb11e8899da471f0e69a3ed55090fc90215227fc5fb1cb0d6e962ea7b74f; // keccak256(abi.encodePacked("bridgeContract"))
     bytes32 internal constant MEDIATOR_CONTRACT = 0x98aa806e31e94a687a31c65769cb99670064dd7f5a87526da075c5fb4eab9880; // keccak256(abi.encodePacked("mediatorContract"))
     bytes32 internal constant REQUEST_GAS_LIMIT = 0x2dfd6c9f781bb6bbb5369c114e949b69ebb440ef3d4dd6b2836225eb1dc3a2be; // keccak256(abi.encodePacked("requestGasLimit"))
-    bytes32 internal constant NONCE = 0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759; // keccak256(abi.encodePacked("nonce"))
 
     function initialize(
         address _bridgeContract,
@@ -58,7 +57,6 @@ contract BasicAMBErc677ToErc677 is
         _setRequestGasLimit(_requestGasLimit);
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
-        setNonce(keccak256(abi.encodePacked(address(this))));
         setInitialize();
 
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
@@ -73,14 +71,16 @@ contract BasicAMBErc677ToErc677 is
 
     function passMessage(address _from, uint256 _value) internal {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value, nonce());
+        bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value);
 
-        bytes32 dataHash = keccak256(data);
-        setMessageHashValue(dataHash, _value);
-        setMessageHashRecipient(dataHash, _from);
-        setNonce(dataHash);
+        bytes32 _messageId = bridgeContract().requireToPassMessage(
+            mediatorContractOnOtherSide(),
+            data,
+            requestGasLimit()
+        );
 
-        bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
+        setMessageValue(_messageId, _value);
+        setMessageRecipient(_messageId, _from);
     }
 
     function relayTokens(address _from, address _receiver, uint256 _value) external {
@@ -169,111 +169,98 @@ contract BasicAMBErc677ToErc677 is
         return bridgeContract().messageSender();
     }
 
-    function transactionHash() internal view returns (bytes32) {
-        return bridgeContract().transactionHash();
+    function messageId() internal view returns (bytes32) {
+        return bridgeContract().messageId();
     }
 
     function maxGasPerTx() internal view returns (uint256) {
         return bridgeContract().maxGasPerTx();
     }
 
-    function nonce() internal view returns (bytes32) {
-        return Bytes.bytesToBytes32(bytesStorage[NONCE]);
-    }
-
-    function setNonce(bytes32 _hash) internal {
-        bytesStorage[NONCE] = abi.encodePacked(_hash);
-    }
-
-    function setMessageHashValue(bytes32 _hash, uint256 _value) internal {
+    function setMessageValue(bytes32 _hash, uint256 _value) internal {
         uintStorage[keccak256(abi.encodePacked("messageHashValue", _hash))] = _value;
     }
 
-    function messageHashValue(bytes32 _hash) internal view returns (uint256) {
+    function messageValue(bytes32 _hash) internal view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("messageHashValue", _hash))];
     }
 
-    function setMessageHashRecipient(bytes32 _hash, address _recipient) internal {
+    function setMessageRecipient(bytes32 _hash, address _recipient) internal {
         addressStorage[keccak256(abi.encodePacked("messageHashRecipient", _hash))] = _recipient;
     }
 
-    function messageHashRecipient(bytes32 _hash) internal view returns (address) {
+    function messageRecipient(bytes32 _hash) internal view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("messageHashRecipient", _hash))];
     }
 
-    function setMessageHashFixed(bytes32 _hash) internal {
+    function setMessageFixed(bytes32 _hash) internal {
         boolStorage[keccak256(abi.encodePacked("messageHashFixed", _hash))] = true;
     }
 
-    function messageHashFixed(bytes32 _hash) public view returns (bool) {
+    function messageFixed(bytes32 _hash) public view returns (bool) {
         return boolStorage[keccak256(abi.encodePacked("messageHashFixed", _hash))];
     }
 
-    function handleBridgedTokens(
-        address _recipient,
-        uint256 _value,
-        bytes32 /* nonce */
-    ) external {
+    function handleBridgedTokens(address _recipient, uint256 _value) external {
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
         if (withinExecutionLimit(_value)) {
             setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
             executeActionOnBridgedTokens(_recipient, _value);
         } else {
-            bytes32 txHash = transactionHash();
+            bytes32 _messageId = messageId();
             address recipient;
             uint256 value;
-            (recipient, value) = txAboveLimits(txHash);
+            (recipient, value) = txAboveLimits(_messageId);
             require(recipient == address(0) && value == 0);
             setOutOfLimitAmount(outOfLimitAmount().add(_value));
-            setTxAboveLimits(_recipient, _value, txHash);
-            emit AmountLimitExceeded(_recipient, _value, txHash);
+            setTxAboveLimits(_recipient, _value, _messageId);
+            emit AmountLimitExceeded(_recipient, _value, _messageId);
         }
     }
 
-    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
+    function fixAssetsAboveLimits(bytes32 _messageId, bool unlockOnForeign, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
     {
-        require(!fixedAssets(txHash));
+        require(!fixedAssets(_messageId));
         require(valueToUnlock <= maxPerTx());
         address recipient;
         uint256 value;
-        (recipient, value) = txAboveLimits(txHash);
+        (recipient, value) = txAboveLimits(_messageId);
         require(recipient != address(0) && value > 0 && value >= valueToUnlock);
         setOutOfLimitAmount(outOfLimitAmount().sub(valueToUnlock));
         uint256 pendingValue = value.sub(valueToUnlock);
-        setTxAboveLimitsValue(pendingValue, txHash);
-        emit AssetAboveLimitsFixed(txHash, valueToUnlock, pendingValue);
+        setTxAboveLimitsValue(pendingValue, _messageId);
+        emit AssetAboveLimitsFixed(_messageId, valueToUnlock, pendingValue);
         if (pendingValue == 0) {
-            setFixedAssets(txHash);
+            setFixedAssets(_messageId);
         }
         if (unlockOnForeign) {
             passMessage(recipient, valueToUnlock);
         }
     }
 
-    function requestFailedMessageFix(bytes32 _txHash) external {
-        require(!bridgeContract().messageCallStatus(_txHash));
-        require(bridgeContract().failedMessageReceiver(_txHash) == address(this));
-        require(bridgeContract().failedMessageSender(_txHash) == mediatorContractOnOtherSide());
-        bytes32 dataHash = bridgeContract().failedMessageDataHash(_txHash);
+    function requestFailedMessageFix(bytes32 _messageId) external {
+        require(!bridgeContract().messageCallStatus(_messageId));
+        require(bridgeContract().failedMessageReceiver(_messageId) == address(this));
+        require(bridgeContract().failedMessageSender(_messageId) == mediatorContractOnOtherSide());
 
         bytes4 methodSelector = this.fixFailedMessage.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, dataHash);
+        bytes memory data = abi.encodeWithSelector(methodSelector, _messageId);
         bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
     }
 
-    function fixFailedMessage(bytes32 _dataHash) external {
+    function fixFailedMessage(bytes32 _messageId) external {
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
-        require(!messageHashFixed(_dataHash));
+        require(!messageFixed(_messageId));
 
-        address recipient = messageHashRecipient(_dataHash);
-        uint256 value = messageHashValue(_dataHash);
-        setMessageHashFixed(_dataHash);
+        address recipient = messageRecipient(_messageId);
+        uint256 value = messageValue(_messageId);
+        setMessageFixed(_messageId);
         executeActionOnFixedTokens(recipient, value);
-        emit FailedMessageFixed(_dataHash, recipient, value);
+        emit FailedMessageFixed(_messageId, recipient, value);
     }
 
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {

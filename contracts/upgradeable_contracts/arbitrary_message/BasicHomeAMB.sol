@@ -41,13 +41,13 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
     function handleMessage(bytes _message) internal {
         address sender;
         address executor;
-        bytes32 txHash;
+        bytes32 messageId;
         uint256 gasLimit;
         bytes1 dataType;
         uint256 gasPrice;
         bytes memory data;
-        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_message, false);
-        processMessage(sender, executor, txHash, gasLimit, dataType, gasPrice, data);
+        (sender, executor, messageId, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_message, false);
+        processMessage(sender, executor, messageId, gasLimit, dataType, gasPrice, data);
     }
 
     function submitSignature(bytes signature, bytes message) external onlyValidator {

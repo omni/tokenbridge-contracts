@@ -6,7 +6,7 @@ import "./Message.sol";
 library ArbitraryMessage {
     // layout of message :: bytes:
     // offset  0: 32 bytes :: uint256 - message length
-    // offset 32: 32 bytes :: bytes32 txHash
+    // offset 32: 32 bytes :: bytes32 messageId
     // offset 52: 20 bytes :: address - sender address
     // offset 72: 20 bytes :: address - executor contract
     // offset 104: 32 bytes :: uint256 - gasLimit
@@ -31,7 +31,7 @@ library ArbitraryMessage {
         returns (
             address sender,
             address executor,
-            bytes32 txHash,
+            bytes32 messageId,
             uint256 gasLimit,
             bytes1 dataType,
             uint256 gasPrice,
@@ -43,7 +43,7 @@ library ArbitraryMessage {
         // 32 (tx hash) + 20 (sender)  + 20 (executor) + 32 (gasLimit) + 1 (dataType)
         uint256 srcdataptr = 32 + 20 + 20 + 32 + 1;
         assembly {
-            txHash := mload(add(_data, 32))
+            messageId := mload(add(_data, 32))
             sender := mload(add(_data, 52))
             executor := mload(add(_data, 72))
             gasLimit := mload(add(_data, 104))

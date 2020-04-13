@@ -7,7 +7,7 @@ contract ForeignAMB is BasicForeignAMB {
     event RelayedMessage(
         address indexed sender,
         address indexed executor,
-        bytes32 indexed transactionHash,
+        bytes32 indexed messageId,
         bool status
     );
 
@@ -15,7 +15,7 @@ contract ForeignAMB is BasicForeignAMB {
         emit UserRequestForAffirmation(messageId, encodedData);
     }
 
-    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal {
-        emit RelayedMessage(sender, executor, txHash, status);
+    function emitEventOnMessageProcessed(address sender, address executor, bytes32 messageId, bool status) internal {
+        emit RelayedMessage(sender, executor, messageId, status);
     }
 }

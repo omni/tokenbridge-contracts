@@ -7,28 +7,28 @@ contract MessageProcessor is EternalStorage {
     bytes32 internal constant MESSAGE_SENDER = 0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b; // keccak256(abi.encodePacked("messageSender"))
     bytes32 internal constant TRANSACTION_HASH = 0x7bce44346b9831b0c81437a092605c6fc51612016e2c51e62f21d829e434bcf6; // keccak256(abi.encodePacked("transactionHash"))
 
-    function messageCallStatus(bytes32 _txHash) external view returns (bool) {
-        return boolStorage[keccak256(abi.encodePacked("messageCallStatus", _txHash))];
+    function messageCallStatus(bytes32 _messageId) external view returns (bool) {
+        return boolStorage[keccak256(abi.encodePacked("messageCallStatus", _messageId))];
     }
 
-    function setMessageCallStatus(bytes32 _txHash, bool _status) internal {
-        boolStorage[keccak256(abi.encodePacked("messageCallStatus", _txHash))] = _status;
+    function setMessageCallStatus(bytes32 _messageId, bool _status) internal {
+        boolStorage[keccak256(abi.encodePacked("messageCallStatus", _messageId))] = _status;
     }
 
-    function failedMessageReceiver(bytes32 _txHash) external view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("failedMessageReceiver", _txHash))];
+    function failedMessageReceiver(bytes32 _messageId) external view returns (address) {
+        return addressStorage[keccak256(abi.encodePacked("failedMessageReceiver", _messageId))];
     }
 
-    function setFailedMessageReceiver(bytes32 _txHash, address _receiver) internal {
-        addressStorage[keccak256(abi.encodePacked("failedMessageReceiver", _txHash))] = _receiver;
+    function setFailedMessageReceiver(bytes32 _messageId, address _receiver) internal {
+        addressStorage[keccak256(abi.encodePacked("failedMessageReceiver", _messageId))] = _receiver;
     }
 
-    function failedMessageSender(bytes32 _txHash) external view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("failedMessageSender", _txHash))];
+    function failedMessageSender(bytes32 _messageId) external view returns (address) {
+        return addressStorage[keccak256(abi.encodePacked("failedMessageSender", _messageId))];
     }
 
-    function setFailedMessageSender(bytes32 _txHash, address _sender) internal {
-        addressStorage[keccak256(abi.encodePacked("failedMessageSender", _txHash))] = _sender;
+    function setFailedMessageSender(bytes32 _messageId, address _sender) internal {
+        addressStorage[keccak256(abi.encodePacked("failedMessageSender", _messageId))] = _sender;
     }
 
     function messageSender() external view returns (address) {
@@ -79,5 +79,5 @@ contract MessageProcessor is EternalStorage {
     }
 
     /* solcov ignore next */
-    function emitEventOnMessageProcessed(address sender, address executor, bytes32 txHash, bool status) internal;
+    function emitEventOnMessageProcessed(address sender, address executor, bytes32 _messageId, bool status) internal;
 }

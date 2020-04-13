@@ -18,15 +18,15 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery, MessageProc
 
         address sender;
         address executor;
-        bytes32 txHash;
+        bytes32 messageId;
         uint256 gasLimit;
         bytes1 dataType;
         uint256 gasPrice;
         bytes memory data;
 
-        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data, true);
-        require(!relayedMessages(txHash));
-        setRelayedMessages(txHash, true);
-        processMessage(sender, executor, txHash, gasLimit, dataType, gasPrice, data);
+        (sender, executor, messageId, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data, true);
+        require(!relayedMessages(messageId));
+        setRelayedMessages(messageId, true);
+        processMessage(sender, executor, messageId, gasLimit, dataType, gasPrice, data);
     }
 }

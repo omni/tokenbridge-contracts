@@ -46,7 +46,10 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
         bytes1 dataType;
         uint256 gasPrice;
         bytes memory data;
-        (sender, executor, messageId, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_message, false);
+        (sender, executor, messageId, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(
+            _message,
+            false
+        );
         processMessage(sender, executor, messageId, gasLimit, dataType, gasPrice, data);
     }
 

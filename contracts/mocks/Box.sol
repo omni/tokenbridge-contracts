@@ -5,12 +5,12 @@ import "../interfaces/IAMB.sol";
 contract Box {
     uint256 public value;
     address public lastSender;
-    bytes32 public txHash;
+    bytes32 public messageId;
 
     function setValue(uint256 _value) public {
         value = _value;
         lastSender = IAMB(msg.sender).messageSender();
-        txHash = IAMB(msg.sender).transactionHash();
+        messageId = IAMB(msg.sender).messageId();
     }
 
     function methodWillFail() public {

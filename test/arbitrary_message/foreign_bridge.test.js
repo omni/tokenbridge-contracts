@@ -10,7 +10,6 @@ const {
   sign,
   ether,
   expectEventInLogs,
-  addTxHashToAMBData,
   signatureToVRS,
   packSignatures,
   createFullAccounts
@@ -243,9 +242,7 @@ contract('ForeignAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -257,16 +254,16 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: true
       })
 
-      expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(true)
+      expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
 
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
-      expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
+      expect(await box.messageId()).to.be.equal(messageId)
       expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('test with 3 signatures required', async () => {
@@ -299,9 +296,7 @@ contract('ForeignAMB', async accounts => {
         { from: user }
       )
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const signature1 = await sign(authoritiesFiveAccs[0], message)
       const vrs = signatureToVRS(signature1)
@@ -332,14 +327,14 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: true
       })
 
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
-      expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
+      expect(await box.messageId()).to.be.equal(messageId)
       expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('test with max allowed number of signatures required', async () => {
@@ -373,9 +368,7 @@ contract('ForeignAMB', async accounts => {
         { from: user }
       )
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const message = resultPassMessageTx.logs[0].args.encodedData
 
       const vrsList = []
       for (let i = 0; i < MAX_SIGNATURES; i++) {
@@ -399,9 +392,7 @@ contract('ForeignAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -414,7 +405,7 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: true
       })
 
@@ -433,9 +424,7 @@ contract('ForeignAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -449,26 +438,23 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: true
       })
 
-      expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(true)
+      expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
     })
     it('status of RelayedMessage should be false on contract failed call', async () => {
       const user = accounts[8]
 
       const methodWillFailData = box.contract.methods.methodWillFail().encodeABI()
-      const messageDataHash = web3.utils.soliditySha3(methodWillFailData)
 
       // Use these calls to simulate home bridge on home network
       const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, methodWillFailData, 821254, {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -481,14 +467,13 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: false
       })
 
-      expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
-      expect(await foreignBridge.failedMessageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
-      expect(await foreignBridge.failedMessageReceiver(resultPassMessageTx.tx)).to.be.equal(box.address)
-      expect(await foreignBridge.failedMessageSender(resultPassMessageTx.tx)).to.be.equal(user)
+      expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(false)
+      expect(await foreignBridge.failedMessageReceiver(messageId)).to.be.equal(box.address)
+      expect(await foreignBridge.failedMessageSender(messageId)).to.be.equal(user)
 
       await foreignBridge
         .executeSignatures(message, signatures, { from: authorities[0], gasPrice })
@@ -501,16 +486,13 @@ contract('ForeignAMB', async accounts => {
       const user = accounts[8]
 
       const methodOutOfGasData = box.contract.methods.methodOutOfGas().encodeABI()
-      const messageDataHash = web3.utils.soliditySha3(methodOutOfGasData)
 
       // Use these calls to simulate home bridge on home network
       const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, methodOutOfGasData, 1000, {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const signature = await sign(authorities[0], message)
       const vrs = signatureToVRS(signature)
@@ -523,14 +505,13 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'RelayedMessage', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: false
       })
 
-      expect(await foreignBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
-      expect(await foreignBridge.failedMessageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
-      expect(await foreignBridge.failedMessageReceiver(resultPassMessageTx.tx)).to.be.equal(box.address)
-      expect(await foreignBridge.failedMessageSender(resultPassMessageTx.tx)).to.be.equal(user)
+      expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(false)
+      expect(await foreignBridge.failedMessageReceiver(messageId)).to.be.equal(box.address)
+      expect(await foreignBridge.failedMessageSender(messageId)).to.be.equal(user)
 
       await foreignBridge
         .executeSignatures(message, signatures, { from: authorities[0], gasPrice })

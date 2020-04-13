@@ -5,7 +5,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { sign, ether, expectEventInLogs, addTxHashToAMBData } = require('../helpers/helpers')
+const { sign, ether, expectEventInLogs } = require('../helpers/helpers')
 
 const requiredBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -257,25 +257,23 @@ contract('HomeAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const { logs } = await homeBridge.executeAffirmation(message, { from: authorities[0] }).should.be.fulfilled
       logs[0].event.should.be.equal('SignedForAffirmation')
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: true
       })
 
-      expect(await homeBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(true)
+      expect(await homeBridge.messageCallStatus(messageId)).to.be.equal(true)
 
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
-      expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
+      expect(await box.messageId()).to.be.equal(messageId)
       expect(await homeBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('test with 3 signatures required', async () => {
@@ -308,9 +306,7 @@ contract('HomeAMB', async accounts => {
         { from: user }
       )
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
       const msgHash = web3.utils.soliditySha3(message)
 
       const { logs } = await homeBridgeWithThreeSigs.executeAffirmation(message, {
@@ -346,7 +342,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(thirdSignature.logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: true
       })
 
@@ -362,7 +358,7 @@ contract('HomeAMB', async accounts => {
       // check Box value
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
-      expect(await box.txHash()).to.be.equal(resultPassMessageTx.tx)
+      expect(await box.messageId()).to.be.equal(messageId)
       expect(await homeBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('should not allow to double execute', async () => {
@@ -373,9 +369,7 @@ contract('HomeAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const { logs } = await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be
         .fulfilled
@@ -383,7 +377,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: true
       })
 
@@ -398,9 +392,7 @@ contract('HomeAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const message = resultPassMessageTx.logs[0].args.encodedData
 
       await homeBridge.executeAffirmation(message, { from: user, gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: accounts[7], gasPrice }).should.be.rejectedWith(ERROR_MSG)
@@ -421,9 +413,7 @@ contract('HomeAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const { logs } = await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be
         .fulfilled
@@ -431,14 +421,13 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: false
       })
 
-      expect(await homeBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
-      expect(await homeBridge.failedMessageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
-      expect(await homeBridge.failedMessageReceiver(resultPassMessageTx.tx)).to.be.equal(box.address)
-      expect(await homeBridge.failedMessageSender(resultPassMessageTx.tx)).to.be.equal(user)
+      expect(await homeBridge.messageCallStatus(messageId)).to.be.equal(false)
+      expect(await homeBridge.failedMessageReceiver(messageId)).to.be.equal(box.address)
+      expect(await homeBridge.failedMessageSender(messageId)).to.be.equal(user)
 
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)
@@ -454,9 +443,7 @@ contract('HomeAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
       const { logs } = await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be
         .fulfilled
@@ -464,14 +451,13 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'AffirmationCompleted', {
         sender: user,
         executor: box.address,
-        transactionHash: resultPassMessageTx.tx,
+        messageId,
         status: false
       })
 
-      expect(await homeBridge.messageCallStatus(resultPassMessageTx.tx)).to.be.equal(false)
-      expect(await homeBridge.failedMessageDataHash(resultPassMessageTx.tx)).to.be.equal(messageDataHash)
-      expect(await homeBridge.failedMessageReceiver(resultPassMessageTx.tx)).to.be.equal(box.address)
-      expect(await homeBridge.failedMessageSender(resultPassMessageTx.tx)).to.be.equal(user)
+      expect(await homeBridge.messageCallStatus(messageId)).to.be.equal(false)
+      expect(await homeBridge.failedMessageReceiver(messageId)).to.be.equal(box.address)
+      expect(await homeBridge.failedMessageSender(messageId)).to.be.equal(user)
 
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)
@@ -501,9 +487,7 @@ contract('HomeAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const message = resultPassMessageTx.logs[0].args.encodedData
       const signature = await sign(authorities[0], message)
       const msgHash = web3.utils.soliditySha3(message)
 
@@ -554,9 +538,7 @@ contract('HomeAMB', async accounts => {
         { from: user }
       )
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const message = resultPassMessageTx.logs[0].args.encodedData
       const signature1 = await sign(authoritiesFiveAccs[0], message)
       const signature2 = await sign(authoritiesFiveAccs[1], message)
       const signature3 = await sign(authoritiesFiveAccs[2], message)
@@ -610,9 +592,7 @@ contract('HomeAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const message = resultPassMessageTx.logs[0].args.encodedData
       const signature = await sign(authorities[0], message)
       const signature2 = await sign(authorities[1], message)
 
@@ -635,9 +615,7 @@ contract('HomeAMB', async accounts => {
         from: user
       })
 
-      // Validator on token-bridge add txHash to message
-      const { encodedData } = resultPassMessageTx.logs[0].args
-      const message = addTxHashToAMBData(encodedData, resultPassMessageTx.tx)
+      const message = resultPassMessageTx.logs[0].args.encodedData
 
       const signature = await sign(authorities[0], message)
       const userSignature = await sign(user, message)

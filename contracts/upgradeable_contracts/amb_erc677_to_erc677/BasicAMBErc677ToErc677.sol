@@ -73,14 +73,14 @@ contract BasicAMBErc677ToErc677 is
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value);
 
-        bytes32 _messageId = bridgeContract().requireToPassMessage(
+        bytes32 messageId = bridgeContract().requireToPassMessage(
             mediatorContractOnOtherSide(),
             data,
             requestGasLimit()
         );
 
-        setMessageValue(_messageId, _value);
-        setMessageRecipient(_messageId, _from);
+        setMessageValue(messageId, _value);
+        setMessageRecipient(messageId, _from);
     }
 
     function relayTokens(address _from, address _receiver, uint256 _value) external {
@@ -169,7 +169,7 @@ contract BasicAMBErc677ToErc677 is
         return bridgeContract().messageSender();
     }
 
-    function messageId() internal view returns (bytes32) {
+    function _messageId() internal view returns (bytes32) {
         return bridgeContract().messageId();
     }
 
@@ -208,59 +208,59 @@ contract BasicAMBErc677ToErc677 is
             setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
             executeActionOnBridgedTokens(_recipient, _value);
         } else {
-            bytes32 _messageId = messageId();
+            bytes32 messageId = _messageId();
             address recipient;
             uint256 value;
-            (recipient, value) = txAboveLimits(_messageId);
+            (recipient, value) = txAboveLimits(messageId);
             require(recipient == address(0) && value == 0);
             setOutOfLimitAmount(outOfLimitAmount().add(_value));
-            setTxAboveLimits(_recipient, _value, _messageId);
-            emit AmountLimitExceeded(_recipient, _value, _messageId);
+            setTxAboveLimits(_recipient, _value, messageId);
+            emit AmountLimitExceeded(_recipient, _value, messageId);
         }
     }
 
-    function fixAssetsAboveLimits(bytes32 _messageId, bool unlockOnForeign, uint256 valueToUnlock)
+    function fixAssetsAboveLimits(bytes32 messageId, bool unlockOnForeign, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
     {
-        require(!fixedAssets(_messageId));
+        require(!fixedAssets(messageId));
         require(valueToUnlock <= maxPerTx());
         address recipient;
         uint256 value;
-        (recipient, value) = txAboveLimits(_messageId);
+        (recipient, value) = txAboveLimits(messageId);
         require(recipient != address(0) && value > 0 && value >= valueToUnlock);
         setOutOfLimitAmount(outOfLimitAmount().sub(valueToUnlock));
         uint256 pendingValue = value.sub(valueToUnlock);
-        setTxAboveLimitsValue(pendingValue, _messageId);
-        emit AssetAboveLimitsFixed(_messageId, valueToUnlock, pendingValue);
+        setTxAboveLimitsValue(pendingValue, messageId);
+        emit AssetAboveLimitsFixed(messageId, valueToUnlock, pendingValue);
         if (pendingValue == 0) {
-            setFixedAssets(_messageId);
+            setFixedAssets(messageId);
         }
         if (unlockOnForeign) {
             passMessage(recipient, valueToUnlock);
         }
     }
 
-    function requestFailedMessageFix(bytes32 _messageId) external {
-        require(!bridgeContract().messageCallStatus(_messageId));
-        require(bridgeContract().failedMessageReceiver(_messageId) == address(this));
-        require(bridgeContract().failedMessageSender(_messageId) == mediatorContractOnOtherSide());
+    function requestFailedMessageFix(bytes32 messageId) external {
+        require(!bridgeContract().messageCallStatus(messageId));
+        require(bridgeContract().failedMessageReceiver(messageId) == address(this));
+        require(bridgeContract().failedMessageSender(messageId) == mediatorContractOnOtherSide());
 
         bytes4 methodSelector = this.fixFailedMessage.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, _messageId);
+        bytes memory data = abi.encodeWithSelector(methodSelector, messageId);
         bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
     }
 
-    function fixFailedMessage(bytes32 _messageId) external {
+    function fixFailedMessage(bytes32 messageId) external {
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
-        require(!messageFixed(_messageId));
+        require(!messageFixed(messageId));
 
-        address recipient = messageRecipient(_messageId);
-        uint256 value = messageValue(_messageId);
-        setMessageFixed(_messageId);
+        address recipient = messageRecipient(messageId);
+        uint256 value = messageValue(messageId);
+        setMessageFixed(messageId);
         executeActionOnFixedTokens(recipient, value);
-        emit FailedMessageFixed(_messageId, recipient, value);
+        emit FailedMessageFixed(messageId, recipient, value);
     }
 
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {

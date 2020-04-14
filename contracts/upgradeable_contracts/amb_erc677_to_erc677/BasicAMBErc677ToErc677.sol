@@ -37,7 +37,7 @@ contract BasicAMBErc677ToErc677 is
         uint256 _requestGasLimit,
         uint256 _decimalShift,
         address _owner
-    ) external onlyRelevantSender returns (bool) {
+    ) public onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(
             _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0

@@ -36,7 +36,9 @@ function getContracts(evmVersion) {
     ForeignAMB: require(`../../build/${buildPath}/ForeignAMB`),
     HomeAMBErc677ToErc677: require(`../../build/${buildPath}/HomeAMBErc677ToErc677.json`),
     ForeignAMBErc677ToErc677: require(`../../build/${buildPath}/ForeignAMBErc677ToErc677.json`),
-    InterestReceiver: require(`../../build/${buildPath}/InterestReceiver.json`)
+    InterestReceiver: require(`../../build/${buildPath}/InterestReceiver.json`),
+    HomeStakeTokenMediator: require(`../../build/${buildPath}/HomeStakeTokenMediator.json`),
+    ForeignStakeTokenMediator: require(`../../build/${buildPath}/ForeignStakeTokenMediator.json`)
   }
 }
 

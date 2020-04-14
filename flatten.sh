@@ -55,3 +55,7 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/arbitrary_message/ForeignAMBWithGasToken.so
 echo "Flattening contracts related to erc677 to erc677 on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/HomeAMBErc677ToErc677.sol > flats/amb_erc677_to_erc677/HomeAMBErc677ToErc677_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/ForeignAMBErc677ToErc677.sol > flats/amb_erc677_to_erc677/ForeignAMBErc677ToErc677_flat.sol
+
+echo "Flattening contracts related to stake token mediators"
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/HomeStakeTokenMediator.sol > flats/amb_erc677_to_erc677/HomeStakeTokenMediator_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc677_to_erc677/ForeignStakeTokenMediator.sol > flats/amb_erc677_to_erc677/ForeignStakeTokenMediator_flat.sol

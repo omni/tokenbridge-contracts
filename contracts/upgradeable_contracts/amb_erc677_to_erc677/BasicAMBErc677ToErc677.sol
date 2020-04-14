@@ -178,27 +178,27 @@ contract BasicAMBErc677ToErc677 is
     }
 
     function setMessageValue(bytes32 _hash, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("messageHashValue", _hash))] = _value;
+        uintStorage[keccak256(abi.encodePacked("messageValue", _hash))] = _value;
     }
 
     function messageValue(bytes32 _hash) internal view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("messageHashValue", _hash))];
+        return uintStorage[keccak256(abi.encodePacked("messageValue", _hash))];
     }
 
     function setMessageRecipient(bytes32 _hash, address _recipient) internal {
-        addressStorage[keccak256(abi.encodePacked("messageHashRecipient", _hash))] = _recipient;
+        addressStorage[keccak256(abi.encodePacked("messageRecipient", _hash))] = _recipient;
     }
 
     function messageRecipient(bytes32 _hash) internal view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("messageHashRecipient", _hash))];
+        return addressStorage[keccak256(abi.encodePacked("messageRecipient", _hash))];
     }
 
     function setMessageFixed(bytes32 _hash) internal {
-        boolStorage[keccak256(abi.encodePacked("messageHashFixed", _hash))] = true;
+        boolStorage[keccak256(abi.encodePacked("messageFixed", _hash))] = true;
     }
 
     function messageFixed(bytes32 _hash) public view returns (bool) {
-        return boolStorage[keccak256(abi.encodePacked("messageHashFixed", _hash))];
+        return boolStorage[keccak256(abi.encodePacked("messageFixed", _hash))];
     }
 
     function handleBridgedTokens(address _recipient, uint256 _value) external {

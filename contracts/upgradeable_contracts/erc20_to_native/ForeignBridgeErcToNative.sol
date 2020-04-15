@@ -104,20 +104,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         revert();
     }
 
-    function migrateToMCD() external {
-        bytes32 storageAddress = 0x3378953eb16363e06fd9ea9701d36ed7285d206d9de7df55b778462d74596a89; // keccak256(abi.encodePacked("migrationToMcdCompleted"))
-        require(!boolStorage[storageAddress]);
-
-        address mcdContract = IDaiAdapter(migrationContract().daiJoin()).dai();
-        setErc20token(mcdContract);
-
-        uintStorage[MIN_HDTOKEN_BALANCE] = 10 ether;
-
-        swapTokens();
-
-        boolStorage[storageAddress] = true;
-    }
-
     function saiTopContract() internal pure returns (ISaiTop) {
         return ISaiTop(0x9b0ccf7C8994E19F39b2B4CF708e0A7DF65fA8a3);
     }

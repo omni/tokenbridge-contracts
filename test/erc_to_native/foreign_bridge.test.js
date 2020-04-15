@@ -1148,36 +1148,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       expect(await token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(minDaiLimit)
     })
   })
-  describe('migrateToMCD', () => {
-    let foreignBridge
-    beforeEach(async () => {
-      foreignBridge = await ForeignBridgeErcToNativeMock.new()
-
-      await foreignBridge.initialize(
-        validatorContract.address,
-        sai.address,
-        requireBlockConfirmations,
-        gasPrice,
-        [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
-        owner,
-        decimalShiftZero,
-        otherSideBridge.address
-      )
-
-      // Mint the bridge some sai tokens
-      await sai.mint(foreignBridge.address, oneEther)
-    })
-    it('should not be able to swap tokens', async () => {
-      // Given
-      expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-      expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-      expect(await foreignBridge.erc20token()).to.be.equal(sai.address)
-
-      // When
-      await foreignBridge.migrateToMCD({ from: owner }).should.be.rejectedWith(ERROR_MSG)
-    })
-  })
   describe('support two tokens', () => {
     let foreignBridge
     const recipient = accounts[8]

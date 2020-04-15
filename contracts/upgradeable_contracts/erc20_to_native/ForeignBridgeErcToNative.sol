@@ -122,12 +122,10 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         return ISaiTop(0x9b0ccf7C8994E19F39b2B4CF708e0A7DF65fA8a3);
     }
 
-    function isTokenSwapAllowed(uint256 _ts) public view returns (bool) {
-        uint256 esTs = saiTopContract().caged();
-        if (esTs > 0 && _ts > esTs) {
-            return false;
-        }
-        return true;
+    function isTokenSwapAllowed(
+        uint256 /* _ts */
+    ) public pure returns (bool) {
+        return false;
     }
 
     function halfDuplexErc20token() public pure returns (ERC20) {

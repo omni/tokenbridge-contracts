@@ -26,7 +26,7 @@ const upgradeBridgeOnForeign = async () => {
 
     await validatorState(web3, address, multiSigWallet)
 
-    const data = proxy.methods.upgradeTo('4', NEW_IMPLEMENTATION_ETH_BRIDGE).encodeABI()
+    const data = proxy.methods.upgradeTo('5', NEW_IMPLEMENTATION_ETH_BRIDGE).encodeABI()
 
     await callMultiSigWallet({
       role: ROLE,

@@ -5,8 +5,6 @@
     "license": "GPLv3",
     "scripts": {
         "upgradeBridgeOnForeign": "node src/upgradeBridgeOnForeign.js",
-        "upgradeBridgeOnHome": "node src/upgradeBridgeOnHome.js",
-        "initializeChai": "node src/initializeChai.js",
         "lint": "eslint ."
     },
     "dependencies": {

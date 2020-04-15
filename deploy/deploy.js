@@ -159,6 +159,37 @@ async function deployAMBErcToErc() {
   console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
 }
 
+async function deployStakeAMBErcToErc() {
+  const preDeploy = require('./src/stake_token_mediators/preDeploy')
+  const deployHome = require('./src/stake_token_mediators/home')
+  const deployForeign = require('./src/stake_token_mediators/foreign')
+  const initialize = require('./src/stake_token_mediators/initialize')
+  await preDeploy()
+  const { homeBridgeMediator } = await deployHome()
+  const { foreignBridgeMediator } = await deployForeign()
+  await initialize({ homeBridge: homeBridgeMediator.address, foreignBridge: foreignBridgeMediator.address })
+  console.log('\nDeployment has been completed.\n\n')
+  console.log(`[   Home  ] Bridge Mediator: ${homeBridgeMediator.address}`)
+  console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
+  fs.writeFileSync(
+    deployResultsPath,
+    JSON.stringify(
+      {
+        homeBridge: {
+          homeBridgeMediator
+        },
+        foreignBridge: {
+          foreignBridgeMediator
+        }
+      },
+      null,
+      4
+    )
+  )
+  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+}
+
+
 async function deployAMBNativeToErc() {
   const preDeploy = require('./src/amb_native_to_erc20/preDeploy')
   const deployHome = require('./src/amb_native_to_erc20/home')
@@ -230,6 +261,9 @@ async function main() {
       break
     case 'AMB_ERC_TO_ERC':
       await deployAMBErcToErc()
+      break
+    case 'STAKE_AMB_ERC_TO_ERC':
+      await deployStakeAMBErcToErc()
       break
     case 'AMB_NATIVE_TO_ERC':
       await deployAMBNativeToErc()

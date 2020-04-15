@@ -146,6 +146,7 @@ contract PotMock {
     // --- Administration ---
     function file(bytes32 what, uint256 data) external auth {
         require(live == 1, "Pot/not-live");
+        drip();
         require(now == rho, "Pot/rho-not-updated");
         if (what == "dsr") dsr = data;
         else revert("Pot/file-unrecognized-param");
@@ -162,7 +163,7 @@ contract PotMock {
     }
 
     // --- Savings Rate Accumulation ---
-    function drip() external returns (uint256 tmp) {
+    function drip() public returns (uint256 tmp) {
         require(now >= rho, "Pot/invalid-now");
         tmp = rmul(rpow(dsr, now - rho, ONE), chi);
         uint256 chi_ = sub(tmp, chi);

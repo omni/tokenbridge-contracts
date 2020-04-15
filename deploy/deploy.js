@@ -189,7 +189,6 @@ async function deployStakeAMBErcToErc() {
   console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
 }
 
-
 async function deployAMBNativeToErc() {
   const preDeploy = require('./src/amb_native_to_erc20/preDeploy')
   const deployHome = require('./src/amb_native_to_erc20/home')

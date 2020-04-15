@@ -155,7 +155,7 @@ if (BRIDGE_MODE.includes('AMB_')) {
       ...validations,
       HOME_STAKE_TOKEN_ADDRESS: addressValidator(),
       FOREIGN_STAKE_TOKEN_ADDRESS: addressValidator(),
-      HOME_TRANSACTIONS_FEE: envalid.num(),
+      HOME_TRANSACTIONS_FEE: envalid.num()
     }
   }
 } else {

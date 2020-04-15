@@ -54,7 +54,9 @@ async function initializeHome(homeMediator, foreignMediator) {
     MAX_AMOUNT_PER_TX: ${HOME_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MAX_AMOUNT_PER_TX)} in eth,
     MIN_AMOUNT_PER_TX: ${HOME_MIN_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(HOME_MIN_AMOUNT_PER_TX)} in eth,
     EXECUTION_DAILY_LIMIT : ${FOREIGN_DAILY_LIMIT} which is ${Web3Utils.fromWei(FOREIGN_DAILY_LIMIT)} in eth,
-    EXECUTION_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(FOREIGN_MAX_AMOUNT_PER_TX)} in eth,
+    EXECUTION_MAX_AMOUNT_PER_TX: ${FOREIGN_MAX_AMOUNT_PER_TX} which is ${Web3Utils.fromWei(
+    FOREIGN_MAX_AMOUNT_PER_TX
+  )} in eth,
     FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
     MEDIATOR_REQUEST_GAS_LIMIT : ${HOME_MEDIATOR_REQUEST_GAS_LIMIT}, 
     OWNER: ${HOME_BRIDGE_OWNER},
@@ -163,8 +165,12 @@ async function initializeBridges({ homeBridge, foreignBridge }) {
   console.log('\n[Foreign] Initializing Bridge Mediator with following parameters:\n')
   await initializeForeign(foreignBridge, homeBridge)
 
-  console.log(`\n[Home] Allow bridge mediator to mint token, by calling transferOwnership(${homeBridge}) and addBridge(${homeBridge}) on token ${HOME_STAKE_TOKEN_ADDRESS}`)
-  console.log(`\n[Foreign] Allow bridge mediator to mint token, by calling addBridge(${foreignBridge}) on token ${FOREIGN_STAKE_TOKEN_ADDRESS}`)
+  console.log(
+    `\n[Home] Allow bridge mediator to mint token, by calling transferOwnership(${homeBridge}) and addBridge(${homeBridge}) on token ${HOME_STAKE_TOKEN_ADDRESS}`
+  )
+  console.log(
+    `\n[Foreign] Allow bridge mediator to mint token, by calling addBridge(${foreignBridge}) on token ${FOREIGN_STAKE_TOKEN_ADDRESS}`
+  )
 }
 
 module.exports = initializeBridges

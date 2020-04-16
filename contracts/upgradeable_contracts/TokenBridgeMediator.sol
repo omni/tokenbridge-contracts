@@ -9,6 +9,7 @@ import "./BasicTokenBridge.sol";
 */
 contract TokenBridgeMediator is BasicAMBMediator, BasicTokenBridge {
     event FailedMessageFixed(bytes32 indexed dataHash, address recipient, uint256 value);
+    event TokensBridged(address indexed recipient, uint256 value, bytes32 indexed messageId);
 
     /**
     * @dev Stores the value related to the hash of a message sent to the AMB bridge.

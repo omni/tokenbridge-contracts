@@ -576,6 +576,12 @@ contract('HomeAMBNativeToErc20', async accounts => {
       expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(oneEther)
       expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
       expect(toBN(await web3.eth.getBalance(user))).to.be.bignumber.equal(balanceUserBefore.add(oneEther))
+
+      const event = await getEvents(contract, { event: 'TokensBridged' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+      expect(event[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
     it('should unlock native tokens on message from amb with decimal shift of two', async () => {
       // Given
@@ -641,6 +647,12 @@ contract('HomeAMBNativeToErc20', async accounts => {
       expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(valueOnForeign)
       expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
       expect(toBN(await web3.eth.getBalance(user))).to.be.bignumber.equal(balanceUserBefore.add(valueOnHome))
+
+      const event = await getEvents(contract, { event: 'TokensBridged' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(valueOnHome.toString())
+      expect(event[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
     it('should revert when out of execution limits on message from amb', async () => {
       // Given
@@ -1287,6 +1299,12 @@ contract('HomeAMBNativeToErc20', async accounts => {
       expect(events.length).to.be.equal(1)
       expect(toBN(events[0].returnValues.feeAmount)).to.be.bignumber.equal(feeAmount)
       expect(events[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
+
+      const event = await getEvents(contract, { event: 'TokensBridged' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(finalUserValue.toString())
+      expect(event[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
   })
   describe('fixMediatorBalance', async () => {

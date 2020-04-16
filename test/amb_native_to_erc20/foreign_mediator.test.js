@@ -999,6 +999,12 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(events[0].returnValues.amount).to.be.equal(oneEther.toString())
       expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+
+      const event = await getEvents(contract, { event: 'TokensBridged' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+      expect(event[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
     it('should mint tokens on message from amb with decimal shift of two', async () => {
       // Given
@@ -1057,6 +1063,12 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(events[0].returnValues.amount).to.be.equal(valueOnForeign.toString())
       expect(await token.totalSupply()).to.be.bignumber.equal(valueOnForeign)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(valueOnForeign)
+
+      const event = await getEvents(contract, { event: 'TokensBridged' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(valueOnForeign.toString())
+      expect(event[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
     it('should revert when out of execution limits on message from amb', async () => {
       // Given
@@ -1415,6 +1427,12 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(feeEvents.length).to.be.equal(1)
       expect(toBN(feeEvents[0].returnValues.feeAmount)).to.be.bignumber.equal(feeAmount)
       expect(feeEvents[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
+
+      const event = await getEvents(contract, { event: 'TokensBridged' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(finalUserValue.toString())
+      expect(event[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
     it('should allow a fee receiver to bridge back the tokens', async () => {
       // initialize
@@ -1531,8 +1549,13 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(feeEvents.length).to.be.equal(1)
       expect(toBN(feeEvents[0].returnValues.feeAmount)).to.be.bignumber.equal(feeAmount)
       expect(feeEvents[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
-    })
 
+      const event = await getEvents(contract, { event: 'TokensBridged' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(finalUserValue.toString())
+      expect(event[0].returnValues.messageId).to.be.equal(exampleTxHash)
+    })
     it('should prevent multiple fee receiver to bridge back the tokens', async () => {
       // initialize
       const feeReceiver = await FeeReceiverMock.new(contract.address, token.address)
@@ -1650,6 +1673,12 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(feeEvents.length).to.be.equal(1)
       expect(toBN(feeEvents[0].returnValues.feeAmount)).to.be.bignumber.equal(feeAmount)
       expect(feeEvents[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
+
+      const event = await getEvents(contract, { event: 'TokensBridged' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(finalUserValue.toString())
+      expect(event[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
   })
 })

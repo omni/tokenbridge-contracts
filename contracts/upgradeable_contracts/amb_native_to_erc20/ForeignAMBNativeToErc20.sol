@@ -61,17 +61,18 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
         uint256 valueToMint = _value.div(10**decimalShift());
 
+        bytes32 txHash = transactionHash();
         IMediatorFeeManager feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = feeManager.calculateFee(valueToMint);
             if (fee != 0) {
-                bytes32 txHash = transactionHash();
                 distributeFee(feeManager, fee, txHash);
                 valueToMint = valueToMint.sub(fee);
             }
         }
 
         IBurnableMintableERC677Token(erc677token()).mint(_receiver, valueToMint);
+        emit TokensBridged(_receiver, valueToMint, txHash);
     }
 
     /**

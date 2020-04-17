@@ -197,7 +197,7 @@ contract BasicAMBErc677ToErc677 is
         addressStorage[keccak256(abi.encodePacked("messageHashRecipient", _hash))] = _recipient;
     }
 
-    function messageHashRecipient(bytes32 _hash) public view returns (address) {
+    function messageHashRecipient(bytes32 _hash) internal view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("messageHashRecipient", _hash))];
     }
 

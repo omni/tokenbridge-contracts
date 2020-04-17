@@ -71,9 +71,9 @@ contract BasicAMBErc677ToErc677 is
         return mediatorContractOnOtherSide();
     }
 
-    function passMessage(address _from, uint256 _value) internal {
+    function passMessage(address _from, address _receiver, uint256 _value) internal {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value, nonce());
+        bytes memory data = abi.encodeWithSelector(methodSelector, _receiver, _value, nonce());
 
         bytes32 dataHash = keccak256(data);
         setMessageHashValue(dataHash, _value);
@@ -197,7 +197,7 @@ contract BasicAMBErc677ToErc677 is
         addressStorage[keccak256(abi.encodePacked("messageHashRecipient", _hash))] = _recipient;
     }
 
-    function messageHashRecipient(bytes32 _hash) internal view returns (address) {
+    function messageHashRecipient(bytes32 _hash) public view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("messageHashRecipient", _hash))];
     }
 
@@ -249,7 +249,7 @@ contract BasicAMBErc677ToErc677 is
             setFixedAssets(txHash);
         }
         if (unlockOnForeign) {
-            passMessage(recipient, valueToUnlock);
+            passMessage(recipient, recipient, valueToUnlock);
         }
     }
 

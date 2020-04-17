@@ -136,11 +136,11 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
 
             if (address(_blockRewardContract()) == address(0)) {
                 // in case if block reward contract is not configured, the fee is not collected
-                passMessage(chooseReceiver(_from, _data), _value);
+                passMessage(_from, chooseReceiver(_from, _data), _value);
             } else {
                 // when block reward contract is defined, the calculated fee is subtracted from the original value
                 uint256 fee = calculateFee(_value);
-                passMessage(chooseReceiver(_from, _data), _value.sub(fee));
+                passMessage(_from, chooseReceiver(_from, _data), _value.sub(fee));
                 if (fee > 0) {
                     // the fee itself is distributed later in the block reward contract
                     _blockRewardContract().addBridgeTokenRewardReceivers(fee);

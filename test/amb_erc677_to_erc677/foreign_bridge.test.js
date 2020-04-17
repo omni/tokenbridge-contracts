@@ -111,6 +111,9 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       // Then
       const events = await getEvents(ambBridgeContract, { event: 'UserRequestForAffirmation' })
       expect(events.length).to.be.equal(1)
+      const data = `0x${events[0].returnValues.encodedData.slice(2 + 40 + 40 + 66)}`
+      const hash = web3.utils.soliditySha3(data)
+      expect(await foreignBridge.messageHashRecipient(hash)).to.be.equal(user) // should keep message sender instead of alternative receiver messageHashRecipient
       expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
       expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
     })

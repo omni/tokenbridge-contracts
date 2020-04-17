@@ -1,7 +1,6 @@
 pragma solidity 0.4.24;
 
 import "../upgradeability/EternalStorage.sol";
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /**
 * @title MediatorMessagesGuard
@@ -9,62 +8,59 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 * messages that a mediator can send to the bridge on a single transaction.
 */
 contract MediatorMessagesGuard is EternalStorage {
-    using SafeMath for uint256;
-
-    bytes32 private constant BRIDGE_MESSAGE_LOCK = 0x0ee06820811e91be37ae8d7f20d6dccd5bda0f24b568acdd4e2499013b53fc5f; // keccak256(abi.encodePacked("bridgeMessageLock"))
-    bytes32 private constant BRIDGE_MESSAGE_LIMIT_REACHED = 0x9fc9eb8bbe605baeeff607a74c3338dbf768244599c53ece5c90cc940a0af581; // keccak256(abi.encodePacked("bridgeMessageLimitReached"))
+    bytes32 private constant MESSAGES_CONTROL_BITMAP = 0x3caea4a73ee3aee2c0babf273b625b68b12a4f38d694d7cb051cb4b944e5e802; // keccak256(abi.encodePacked("messagesControlBitmap"))
 
     /**
     * @dev Tells the status of the lock.
-    * @return true if the number of messages are limited.
+    * @return the status of the lock.
     */
-    function bridgeMessageLock() private view returns (bool) {
-        return boolStorage[BRIDGE_MESSAGE_LOCK];
+    function getMessagesControlBitmap() private view returns (uint256) {
+        return uintStorage[MESSAGES_CONTROL_BITMAP];
     }
 
     /**
     * @dev Sets the status of the lock.
-    * @param _lock the new status for the lock
+    * @param _bitmap the new status for the lock
     */
-    function setBridgeMessageLock(bool _lock) private {
-        boolStorage[BRIDGE_MESSAGE_LOCK] = _lock;
+    function setMessagesControlBitmap(uint256 _bitmap) private {
+        uintStorage[MESSAGES_CONTROL_BITMAP] = _bitmap;
     }
 
     /**
-    * @dev Tells if the limit number of messages that were sent to the AMB bridge so far in the transaction was reached
-    * @return the status of the message limit
+    * @dev Tells if messages are restricted and the limit was reached.
+    * @param _bitmap the status of the lock
     */
-    function bridgeMessageLimitReached() private view returns (bool) {
-        return boolStorage[BRIDGE_MESSAGE_LIMIT_REACHED];
+    function messagesRestrictedAndLimitReached(uint256 _bitmap) private pure returns (bool) {
+        return (_bitmap == ((2**255) | 1));
     }
 
     /**
-    * @dev Sets the status of the limit of messages that were sent to the AMB bridge so far in the transaction.
-    * @param _status the new status of the message limit
+    * @dev Tells if messages are restricted.
+    * @param _bitmap the status of the lock
     */
-    function setBridgeMessageLimitReached(bool _status) private {
-        boolStorage[BRIDGE_MESSAGE_LIMIT_REACHED] = _status;
+    function messagesRestricted(uint256 _bitmap) private pure returns (bool) {
+        return (_bitmap == 2**255);
     }
 
     /**
     * @dev Enable the lock to limit the number of messages to send to the AMB bridge
     */
-    function lockBridgeMessages() internal {
-        setBridgeMessageLock(true);
-        setBridgeMessageLimitReached(false);
+    function enableMessagesRestriction() internal {
+        setMessagesControlBitmap(2**255);
     }
 
     /**
-    * @dev Remove the lock to limit the number of messages to send to the AMB bridge
+    * @dev Disable the lock to limit the number of messages to send to the AMB bridge
     */
-    function unlockBridgeMessages() internal {
-        setBridgeMessageLock(false);
+    function disableMessagesRestriction() internal {
+        setMessagesControlBitmap(0);
     }
 
     modifier bridgeMessageAllowed {
-        if (bridgeMessageLock()) {
-            require(!bridgeMessageLimitReached());
-            setBridgeMessageLimitReached(true);
+        uint256 bm = getMessagesControlBitmap();
+        require(!messagesRestrictedAndLimitReached(bm));
+        if (messagesRestricted(bm)) {
+            setMessagesControlBitmap(bm | 1);
         }
         /* solcov ignore next */
         _;

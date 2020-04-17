@@ -203,9 +203,9 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
         // The receivers of the fee could try to send back the fees through the mediator,
         // so here we add a lock to limit the number of messages that the mediator can send to the bridge,
         // allowing a maximum of 1 message
-        lockBridgeMessages();
+        enableMessagesRestriction();
         super.distributeFee(_feeManager, _fee, _txHash);
         // remove the lock
-        unlockBridgeMessages();
+        disableMessagesRestriction();
     }
 }

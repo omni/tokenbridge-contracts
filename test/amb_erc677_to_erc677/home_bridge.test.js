@@ -183,6 +183,12 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       expect(events[0].returnValues.amount).to.be.equal(oneEther.toString())
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+
+      const TokensBridgedEvent = await getEvents(homeBridge, { event: 'TokensBridged' })
+      expect(TokensBridgedEvent.length).to.be.equal(1)
+      expect(TokensBridgedEvent[0].returnValues.recipient).to.be.equal(user)
+      expect(TokensBridgedEvent[0].returnValues.value).to.be.equal(oneEther.toString())
+      expect(TokensBridgedEvent[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
     it('should mint tokens on message from amb with decimal shift of two', async () => {
       // Given
@@ -241,6 +247,12 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       expect(events[0].returnValues.amount).to.be.equal(valueOnHome.toString())
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(valueOnHome)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(valueOnHome)
+
+      const TokensBridgedEvent = await getEvents(homeBridge, { event: 'TokensBridged' })
+      expect(TokensBridgedEvent.length).to.be.equal(1)
+      expect(TokensBridgedEvent[0].returnValues.recipient).to.be.equal(user)
+      expect(TokensBridgedEvent[0].returnValues.value).to.be.equal(valueOnHome.toString())
+      expect(TokensBridgedEvent[0].returnValues.messageId).to.be.equal(exampleTxHash)
     })
     it('should emit AmountLimitExceeded and not mint tokens when out of execution limits', async () => {
       // Given
@@ -278,6 +290,9 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       expect(outOfLimitEvent[0].returnValues.recipient).to.be.equal(user)
       expect(outOfLimitEvent[0].returnValues.value).to.be.equal(twoEthers.toString())
       expect(outOfLimitEvent[0].returnValues.transactionHash).to.be.equal(exampleTxHash)
+
+      const TokensBridgedEvent = await getEvents(homeBridge, { event: 'TokensBridged' })
+      expect(TokensBridgedEvent.length).to.be.equal(0)
     })
   })
 })

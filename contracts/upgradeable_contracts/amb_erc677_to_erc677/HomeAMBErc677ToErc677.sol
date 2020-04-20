@@ -6,7 +6,9 @@ import "../../interfaces/IBurnableMintableERC677Token.sol";
 contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.mul(10**decimalShift());
+        bytes32 txHash = transactionHash();
         IBurnableMintableERC677Token(erc677token()).mint(_recipient, value);
+        emit TokensBridged(_recipient, value, txHash);
     }
 
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {

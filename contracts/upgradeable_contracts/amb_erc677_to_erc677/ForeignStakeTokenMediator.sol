@@ -11,7 +11,9 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.div(10**decimalShift());
+        bytes32 txHash = transactionHash();
         _transferWithOptionalMint(_recipient, value);
+        emit TokensBridged(_recipient, value, txHash);
     }
 
     /**

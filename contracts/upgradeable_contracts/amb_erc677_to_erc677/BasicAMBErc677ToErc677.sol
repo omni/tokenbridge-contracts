@@ -23,6 +23,7 @@ contract BasicAMBErc677ToErc677 is
     BaseERC677Bridge
 {
     event FailedMessageFixed(bytes32 indexed dataHash, address recipient, uint256 value);
+    event TokensBridged(address indexed recipient, uint256 value, bytes32 indexed messageId);
 
     bytes32 internal constant BRIDGE_CONTRACT = 0x811bbb11e8899da471f0e69a3ed55090fc90215227fc5fb1cb0d6e962ea7b74f; // keccak256(abi.encodePacked("bridgeContract"))
     bytes32 internal constant MEDIATOR_CONTRACT = 0x98aa806e31e94a687a31c65769cb99670064dd7f5a87526da075c5fb4eab9880; // keccak256(abi.encodePacked("mediatorContract"))

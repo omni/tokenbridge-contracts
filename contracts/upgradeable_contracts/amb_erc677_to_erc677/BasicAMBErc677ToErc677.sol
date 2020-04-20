@@ -12,6 +12,10 @@ import "../Claimable.sol";
 import "../VersionableBridge.sol";
 import "../../libraries/Bytes.sol";
 
+/**
+* @title BasicAMBErc677ToErc677
+* @dev Common functionality for erc677-to-erc677 mediator intended to work on top of AMB bridge.
+*/
 contract BasicAMBErc677ToErc677 is
     Initializable,
     Ownable,

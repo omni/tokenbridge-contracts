@@ -3,6 +3,11 @@ pragma solidity 0.4.24;
 import "./BasicStakeTokenMediator.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 
+/**
+* @title ForeignStakeTokenMediator
+* @dev Foreign side implementation for stake token mediator intended to work on top of AMB bridge.
+* It is designed to be used as an implementation contract of EternalStorageProxy contract.
+*/
 contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
     /**
      * @dev Executes action on the request to withdraw tokens relayed from the other network

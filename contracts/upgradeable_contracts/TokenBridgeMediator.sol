@@ -65,16 +65,17 @@ contract TokenBridgeMediator is BasicAMBMediator, BasicTokenBridge {
     * @dev Call AMB bridge to require the invocation of handleBridgedTokens method of the mediator on the other network.
     * Store information related to the bridged tokens in case the message execution fails on the other network
     * and the action needs to be fixed/rolled back.
-    * @param _receiver address that will receive the tokens on the other network.
-    * @param _value the amount of tokens to be received on the other network.
+    * @param _from address of sender, if bridge operation fails, tokens will be returned to this address
+    * @param _receiver address of receiver on the other side, will eventually receive bridged tokens
+    * @param _value bridged amount of tokens
     */
-    function passMessage(address _receiver, uint256 _value) internal {
+    function passMessage(address _from, address _receiver, uint256 _value) internal {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         bytes memory data = abi.encodeWithSelector(methodSelector, _receiver, _value, nonce());
 
         bytes32 dataHash = keccak256(data);
         setMessageHashValue(dataHash, _value);
-        setMessageHashRecipient(dataHash, _receiver);
+        setMessageHashRecipient(dataHash, _from);
         setNonce(dataHash);
 
         bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());

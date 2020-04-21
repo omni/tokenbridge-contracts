@@ -74,7 +74,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         require(withinLimit(msg.value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
         setMediatorBalance(mediatorBalance().add(msg.value));
-        passMessage(_receiver, msg.value);
+        passMessage(msg.sender, _receiver, msg.value);
     }
 
     /**
@@ -157,6 +157,6 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         uint256 diff = balance.sub(mediatorBalance());
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(diff));
         setMediatorBalance(mediatorBalance().add(diff));
-        passMessage(_receiver, diff);
+        passMessage(_receiver, _receiver, diff);
     }
 }

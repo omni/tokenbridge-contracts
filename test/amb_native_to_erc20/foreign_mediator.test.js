@@ -1321,6 +1321,105 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       await contract.fixFailedMessage(dataHash, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
   })
+  describe('fixFailedMessage with alternative receiver', () => {
+    let dataHash
+    beforeEach(async function() {
+      await token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      await token.transferOwnership(contract.address)
+
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        token.address,
+        ZERO_ADDRESS
+      ).should.be.fulfilled
+
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await token.totalSupply()).to.be.bignumber.equal(twoEthers)
+
+      // User transfer tokens
+      const transferTx = await token.transferAndCall(contract.address, oneEther, user2, { from: user }).should.be
+        .fulfilled
+
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+
+      const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      const data = `0x${events[0].returnValues.encodedData.substr(
+        148,
+        events[0].returnValues.encodedData.length - 148
+      )}`
+
+      // Bridge calls mediator from other side
+      await ambBridgeContract.executeMessageCall(
+        contract.address,
+        contract.address,
+        data,
+        transferTx.tx,
+        100
+      ).should.be.fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(transferTx.tx)).to.be.equal(false)
+
+      // mediator from other side should use this dataHash to request fix the failed message
+      dataHash = await ambBridgeContract.failedMessageDataHash(transferTx.tx)
+    })
+    it('should fix burnt tokens', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      // When
+      const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
+
+      const txHash2 = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+
+      // Should be called by mediator from other side so it will fail
+      await ambBridgeContract.executeMessageCall(contract.address, contract.address, fixData, txHash2, 1000000).should
+        .be.fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(txHash2)).to.be.equal(false)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      await ambBridgeContract.executeMessageCall(
+        contract.address,
+        otherSideMediatorContract.address,
+        fixData,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      // Then
+      expect(await ambBridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await token.totalSupply()).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+
+      const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+
+      // can only fix it one time
+      await ambBridgeContract.executeMessageCall(
+        contract.address,
+        otherSideMediatorContract.address,
+        fixData,
+        otherTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(otherTxHash)).to.be.equal(false)
+      expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+    })
+  })
   describe('handleBridgedTokens with fees', () => {
     it('should mint tokens and distribute fees on message from amb', async () => {
       // initialize

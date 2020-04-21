@@ -914,6 +914,106 @@ contract('HomeAMBNativeToErc20', async accounts => {
       await contract.fixFailedMessage(dataHash, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
   })
+  describe('fixFailedMessage for alternative receiver', () => {
+    let dataHash
+    beforeEach(async () => {
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        ZERO_ADDRESS
+      ).should.be.fulfilled
+
+      // User transfer native tokens
+      const transferTx = await contract.relayTokens(user2, {
+        from: user,
+        value: oneEther
+      }).should.be.fulfilled
+
+      const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      const data = `0x${events[0].returnValues.encodedData.substr(
+        148,
+        events[0].returnValues.encodedData.length - 148
+      )}`
+
+      // Bridge calls mediator from other side
+      await ambBridgeContract.executeMessageCall(contract.address, contract.address, data, transferTx.tx, 100).should.be
+        .fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(transferTx.tx)).to.be.equal(false)
+
+      // mediator from other side should use this dataHash to request fix the failed message
+      dataHash = await ambBridgeContract.failedMessageDataHash(transferTx.tx)
+    })
+    it('should fix locked tokens', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      const balanceUserBefore = toBN(await web3.eth.getBalance(user))
+      // When
+      const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
+
+      const txHash2 = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+
+      // Should be called by mediator from other side so it will fail
+      await ambBridgeContract.executeMessageCall(contract.address, contract.address, fixData, txHash2, 1000000).should
+        .be.fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(txHash2)).to.be.equal(false)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      await ambBridgeContract.executeMessageCall(
+        contract.address,
+        otherSideMediatorContract.address,
+        fixData,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      // Then
+
+      expect(await ambBridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+      expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
+      expect(toBN(await web3.eth.getBalance(user))).to.be.bignumber.equal(balanceUserBefore.add(oneEther))
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+
+      const otherTxHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+
+      // Second transfer from a different user so next try to fix an already fixed transaction doesn't fail because of
+      // lack of funds
+      await contract.sendTransaction({
+        from: user2,
+        value: oneEther
+      }).should.be.fulfilled
+
+      // can only fix it one time
+      await ambBridgeContract.executeMessageCall(
+        contract.address,
+        otherSideMediatorContract.address,
+        fixData,
+        otherTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      expect(await ambBridgeContract.messageCallStatus(otherTxHash)).to.be.equal(false)
+      expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(oneEther)
+      expect(toBN(await web3.eth.getBalance(user))).to.be.bignumber.equal(balanceUserBefore.add(oneEther))
+    })
+    it('should be called by amb bridge', async () => {
+      await contract.fixFailedMessage(dataHash, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+    })
+  })
   describe('claimTokens', () => {
     beforeEach(async () => {
       const storageProxy = await EternalStorageProxy.new()

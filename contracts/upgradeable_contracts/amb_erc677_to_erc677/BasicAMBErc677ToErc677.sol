@@ -67,25 +67,6 @@ contract BasicAMBErc677ToErc677 is
         return mediatorContractOnOtherSide();
     }
 
-    /**
-    * @dev Constructs and passes a message to the AMB bridge contract.
-    * Message represents a call of handleBridgedTokens(receiver, value, nonce) on the other side mediator contract.
-    * @param _from adddress of sender, if bridge operation failes, tokens will be returned to this address
-    * @param _receiver adddress of receiver on the other side, will eventually receive bridged tokens
-    * @param _value bridged amount of tokens
-    */
-    function passMessage(address _from, address _receiver, uint256 _value) internal {
-        bytes4 methodSelector = this.handleBridgedTokens.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, _receiver, _value, nonce());
-
-        bytes32 dataHash = keccak256(data);
-        setMessageHashValue(dataHash, _value);
-        setMessageHashRecipient(dataHash, _from);
-        setNonce(dataHash);
-
-        bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
-    }
-
     function relayTokens(address _from, address _receiver, uint256 _value) external {
         require(_from == msg.sender || _from == _receiver);
         _relayTokens(_from, _receiver, _value);

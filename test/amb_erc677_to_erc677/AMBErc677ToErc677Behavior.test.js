@@ -25,6 +25,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
   let erc677Token
   const owner = accounts[0]
   const user = accounts[1]
+  const user2 = accounts[2]
   describe('initialize', () => {
     beforeEach(async () => {
       bridgeContract = await AMBMock.new()
@@ -498,7 +499,6 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
   describe('relayTokens', () => {
     let contract
     let erc20Token
-    const user2 = accounts[2]
     beforeEach(async function() {
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
@@ -983,6 +983,88 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
 
       expect(await bridgeContract.messageCallStatus(otherTxHash)).to.be.equal(true)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.dataHash).to.be.equal(dataHash)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+    })
+  })
+  describe('fixFailedMessage for alternative receiver', () => {
+    let dataHash
+    let contract
+    beforeEach(async function() {
+      bridgeContract = await AMBMock.new()
+      await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+      mediatorContract = await otherSideMediatorContract.new()
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+
+      contract = this.bridge
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+      await erc677Token.transferOwnership(contract.address)
+
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+
+      // User transfer tokens
+      const transferTx = await erc677Token.transferAndCall(contract.address, oneEther, user2, { from: user }).should.be
+        .fulfilled
+
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      const data = `0x${events[0].returnValues.encodedData.substr(
+        148,
+        events[0].returnValues.encodedData.length - 148
+      )}`
+
+      // Bridge calls mediator from other side
+      await bridgeContract.executeMessageCall(
+        contract.address,
+        contract.address,
+        data,
+        transferTx.tx,
+        100
+      ).should.be.fulfilled
+
+      expect(await bridgeContract.messageCallStatus(transferTx.tx)).to.be.equal(false)
+
+      // mediator from other side should use this dataHash to request fix the failed message
+      dataHash = await bridgeContract.failedMessageDataHash(transferTx.tx)
+    })
+    it('should fix burnt/locked tokens', async () => {
+      // Given
+      expect(await contract.messageHashFixed(dataHash)).to.be.equal(false)
+
+      // When
+      const fixData = await contract.contract.methods.fixFailedMessage(dataHash).encodeABI()
+
+      await bridgeContract.executeMessageCall(
+        contract.address,
+        mediatorContract.address,
+        fixData,
+        exampleTxHash,
+        1000000
+      ).should.be.fulfilled
+
+      // Then
+      expect(await bridgeContract.messageCallStatus(exampleTxHash)).to.be.equal(true)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
       expect(await contract.messageHashFixed(dataHash)).to.be.equal(true)
 
       const event = await getEvents(contract, { event: 'FailedMessageFixed' })

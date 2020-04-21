@@ -6,6 +6,11 @@ import "../BlockRewardBridge.sol";
 import "./HomeStakeTokenFeeManager.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 
+/**
+* @title HomeStakeTokenMediator
+* @dev Home side implementation for stake token mediator intended to work on top of AMB bridge.
+* It is designed to be used as an implementation contract of EternalStorageProxy contract.
+*/
 contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeManager {
     bytes32 internal constant MINT_HANDLER = 0x8a8236f871f2bbb44f59e8c68b82f7587d19c987e09aba39148cc97ea004a32e; // keccak256(abi.encodePacked("mintHandler"))
 
@@ -119,7 +124,9 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.mul(10**decimalShift());
+        bytes32 txHash = transactionHash();
         getMintHandler().mint(_recipient, value);
+        emit TokensBridged(_recipient, value, txHash);
     }
 
     /**

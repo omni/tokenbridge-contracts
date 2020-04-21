@@ -3,10 +3,22 @@ pragma solidity 0.4.24;
 import "./BasicAMBErc677ToErc677.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 
+/**
+* @title HomeAMBErc677ToErc677
+* @dev Home side implementation for erc677-to-erc677 mediator intended to work on top of AMB bridge.
+* It is designed to be used as an implementation contract of EternalStorageProxy contract.
+*/
 contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
+    /**
+     * @dev Executes action on the request to deposit tokens relayed from the other network
+     * @param _recipient address of tokens receiver
+     * @param _value amount of bridged tokens
+     */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.mul(10**decimalShift());
+        bytes32 txHash = transactionHash();
         IBurnableMintableERC677Token(erc677token()).mint(_recipient, value);
+        emit TokensBridged(_recipient, value, txHash);
     }
 
     /**

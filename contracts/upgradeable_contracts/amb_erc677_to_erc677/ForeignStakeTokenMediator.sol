@@ -27,7 +27,7 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
         bytes _data
     ) internal {
         if (!lock()) {
-            passMessage(chooseReceiver(_from, _data), _value);
+            passMessage(_from, chooseReceiver(_from, _data), _value);
         }
     }
 
@@ -48,7 +48,7 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
     function _transferWithOptionalMint(address _recipient, uint256 _value) internal {
         IBurnableMintableERC677Token token = IBurnableMintableERC677Token(erc677token());
         uint256 balance = token.balanceOf(address(this));
-        if (_recipient != address(0) && balance == 0) {
+        if (balance == 0) {
             token.mint(_recipient, _value);
         } else if (balance < _value) {
             token.mint(address(this), _value - balance);

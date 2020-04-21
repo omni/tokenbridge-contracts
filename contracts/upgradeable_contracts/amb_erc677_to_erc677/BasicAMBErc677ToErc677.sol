@@ -71,9 +71,16 @@ contract BasicAMBErc677ToErc677 is
         return mediatorContractOnOtherSide();
     }
 
-    function passMessage(address _from, uint256 _value) internal {
+    /**
+    * @dev Constructs and passes a message to the AMB bridge contract.
+    * Message represents a call of handleBridgedTokens(receiver, value, nonce) on the other side mediator contract.
+    * @param _from adddress of sender, if bridge operation failes, tokens will be returned to this address
+    * @param _receiver adddress of receiver on the other side, will eventually receive bridged tokens
+    * @param _value bridged amount of tokens
+    */
+    function passMessage(address _from, address _receiver, uint256 _value) internal {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value, nonce());
+        bytes memory data = abi.encodeWithSelector(methodSelector, _receiver, _value, nonce());
 
         bytes32 dataHash = keccak256(data);
         setMessageHashValue(dataHash, _value);
@@ -231,6 +238,12 @@ contract BasicAMBErc677ToErc677 is
         }
     }
 
+    /**
+    * @dev Fixes locked tokens, that were out of execution limits during the call to handleBridgedTokens
+    * @param txHash reference transaction hash for bridge operation that was out of execution limits
+    * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge
+    * @param valueToUnlock unlocked amount of tokens, should be less than maxPerTx() and saved txAboveLimitsValue
+    */
     function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
@@ -249,7 +262,7 @@ contract BasicAMBErc677ToErc677 is
             setFixedAssets(txHash);
         }
         if (unlockOnForeign) {
-            passMessage(recipient, valueToUnlock);
+            passMessage(recipient, recipient, valueToUnlock);
         }
     }
 

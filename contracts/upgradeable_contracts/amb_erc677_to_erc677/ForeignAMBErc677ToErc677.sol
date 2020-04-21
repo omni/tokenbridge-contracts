@@ -8,6 +8,12 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
         erc677token().transfer(_recipient, value);
     }
 
+    /**
+     * @dev Executes action on deposit of bridged tokens
+     * @param _from address of tokens sender
+     * @param _value requsted amount of bridged tokens
+     * @param _data alternative receiver, if specified
+     */
     function bridgeSpecificActionsOnTokenTransfer(
         ERC677, /* _token */
         address _from,
@@ -15,7 +21,7 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
         bytes _data
     ) internal {
         if (!lock()) {
-            passMessage(chooseReceiver(_from, _data), _value);
+            passMessage(_from, chooseReceiver(_from, _data), _value);
         }
     }
 

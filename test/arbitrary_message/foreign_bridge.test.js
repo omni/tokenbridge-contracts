@@ -4,6 +4,7 @@ const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const Box = artifacts.require('Box.sol')
 const ERC677ReceiverTest = artifacts.require('ERC677ReceiverTest.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
+const ForeignAMBWithOldStorage = artifacts.require('ForeignAMBWithOldStorage.sol')
 
 const { expect } = require('chai')
 const {
@@ -264,6 +265,7 @@ contract('ForeignAMB', async accounts => {
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
       expect(await box.messageId()).to.be.equal(messageId)
+      expect(await box.txHash()).to.be.equal(messageId)
       expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('should generate different message ids', async () => {
@@ -358,6 +360,7 @@ contract('ForeignAMB', async accounts => {
       expect(await box.value()).to.be.bignumber.equal('3')
       expect(await box.lastSender()).to.be.equal(user)
       expect(await box.messageId()).to.be.equal(messageId)
+      expect(await box.txHash()).to.be.equal(messageId)
       expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
     it('test with max allowed number of signatures required', async () => {
@@ -776,6 +779,19 @@ contract('ForeignAMB', async accounts => {
         expect(await gasTokenContract.balanceOf(user)).to.be.bignumber.equal('2')
         expect(await gasTokenContract.balanceOf(receiver)).to.be.bignumber.equal('5')
       })
+    })
+  })
+
+  describe('failedMessageDataHash for old storage', async () => {
+    it('should return dataHash for old message', async () => {
+      const foreignBridge = await ForeignAMBWithOldStorage.new()
+      const data = '0x01020304'
+      const dataHash = web3.utils.soliditySha3(data)
+      const messageId = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbe'
+
+      await foreignBridge.oldSetFailedMessageDataHash(messageId, data)
+
+      expect(await foreignBridge.failedMessageDataHash(messageId)).to.be.equal(dataHash)
     })
   })
 })

@@ -5,11 +5,13 @@ contract AMBMock {
 
     address public messageSender;
     uint256 public maxGasPerTx;
+    bytes32 public transactionHash;
     bytes32 public messageId;
     bytes32 public nonce;
     mapping(bytes32 => bool) public messageCallStatus;
     mapping(bytes32 => address) public failedMessageSender;
     mapping(bytes32 => address) public failedMessageReceiver;
+    mapping(bytes32 => bytes32) public failedMessageDataHash;
 
     function setMaxGasPerTx(uint256 _value) public {
         maxGasPerTx = _value;
@@ -20,12 +22,15 @@ contract AMBMock {
     {
         messageSender = _sender;
         messageId = _messageId;
+        transactionHash = _messageId;
         bool status = _contract.call.gas(_gas)(_data);
         messageSender = address(0);
         messageId = bytes32(0);
+        transactionHash = bytes32(0);
 
         messageCallStatus[_messageId] = status;
         if (!status) {
+            failedMessageDataHash[_messageId] = keccak256(_data);
             failedMessageReceiver[_messageId] = _contract;
             failedMessageSender[_messageId] = _sender;
         }

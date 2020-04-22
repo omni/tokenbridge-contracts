@@ -2,7 +2,6 @@ const HomeAMB = artifacts.require('HomeAMB.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const Box = artifacts.require('Box.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
-const HomeAMBWithOldStorage = artifacts.require('HomeAMBWithOldStorage.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
@@ -654,19 +653,6 @@ contract('HomeAMB', async accounts => {
         .fulfilled
       logs[0].event.should.be.equal('SignedForUserRequest')
       logs[1].event.should.be.equal('CollectedSignatures')
-    })
-  })
-
-  describe('failedMessageDataHash for old storage', async () => {
-    it('should return dataHash for old message', async () => {
-      const homeBridge = await HomeAMBWithOldStorage.new()
-      const data = '0x01020304'
-      const dataHash = web3.utils.soliditySha3(data)
-      const messageId = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbe'
-
-      await homeBridge.oldSetFailedMessageDataHash(messageId, data)
-
-      expect(await homeBridge.failedMessageDataHash(messageId)).to.be.equal(dataHash)
     })
   })
 })

@@ -16,14 +16,7 @@ contract MessageProcessor is EternalStorage {
     }
 
     function failedMessageDataHash(bytes32 _messageId) external view returns (bytes32) {
-        bytes32 id = keccak256(abi.encodePacked("failedMessageDataHash", _messageId));
-        uint256 dataHash = uintStorage[id];
-        if (dataHash > 0) {
-            return bytes32(dataHash);
-        }
-        // previous version of the contract used bytesStorage for storing bytes32
-        // this is needed for backwards compatibility with already saved data hashes
-        return Bytes.bytesToBytes32(bytesStorage[id]);
+        return bytes32(uintStorage[keccak256(abi.encodePacked("failedMessageDataHash", _messageId))]);
     }
 
     function setFailedMessageDataHash(bytes32 _messageId, bytes data) internal {

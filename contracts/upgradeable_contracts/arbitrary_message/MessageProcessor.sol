@@ -15,6 +15,21 @@ contract MessageProcessor is EternalStorage {
         boolStorage[keccak256(abi.encodePacked("messageCallStatus", _messageId))] = _status;
     }
 
+    function failedMessageDataHash(bytes32 _messageId) external view returns (bytes32) {
+        bytes32 id = keccak256(abi.encodePacked("failedMessageDataHash", _messageId));
+        uint256 dataHash = uintStorage[id];
+        if (dataHash > 0) {
+            return bytes32(dataHash);
+        }
+        // previous version of the contract used bytesStorage for storing bytes32
+        // this is needed for backwards compatibility with already saved data hashes
+        return Bytes.bytesToBytes32(bytesStorage[id]);
+    }
+
+    function setFailedMessageDataHash(bytes32 _messageId, bytes data) internal {
+        uintStorage[keccak256(abi.encodePacked("failedMessageDataHash", _messageId))] = uint256(keccak256(data));
+    }
+
     function failedMessageReceiver(bytes32 _messageId) external view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("failedMessageReceiver", _messageId))];
     }
@@ -39,8 +54,12 @@ contract MessageProcessor is EternalStorage {
         addressStorage[MESSAGE_SENDER] = _sender;
     }
 
-    function messageId() external view returns (bytes32) {
+    function messageId() public view returns (bytes32) {
         return bytes32(uintStorage[MESSAGE_ID]);
+    }
+
+    function transactionHash() external view returns (bytes32) {
+        return messageId();
     }
 
     function setMessageId(bytes32 _messageId) internal {
@@ -60,6 +79,7 @@ contract MessageProcessor is EternalStorage {
 
         setMessageCallStatus(_messageId, status);
         if (!status) {
+            setFailedMessageDataHash(_messageId, _data);
             setFailedMessageReceiver(_messageId, _executor);
             setFailedMessageSender(_messageId, _sender);
         }

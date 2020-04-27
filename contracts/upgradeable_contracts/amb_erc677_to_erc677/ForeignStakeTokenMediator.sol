@@ -3,6 +3,11 @@ pragma solidity 0.4.24;
 import "./BasicStakeTokenMediator.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 
+/**
+* @title ForeignStakeTokenMediator
+* @dev Foreign side implementation for stake token mediator intended to work on top of AMB bridge.
+* It is designed to be used as an implementation contract of EternalStorageProxy contract.
+*/
 contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
     /**
      * @dev Executes action on the request to withdraw tokens relayed from the other network
@@ -11,7 +16,9 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.div(10**decimalShift());
+        bytes32 messageId = _messageId();
         _transferWithOptionalMint(_recipient, value);
+        emit TokensBridged(_recipient, value, messageId);
     }
 
     /**
@@ -27,7 +34,7 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
         bytes _data
     ) internal {
         if (!lock()) {
-            passMessage(chooseReceiver(_from, _data), _value);
+            passMessage(_from, chooseReceiver(_from, _data), _value);
         }
     }
 
@@ -48,7 +55,7 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
     function _transferWithOptionalMint(address _recipient, uint256 _value) internal {
         IBurnableMintableERC677Token token = IBurnableMintableERC677Token(erc677token());
         uint256 balance = token.balanceOf(address(this));
-        if (_recipient != address(0) && balance == 0) {
+        if (balance == 0) {
             token.mint(_recipient, _value);
         } else if (balance < _value) {
             token.mint(address(this), _value - balance);

@@ -77,6 +77,12 @@ contract('ForeignStakeTokenMediator', async accounts => {
       expect(await token.totalSupply()).to.be.bignumber.equal(twoEthers)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(twoEthers.sub(halfEther))
+
+      const events = await getEvents(foreignMediator, { event: 'TokensBridged' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.recipient).to.be.equal(user)
+      expect(events[0].returnValues.value).to.be.equal(halfEther.toString())
+      expect(events[0].returnValues.messageId).to.be.equal(exampleMessageId)
     })
 
     it('should use all tokens from bridge balance', async () => {
@@ -97,6 +103,12 @@ contract('ForeignStakeTokenMediator', async accounts => {
       expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(ZERO)
+
+      const events = await getEvents(foreignMediator, { event: 'TokensBridged' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.recipient).to.be.equal(user)
+      expect(events[0].returnValues.value).to.be.equal(halfEther.toString())
+      expect(events[0].returnValues.messageId).to.be.equal(exampleMessageId)
     })
 
     it('should mint lacking tokens', async () => {
@@ -117,6 +129,12 @@ contract('ForeignStakeTokenMediator', async accounts => {
       expect(await token.totalSupply()).to.be.bignumber.equal(ether('0.6'))
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ether('0.6'))
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(ZERO)
+
+      const events = await getEvents(foreignMediator, { event: 'TokensBridged' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.recipient).to.be.equal(user)
+      expect(events[0].returnValues.value).to.be.equal(ether('0.6').toString())
+      expect(events[0].returnValues.messageId).to.be.equal(exampleMessageId)
     })
 
     it('should mint lacking tokens, zero initial balance', async () => {
@@ -136,6 +154,12 @@ contract('ForeignStakeTokenMediator', async accounts => {
       expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(foreignMediator.address)).to.be.bignumber.equal(ZERO)
+
+      const events = await getEvents(foreignMediator, { event: 'TokensBridged' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.recipient).to.be.equal(user)
+      expect(events[0].returnValues.value).to.be.equal(halfEther.toString())
+      expect(events[0].returnValues.messageId).to.be.equal(exampleMessageId)
     })
   })
 

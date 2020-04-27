@@ -497,6 +497,9 @@ contract('ForeignAMB', async accounts => {
       })
 
       expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(false)
+      expect(await foreignBridge.failedMessageDataHash(messageId)).to.be.equal(
+        web3.utils.soliditySha3(methodWillFailData)
+      )
       expect(await foreignBridge.failedMessageReceiver(messageId)).to.be.equal(box.address)
       expect(await foreignBridge.failedMessageSender(messageId)).to.be.equal(user)
 
@@ -535,6 +538,9 @@ contract('ForeignAMB', async accounts => {
       })
 
       expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(false)
+      expect(await foreignBridge.failedMessageDataHash(messageId)).to.be.equal(
+        web3.utils.soliditySha3(methodOutOfGasData)
+      )
       expect(await foreignBridge.failedMessageReceiver(messageId)).to.be.equal(box.address)
       expect(await foreignBridge.failedMessageSender(messageId)).to.be.equal(user)
 

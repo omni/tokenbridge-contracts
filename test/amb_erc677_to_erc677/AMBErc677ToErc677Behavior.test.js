@@ -26,6 +26,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
   let erc677Token
   const owner = accounts[0]
   const user = accounts[1]
+  const user2 = accounts[2]
   describe('initialize', () => {
     beforeEach(async () => {
       bridgeContract = await AMBMock.new()
@@ -498,7 +499,6 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
   describe('relayTokens', () => {
     let contract
     let erc20Token
-    const user2 = accounts[2]
     beforeEach(async function() {
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
@@ -972,6 +972,70 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
 
       expect(await bridgeContract.messageCallStatus(otherMessageId)).to.be.equal(true)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await contract.messageFixed(transferMessageId)).to.be.equal(true)
+
+      const event = await getEvents(contract, { event: 'FailedMessageFixed' })
+      expect(event.length).to.be.equal(1)
+      expect(event[0].returnValues.messageId).to.be.equal(transferMessageId)
+      expect(event[0].returnValues.recipient).to.be.equal(user)
+      expect(event[0].returnValues.value).to.be.equal(oneEther.toString())
+    })
+  })
+  describe('fixFailedMessage for alternative receiver', () => {
+    let transferMessageId
+    let contract
+    beforeEach(async function() {
+      bridgeContract = await AMBMock.new()
+      await bridgeContract.setMaxGasPerTx(maxGasPerTx)
+      mediatorContract = await otherSideMediatorContract.new()
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+
+      contract = this.bridge
+
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+      await erc677Token.transferOwnership(contract.address)
+
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+
+      // User transfer tokens
+      await erc677Token.transferAndCall(contract.address, oneEther, user2, { from: user }).should.be.fulfilled
+
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+
+      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
+      transferMessageId = events[0].returnValues.messageId
+      expect(events.length).to.be.equal(1)
+    })
+    it('should fix burnt/locked tokens', async () => {
+      // Given
+      expect(await contract.messageFixed(transferMessageId)).to.be.equal(false)
+
+      // When
+      const fixData = await contract.contract.methods.fixFailedMessage(transferMessageId).encodeABI()
+
+      await bridgeContract.executeMessageCall(
+        contract.address,
+        mediatorContract.address,
+        fixData,
+        exampleMessageId,
+        1000000
+      ).should.be.fulfilled
+
+      // Then
+      expect(await bridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
       expect(await contract.messageFixed(transferMessageId)).to.be.equal(true)
 
       const event = await getEvents(contract, { event: 'FailedMessageFixed' })

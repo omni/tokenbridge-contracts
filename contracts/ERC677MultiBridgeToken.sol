@@ -15,7 +15,10 @@ contract ERC677MultiBridgeToken is ERC677BridgeToken {
     event BridgeAdded(address indexed bridge);
     event BridgeRemoved(address indexed bridge);
 
-    constructor(string _name, string _symbol, uint8 _decimals) public ERC677BridgeToken(_name, _symbol, _decimals) {
+    constructor(string _name, string _symbol, uint8 _decimals, uint256 _chainId)
+        public
+        ERC677BridgeToken(_name, _symbol, _decimals, _chainId)
+    {
         bridgePointers[F_ADDR] = F_ADDR; // empty bridge contracts list
     }
 

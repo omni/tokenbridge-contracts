@@ -35,7 +35,7 @@ contract('HomeStakeTokenMediator', async accounts => {
   beforeEach(async () => {
     homeBridge = await AMBMock.new()
     await homeBridge.setMaxGasPerTx(maxGasPerTx)
-    token = await ERC677BridgeTokenRewardable.new('Test token', 'TST', 18)
+    token = await ERC677BridgeTokenRewardable.new('Test token', 'TST', 18, 100)
     blockReward = await BlockReward.new()
     await blockReward.setValidatorsRewards(authorities)
     await blockReward.setToken(token.address)

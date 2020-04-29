@@ -1029,7 +1029,7 @@ contract('HomeBridge', async accounts => {
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
       const homeBridge = await HomeBridge.at(storageProxy.address)
 
-      const token = await ERC677BridgeToken.new('Test', 'TST', 18)
+      const token = await ERC677BridgeToken.new('Test', 'TST', 18, 100)
 
       await token.mint(accounts[0], halfEther).should.be.fulfilled
       expect(await token.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)

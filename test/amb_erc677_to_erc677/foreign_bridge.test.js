@@ -47,7 +47,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       ambBridgeContract = await ForeignAMB.new()
       await ambBridgeContract.initialize(validatorContract.address, maxGasPerTx, '1', '1', owner)
       mediatorContract = await HomeAMBErc677ToErc677.new()
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
       foreignBridge = await ForeignAMBErc677ToErc677.new()
@@ -121,7 +121,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       ambBridgeContract = await AMBMock.new()
       await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await HomeAMBErc677ToErc677.new()
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
 
       foreignBridge = await ForeignAMBErc677ToErc677.new()
       await foreignBridge.initialize(
@@ -187,7 +187,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
     it('should transfer locked tokens on message from amb with decimal shift of two', async () => {
       // Given
       const decimalShiftTwo = 2
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 16)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 16, 100)
 
       foreignBridge = await ForeignAMBErc677ToErc677.new()
       await foreignBridge.initialize(

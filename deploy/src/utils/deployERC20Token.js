@@ -20,10 +20,12 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 
 async function deployToken() {
   let foreignNonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
+  const chainId = await web3Foreign.eth.net.getId()
+  assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
   console.log('\n[Foreign] deploying ERC20 token')
   const erc677token = await deployContract(
     ERC677BridgeToken,
-    [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
+    [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS, chainId],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce }
   )
   foreignNonce++

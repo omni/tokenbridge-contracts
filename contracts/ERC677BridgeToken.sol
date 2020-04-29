@@ -1,18 +1,18 @@
 pragma solidity 0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
-import "./interfaces/IBurnableMintableERC677Token.sol";
 import "./upgradeable_contracts/Claimable.sol";
+import "./PermittableToken.sol";
 
-contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, BurnableToken, MintableToken, Claimable {
+contract ERC677BridgeToken is PermittableToken, Claimable {
     address internal bridgeContractAddr;
 
     event ContractFallbackCallFailed(address from, address to, uint256 value);
 
-    constructor(string _name, string _symbol, uint8 _decimals) public DetailedERC20(_name, _symbol, _decimals) {
+    constructor(string _name, string _symbol, uint8 _decimals, uint256 _chainId)
+        public
+        PermittableToken(_name, _symbol, _decimals, _chainId)
+    {
         // solhint-disable-previous-line no-empty-blocks
     }
 

@@ -7,7 +7,13 @@ import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "./interfaces/IBurnableMintableERC677Token.sol";
 import "./upgradeable_contracts/Claimable.sol";
 
+/**
+* @title ERC677BridgeToken
+* @dev The basic implementation of a bridgeable ERC677-compatible token
+*/
 contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, BurnableToken, MintableToken, Claimable {
+    bytes4 internal constant ON_TOKEN_TRANSFER = 0xa4c0ed36; // onTokenTransfer(address,uint256,bytes)
+
     address internal bridgeContractAddr;
 
     event ContractFallbackCallFailed(address from, address to, uint256 value);
@@ -72,8 +78,15 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
         return _address == bridgeContractAddr;
     }
 
+    /**
+     * @dev call onTokenTransfer fallback on the token recipient contract
+     * @param _from tokens sender
+     * @param _to tokens recipient
+     * @param _value amount of tokens that was sent
+     * @param _data set of extra bytes that can be passed to the recipient
+     */
     function contractFallback(address _from, address _to, uint256 _value, bytes _data) private returns (bool) {
-        return _to.call(abi.encodeWithSignature("onTokenTransfer(address,uint256,bytes)", _from, _value, _data));
+        return _to.call(abi.encodeWithSelector(ON_TOKEN_TRANSFER, _from, _value, _data));
     }
 
     function finishMinting() public returns (bool) {

@@ -626,7 +626,7 @@ contract('ForeignBridge', async accounts => {
       expect(await token.balanceOf(user)).to.be.bignumber.equal('1')
       await token.transferAndCall(foreignBridge.address, '1', '0x', { from: user }).should.be.rejectedWith(ERROR_MSG)
     })
-    it('should not let to withdraw less than minPerTx', async () => {
+    it('should not let withdraw less than minPerTx', async () => {
       const owner = accounts[3]
       const user = accounts[4]
       const valueLessThanMinPerTx = minPerTx.sub(toBN(1))

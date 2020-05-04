@@ -6,9 +6,9 @@ contract ERC677BridgeTokenRewardable is ERC677MultiBridgeToken {
     address public blockRewardContract;
     address public stakingContract;
 
-    constructor(string _name, string _symbol, uint8 _decimals)
+    constructor(string _name, string _symbol, uint8 _decimals, uint256 _chainId)
         public
-        ERC677MultiBridgeToken(_name, _symbol, _decimals)
+        ERC677MultiBridgeToken(_name, _symbol, _decimals, _chainId)
     {
         // solhint-disable-previous-line no-empty-blocks
     }

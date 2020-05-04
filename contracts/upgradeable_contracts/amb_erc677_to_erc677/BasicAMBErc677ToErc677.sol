@@ -12,6 +12,10 @@ import "../Claimable.sol";
 import "../VersionableBridge.sol";
 import "../../libraries/Bytes.sol";
 
+/**
+* @title BasicAMBErc677ToErc677
+* @dev Common functionality for erc677-to-erc677 mediator intended to work on top of AMB bridge.
+*/
 contract BasicAMBErc677ToErc677 is
     Initializable,
     Ownable,
@@ -23,6 +27,7 @@ contract BasicAMBErc677ToErc677 is
     BaseERC677Bridge
 {
     event FailedMessageFixed(bytes32 indexed dataHash, address recipient, uint256 value);
+    event TokensBridged(address indexed recipient, uint256 value, bytes32 indexed messageId);
 
     bytes32 internal constant BRIDGE_CONTRACT = 0x811bbb11e8899da471f0e69a3ed55090fc90215227fc5fb1cb0d6e962ea7b74f; // keccak256(abi.encodePacked("bridgeContract"))
     bytes32 internal constant MEDIATOR_CONTRACT = 0x98aa806e31e94a687a31c65769cb99670064dd7f5a87526da075c5fb4eab9880; // keccak256(abi.encodePacked("mediatorContract"))
@@ -38,7 +43,7 @@ contract BasicAMBErc677ToErc677 is
         uint256 _requestGasLimit,
         uint256 _decimalShift,
         address _owner
-    ) external onlyRelevantSender returns (bool) {
+    ) public onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(
             _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
@@ -71,9 +76,16 @@ contract BasicAMBErc677ToErc677 is
         return mediatorContractOnOtherSide();
     }
 
-    function passMessage(address _from, uint256 _value) internal {
+    /**
+    * @dev Constructs and passes a message to the AMB bridge contract.
+    * Message represents a call of handleBridgedTokens(receiver, value, nonce) on the other side mediator contract.
+    * @param _from adddress of sender, if bridge operation failes, tokens will be returned to this address
+    * @param _receiver adddress of receiver on the other side, will eventually receive bridged tokens
+    * @param _value bridged amount of tokens
+    */
+    function passMessage(address _from, address _receiver, uint256 _value) internal {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, _from, _value, nonce());
+        bytes memory data = abi.encodeWithSelector(methodSelector, _receiver, _value, nonce());
 
         bytes32 dataHash = keccak256(data);
         setMessageHashValue(dataHash, _value);
@@ -231,6 +243,12 @@ contract BasicAMBErc677ToErc677 is
         }
     }
 
+    /**
+    * @dev Fixes locked tokens, that were out of execution limits during the call to handleBridgedTokens
+    * @param txHash reference transaction hash for bridge operation that was out of execution limits
+    * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge
+    * @param valueToUnlock unlocked amount of tokens, should be less than maxPerTx() and saved txAboveLimitsValue
+    */
     function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
@@ -249,7 +267,7 @@ contract BasicAMBErc677ToErc677 is
             setFixedAssets(txHash);
         }
         if (unlockOnForeign) {
-            passMessage(recipient, valueToUnlock);
+            passMessage(recipient, recipient, valueToUnlock);
         }
     }
 

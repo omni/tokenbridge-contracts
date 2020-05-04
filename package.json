@@ -39,6 +39,8 @@
     "eslint-plugin-node": "^10.0.0",
     "eslint-plugin-prettier": "^3.0.1",
     "eth-gas-reporter": "^0.2.11",
+    "ethereumjs-abi": "0.6.8",
+    "ethereumjs-util": "5.2.0",
     "ganache-cli": "^6.6.0",
     "istanbul": "^0.4.5",
     "nodemon": "^1.17.3",

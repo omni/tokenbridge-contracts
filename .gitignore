@@ -5,3 +5,4 @@ flats
 .idea
 coverage
 *.sublime-*
+.0x-artifacts

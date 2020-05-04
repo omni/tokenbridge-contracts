@@ -1529,7 +1529,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
     let blockRewardContract
     let feeManager
     beforeEach(async () => {
-      token = await ERC677BridgeTokenRewardable.new('Some ERC20', 'RSZT', 18)
+      token = await ERC677BridgeTokenRewardable.new('Some ERC20', 'RSZT', 18, 100)
       rewardableValidators = await RewardableValidators.new()
       feeManager = await FeeManagerErcToErcPOSDAO.new()
       homeBridge = await POSDAOHomeBridge.new()
@@ -1752,7 +1752,7 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
     let blockRewardContract
     let feeManager
     beforeEach(async () => {
-      token = await ERC677BridgeTokenRewardable.new('Some ERC20', 'RSZT', 18)
+      token = await ERC677BridgeTokenRewardable.new('Some ERC20', 'RSZT', 18, 100)
       rewardableValidators = await RewardableValidators.new()
       feeManager = await FeeManagerErcToErcPOSDAO.new()
       homeBridge = await POSDAOHomeBridge.new()

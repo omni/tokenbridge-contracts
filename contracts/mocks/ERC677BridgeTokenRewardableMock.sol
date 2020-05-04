@@ -3,9 +3,11 @@ pragma solidity 0.4.24;
 import "../ERC677BridgeTokenRewardable.sol";
 
 contract ERC677BridgeTokenRewardableMock is ERC677BridgeTokenRewardable {
-    constructor(string _name, string _symbol, uint8 _decimals)
+    uint256 private _blockTimestamp;
+
+    constructor(string _name, string _symbol, uint8 _decimals, uint256 _chainId)
         public
-        ERC677BridgeTokenRewardable(_name, _symbol, _decimals)
+        ERC677BridgeTokenRewardable(_name, _symbol, _decimals, _chainId)
     {
         // solhint-disable-previous-line no-empty-blocks
     }
@@ -16,6 +18,14 @@ contract ERC677BridgeTokenRewardableMock is ERC677BridgeTokenRewardable {
 
     function setStakingContractMock(address _stakingContract) public {
         stakingContract = _stakingContract;
+    }
+
+    function setNow(uint256 _timestamp) public {
+        _blockTimestamp = _timestamp;
+    }
+
+    function _now() internal view returns (uint256) {
+        return _blockTimestamp != 0 ? _blockTimestamp : now;
     }
 
 }

@@ -31,7 +31,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
     })
     it('should initialize', async function() {
       const contract = this.bridge
@@ -258,7 +258,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
 
       contract = this.bridge
 
@@ -340,7 +340,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
 
       contract = this.proxyContract
 
@@ -692,7 +692,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
     })
     it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is owned by token manager', async function() {
       // Given
-      const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
+      const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
       await erc677Token.setBridgeContract(contract.address, { from: owner }).should.be.fulfilled
       await erc677Token.transferOwnership(contract.address, { from: owner }).should.be.fulfilled
@@ -727,7 +727,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
     })
     it('should prevent emitting the event twice when ERC677 used by relayTokens and ERC677 is not owned by token manager', async function() {
       // Given
-      const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
+      const erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
       contract = this.bridge
@@ -766,7 +766,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
 
       contract = this.proxyContract
 
@@ -875,7 +875,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
       contract = this.bridge
@@ -999,7 +999,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       bridgeContract = await AMBMock.new()
       await bridgeContract.setMaxGasPerTx(maxGasPerTx)
       mediatorContract = await otherSideMediatorContract.new()
-      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18, 100)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
       contract = this.bridge
@@ -1089,7 +1089,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.fulfilled
 
-      const tokenSecond = await ERC677BridgeToken.new('Test Token', 'TST', 18, 100)
+      const tokenSecond = await ERC677BridgeToken.new('Test Token', 'TST', 18)
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
       expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)

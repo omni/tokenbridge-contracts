@@ -170,11 +170,15 @@ async function deployForeign(homeBridgeAddress) {
   console.log('========================================\n')
 
   console.log('\n[Foreign] deploying bridgeable token')
-  const chainId = await web3Foreign.eth.net.getId()
-  assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
+  let args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS]
+  if (DEPLOY_REWARDABLE_TOKEN) {
+    const chainId = await web3Foreign.eth.net.getId()
+    assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
+    args.push(chainId)
+  }
   const erc677bridgeToken = await deployContract(
     DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken,
-    [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS, chainId],
+    args,
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce }
   )
   nonce++

@@ -30,7 +30,7 @@ contract('ForeignStakeTokenMediator', async accounts => {
   beforeEach(async function() {
     foreignBridge = await AMBMock.new()
     await foreignBridge.setMaxGasPerTx(maxGasPerTx)
-    token = await ERC677BridgeToken.new('Test token', 'TST', 18, 100)
+    token = await ERC677BridgeToken.new('Test token', 'TST', 18)
     homeMediator = await HomeStakeTokenMediator.new()
     foreignMediator = await ForeignStakeTokenMediator.new()
     await foreignMediator.initialize(

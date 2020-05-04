@@ -99,7 +99,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   })
   describe('#initialize', async () => {
     it('should initialize', async () => {
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const foreignBridge = await ForeignBridge.new()
 
       expect(await foreignBridge.erc20token()).to.be.equal(ZERO_ADDRESS)
@@ -245,7 +245,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     let foreignBridge
     beforeEach(async () => {
       foreignBridge = await ForeignBridgeErcToNativeMock.new()
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -524,7 +524,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     const value = halfEther
     beforeEach(async () => {
       multisigValidatorContract = await BridgeValidators.new()
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       twoAuthorities = [accounts[0], accounts[1]]
       ownerOfValidatorContract = accounts[3]
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
@@ -590,7 +590,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const ownerOfValidators = accounts[0]
       const validatorContractWith3Signatures = await BridgeValidators.new()
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
-      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const value = halfEther
       const foreignBridgeWithThreeSigs = await ForeignBridgeErcToNativeMock.new()
 
@@ -639,7 +639,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const ownerOfValidators = accounts[0]
 
       await validatorContract.initialize(MAX_SIGNATURES, addresses, ownerOfValidators)
-      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const foreignBridgeWithMaxSigs = await ForeignBridgeErcToNativeMock.new()
 
       await foreignBridgeWithMaxSigs.initialize(
@@ -683,7 +683,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
       validatorsProxy = await BridgeValidators.at(validatorsProxy.address)
       await validatorsProxy.initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER).should.be.fulfilled
-      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
 
       // ForeignBridge V1 Contract
 
@@ -741,7 +741,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   describe('#claimTokens', async () => {
     it('can send erc20', async () => {
       const owner = accounts[0]
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const foreignBridgeImpl = await ForeignBridge.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
@@ -758,7 +758,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         decimalShiftZero,
         otherSideBridge.address
       )
-      const tokenSecond = await ERC677BridgeToken.new('Roman Token', 'RST', 18, 100)
+      const tokenSecond = await ERC677BridgeToken.new('Roman Token', 'RST', 18)
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
       expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
@@ -779,7 +779,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     const decimalShiftTwo = 2
     it('Home to Foreign: withdraw with 1 signature with a decimalShift of 2', async () => {
       // From a foreign a token erc token 16 decimals.
-      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16, 100)
+      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
       const valueOnForeign = toBN('1000')
       // Value is decimals shifted from foreign to home: Native on home = 16+2 shift = 18 decimals
       const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
@@ -830,7 +830,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const valueOnForeign = toBN('1000')
       const decimalShiftTwo = 2
       const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
-      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16, 100)
+      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
       const twoAuthorities = [accounts[0], accounts[1]]
       const ownerOfValidatorContract = accounts[3]
       const recipient = accounts[8]
@@ -886,7 +886,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     let foreignBridge
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -2085,7 +2085,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         })
 
         it('should allow to claim tokens from recipient account', async () => {
-          const tokenSecond = await ERC677BridgeToken.new('Second token', 'TST2', 18, 100)
+          const tokenSecond = await ERC677BridgeToken.new('Second token', 'TST2', 18)
 
           await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
           expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)

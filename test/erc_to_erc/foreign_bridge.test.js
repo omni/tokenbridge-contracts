@@ -46,7 +46,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
   })
   describe('#initialize', async () => {
     it('should initialize', async () => {
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const foreignBridge = await ForeignBridge.new()
 
       expect(await foreignBridge.erc20token()).to.be.equal(ZERO_ADDRESS)
@@ -197,7 +197,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     let foreignBridge
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -332,7 +332,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     const value = halfEther
     beforeEach(async () => {
       multisigValidatorContract = await BridgeValidators.new()
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       twoAuthorities = [accounts[0], accounts[1]]
       ownerOfValidatorContract = accounts[3]
       await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
@@ -391,7 +391,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const ownerOfValidators = accounts[0]
       const validatorContractWith3Signatures = await BridgeValidators.new()
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
-      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const value = halfEther
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
 
@@ -440,7 +440,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const ownerOfValidators = accounts[0]
 
       await validatorContract.initialize(MAX_SIGNATURES, addresses, ownerOfValidators)
-      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const foreignBridgeWithMaxSigs = await ForeignBridge.new()
 
       await foreignBridgeWithMaxSigs.initialize(
@@ -483,7 +483,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
 
       validatorsProxy = await BridgeValidators.at(validatorsProxy.address)
       await validatorsProxy.initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER).should.be.fulfilled
-      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
 
       // ForeignBridge V1 Contract
 
@@ -541,7 +541,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
   describe('#claimTokens', async () => {
     it('can send erc20', async () => {
       const owner = accounts[0]
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const foreignBridgeImpl = await ForeignBridge.new()
       const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
       await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
@@ -557,7 +557,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
         decimalShiftZero
       )
 
-      const tokenSecond = await ERC677BridgeToken.new('Roman Token', 'RST', 18, 100)
+      const tokenSecond = await ERC677BridgeToken.new('Roman Token', 'RST', 18)
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
       expect(await tokenSecond.balanceOf(accounts[0])).to.be.bignumber.equal(halfEther)
@@ -577,7 +577,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
   describe('#ForeignBridgeErc677ToErc677_onTokenTransfer', async () => {
     it('should emit correct events on initialize', async () => {
       const owner = accounts[3]
-      token = await ERC677BridgeToken.new('TEST', 'TST', 18, 100, { from: owner })
+      token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
       const foreignBridge = await ForeignBridgeErc677ToErc677.new()
       const { logs } = await foreignBridge.initialize(
         validatorContract.address,
@@ -600,7 +600,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     it('can only be called from token contract', async () => {
       const owner = accounts[3]
       const user = accounts[4]
-      token = await ERC677BridgeToken.new('TEST', 'TST', 18, 100, { from: owner })
+      token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
       const foreignBridge = await ForeignBridgeErc677ToErc677.new()
       await foreignBridge.initialize(
         validatorContract.address,
@@ -630,7 +630,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const owner = accounts[3]
       const user = accounts[4]
       const valueMoreThanLimit = halfEther.add(toBN(1))
-      token = await ERC677BridgeToken.new('TEST', 'TST', 18, 100, { from: owner })
+      token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
       const foreignBridge = await ForeignBridgeErc677ToErc677.new()
       await foreignBridge.initialize(
         validatorContract.address,
@@ -665,7 +665,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const owner = accounts[3]
       const user = accounts[4]
       const valueMoreThanLimit = halfEther.add(toBN(1))
-      token = await ERC677BridgeToken.new('TEST', 'TST', 18, 100, { from: owner })
+      token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
       const foreignBridge = await ForeignBridgeErc677ToErc677.new()
       await foreignBridge.initialize(
         validatorContract.address,
@@ -706,7 +706,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const owner = accounts[3]
       const user = accounts[4]
       const valueLessThanMinPerTx = minPerTx.sub(toBN(1))
-      token = await ERC677BridgeToken.new('TEST', 'TST', 18, 100, { from: owner })
+      token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
       const foreignBridge = await ForeignBridgeErc677ToErc677.new()
       await foreignBridge.initialize(
         validatorContract.address,
@@ -742,7 +742,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const owner = accounts[3]
       const user = accounts[4]
       const user2 = accounts[5]
-      token = await ERC677BridgeToken.new('TEST', 'TST', 18, 100, { from: owner })
+      token = await ERC677BridgeToken.new('TEST', 'TST', 18, { from: owner })
       const foreignBridge = await ForeignBridgeErc677ToErc677.new()
       await foreignBridge.initialize(
         validatorContract.address,
@@ -777,7 +777,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       // Value is decimals shifted from foreign to home: Native on home = 16+2 shift = 18 decimals
       const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
       const foreignBridge = await ForeignBridge.new()
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -819,7 +819,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const ownerOfValidators = accounts[0]
       const validatorContractWith3Signatures = await BridgeValidators.new()
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
-      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16, 100)
+      const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
 
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
 
@@ -869,7 +869,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const value = halfEther
       const owner = accounts[3]
       const user = accounts[4]
-      token = await ERC677BridgeToken.new('TEST', 'TST', 16, 100, { from: owner })
+      token = await ERC677BridgeToken.new('TEST', 'TST', 16, { from: owner })
       const foreignBridge = await ForeignBridgeErc677ToErc677.new()
       await foreignBridge.initialize(
         validatorContract.address,
@@ -903,7 +903,7 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
     let foreignBridge
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18, 100)
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,

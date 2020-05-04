@@ -46,7 +46,11 @@ async function testERC677BridgeToken(accounts, rewardable) {
   }
 
   beforeEach(async () => {
-    token = await tokenContract.new('POA ERC20 Foundation', 'POA20', 18, 100)
+    const args = ['POA ERC20 Foundation', 'POA20', 18]
+    if (rewardable) {
+      args.push(100)
+    }
+    token = await tokenContract.new(...args)
   })
   it('default values', async () => {
     expect(await token.symbol()).to.be.equal('POA20')
@@ -548,7 +552,12 @@ async function testERC677BridgeToken(accounts, rewardable) {
     it('can take send ERC20 tokens', async () => {
       const owner = accounts[0]
       const halfEther = ether('0.5')
-      const tokenSecond = await tokenContract.new('Roman Token', 'RST', 18, 100)
+
+      const args = ['Roman Token', 'RST', 18]
+      if (rewardable) {
+        args.push(100)
+      }
+      const tokenSecond = await tokenContract.new(...args)
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
@@ -596,7 +605,11 @@ async function testERC677BridgeToken(accounts, rewardable) {
       expect(logs[0].event).to.be.equal('Transfer')
     })
     it('if transfer called on contract, still works even if onTokenTransfer doesnot exist', async () => {
-      const someContract = await tokenContract.new('Some', 'Token', 18, 100)
+      const args = ['Some', 'Token', 18]
+      if (rewardable) {
+        args.push(100)
+      }
+      const someContract = await tokenContract.new(...args)
       await token.mint(user, '2', { from: owner }).should.be.fulfilled
       const tokenTransfer = await token.transfer(someContract.address, '1', { from: user }).should.be.fulfilled
       const tokenTransfer2 = await token.transfer(accounts[0], '1', { from: user }).should.be.fulfilled

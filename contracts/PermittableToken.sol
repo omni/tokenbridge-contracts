@@ -1,11 +1,8 @@
 pragma solidity 0.4.24;
 
-import "openzeppelin-solidity/contracts/token/ERC20/BurnableToken.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
-import "./interfaces/IBurnableMintableERC677Token.sol";
+import "./ERC677BridgeToken.sol";
 
-contract PermittableToken is IBurnableMintableERC677Token, DetailedERC20, BurnableToken, MintableToken {
+contract PermittableToken is ERC677BridgeToken {
     string public constant version = "1";
 
     // EIP712 niceties
@@ -18,7 +15,7 @@ contract PermittableToken is IBurnableMintableERC677Token, DetailedERC20, Burnab
 
     constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _chainId)
         public
-        DetailedERC20(_name, _symbol, _decimals)
+        ERC677BridgeToken(_name, _symbol, _decimals)
     {
         require(_chainId != 0);
         DOMAIN_SEPARATOR = keccak256(
@@ -66,6 +63,7 @@ contract PermittableToken is IBurnableMintableERC677Token, DetailedERC20, Burnab
             // the function works just like `transfer()`
         }
 
+        callAfterTransfer(_sender, _recipient, _amount);
         return true;
     }
 

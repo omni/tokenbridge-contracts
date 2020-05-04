@@ -2145,8 +2145,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
           await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
         }
-
-        expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('7.4'))
       })
 
       it('should allow to executeSignatures when DSR is zero with many conversions', async () => {
@@ -2170,8 +2168,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
           await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
         }
-
-        expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('0.4'))
       })
 
       it('should allow to executeSignatures after pay interest', async () => {
@@ -2203,8 +2199,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
           await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
         }
-
-        expect(await foreignBridge.dsrBalance()).to.be.bignumber.lt(ether('7.4'))
       })
     })
   })

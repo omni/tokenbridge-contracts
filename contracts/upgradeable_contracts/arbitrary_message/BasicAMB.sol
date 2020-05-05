@@ -5,8 +5,19 @@ import "../BasicBridge.sol";
 contract BasicAMB is BasicBridge {
     bytes32 internal constant MAX_GAS_PER_TX = 0x2670ecc91ec356e32067fd27b36614132d727b84a1e03e08f412a4f2cf075974; // keccak256(abi.encodePacked("maxGasPerTx"))
     bytes32 internal constant NONCE = 0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759; // keccak256(abi.encodePacked("nonce"))
+    bytes32 internal constant CHAIN_ID = 0x8ed9144e2f2122812934305f889c544efe55db33a5fd4b235aaab787c3f913d4; // keccak256(abi.encodePacked("chainId"))
 
+    /**
+     * Initializes AMB contract
+     * @param _chainId chain id of a network where this contract is deployed
+     * @param _validatorContract address of the validators contract
+     * @param _maxGasPerTx maximum amount of gas per one message execution
+     * @param _gasPrice default gas price used by oracles for sending transactions in this network
+     * @param _requiredBlockConfirmations number of block confirmations oracle will wait before processing passed messages
+     * @param _owner address of new bridge owner
+     */
     function initialize(
+        uint256 _chainId,
         address _validatorContract,
         uint256 _maxGasPerTx,
         uint256 _gasPrice,
@@ -14,16 +25,17 @@ contract BasicAMB is BasicBridge {
         address _owner
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
+        require(_chainId > 0);
         require(AddressUtils.isContract(_validatorContract));
         require(_gasPrice > 0);
         require(_requiredBlockConfirmations > 0);
 
+        uintStorage[CHAIN_ID] = _chainId;
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
         uintStorage[GAS_PRICE] = _gasPrice;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        _setNonce(keccak256(address(this)));
         setOwner(_owner);
         setInitialize();
 
@@ -31,10 +43,6 @@ contract BasicAMB is BasicBridge {
         emit GasPriceChanged(_gasPrice);
 
         return isInitialized();
-    }
-
-    function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (4, 0, 0);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -49,11 +57,27 @@ contract BasicAMB is BasicBridge {
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
     }
 
-    function nonce() internal view returns (bytes32) {
-        return bytes32(uintStorage[NONCE]);
+    /**
+     * Internal function for retrieving current nonce value
+     * @return nonce value
+     */
+    function _nonce() internal view returns (uint64) {
+        return uint64(uintStorage[NONCE]);
     }
 
-    function _setNonce(bytes32 _hash) internal {
-        uintStorage[NONCE] = uint256(_hash);
+    /**
+     * Internal function for updating nonce value
+     * @param _nonce new nonce value
+     */
+    function _setNonce(uint64 _nonce) internal {
+        uintStorage[NONCE] = uint256(_nonce);
+    }
+
+    /**
+     * Internal function for retrieving used chain id
+     * @return chain id for current network
+     */
+    function _chainId() internal view returns (uint256) {
+        return uintStorage[CHAIN_ID];
     }
 }

@@ -2,7 +2,6 @@ pragma solidity 0.4.24;
 
 import "../../interfaces/IMintHandler.sol";
 import "./BasicStakeTokenMediator.sol";
-import "../BlockRewardBridge.sol";
 import "./HomeStakeTokenFeeManager.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 
@@ -148,7 +147,7 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
                 // the fee manager will take care about fee distribution
                 _distributeFee(fee);
             } else {
-                // fee is zero if the fee manager is not configured or 
+                // fee is zero if the fee manager is not configured or
                 // no fees are collected from token transfers
                 passMessage(_from, chooseReceiver(_from, _data), _value);
             }

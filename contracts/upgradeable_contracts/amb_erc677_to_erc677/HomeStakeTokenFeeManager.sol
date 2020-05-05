@@ -72,7 +72,7 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
      */
     function _distributeFee(uint256 _fee) internal {
         if (address(_blockRewardContract()) != address(0)) {
-            _blockRewardContract().addBridgeTokenRewardReceivers(fee);
+            _blockRewardContract().addBridgeTokenRewardReceivers(_fee);
         }
     }
 }

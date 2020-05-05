@@ -6,7 +6,6 @@ contract VersionableAMB is VersionableBridge {
     // bridge version as a single 4-bytes number, included into every outgoing relay request
     uint32 internal constant ENCODED_BRIDGE_VERSION = 0x00040000;
 
-
     /**
      * Returns currently used bridge version
      * @return (major, minor, patch) version triple

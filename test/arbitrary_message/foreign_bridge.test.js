@@ -25,6 +25,7 @@ const MAX_VALIDATORS = 50
 const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
 const CHAIN_ID = 77
+const CHAIN_ID_HEX = `0x${CHAIN_ID.toString(16).padStart(64, '0')}`
 
 contract('ForeignAMB', async accounts => {
   let validatorContract
@@ -211,6 +212,7 @@ contract('ForeignAMB', async accounts => {
   })
   describe('requireToPassMessage', () => {
     let foreignBridge
+    let bridgeId
     beforeEach(async () => {
       const foreignBridgeV1 = await ForeignBridge.new()
 
@@ -227,6 +229,7 @@ contract('ForeignAMB', async accounts => {
         requiredBlockConfirmations,
         owner
       )
+      bridgeId = web3.utils.soliditySha3(CHAIN_ID_HEX + foreignBridge.address.slice(2)).slice(2, 42)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       const tx = await foreignBridge.methods['requireToPassMessage(address,bytes,uint256)'](
@@ -237,6 +240,7 @@ contract('ForeignAMB', async accounts => {
       )
 
       tx.receipt.logs.length.should.be.equal(1)
+      expect(tx.receipt.logs[0].args.messageId).to.include(`${bridgeId}0000000000000000`)
     })
     it('should generate different message ids', async () => {
       const user = accounts[8]
@@ -254,9 +258,9 @@ contract('ForeignAMB', async accounts => {
       const messageId1 = resultPassMessageTx1.logs[0].args.messageId
       const messageId2 = resultPassMessageTx2.logs[0].args.messageId
       const messageId3 = resultPassMessageTx3.logs[0].args.messageId
-      expect(messageId1).to.be.not.equal(messageId2)
-      expect(messageId2).to.be.not.equal(messageId3)
-      expect(messageId1).to.be.not.equal(messageId3)
+      expect(messageId1).to.include(`${bridgeId}0000000000000000`)
+      expect(messageId2).to.include(`${bridgeId}0000000000000001`)
+      expect(messageId3).to.include(`${bridgeId}0000000000000002`)
     })
   })
   describe('executeSignatures', () => {

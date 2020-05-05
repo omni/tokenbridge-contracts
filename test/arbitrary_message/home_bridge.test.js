@@ -13,6 +13,7 @@ const oneEther = ether('1')
 const twoEther = ether('2')
 const ZERO = toBN(0)
 const CHAIN_ID = 77
+const CHAIN_ID_HEX = `0x${CHAIN_ID.toString(16).padStart(64, '0')}`
 
 contract('HomeAMB', async accounts => {
   let validatorContract
@@ -200,6 +201,7 @@ contract('HomeAMB', async accounts => {
   })
   describe('requireToPassMessage', () => {
     let homeBridge
+    let bridgeId
     beforeEach(async () => {
       // create proxy
       const homeBridgeV1 = await HomeAMB.new()
@@ -215,6 +217,7 @@ contract('HomeAMB', async accounts => {
         requiredBlockConfirmations,
         owner
       )
+      bridgeId = web3.utils.soliditySha3(CHAIN_ID_HEX + homeBridge.address.slice(2)).slice(2, 42)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       const tx = await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
@@ -225,6 +228,7 @@ contract('HomeAMB', async accounts => {
       )
 
       tx.receipt.logs.length.should.be.equal(1)
+      expect(tx.receipt.logs[0].args.messageId).to.include(`${bridgeId}0000000000000000`)
     })
     it('call requireToPassMessage(address, bytes, uint256) should fail', async () => {
       // Should fail because gas < minimumGasUsage
@@ -280,9 +284,9 @@ contract('HomeAMB', async accounts => {
       const messageId1 = resultPassMessageTx1.logs[0].args.messageId
       const messageId2 = resultPassMessageTx2.logs[0].args.messageId
       const messageId3 = resultPassMessageTx3.logs[0].args.messageId
-      expect(messageId1).to.be.not.equal(messageId2)
-      expect(messageId2).to.be.not.equal(messageId3)
-      expect(messageId1).to.be.not.equal(messageId3)
+      expect(messageId1).to.include(`${bridgeId}0000000000000000`)
+      expect(messageId2).to.include(`${bridgeId}0000000000000001`)
+      expect(messageId3).to.include(`${bridgeId}0000000000000002`)
     })
   })
   describe('executeAffirmation', () => {

@@ -25,6 +25,7 @@ const executionMaxPerTx = maxPerTx
 const exampleMessageId = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const otherMessageId = '0x2ebc2ccc755acc8eaf9252e19573af708d644ab63a39619adb080a3500a4ff2e'
 const decimalShiftZero = 0
+const CHAIN_ID = 77
 
 contract('HomeAMBErc677ToErc677', async accounts => {
   const owner = accounts[0]
@@ -46,7 +47,7 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       const authorities = [accounts[1], accounts[2]]
       await validatorContract.initialize(1, authorities, owner)
       ambBridgeContract = await HomeAMB.new()
-      await ambBridgeContract.initialize(validatorContract.address, maxGasPerTx, '1', '1', owner)
+      await ambBridgeContract.initialize(CHAIN_ID, validatorContract.address, maxGasPerTx, '1', '1', owner)
       mediatorContract = await ForeignAMBErc677ToErc677.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled

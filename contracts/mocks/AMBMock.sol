@@ -1,5 +1,7 @@
 pragma solidity 0.4.24;
 
+import "../libraries/Bytes.sol";
+
 contract AMBMock {
     event MockedEvent(bytes32 indexed messageId, bytes encodedData);
 
@@ -7,7 +9,7 @@ contract AMBMock {
     uint256 public maxGasPerTx;
     bytes32 public transactionHash;
     bytes32 public messageId;
-    bytes32 public nonce;
+    uint64 public nonce;
     mapping(bytes32 => bool) public messageCallStatus;
     mapping(bytes32 => address) public failedMessageSender;
     mapping(bytes32 => address) public failedMessageReceiver;
@@ -37,8 +39,22 @@ contract AMBMock {
     }
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32) {
-        nonce = keccak256(abi.encodePacked(nonce));
-        emit MockedEvent(nonce, abi.encodePacked(msg.sender, _contract, _gas, uint8(0x00), _data));
-        return nonce;
+        uint256 chainId = 1337;
+        bytes20 bridgeId = bytes20(keccak256(abi.encodePacked(chainId, address(this))));
+
+        bytes32 messageId = Bytes.bytesToBytes32(abi.encodePacked(bytes4(0x11223344), bridgeId, nonce));
+        nonce += 1;
+        bytes memory eventData = abi.encodePacked(
+            messageId,
+            chainId,
+            msg.sender,
+            _contract,
+            uint32(_gas),
+            uint8(0x00),
+            _data
+        );
+
+        emit MockedEvent(messageId, eventData);
+        return messageId;
     }
 }

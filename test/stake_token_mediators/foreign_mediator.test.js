@@ -242,9 +242,8 @@ contract('ForeignStakeTokenMediator', async accounts => {
 
       const events = await getEvents(foreignBridge, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
-      const sender = `0x${events[0].returnValues.encodedData.slice(148 + 32, 148 + 72)}`
-      const bridgedValue = toBN(events[0].returnValues.encodedData.slice(148 + 72, 148 + 136))
-
+      const sender = `0x${events[0].returnValues.encodedData.slice(252, 252 + 40)}`
+      const bridgedValue = toBN(events[0].returnValues.encodedData.slice(252 + 40))
       expect(sender).to.be.equal(user.toLowerCase())
       expect(bridgedValue).to.be.bignumber.equal(halfEther)
       expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)

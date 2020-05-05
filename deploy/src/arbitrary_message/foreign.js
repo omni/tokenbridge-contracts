@@ -35,12 +35,16 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
 
-  console.log(`Foreign Validators: ${validatorsBridge.options.address},
+  const chainId = await web3Foreign.eth.net.getId()
+
+  console.log('\ninitializing Foreign Bridge with following parameters:\n')
+  console.log(`CHAIN_ID: ${chainId}, Foreign Validators: ${validatorsBridge.options.address},
   FOREIGN_MAX_AMOUNT_PER_TX (gas limit per call): ${FOREIGN_MAX_AMOUNT_PER_TX},
   FOREIGN_GAS_PRICE: ${FOREIGN_GAS_PRICE}, FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS : ${FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS}
   `)
   const initializeFBridgeData = await bridge.methods
     .initialize(
+      chainId,
       validatorsBridge.options.address,
       FOREIGN_MAX_AMOUNT_PER_TX,
       FOREIGN_GAS_PRICE,

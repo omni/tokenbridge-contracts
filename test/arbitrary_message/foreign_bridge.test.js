@@ -24,6 +24,7 @@ const ZERO = toBN(0)
 const MAX_VALIDATORS = 50
 const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
+const CHAIN_ID = 77
 
 contract('ForeignAMB', async accounts => {
   let validatorContract
@@ -60,6 +61,7 @@ contract('ForeignAMB', async accounts => {
       expect(await foreignBridge.isInitialized()).to.be.equal(false)
 
       const { logs } = await foreignBridge.initialize(
+        CHAIN_ID,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -86,19 +88,28 @@ contract('ForeignAMB', async accounts => {
       expect(await foreignBridge.isInitialized()).to.be.equal(false)
 
       await foreignBridge
-        .initialize(ZERO_ADDRESS, oneEther, gasPrice, requiredBlockConfirmations, owner)
+        .initialize(0, validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
-        .initialize(accounts[0], oneEther, gasPrice, requiredBlockConfirmations, owner)
+        .initialize(CHAIN_ID, ZERO_ADDRESS, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
-        .initialize(validatorContract.address, oneEther, 0, requiredBlockConfirmations, owner)
+        .initialize(CHAIN_ID, accounts[0], oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge
-        .initialize(validatorContract.address, oneEther, gasPrice, 0, owner)
+        .initialize(CHAIN_ID, validatorContract.address, oneEther, 0, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.fulfilled
+      await foreignBridge
+        .initialize(CHAIN_ID, validatorContract.address, oneEther, gasPrice, 0, owner)
+        .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
 
       expect(await foreignBridge.isInitialized()).to.be.equal(true)
     })
@@ -107,8 +118,14 @@ contract('ForeignAMB', async accounts => {
       const alternativeBlockConfirmations = 1
       const foreignBridge = await ForeignBridge.new()
 
-      await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.fulfilled
+      await foreignBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
 
       expect(await foreignBridge.maxGasPerTx()).to.be.bignumber.equal(oneEther)
       expect(await foreignBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
@@ -141,6 +158,7 @@ contract('ForeignAMB', async accounts => {
 
       const foreignBridgeProxy = await ForeignBridge.at(proxy.address)
       await foreignBridgeProxy.initialize(
+        CHAIN_ID,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -160,7 +178,7 @@ contract('ForeignAMB', async accounts => {
       const proxy = await EternalStorageProxy.new()
 
       const data = foreignBridgeV1.contract.methods
-        .initialize(validatorContract.address, '1', '1', requiredBlockConfirmations, owner)
+        .initialize(CHAIN_ID, validatorContract.address, '1', '1', requiredBlockConfirmations, owner)
         .encodeABI()
       await proxy.upgradeToAndCall('1', foreignBridgeV1.address, data).should.be.fulfilled
 
@@ -177,6 +195,7 @@ contract('ForeignAMB', async accounts => {
 
       const foreignBridgeProxy = await ForeignBridge.at(proxy.address)
       await foreignBridgeProxy.initialize(
+        CHAIN_ID,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -200,7 +219,14 @@ contract('ForeignAMB', async accounts => {
       await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled
 
       foreignBridge = await ForeignBridge.at(proxy.address)
-      await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await foreignBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       const tx = await foreignBridge.methods['requireToPassMessage(address,bytes,uint256)'](
@@ -211,6 +237,26 @@ contract('ForeignAMB', async accounts => {
       )
 
       tx.receipt.logs.length.should.be.equal(1)
+    })
+    it('should generate different message ids', async () => {
+      const user = accounts[8]
+
+      const resultPassMessageTx1 = await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
+        from: user
+      })
+      const resultPassMessageTx2 = await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
+        from: user
+      })
+      const resultPassMessageTx3 = await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
+        from: user
+      })
+
+      const messageId1 = resultPassMessageTx1.logs[0].args.messageId
+      const messageId2 = resultPassMessageTx2.logs[0].args.messageId
+      const messageId3 = resultPassMessageTx3.logs[0].args.messageId
+      expect(messageId1).to.be.not.equal(messageId2)
+      expect(messageId2).to.be.not.equal(messageId3)
+      expect(messageId1).to.be.not.equal(messageId3)
     })
   })
   describe('executeSignatures', () => {
@@ -225,7 +271,14 @@ contract('ForeignAMB', async accounts => {
       await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled
 
       foreignBridge = await ForeignBridge.at(proxy.address)
-      await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await foreignBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
 
       box = await Box.new()
       // Generate data for method we want to call on Box contract
@@ -267,29 +320,6 @@ contract('ForeignAMB', async accounts => {
       expect(await box.txHash()).to.be.equal(messageId)
       expect(await foreignBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
-    it('should generate different message ids', async () => {
-      const user = accounts[8]
-
-      const boxInitialValue = await box.value()
-      boxInitialValue.should.be.bignumber.equal(ZERO)
-
-      const resultPassMessageTx1 = await foreignBridge.requireToPassMessage(box.address, setValueData, 221254, {
-        from: user
-      })
-      const resultPassMessageTx2 = await foreignBridge.requireToPassMessage(box.address, setValueData, 221254, {
-        from: user
-      })
-      const resultPassMessageTx3 = await foreignBridge.requireToPassMessage(box.address, setValueData, 221254, {
-        from: user
-      })
-
-      const messageId1 = resultPassMessageTx1.logs[0].args.messageId
-      const messageId2 = resultPassMessageTx2.logs[0].args.messageId
-      const messageId3 = resultPassMessageTx3.logs[0].args.messageId
-      expect(messageId1).to.be.not.equal(messageId2)
-      expect(messageId2).to.be.not.equal(messageId3)
-      expect(messageId1).to.be.not.equal(messageId3)
-    })
     it('test with 3 signatures required', async () => {
       // set validator
       const validatorContractWith3Signatures = await BridgeValidators.new()
@@ -300,6 +330,7 @@ contract('ForeignAMB', async accounts => {
       // set bridge
       const foreignBridgeWithThreeSigs = await ForeignBridge.new()
       await foreignBridgeWithThreeSigs.initialize(
+        CHAIN_ID,
         validatorContractWith3Signatures.address,
         oneEther,
         gasPrice,
@@ -373,6 +404,7 @@ contract('ForeignAMB', async accounts => {
       // set bridge
       const foreignBridgeWithMaxSigs = await ForeignBridge.new()
       await foreignBridgeWithMaxSigs.initialize(
+        CHAIN_ID,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -559,7 +591,14 @@ contract('ForeignAMB', async accounts => {
 
     beforeEach(async () => {
       foreignBridge = await ForeignBridge.new()
-      await foreignBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await foreignBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
     })
 
     describe('setGasTokenParameters', async () => {

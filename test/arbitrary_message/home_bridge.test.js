@@ -12,6 +12,7 @@ const gasPrice = web3.utils.toWei('1', 'gwei')
 const oneEther = ether('1')
 const twoEther = ether('2')
 const ZERO = toBN(0)
+const CHAIN_ID = 77
 
 contract('HomeAMB', async accounts => {
   let validatorContract
@@ -51,6 +52,7 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.isInitialized()).to.be.equal(false)
 
       const { logs } = await homeBridge.initialize(
+        CHAIN_ID,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -77,19 +79,28 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.isInitialized()).to.be.equal(false)
 
       await homeBridge
-        .initialize(ZERO_ADDRESS, oneEther, gasPrice, requiredBlockConfirmations, owner)
+        .initialize(0, validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(accounts[0], oneEther, gasPrice, requiredBlockConfirmations, owner)
+        .initialize(CHAIN_ID, ZERO_ADDRESS, oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(validatorContract.address, oneEther, 0, requiredBlockConfirmations, owner)
+        .initialize(CHAIN_ID, accounts[0], oneEther, gasPrice, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(validatorContract.address, oneEther, gasPrice, 0, owner)
+        .initialize(CHAIN_ID, validatorContract.address, oneEther, 0, requiredBlockConfirmations, owner)
         .should.be.rejectedWith(ERROR_MSG)
-      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.fulfilled
+      await homeBridge
+        .initialize(CHAIN_ID, validatorContract.address, oneEther, gasPrice, 0, owner)
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
 
       expect(await homeBridge.isInitialized()).to.be.equal(true)
     })
@@ -98,8 +109,14 @@ contract('HomeAMB', async accounts => {
       const alternativeBlockConfirmations = 1
       const homeBridge = await HomeAMB.new()
 
-      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.fulfilled
+      await homeBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
 
       expect(await homeBridge.maxGasPerTx()).to.be.bignumber.equal(oneEther)
       expect(await homeBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
@@ -130,8 +147,14 @@ contract('HomeAMB', async accounts => {
       await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
 
       const homeBridgeProxy = await HomeAMB.at(proxy.address)
-      await homeBridgeProxy.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.fulfilled
+      await homeBridgeProxy.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
 
       // Deploy V2
       const homeBridgeV2 = await HomeAMB.new()
@@ -144,7 +167,7 @@ contract('HomeAMB', async accounts => {
       const proxy = await EternalStorageProxy.new()
 
       const data = homeBridgeV1.contract.methods
-        .initialize(validatorContract.address, '1', '1', requiredBlockConfirmations, owner)
+        .initialize(CHAIN_ID, validatorContract.address, '1', '1', requiredBlockConfirmations, owner)
         .encodeABI()
       await proxy.upgradeToAndCall('1', homeBridgeV1.address, data).should.be.fulfilled
 
@@ -160,8 +183,14 @@ contract('HomeAMB', async accounts => {
       await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
 
       const homeBridgeProxy = await HomeAMB.at(proxy.address)
-      await homeBridgeProxy.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
-        .should.be.fulfilled
+      await homeBridgeProxy.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
       expect(await proxy.upgradeabilityOwner()).to.be.equal(owner)
 
       const newOwner = accounts[1]
@@ -178,7 +207,14 @@ contract('HomeAMB', async accounts => {
       await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
 
       homeBridge = await HomeAMB.at(proxy.address)
-      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await homeBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       const tx = await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
@@ -228,6 +264,26 @@ contract('HomeAMB', async accounts => {
         { from: accounts[3] }
       ).should.be.fulfilled
     })
+    it('should generate different message ids', async () => {
+      const user = accounts[8]
+
+      const resultPassMessageTx1 = await homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
+        from: user
+      })
+      const resultPassMessageTx2 = await homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
+        from: user
+      })
+      const resultPassMessageTx3 = await homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
+        from: user
+      })
+
+      const messageId1 = resultPassMessageTx1.logs[0].args.messageId
+      const messageId2 = resultPassMessageTx2.logs[0].args.messageId
+      const messageId3 = resultPassMessageTx3.logs[0].args.messageId
+      expect(messageId1).to.be.not.equal(messageId2)
+      expect(messageId2).to.be.not.equal(messageId3)
+      expect(messageId1).to.be.not.equal(messageId3)
+    })
   })
   describe('executeAffirmation', () => {
     let homeBridge
@@ -240,7 +296,14 @@ contract('HomeAMB', async accounts => {
       await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
 
       homeBridge = await HomeAMB.at(proxy.address)
-      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await homeBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
 
       box = await Box.new()
       // Generate data for method we want to call on Box contract
@@ -277,29 +340,6 @@ contract('HomeAMB', async accounts => {
       expect(await box.txHash()).to.be.equal(messageId)
       expect(await homeBridge.messageSender()).to.be.equal(ZERO_ADDRESS)
     })
-    it('should generate different message ids', async () => {
-      const user = accounts[8]
-
-      const boxInitialValue = await box.value()
-      boxInitialValue.should.be.bignumber.equal(ZERO)
-
-      const resultPassMessageTx1 = await homeBridge.requireToPassMessage(box.address, setValueData, 221254, {
-        from: user
-      })
-      const resultPassMessageTx2 = await homeBridge.requireToPassMessage(box.address, setValueData, 221254, {
-        from: user
-      })
-      const resultPassMessageTx3 = await homeBridge.requireToPassMessage(box.address, setValueData, 221254, {
-        from: user
-      })
-
-      const messageId1 = resultPassMessageTx1.logs[0].args.messageId
-      const messageId2 = resultPassMessageTx2.logs[0].args.messageId
-      const messageId3 = resultPassMessageTx3.logs[0].args.messageId
-      expect(messageId1).to.be.not.equal(messageId2)
-      expect(messageId2).to.be.not.equal(messageId3)
-      expect(messageId1).to.be.not.equal(messageId3)
-    })
     it('test with 3 signatures required', async () => {
       // set validator
       const validatorContractWith3Signatures = await BridgeValidators.new()
@@ -310,6 +350,7 @@ contract('HomeAMB', async accounts => {
       // set bridge
       const homeBridgeWithThreeSigs = await HomeAMB.new()
       await homeBridgeWithThreeSigs.initialize(
+        CHAIN_ID,
         validatorContractWith3Signatures.address,
         oneEther,
         gasPrice,
@@ -499,7 +540,14 @@ contract('HomeAMB', async accounts => {
       await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
 
       homeBridge = await HomeAMB.at(proxy.address)
-      await homeBridge.initialize(validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+      await homeBridge.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
 
       box = await Box.new()
       // Generate data for method we want to call on Box contract
@@ -547,6 +595,7 @@ contract('HomeAMB', async accounts => {
       // set bridge
       const homeBridgeWithThreeSigs = await HomeAMB.new()
       await homeBridgeWithThreeSigs.initialize(
+        CHAIN_ID,
         validatorContractWith3Signatures.address,
         oneEther,
         gasPrice,

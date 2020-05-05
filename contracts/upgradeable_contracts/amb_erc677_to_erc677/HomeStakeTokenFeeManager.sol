@@ -45,7 +45,8 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
     }
 
     /**
-     * @dev Sets the fee percentage amount for the mediator operations. Only the owner can call this method.
+     * @dev Sets the fee percentage amount for the mediator operations.
+     * Only the owner can call this method.
      * @param _fee the fee percentage
      */
     function setFee(uint256 _fee) external onlyOwner {
@@ -60,5 +61,18 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
         require(_fee < MAX_FEE);
         uintStorage[FEE] = _fee;
         emit FeeUpdated(_fee);
+    }
+
+    /**
+     * @dev Distributes fee as per the logic of the fee manager.
+     * In this particular case, the amount of fee is passed the block 
+     * reward contract which will mint new tokens and distribute them
+     * among the stakers.
+     * @param _fee amount of tokens to be distributed
+     */
+    function _distributeFee(uint256 _fee) internal {
+        if (address(_blockRewardContract()) != address(0)) {
+            _blockRewardContract().addBridgeTokenRewardReceivers(fee);
+        }
     }
 }

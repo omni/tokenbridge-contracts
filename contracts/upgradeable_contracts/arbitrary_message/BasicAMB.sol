@@ -58,6 +58,15 @@ contract BasicAMB is BasicBridge {
     }
 
     /**
+     * Updates chain id value
+     * @param chainId chain id for current network
+     */
+    function setChainId(uint256 chainId) external onlyOwner {
+        require(chainId > 0);
+        uintStorage[CHAIN_ID] = chainId;
+    }
+
+    /**
      * Internal function for retrieving current nonce value
      * @return nonce value
      */

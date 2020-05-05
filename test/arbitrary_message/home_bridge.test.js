@@ -708,4 +708,34 @@ contract('HomeAMB', async accounts => {
       logs[1].event.should.be.equal('CollectedSignatures')
     })
   })
+  describe('setChainId', async () => {
+    let homeContract
+    const storageKey = web3.utils.soliditySha3(
+      '0x8ed9144e2f2122812934305f889c544efe55db33a5fd4b235aaab787c3f913d4' +
+        '0000000000000000000000000000000000000000000000000000000000000000'
+    )
+    beforeEach(async () => {
+      homeContract = await HomeAMB.new()
+      await homeContract.initialize(
+        CHAIN_ID,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
+    })
+
+    it('should allow to set chain id', async () => {
+      expect(await web3.eth.getStorageAt(homeContract.address, storageKey)).to.be.equal('0x4d')
+
+      await homeContract.setChainId(1337, { from: owner }).should.be.fulfilled
+
+      expect(await web3.eth.getStorageAt(homeContract.address, storageKey)).to.be.equal('0x0539')
+    })
+
+    it('should not allow to set chain id if not an owner', async () => {
+      await homeContract.setChainId(1337, { from: accounts[1] }).should.be.rejected
+    })
+  })
 })

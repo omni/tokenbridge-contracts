@@ -64,6 +64,14 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
     }
 
     /**
+     * @dev Returns the state of the fee manager configuration: whether
+     * it is ready to collect and distribute fee or not.
+     */
+    function isFeeCollectingActivated() public view returns (bool) {
+        return ((address(_blockRewardContract()) != address(0)) && (getFee() > 0));
+    }
+
+    /**
      * @dev Distributes fee as per the logic of the fee manager.
      * In this particular case, the amount of fee is passed the block 
      * reward contract which will mint new tokens and distribute them

@@ -198,6 +198,31 @@ contract('HomeStakeTokenMediator', async accounts => {
       })
     })
 
+    describe('isFeeCollectingActivated', async () => {
+      it('should return false when no block reward and no fee', async () => {
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return false when block reward is configured but no fee', async () => {
+        await homeMediator.setBlockRewardContract(blockReward.address)
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return false when no block reward but fee is set', async () => {
+        await homeMediator.setFee(ether('0.05'), { from: owner }).should.be.fulfilled
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return true when both block reward and fee are configured', async () => {
+        await homeMediator.setFee(ether('0.05'), { from: owner }).should.be.fulfilled
+        await homeMediator.setBlockRewardContract(blockReward.address)
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(true)
+      })
+    })
+
     describe('calculateFee', async () => {
       it('should calculate fee for given value', async () => {
         expect(await homeMediator.calculateFee(ether('0'))).to.be.bignumber.equal(ZERO)

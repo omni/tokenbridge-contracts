@@ -140,15 +140,15 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
             // burn all incoming tokens
             IBurnableMintableERC677Token(_token).burn(_value);
 
-            uint256 fee = calculateFee(_value);
-            if (fee > 0) {
+            if (isFeeCollectingActivated()) {
+                uint256 fee = calculateFee(_value);
                 // the calculated fee is subtracted from the original value
                 passMessage(_from, chooseReceiver(_from, _data), _value.sub(fee));
-                // the fee manager will take care about fee distribution
-                _distributeFee(fee);
+                if (fee > 0) {
+                    // the fee manager will take care about fee distribution
+                    _distributeFee(fee);
+                }
             } else {
-                // fee is zero if the fee manager is not configured or
-                // no fees are collected from token transfers
                 passMessage(_from, chooseReceiver(_from, _data), _value);
             }
         }

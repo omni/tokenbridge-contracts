@@ -76,11 +76,11 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
      * In this particular case, the amount of fee is passed the block 
      * reward contract which will mint new tokens and distribute them
      * among the stakers.
+     * IMPORTANT: make sure that the code checks that the block reward
+     * contract is initialized before calling this method.
      * @param _fee amount of tokens to be distributed
      */
     function _distributeFee(uint256 _fee) internal {
-        if (address(_blockRewardContract()) != address(0)) {
-            _blockRewardContract().addBridgeTokenRewardReceivers(_fee);
-        }
+        _blockRewardContract().addBridgeTokenRewardReceivers(_fee);
     }
 }

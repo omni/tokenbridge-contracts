@@ -63,10 +63,11 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     }
 
     function fixLockedSai(address _receiver) external {
+        require(msg.sender == address(this));
         require(!boolStorage[LOCKED_SAI_FIXED]);
         boolStorage[LOCKED_SAI_FIXED] = true;
         setInvestedAmountInDai(investedAmountInDai() + 49938645266079271041);
-        claimTokens(halfDuplexErc20token(), _receiver);
+        claimValues(halfDuplexErc20token(), _receiver);
     }
 
     function claimTokens(address _token, address _to) public {

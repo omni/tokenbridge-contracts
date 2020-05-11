@@ -2220,7 +2220,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           otherSideBridge.address
         ).should.be.fulfilled
 
-
         await sai.mint(foreignBridgeProxy.address, 100)
 
         await foreignBridgeProxy.fixLockedSai(accounts[9], { from: accounts[1] }).should.be.rejected

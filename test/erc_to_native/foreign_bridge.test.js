@@ -2201,5 +2201,40 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         }
       })
     })
+
+    describe('fixLockedSai', async () => {
+      it('should fix 49.938645266079271041 locked sai tokens', async () => {
+        const foreignBridgeProxy = await EternalStorageProxy.new().should.be.fulfilled
+        await foreignBridgeProxy.upgradeTo('1', foreignBridge.address).should.be.fulfilled
+        foreignBridge = await ForeignBridge.at(foreignBridgeProxy.address)
+        await foreignBridge.initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShiftZero,
+          otherSideBridge.address
+        ).should.be.fulfilled
+
+        await sai.mint(foreignBridge.address, 100)
+
+        const foreignBridge2 = await ForeignBridgeErcToNativeMock.new()
+        const foreignBridge3 = await ForeignBridgeErcToNativeMock.new()
+
+        const data = foreignBridge.contract.methods.fixLockedSai(accounts[9]).encodeABI()
+
+        await foreignBridgeProxy.upgradeToAndCall('2', foreignBridge2.address, data).should.be.fulfilled
+
+        await sai.mint(foreignBridge.address, 100)
+
+        await foreignBridgeProxy.upgradeToAndCall('3', foreignBridge3.address, data).should.be.rejected
+
+        expect(await sai.balanceOf(accounts[9])).to.be.bignumber.equal('100')
+        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal('49938645266079271041')
+      })
+    })
   })
 })

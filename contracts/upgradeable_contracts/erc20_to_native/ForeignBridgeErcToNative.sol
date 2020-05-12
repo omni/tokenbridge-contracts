@@ -8,6 +8,7 @@ import "../ChaiConnector.sol";
 
 contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, ChaiConnector {
     bytes32 internal constant MIN_HDTOKEN_BALANCE = 0x48649cf195feb695632309f41e61252b09f537943654bde13eb7bb1bca06964e; // keccak256(abi.encodePacked("minHDTokenBalance"))
+    bytes32 internal constant LOCKED_SAI_FIXED = 0xbeb8b2ece34b32b36c9cc00744143b61b2c23f93adcc3ce78d38937229423051; // keccak256(abi.encodePacked("lockedSaiFixed"))
     bytes4 internal constant SWAP_TOKENS = 0x73d00224; // swapTokens()
 
     function initialize(
@@ -59,6 +60,14 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
     function getBridgeMode() external pure returns (bytes4 _data) {
         return 0x18762d46; // bytes4(keccak256(abi.encodePacked("erc-to-native-core")))
+    }
+
+    function fixLockedSai(address _receiver) external {
+        require(msg.sender == address(this));
+        require(!boolStorage[LOCKED_SAI_FIXED]);
+        boolStorage[LOCKED_SAI_FIXED] = true;
+        setInvestedAmountInDai(investedAmountInDai() + 49938645266079271041);
+        claimValues(halfDuplexErc20token(), _receiver);
     }
 
     function claimTokens(address _token, address _to) public {

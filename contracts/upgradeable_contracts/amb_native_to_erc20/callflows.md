@@ -1,14 +1,25 @@
 # native-to-ERC677 AMB extension call flows
 
+The call flows below document sequences of contracts methods invocations to cover the main native-to-ERC677 Arbitrary Message Bridge extension operations.
+
+This extension is intended to replace existing bridges: POA-POA20 bridge and WETC bridge. That is why it is assumed that it will operate together with the following deployed token contracts:
+  * POA20, the bridgeable ERC677 compatible token on the Ethereum Mainnet representing POA native token from POA Network:
+    * [0x6758b7d441a9739b98552b373703d8d3d14f9e62](https://etherscan.io/address/0x6758b7d441a9739b98552b373703d8d3d14f9e62)
+  * WETC (Wrapped ETC), the bridgeable ERC677 compatible token on the Ethereum Mainnet representing ETC native token from Ethereum Classic:
+    * [0x86aabcc646f290b9fc9bd05ce17c3858d1511da1](https://etherscan.io/address/0x86aabcc646f290b9fc9bd05ce17c3858d1511da1)
+
+So, further the Ethereum Mainnet will be considered when the Foreign chain is mentioned.
+For the Home chain there could be either the POA Network or the Ethereum Classic.
+
 ## Tokens relay: successful path
 
-### Home to Foreign
+### Sending native tokens from Home to Foreign
 
-The scenario to pass native tokens to another side of the bridge in form of ERC677-compatible tokens locks the native tokens on the mediator contract on originating (Home) bridge side. Then the mediator on the terminating (Foreign) bridge side mints some amount of ERC677 tokens.
-
-It is necessary to note that the mediator on the terminating side could be configured to use a fee manager. If so, as soon as the mediator contract receives the passed request to mint tokens from the AMB contract, it asks the fee manager to calculate amount of fee, mints this amount of tokens in favor of the fee manage contract and initiates distribution of the fees among the fees recipients configured in the fee manager. The distribution process is to transfer a fraction of fee by using the ERC677 token contract for the corresponding recipient. When the fee is distributed, the amount of ERC677 tokens reduced by the fee amount will be minted for the address which originated the initial request on the Home chain.
+The scenario to pass native tokens to another side of the bridge in form of ERC677 compatible tokens locks the native tokens on the mediator contract on originating (Home) bridge side. Then the mediator on the terminating (Foreign) bridge side mints some amount of ERC677 tokens.
 
 #### Request
+
+In order to initiate the request the native tokens are sent to the payable fallback method of the mediator contract on the Home side.
 
 ```=
 >>Mediator
@@ -25,6 +36,8 @@ HomeAMBNativeToErc20::()
 ```
 
 #### Execution
+
+It is necessary to note that the mediator on the terminating side could be configured to use a fee manager. If so, as soon as the mediator contract receives the request to mint tokens from the AMB contract, it asks the fee manager to calculate amount of fee, mints this amount of tokens in favor of the fee manage contract and initiates distribution of the fees among the fees recipients configured in the fee manager. The distribution process is to transfer a fraction of fee by using the ERC677 token contract for the corresponding recipient. When the fee is distributed, the amount of ERC677 tokens reduced by the fee amount will be minted for the address which originated the initial request on the Home chain.
 
 ```=
 >>Bridge
@@ -67,13 +80,13 @@ BasicForeignAMB::executeSignatures
 ........emit RelayedMessage
 ```
 
-### Foreign to Home
+### Sending ERC677 tokens from Foreign to Home
 
-For the scenario to exchange ERC677-tokens back to the native ones the mediator contract on the originating (Foreign) bridge side burns the tokens. The mediator of the terminating bride side unlocks the native tokens in favor of the originating request sender.
-
-If it is configured the fee manager is involved to calculate and distribute fees: the mediators receives the request to unlock tokens from the AMB contract, calculates the fees amount by using the fee manager, sends this amount of tokens to the fee manager and passes the control to it for the fees distribution among the accounts configured in the fee manager. The fee manager safely sends fractions of the fees to the accounts. As soon as this process finishes the mediator contract sends the reduced amount of native tokens to the initial request sender's address.
+For the scenario to exchange ERC677 tokens back to the native ones, the mediator contract on the originating (Foreign) bridge side burns the tokens. The mediator of the terminating bridge side unlocks the native tokens in favor of the originating request sender.
 
 #### Request
+
+Since the token contract is ERC677 compatible, the `transferAndCall` method is used to intiate the exchange from ERC677 tokens to native tokens.
 
 ```=
 >>Token
@@ -102,6 +115,8 @@ ERC677BridgeToken::transferAndCall
 ```
 
 #### Execution
+
+If it is configured, the fee manager is involved to calculate and distribute fees: the mediators receives the request to unlock tokens from the AMB contract, calculates the fees amount by using the fee manager, sends this amount of tokens to the fee manager and passes the control to it for the fees distribution among the accounts configured in the fee manager. The fee manager safely sends fractions of the fees to the accounts. As soon as this process finishes the mediator contract sends the reduced amount of native tokens to the initial request sender's address.
 
 ```=
 >>Bridge
@@ -134,18 +149,23 @@ BasicHomeAMB::executeAffirmation
 
 ## Tokens relay: failure and recovery
 
-Due to asynchronous nature of the Arbitrary Message Bridge, for the mediator contracts
-there is a possibility to provide a way how to recover an operation if the data relay request has been failed within the mediator contract on another side.
+Failures in the mediator contract at the moment to complete a relay operation could cause imbalance of the extension due to the asynchronous nature of the Arbitrary Message Bridge. Therefore the feature to recover the balance of the native-to-ERC677 extension is very important for the extension healthiness. 
+
+For the mediator contracts there is a possibility to provide a way how to recover an operation if the data relay request has been failed within the mediator contract on another side.
 
 For the token bridging this means that:
-  * if the operation to mint tokens as part of the Home->Foreign request processing was failed it is possible to unlock the tokens on the Home side;
-  * if the operation to unlock tokens as part of the Foreign->Home request processing was failed it is possible to mint burnt tokens on the Foreign side.
+  * if the operation to mint tokens as part of the Home->Foreign request processing was failed, it is possible to unlock the tokens on the Home side;
+  * if the operation to unlock tokens as part of the Foreign->Home request processing was failed, it is possible to mint the burnt tokens on the Foreign side.
 
-The mediator can get the status of the corresponding relay request from the bridge contract by using the id of this request (originating transaction hash). So, as soon as a user would like to perform recovery they send a request with the request id to the mediator contract and if the request was failed indeed the mediator originates the recovery message to the mediator on another side. The recovery messages contain the same information as it was used by the tokens relay request, so the terminating mediator checks that such request was registered and executes actual recovery by using amount of tokens from the request and the request sender.
+The mediator can get the status of the corresponding relay request from the bridge contract by using the id of this request (originating transaction hash). So, as soon as a user would like to perform recovery they send a call with the request id to the mediator contract and if such request was failed indeed, the mediator originates the recovery message to the mediator on another side. The recovery messages contain the same information as it was used by the tokens relay request, so the terminating mediator checks that such request was registered and executes the actual recovery by using amount of tokens from the request and the request sender.
 
-### Home to Foreign
+It is important that the recovery must be performed without the extension admin attendance.
+
+### Failed attempt to relay tokens from Home to Foreign
 
 #### Execution Failure
+
+A failure happens within the message handler on the mediator contract's side when the Foreign bridge contract passes the message to it.
 
 ```=
 >>Bridge
@@ -168,6 +188,8 @@ BasicForeignAMB::executeSignatures
 
 #### Recovery initialization
 
+As soon as a user identified a message transfer failure (e.g. the corresponding amount of ERC677 tokens did not appear on the user account balance on the Foreign chain), they call the `requestFailedMessageFix` method on the Foreign mediator contract. Anyone is able to call this method by specifying the message id (the originating transaction hash). The method requests the bridge contract whether the corresponding message was failed indeed. That is why the operation is safe to perform by anyone.
+
 ```=
 >>Mediator
 TokenBridgeMediator::requestFailedMessageFix
@@ -182,6 +204,8 @@ TokenBridgeMediator::requestFailedMessageFix
 ```
 
 #### Recovery completion
+
+The Home chain initially originated the request, that is why the extension is imbalances - more native tokens are locked on the Home side than ERC677 tokens are minted on the Foreign side. Therefore the appeared message to invoke `fixFailedMessage` causes unlocking of the native tokens.
 
 ```=
 >>Bridge
@@ -205,9 +229,11 @@ BasicHomeAMB::executeAffirmation
 ........emit AffirmationCompleted
 ```
 
-### Foreign to Home
+### Failed attempt to relay tokens from Foreign to Home
 
 #### Execution Failure
+
+A failure happens within the message handler on the mediator contract's side when the Home bridge contract passes the message to it.
 
 ```=
 >>Bridge
@@ -231,6 +257,8 @@ BasicHomeAMB::executeAffirmation
 
 #### Recovery initialization
 
+As soon as a user identified a message transfer failure (e.g. the corresponding amount of native tokens did not appear on the user account balance on the Home chain), they call the `requestFailedMessageFix` method on the Home mediator contract. Anyone is able to call this method by specifying the message id (the originating transaction hash). The method requests the bridge contract whether the corresponding message was failed indeed. That is why the operation is safe to perform by anyone.
+
 ```=
 >>Mediator
 TokenBridgeMediator::requestFailedMessageFix
@@ -245,6 +273,8 @@ TokenBridgeMediator::requestFailedMessageFix
 ```
 
 #### Recovery completion
+
+The Foreign chain initially originated the request. It has no ERC677 tokens anymore on the mediator contract balance since they were burnt as part of the request -- the extension is imbalanced. That is why the appeared message to invoke `fixFailedMessage` causes new ERC677 tokens minting.
 
 ```=
 >>Bridge
@@ -305,7 +335,7 @@ The `relayTokens` method in the mediator contract on the Foreign side must be ex
   * the user calls `approve` from the token contract
   * the user calls `relayTokens` from the mediator contract by specifying both the receiver of tokens on another side and the amount of tokens to exchange.
 
-This will allow to the mediator contract to call the `transferFrom` method from the token contract to gets ERC677 tokens before burning them.
+This will allow to the mediator contract to call the `transferFrom` method from the token contract to receive ERC677 tokens before burning them.
 
 #### Request
 

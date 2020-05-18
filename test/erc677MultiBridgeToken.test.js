@@ -20,7 +20,7 @@ contract('ERC677MultiBridgeToken', async accounts => {
   })
 
   beforeEach(async () => {
-    token = await ERC677MultiBridgeToken.new('Test token', 'TEST', 18)
+    token = await ERC677MultiBridgeToken.new('Test token', 'TEST', 18, 100)
   })
 
   describe('constructor', async () => {

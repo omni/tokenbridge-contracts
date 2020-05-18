@@ -35,7 +35,7 @@ contract('HomeStakeTokenMediator', async accounts => {
   beforeEach(async () => {
     homeBridge = await AMBMock.new()
     await homeBridge.setMaxGasPerTx(maxGasPerTx)
-    token = await ERC677BridgeTokenRewardable.new('Test token', 'TST', 18)
+    token = await ERC677BridgeTokenRewardable.new('Test token', 'TST', 18, 100)
     blockReward = await BlockReward.new()
     await blockReward.setValidatorsRewards(authorities)
     await blockReward.setToken(token.address)
@@ -195,6 +195,31 @@ contract('HomeStakeTokenMediator', async accounts => {
         await homeMediator.setFee(ether('0.05'), { from: owner }).should.be.fulfilled
 
         expect(await homeMediator.getFee()).to.be.bignumber.equal(ether('0.05'))
+      })
+    })
+
+    describe('isFeeCollectingActivated', async () => {
+      it('should return false when no block reward and no fee', async () => {
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return false when block reward is configured but no fee', async () => {
+        await homeMediator.setBlockRewardContract(blockReward.address)
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return false when no block reward but fee is set', async () => {
+        await homeMediator.setFee(ether('0.05'), { from: owner }).should.be.fulfilled
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return true when both block reward and fee are configured', async () => {
+        await homeMediator.setFee(ether('0.05'), { from: owner }).should.be.fulfilled
+        await homeMediator.setBlockRewardContract(blockReward.address)
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(true)
       })
     })
 

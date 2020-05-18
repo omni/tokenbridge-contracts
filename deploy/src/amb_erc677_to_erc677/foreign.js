@@ -1,4 +1,3 @@
-const Web3Utils = require('web3-utils')
 const { web3Foreign, FOREIGN_RPC_URL } = require('../web3')
 const { deployContract, privateKeyToAddress, upgradeProxy } = require('../deploymentUtils')
 const {

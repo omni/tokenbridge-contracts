@@ -6,6 +6,8 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract BlockReward {
     using SafeMath for uint256;
 
+    event BridgeTokenRewardAdded(uint256 amount, uint256 cumulativeAmount, address indexed bridge);
+
     address[] public validatorList;
     uint256[] public validatorRewardList;
     uint256 public mintedCoins = 0;
@@ -14,6 +16,7 @@ contract BlockReward {
     bytes32 internal constant MINTED_TOTALLY_BY_BRIDGE = "mintedTotallyByBridge";
     bytes4 internal constant MINT_REWARD = 0x91c0aabf; // mintReward(uint256)
     address public token;
+    uint256 public bridgeTokenReward = 0;
 
     function() external payable {
         // solhint-disable-previous-line no-empty-blocks
@@ -68,6 +71,7 @@ contract BlockReward {
     }
 
     function addBridgeTokenRewardReceivers(uint256 _amount) external {
+        require(_amount != 0);
         validatorRewardList = new uint256[](validatorList.length);
         feeAmount = _amount;
         uint256 feePerValidator = _amount.div(validatorList.length);
@@ -86,6 +90,8 @@ contract BlockReward {
             validatorRewardList[i] = feeToDistribute;
         }
 
+        bridgeTokenReward = bridgeTokenReward.add(_amount);
+        emit BridgeTokenRewardAdded(_amount, bridgeTokenReward, msg.sender);
         require(token.call(abi.encodeWithSelector(MINT_REWARD, _amount)));
     }
 

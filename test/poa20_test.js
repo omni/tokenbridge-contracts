@@ -9,8 +9,11 @@ const ForeignNativeToErcBridge = artifacts.require('ForeignBridgeNativeToErc.sol
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 
 const { expect } = require('chai')
+const ethUtil = require('ethereumjs-util')
+
 const { ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS, BN } = require('./setup')
 const { ether, expectEventInLogs } = require('./helpers/helpers')
+const permitSign = require('./helpers/eip712.sign.permit')
 
 const minPerTx = ether('0.01')
 const requireBlockConfirmations = 8
@@ -43,7 +46,11 @@ async function testERC677BridgeToken(accounts, rewardable) {
   }
 
   beforeEach(async () => {
-    token = await tokenContract.new('POA ERC20 Foundation', 'POA20', 18)
+    const args = ['POA ERC20 Foundation', 'POA20', 18]
+    if (rewardable) {
+      args.push(100)
+    }
+    token = await tokenContract.new(...args)
   })
   it('default values', async () => {
     expect(await token.symbol()).to.be.equal('POA20')
@@ -545,7 +552,12 @@ async function testERC677BridgeToken(accounts, rewardable) {
     it('can take send ERC20 tokens', async () => {
       const owner = accounts[0]
       const halfEther = ether('0.5')
-      const tokenSecond = await tokenContract.new('Roman Token', 'RST', 18)
+
+      const args = ['Roman Token', 'RST', 18]
+      if (rewardable) {
+        args.push(100)
+      }
+      const tokenSecond = await tokenContract.new(...args)
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
@@ -593,7 +605,11 @@ async function testERC677BridgeToken(accounts, rewardable) {
       expect(logs[0].event).to.be.equal('Transfer')
     })
     it('if transfer called on contract, still works even if onTokenTransfer doesnot exist', async () => {
-      const someContract = await tokenContract.new('Some', 'Token', 18)
+      const args = ['Some', 'Token', 18]
+      if (rewardable) {
+        args.push(100)
+      }
+      const someContract = await tokenContract.new(...args)
       await token.mint(user, '2', { from: owner }).should.be.fulfilled
       const tokenTransfer = await token.transfer(someContract.address, '1', { from: user }).should.be.fulfilled
       const tokenTransfer2 = await token.transfer(accounts[0], '1', { from: user }).should.be.fulfilled
@@ -609,6 +625,290 @@ async function testERC677BridgeToken(accounts, rewardable) {
       await token.renounceOwnership().should.be.rejectedWith(ERROR_MSG)
     })
   })
+  if (rewardable) {
+    describe('permit', () => {
+      const privateKey = '0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501210'
+      const infinite = new BN('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)
+      let holder
+      let spender
+      let nonce
+      let expiry
+      let allowed
+
+      beforeEach(async () => {
+        holder = '0x040b798028e9abded00Bfc65e7CF01484013db17'
+        spender = accounts[9]
+        nonce = await token.nonces.call(holder)
+        expiry = 0
+        allowed = true
+
+        holder.toLowerCase().should.be.equal(ethUtil.bufferToHex(ethUtil.privateToAddress(privateKey)).toLowerCase()) // make sure privateKey is holder's key
+
+        // Mint some extra tokens for the `holder`
+        await token.mint(holder, '10000', { from: owner }).should.be.fulfilled
+        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
+      })
+      it('should permit', async () => {
+        // Holder signs the `permit` params with their privateKey
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+
+        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(new BN('0'))
+
+        // An arbitrary address calls the `permit` function
+        const { logs } = await token.permit(
+          holder,
+          spender,
+          nonce,
+          expiry,
+          allowed,
+          signature.v,
+          signature.r,
+          signature.s
+        ).should.be.fulfilled
+
+        logs[0].event.should.be.equal('Approval')
+        logs[0].args.owner.should.be.equal(holder)
+        logs[0].args.spender.should.be.equal(spender)
+        logs[0].args.value.should.be.bignumber.equal(infinite)
+
+        // Now allowance is infinite
+        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(infinite)
+
+        // The caller of `permit` can't spend holder's funds
+        await token.transferFrom(holder, accounts[9], '10000').should.be.rejectedWith(ERROR_MSG_OPCODE)
+        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
+
+        // Spender can transfer all holder's funds
+        await token.transferFrom(holder, accounts[9], '10000', { from: spender }).should.be.fulfilled
+        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('0'))
+        ;(await token.balanceOf.call(accounts[9])).should.be.bignumber.equal(new BN('10000'))
+        ;(await token.nonces.call(holder)).should.be.bignumber.equal(nonce.add(new BN('1')))
+
+        // The allowance is still infinite after transfer
+        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(infinite)
+      })
+      it('should fail when invalid expiry', async () => {
+        expiry = 900
+
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+
+        await token.setNow(1000).should.be.fulfilled
+        await token
+          .permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s)
+          .should.be.rejectedWith(ERROR_MSG)
+
+        await token.setNow(800).should.be.fulfilled
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+      })
+      it('should consider expiry', async () => {
+        expiry = 900
+
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+
+        await token.setNow(800).should.be.fulfilled
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+
+        // Spender can transfer holder's funds
+        await token.setNow(899).should.be.fulfilled
+        await token.transferFrom(holder, accounts[9], '6000', { from: spender }).should.be.fulfilled
+        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('4000'))
+        ;(await token.balanceOf.call(accounts[9])).should.be.bignumber.equal(new BN('6000'))
+
+        // Spender can't transfer the remaining holder's funds because of expiry
+        await token.setNow(901).should.be.fulfilled
+        await token.transferFrom(holder, accounts[9], '4000', { from: spender }).should.be.rejectedWith(ERROR_MSG)
+      })
+      it('should disallow unlimited allowance', async () => {
+        expiry = 900
+        await token.setNow(800).should.be.fulfilled
+
+        let signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(infinite)
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+
+        // Spender can transfer holder's funds
+        await token.transferFrom(holder, accounts[9], '6000', { from: spender }).should.be.fulfilled
+        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('4000'))
+        ;(await token.balanceOf.call(accounts[9])).should.be.bignumber.equal(new BN('6000'))
+
+        nonce = nonce - 0 + 1
+        allowed = false
+
+        signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(new BN('0'))
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN('0'))
+
+        // Spender can't transfer the remaining holder's funds because of zero allowance
+        await token
+          .transferFrom(holder, accounts[9], '4000', { from: spender })
+          .should.be.rejectedWith(ERROR_MSG_OPCODE)
+      })
+      it('should fail when invalid signature or parameters', async () => {
+        let signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+
+        allowed = !allowed
+
+        await token
+          .permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s)
+          .should.be.rejectedWith(ERROR_MSG)
+
+        allowed = !allowed
+
+        await token
+          .permit(
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed,
+            signature.v,
+            signature.s, // here should be `signature.r` in a correct case
+            signature.r // here should be `signature.s` in a correct case
+          )
+          .should.be.rejectedWith(ERROR_MSG)
+
+        signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce: nonce - 0 + 1,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+
+        await token
+          .permit(holder, spender, nonce - 0 + 1, expiry, allowed, signature.v, signature.r, signature.s)
+          .should.be.rejectedWith(ERROR_MSG)
+
+        signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+      })
+    })
+  }
 }
 
 contract('ERC677BridgeToken', async accounts => {

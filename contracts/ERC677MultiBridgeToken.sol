@@ -1,12 +1,12 @@
 pragma solidity 0.4.24;
 
-import "./ERC677BridgeToken.sol";
+import "./PermittableToken.sol";
 
 /**
  * @title ERC677MultiBridgeToken
  * @dev This contract extends ERC677BridgeToken to support several bridge simulteniously
  */
-contract ERC677MultiBridgeToken is ERC677BridgeToken {
+contract ERC677MultiBridgeToken is PermittableToken {
     address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
     uint256 internal constant MAX_BRIDGES = 50;
     mapping(address => address) public bridgePointers;
@@ -15,7 +15,10 @@ contract ERC677MultiBridgeToken is ERC677BridgeToken {
     event BridgeAdded(address indexed bridge);
     event BridgeRemoved(address indexed bridge);
 
-    constructor(string _name, string _symbol, uint8 _decimals) public ERC677BridgeToken(_name, _symbol, _decimals) {
+    constructor(string _name, string _symbol, uint8 _decimals, uint256 _chainId)
+        public
+        PermittableToken(_name, _symbol, _decimals, _chainId)
+    {
         bridgePointers[F_ADDR] = F_ADDR; // empty bridge contracts list
     }
 

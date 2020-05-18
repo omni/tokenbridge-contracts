@@ -4,7 +4,7 @@ import "../../libraries/Message.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../BasicHomeBridge.sol";
 import "./RewardableHomeBridgeNativeToErc.sol";
-import "../Sacrifice.sol";
+import "../../libraries/Address.sol";
 
 contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
     function() public payable {
@@ -148,9 +148,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
             valueToTransfer = valueToTransfer.sub(fee);
         }
 
-        if (!_recipient.send(valueToTransfer)) {
-            (new Sacrifice).value(valueToTransfer)(_recipient);
-        }
+        Address.safeSendValue(_recipient, valueToTransfer);
         return true;
     }
 

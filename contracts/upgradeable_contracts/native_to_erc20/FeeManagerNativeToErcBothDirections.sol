@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../Sacrifice.sol";
+import "../../libraries/Address.sol";
 import "../ValidatorsFeeManager.sol";
 
 contract FeeManagerNativeToErcBothDirections is ValidatorsFeeManager {
@@ -17,8 +17,6 @@ contract FeeManagerNativeToErcBothDirections is ValidatorsFeeManager {
     }
 
     function _sendReward(address _rewardAddress, uint256 _fee) internal {
-        if (!_rewardAddress.send(_fee)) {
-            (new Sacrifice).value(_fee)(_rewardAddress);
-        }
+        Address.safeSendValue(_rewardAddress, _fee);
     }
 }

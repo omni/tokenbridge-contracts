@@ -72,3 +72,18 @@ Fees are calculated and distributed on Home network. Validators will receive ERC
 Fees are calculated and distributed on Home network. Validators will receive ERC20 tokens.
 ![ERC-ERC-HomeToForeign](https://user-images.githubusercontent.com/4614574/59939670-0cc32480-942f-11e9-9693-727125555c97.png)
 
+## AMB-NATIVE-TO-ERC
+Configuration:
+```
+HOME_REWARDABLE=ONE_DIRECTION
+FOREIGN_REWARDABLE=ONE_DIRECTION
+```
+### Home to Foreign transfer
+Fees are calculated and distributed on Foreign network. The reward accounts will receive ERC20 tokens.
+![AMB-NATIVE-TO-ERC677-Home-Foreign](https://user-images.githubusercontent.com/4614574/74660965-dd0f1c80-5175-11ea-8d6c-51b8bd85f844.png)
+
+### Foreign to Home transfer
+Fees are calculated and distributed on Home network. The reward accounts will receive native tokens.
+![AMB-NATIVE-TO-ERC677-Foreign-Home](https://user-images.githubusercontent.com/4614574/74660986-e6988480-5175-11ea-9216-7f008a6fdaf0.png)
+
+

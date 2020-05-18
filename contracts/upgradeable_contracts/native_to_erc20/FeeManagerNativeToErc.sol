@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "../../interfaces/IBurnableMintableERC677Token.sol";
-import "../Sacrifice.sol";
+import "../../libraries/Address.sol";
 import "../ValidatorsFeeManager.sol";
 import "../ERC677Storage.sol";
 
@@ -15,9 +15,7 @@ contract FeeManagerNativeToErc is ValidatorsFeeManager, ERC677Storage {
     }
 
     function onAffirmationFeeDistribution(address _rewardAddress, uint256 _fee) internal {
-        if (!_rewardAddress.send(_fee)) {
-            (new Sacrifice).value(_fee)(_rewardAddress);
-        }
+        Address.safeSendValue(_rewardAddress, _fee);
     }
 
     function onSignatureFeeDistribution(address _rewardAddress, uint256 _fee) internal {

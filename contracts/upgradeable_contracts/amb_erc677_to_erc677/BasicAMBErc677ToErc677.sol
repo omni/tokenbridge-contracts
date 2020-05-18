@@ -2,7 +2,6 @@ pragma solidity 0.4.24;
 
 import "../../interfaces/IAMB.sol";
 import "../Ownable.sol";
-import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../Initializable.sol";
 import "../BaseERC677Bridge.sol";
 import "../BaseOverdrawManagement.sol";
@@ -10,7 +9,7 @@ import "../ReentrancyGuard.sol";
 import "../Upgradeable.sol";
 import "../Claimable.sol";
 import "../VersionableBridge.sol";
-import "../../libraries/Bytes.sol";
+import "../TokenBridgeMediator.sol";
 
 /**
 * @title BasicAMBErc677ToErc677
@@ -18,21 +17,14 @@ import "../../libraries/Bytes.sol";
 */
 contract BasicAMBErc677ToErc677 is
     Initializable,
-    Ownable,
     ReentrancyGuard,
     Upgradeable,
     Claimable,
     VersionableBridge,
     BaseOverdrawManagement,
-    BaseERC677Bridge
+    BaseERC677Bridge,
+    TokenBridgeMediator
 {
-    event FailedMessageFixed(bytes32 indexed messageId, address recipient, uint256 value);
-    event TokensBridged(address indexed recipient, uint256 value, bytes32 indexed messageId);
-
-    bytes32 internal constant BRIDGE_CONTRACT = 0x811bbb11e8899da471f0e69a3ed55090fc90215227fc5fb1cb0d6e962ea7b74f; // keccak256(abi.encodePacked("bridgeContract"))
-    bytes32 internal constant MEDIATOR_CONTRACT = 0x98aa806e31e94a687a31c65769cb99670064dd7f5a87526da075c5fb4eab9880; // keccak256(abi.encodePacked("mediatorContract"))
-    bytes32 internal constant REQUEST_GAS_LIMIT = 0x2dfd6c9f781bb6bbb5369c114e949b69ebb440ef3d4dd6b2836225eb1dc3a2be; // keccak256(abi.encodePacked("requestGasLimit"))
-
     function initialize(
         address _bridgeContract,
         address _mediatorContract,
@@ -72,27 +64,6 @@ contract BasicAMBErc677ToErc677 is
 
     function bridgeContractOnOtherSide() internal view returns (address) {
         return mediatorContractOnOtherSide();
-    }
-
-    /**
-    * @dev Constructs and passes a message to the AMB bridge contract.
-    * Message represents a call of handleBridgedTokens(receiver, value, nonce) on the other side mediator contract.
-    * @param _from adddress of sender, if bridge operation failes, tokens will be returned to this address
-    * @param _receiver adddress of receiver on the other side, will eventually receive bridged tokens
-    * @param _value bridged amount of tokens
-    */
-    function passMessage(address _from, address _receiver, uint256 _value) internal {
-        bytes4 methodSelector = this.handleBridgedTokens.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, _receiver, _value);
-
-        bytes32 messageId = bridgeContract().requireToPassMessage(
-            mediatorContractOnOtherSide(),
-            data,
-            requestGasLimit()
-        );
-
-        setMessageValue(messageId, _value);
-        setMessageRecipient(messageId, _from);
     }
 
     function relayTokens(address _from, address _receiver, uint256 _value) external {
@@ -139,96 +110,20 @@ contract BasicAMBErc677ToErc677 is
         return 0x76595b56; // bytes4(keccak256(abi.encodePacked("erc-to-erc-amb")))
     }
 
-    function setBridgeContract(address _bridgeContract) external onlyOwner {
-        _setBridgeContract(_bridgeContract);
-    }
-
-    function _setBridgeContract(address _bridgeContract) internal {
-        require(AddressUtils.isContract(_bridgeContract));
-        addressStorage[BRIDGE_CONTRACT] = _bridgeContract;
-    }
-
-    function bridgeContract() public view returns (IAMB) {
-        return IAMB(addressStorage[BRIDGE_CONTRACT]);
-    }
-
-    function setMediatorContractOnOtherSide(address _mediatorContract) external onlyOwner {
-        _setMediatorContractOnOtherSide(_mediatorContract);
-    }
-
-    function _setMediatorContractOnOtherSide(address _mediatorContract) internal {
-        addressStorage[MEDIATOR_CONTRACT] = _mediatorContract;
-    }
-
-    function mediatorContractOnOtherSide() public view returns (address) {
-        return addressStorage[MEDIATOR_CONTRACT];
-    }
-
-    function setRequestGasLimit(uint256 _requestGasLimit) external onlyOwner {
-        _setRequestGasLimit(_requestGasLimit);
-    }
-
-    function _setRequestGasLimit(uint256 _requestGasLimit) internal {
-        require(_requestGasLimit <= maxGasPerTx());
-        uintStorage[REQUEST_GAS_LIMIT] = _requestGasLimit;
-    }
-
-    function requestGasLimit() public view returns (uint256) {
-        return uintStorage[REQUEST_GAS_LIMIT];
-    }
-
-    function messageSender() internal view returns (address) {
-        return bridgeContract().messageSender();
-    }
-
-    function _messageId() internal view returns (bytes32) {
-        return bridgeContract().messageId();
-    }
-
-    function maxGasPerTx() internal view returns (uint256) {
-        return bridgeContract().maxGasPerTx();
-    }
-
-    function setMessageValue(bytes32 _hash, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("messageValue", _hash))] = _value;
-    }
-
-    function messageValue(bytes32 _hash) internal view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("messageValue", _hash))];
-    }
-
-    function setMessageRecipient(bytes32 _hash, address _recipient) internal {
-        addressStorage[keccak256(abi.encodePacked("messageRecipient", _hash))] = _recipient;
-    }
-
-    function messageRecipient(bytes32 _hash) internal view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("messageRecipient", _hash))];
-    }
-
-    function setMessageFixed(bytes32 _hash) internal {
-        boolStorage[keccak256(abi.encodePacked("messageFixed", _hash))] = true;
-    }
-
-    function messageFixed(bytes32 _hash) public view returns (bool) {
-        return boolStorage[keccak256(abi.encodePacked("messageFixed", _hash))];
-    }
-
-    function handleBridgedTokens(address _recipient, uint256 _value) external {
-        require(msg.sender == address(bridgeContract()));
-        require(messageSender() == mediatorContractOnOtherSide());
-        if (withinExecutionLimit(_value)) {
-            setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-            executeActionOnBridgedTokens(_recipient, _value);
-        } else {
-            bytes32 messageId = _messageId();
-            address recipient;
-            uint256 value;
-            (recipient, value) = txAboveLimits(messageId);
-            require(recipient == address(0) && value == 0);
-            setOutOfLimitAmount(outOfLimitAmount().add(_value));
-            setTxAboveLimits(_recipient, _value, messageId);
-            emit AmountLimitExceeded(_recipient, _value, messageId);
-        }
+    /**
+    * @dev Execute the action to be performed when the bridge tokens are out of execution limits.
+    * @param _recipient address intended to receive the tokens
+    * @param _value amount of tokens to be received
+    */
+    function executeActionOnBridgedTokensOutOfLimit(address _recipient, uint256 _value) internal {
+        bytes32 messageId = _messageId();
+        address recipient;
+        uint256 value;
+        (recipient, value) = txAboveLimits(messageId);
+        require(recipient == address(0) && value == 0);
+        setOutOfLimitAmount(outOfLimitAmount().add(_value));
+        setTxAboveLimits(_recipient, _value, messageId);
+        emit AmountLimitExceeded(_recipient, _value, messageId);
     }
 
     /**
@@ -259,35 +154,7 @@ contract BasicAMBErc677ToErc677 is
         }
     }
 
-    function requestFailedMessageFix(bytes32 messageId) external {
-        require(!bridgeContract().messageCallStatus(messageId));
-        require(bridgeContract().failedMessageReceiver(messageId) == address(this));
-        require(bridgeContract().failedMessageSender(messageId) == mediatorContractOnOtherSide());
-
-        bytes4 methodSelector = this.fixFailedMessage.selector;
-        bytes memory data = abi.encodeWithSelector(methodSelector, messageId);
-        bridgeContract().requireToPassMessage(mediatorContractOnOtherSide(), data, requestGasLimit());
-    }
-
-    function fixFailedMessage(bytes32 messageId) external {
-        require(msg.sender == address(bridgeContract()));
-        require(messageSender() == mediatorContractOnOtherSide());
-        require(!messageFixed(messageId));
-
-        address recipient = messageRecipient(messageId);
-        uint256 value = messageValue(messageId);
-        setMessageFixed(messageId);
-        executeActionOnFixedTokens(recipient, value);
-        emit FailedMessageFixed(messageId, recipient, value);
-    }
-
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
         claimValues(_token, _to);
     }
-
-    /* solcov ignore next */
-    function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal;
-
-    /* solcov ignore next */
-    function executeActionOnFixedTokens(address, uint256) internal;
 }

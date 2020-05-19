@@ -61,18 +61,18 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
         uint256 valueToMint = _value.div(10**decimalShift());
 
-        bytes32 txHash = transactionHash();
+        bytes32 _messageId = messageId();
         IMediatorFeeManager feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = feeManager.calculateFee(valueToMint);
             if (fee != 0) {
-                distributeFee(feeManager, fee, txHash);
+                distributeFee(feeManager, fee, _messageId);
                 valueToMint = valueToMint.sub(fee);
             }
         }
 
         IBurnableMintableERC677Token(erc677token()).mint(_receiver, valueToMint);
-        emit TokensBridged(_receiver, valueToMint, txHash);
+        emit TokensBridged(_receiver, valueToMint, _messageId);
     }
 
     /**
@@ -196,15 +196,15 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     * @dev Distributes the provided amount of fees.
     * @param _feeManager address of the fee manager contract
     * @param _fee total amount to be distributed to the list of reward accounts.
-    * @param _txHash the transaction hash associated that generated fee distribution
+    * @param _messageId id of the message that generated fee distribution
     */
-    function distributeFee(IMediatorFeeManager _feeManager, uint256 _fee, bytes32 _txHash) internal {
+    function distributeFee(IMediatorFeeManager _feeManager, uint256 _fee, bytes32 _messageId) internal {
         // Right now, AMB bridge supports only one message per transaction.
         // The receivers of the fee could try to send back the fees through the mediator,
         // so here we add a lock to limit the number of messages that the mediator can send to the bridge,
         // allowing a maximum of 1 message
         enableMessagesRestriction();
-        super.distributeFee(_feeManager, _fee, _txHash);
+        super.distributeFee(_feeManager, _fee, _messageId);
         // remove the lock
         disableMessagesRestriction();
     }

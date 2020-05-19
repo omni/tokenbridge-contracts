@@ -123,9 +123,9 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.mul(10**decimalShift());
-        bytes32 messageId = _messageId();
+        bytes32 _messageId = messageId();
         getMintHandler().mint(_recipient, value);
-        emit TokensBridged(_recipient, value, messageId);
+        emit TokensBridged(_recipient, value, _messageId);
     }
 
     /**

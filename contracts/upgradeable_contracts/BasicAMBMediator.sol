@@ -92,22 +92,6 @@ contract BasicAMBMediator is Ownable {
     }
 
     /**
-    * @dev Sets the unique identifier to be used for the next message to be sent to the AMB bridge.
-    * @param _hash representing the next message unique identifier.
-    */
-    function setNonce(bytes32 _hash) internal {
-        uintStorage[NONCE] = uint256(_hash);
-    }
-
-    /**
-    * @dev Tells the unique identifier to be used for the next message to be sent to the AMB bridge.
-    * @return the next message unique identifier.
-    */
-    function nonce() internal view returns (bytes32) {
-        return bytes32(uintStorage[NONCE]);
-    }
-
-    /**
     * @dev Tells the address that generated the message on the other network that is currently being executed by
     * the AMB bridge.
     * @return the address of the message sender.
@@ -117,11 +101,11 @@ contract BasicAMBMediator is Ownable {
     }
 
     /**
-    * @dev Tells the transaction hash of the message originated on the other network.
-    * @return the transaction hash of the message originated on the other network.
+    * @dev Tells the id of the message originated on the other network.
+    * @return the id of the message originated on the other network.
     */
-    function transactionHash() internal view returns (bytes32) {
-        return bridgeContract().transactionHash();
+    function messageId() internal view returns (bytes32) {
+        return bridgeContract().messageId();
     }
 
     /**

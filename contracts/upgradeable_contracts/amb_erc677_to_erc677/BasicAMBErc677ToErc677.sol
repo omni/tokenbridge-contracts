@@ -116,19 +116,19 @@ contract BasicAMBErc677ToErc677 is
     * @param _value amount of tokens to be received
     */
     function executeActionOnBridgedTokensOutOfLimit(address _recipient, uint256 _value) internal {
-        bytes32 messageId = _messageId();
+        bytes32 _messageId = messageId();
         address recipient;
         uint256 value;
-        (recipient, value) = txAboveLimits(messageId);
+        (recipient, value) = txAboveLimits(_messageId);
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
-        setTxAboveLimits(_recipient, _value, messageId);
-        emit AmountLimitExceeded(_recipient, _value, messageId);
+        setTxAboveLimits(_recipient, _value, _messageId);
+        emit AmountLimitExceeded(_recipient, _value, _messageId);
     }
 
     /**
     * @dev Fixes locked tokens, that were out of execution limits during the call to handleBridgedTokens
-    * @param messageId reference transaction hash for bridge operation that was out of execution limits
+    * @param messageId reference for bridge operation that was out of execution limits
     * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge
     * @param valueToUnlock unlocked amount of tokens, should be less than maxPerTx() and saved txAboveLimitsValue
     */

@@ -42,10 +42,10 @@ contract AMBMock {
         uint256 chainId = 1337;
         bytes20 bridgeId = bytes20(keccak256(abi.encodePacked(chainId, address(this))));
 
-        bytes32 messageId = Bytes.bytesToBytes32(abi.encodePacked(bytes4(0x11223344), bridgeId, nonce));
+        bytes32 _messageId = Bytes.bytesToBytes32(abi.encodePacked(bytes4(0x11223344), bridgeId, nonce));
         nonce += 1;
         bytes memory eventData = abi.encodePacked(
-            messageId,
+            _messageId,
             chainId,
             msg.sender,
             _contract,
@@ -54,7 +54,7 @@ contract AMBMock {
             _data
         );
 
-        emit MockedEvent(messageId, eventData);
-        return messageId;
+        emit MockedEvent(_messageId, eventData);
+        return _messageId;
     }
 }

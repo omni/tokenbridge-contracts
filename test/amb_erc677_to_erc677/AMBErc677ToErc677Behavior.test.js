@@ -901,8 +901,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
 
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
-      transferMessageId = events[0].returnValues.messageId
       expect(events.length).to.be.equal(1)
+      transferMessageId = events[0].returnValues.messageId
     })
     it('should fix burnt/locked tokens', async () => {
       // Given
@@ -1014,8 +1014,8 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
 
       const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
-      transferMessageId = events[0].returnValues.messageId
       expect(events.length).to.be.equal(1)
+      transferMessageId = events[0].returnValues.messageId
     })
     it('should fix burnt/locked tokens', async () => {
       // Given

@@ -12,7 +12,7 @@ library ArbitraryMessage {
     * offset 64: 32 bytes :: uint256 chainId
     * offset 96: 20 bytes :: address - sender address
     * offset 116: 20 bytes :: address - executor contract
-    * offset 136: 4 bytes :: uint256 - gasLimit
+    * offset 136: 4 bytes :: uint32 - gasLimit
     * offset 140: 1 bytes :: bytes1 - dataType
     * (optional) 141: 32 bytes :: uint256 - gasPrice
     * (optional) 141: 1 bytes :: bytes1 - gasPriceSpeed

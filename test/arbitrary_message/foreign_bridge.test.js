@@ -229,7 +229,7 @@ contract('ForeignAMB', async accounts => {
         requiredBlockConfirmations,
         owner
       )
-      bridgeId = web3.utils.soliditySha3(CHAIN_ID_HEX + foreignBridge.address.slice(2)).slice(2, 42)
+      bridgeId = web3.utils.soliditySha3(CHAIN_ID_HEX + foreignBridge.address.slice(2)).slice(10, 50)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       const tx = await foreignBridge.methods['requireToPassMessage(address,bytes,uint256)'](

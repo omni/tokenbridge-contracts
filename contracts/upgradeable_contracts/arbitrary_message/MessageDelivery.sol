@@ -18,11 +18,12 @@ contract MessageDelivery is BasicAMB, VersionableAMB {
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
 
         uint256 chainId = _chainId();
-        bytes20 bridgeId = bytes20(keccak256(abi.encodePacked(chainId, address(this))));
+        bytes32 bridgeId = keccak256(abi.encodePacked(chainId, address(this))) &
+            0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
         uint64 nonce = _nonce();
         _setNonce(nonce + 1);
 
-        bytes32 messageId = Bytes.bytesToBytes32(abi.encodePacked(ENCODED_BRIDGE_VERSION, bridgeId, nonce));
+        bytes32 messageId = ENCODED_BRIDGE_VERSION | bridgeId | bytes32(nonce);
         bytes memory eventData = abi.encodePacked(
             messageId,
             chainId,

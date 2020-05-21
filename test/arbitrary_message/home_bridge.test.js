@@ -217,7 +217,7 @@ contract('HomeAMB', async accounts => {
         requiredBlockConfirmations,
         owner
       )
-      bridgeId = web3.utils.soliditySha3(CHAIN_ID_HEX + homeBridge.address.slice(2)).slice(2, 42)
+      bridgeId = web3.utils.soliditySha3(CHAIN_ID_HEX + homeBridge.address.slice(2)).slice(10, 50)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       const tx = await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](

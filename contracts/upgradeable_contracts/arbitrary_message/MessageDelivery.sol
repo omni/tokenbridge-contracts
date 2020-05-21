@@ -2,10 +2,10 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./BasicAMB.sol";
-import "./VersionableAMB.sol";
+import "../../libraries/ArbitraryMessage.sol";
 import "../../libraries/Bytes.sol";
 
-contract MessageDelivery is BasicAMB, VersionableAMB {
+contract MessageDelivery is BasicAMB {
     using SafeMath for uint256;
 
     /**
@@ -23,7 +23,7 @@ contract MessageDelivery is BasicAMB, VersionableAMB {
         uint64 nonce = _nonce();
         _setNonce(nonce + 1);
 
-        bytes32 messageId = ENCODED_BRIDGE_VERSION | bridgeId | bytes32(nonce);
+        bytes32 messageId = MESSAGE_PACKING_VERSION | bridgeId | bytes32(nonce);
         bytes memory eventData = abi.encodePacked(
             messageId,
             chainId,

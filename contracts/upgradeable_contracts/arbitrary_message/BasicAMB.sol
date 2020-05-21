@@ -1,8 +1,9 @@
 pragma solidity 0.4.24;
 
 import "../BasicBridge.sol";
+import "./VersionableAMB.sol";
 
-contract BasicAMB is BasicBridge {
+contract BasicAMB is BasicBridge, VersionableAMB {
     bytes32 internal constant MAX_GAS_PER_TX = 0x2670ecc91ec356e32067fd27b36614132d727b84a1e03e08f412a4f2cf075974; // keccak256(abi.encodePacked("maxGasPerTx"))
     bytes32 internal constant NONCE = 0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759; // keccak256(abi.encodePacked("nonce"))
     bytes32 internal constant CHAIN_ID = 0x8ed9144e2f2122812934305f889c544efe55db33a5fd4b235aaab787c3f913d4; // keccak256(abi.encodePacked("chainId"))

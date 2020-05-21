@@ -55,7 +55,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
             _message,
             false
         );
-        _validateMessageId(messageId);
+        require(_isMessageVersionValid(messageId));
         processMessage(sender, executor, messageId, gasLimit, dataType, gasPrice, data);
     }
 

@@ -29,7 +29,7 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery, MessageProc
             _data,
             true
         );
-        _validateMessageId(messageId);
+        require(_isMessageVersionValid(messageId));
         require(!relayedMessages(messageId));
         setRelayedMessages(messageId, true);
         processMessage(sender, executor, messageId, gasLimit, dataType, gasPrice, data);

@@ -92,12 +92,11 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     }
 
     /**
-     * Internal function for validating id of the received message
+     * Internal function for validating version of the received message
      * @param _messageId id of the received message
      */
-    function _validateMessageId(bytes32 _messageId) internal {
-        require(
-            _messageId & 0xffffffff00000000000000000000000000000000000000000000000000000000 == MESSAGE_PACKING_VERSION
-        );
+    function _isMessageVersionValid(bytes32 _messageId) internal returns (bool) {
+        return
+            _messageId & 0xffffffff00000000000000000000000000000000000000000000000000000000 == MESSAGE_PACKING_VERSION;
     }
 }

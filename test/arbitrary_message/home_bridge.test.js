@@ -532,6 +532,19 @@ contract('HomeAMB', async accounts => {
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejectedWith(ERROR_MSG)
       await homeBridge.executeAffirmation(message, { from: authorities[1], gasPrice }).should.be.rejectedWith(ERROR_MSG)
     })
+    it('should not allow to process messages with different version', async () => {
+      const user = accounts[8]
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 821254, {
+        from: user
+      })
+
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = `0x99${encodedData.slice(4)}`
+
+      await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejected
+    })
   })
   describe('submitSignature', () => {
     let homeBridge

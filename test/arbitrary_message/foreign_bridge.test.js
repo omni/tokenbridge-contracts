@@ -587,6 +587,26 @@ contract('ForeignAMB', async accounts => {
         .executeSignatures(message, signatures, { from: authorities[1], gasPrice })
         .should.be.rejectedWith(ERROR_MSG)
     })
+    it('should not allow to process messages with different version', async () => {
+      const user = accounts[8]
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 821254, {
+        from: user
+      })
+
+      const { encodedData } = resultPassMessageTx.logs[0].args
+      const message = `0x99${encodedData.slice(4)}`
+
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+      const signatures = packSignatures([vrs])
+
+      await foreignBridge.executeSignatures(message, signatures, {
+        from: user,
+        gasPrice
+      }).should.be.rejected
+    })
   })
 
   describe('gasToken functionality', async () => {

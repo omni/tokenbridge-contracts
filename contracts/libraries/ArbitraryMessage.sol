@@ -27,6 +27,8 @@ library ArbitraryMessage {
     * which is padding address to 32 bytes and reading recipient at offset 32.
     * for more details see discussion in:
     * https://github.com/paritytech/parity-bridge/issues/61
+
+    * NOTE: when message structure is changed, make sure that MESSAGE_PACKING_VERSION from VersionableAMB is updated as well
     * @param _data encoded message
     * @param applyDataOffset indicates if a calldata contains a second argument after message itself
     */

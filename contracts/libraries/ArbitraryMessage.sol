@@ -80,7 +80,6 @@ library ArbitraryMessage {
 
             // at this moment srcdataptr points to sourceChainId
 
-
             // mask for sourceChainId
             // e.g. 0x0a0b -> 0x0a00 -> 0x50 -> 0x0100..00 (11 bytes) -> 0xff..ff (10 bytes)
             let mask := sub(shl(shr(5, and(chainIdLengths, 0xff00)), 1), 1)
@@ -90,9 +89,7 @@ library ArbitraryMessage {
             // write sourceChainId
             mstore(chainIds, and(mload(add(_data, srcdataptr)), mask))
 
-
             // at this moment srcdataptr points to destinationChainId
-
 
             // mask for destinationChainId
             // e.g. 0x0a0b -> 0x0b -> 0x58 -> 0x0100..00 (12 bytes) -> 0xff..ff (11 bytes)
@@ -103,7 +100,6 @@ library ArbitraryMessage {
             // write destinationChainId
             mstore(add(chainIds, 32), and(mload(add(_data, srcdataptr)), mask))
 
-
             // at this moment srcdataptr points to payload
 
             datasize := sub(mload(_data), srcdataptr)
@@ -112,14 +108,14 @@ library ArbitraryMessage {
         data = new bytes(datasize);
         assembly {
             switch applyDataOffset
-            case 1 {
-                // 100 = 4 (selector) + 32 (bytes header) + 32 (bytes header) + 32 (bytes length)
-                srcdataptr := add(srcdataptr, 100)
-            }
-            default {
-                // 68 = 4 (selector) + 32 (bytes header) + 32 (bytes length)
-                srcdataptr := add(srcdataptr, 68)
-            }
+                case 1 {
+                    // 100 = 4 (selector) + 32 (bytes header) + 32 (bytes header) + 32 (bytes length)
+                    srcdataptr := add(srcdataptr, 100)
+                }
+                default {
+                    // 68 = 4 (selector) + 32 (bytes header) + 32 (bytes length)
+                    srcdataptr := add(srcdataptr, 68)
+                }
 
             calldatacopy(add(data, 32), srcdataptr, datasize)
         }

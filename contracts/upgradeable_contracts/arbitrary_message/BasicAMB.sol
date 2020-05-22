@@ -131,7 +131,7 @@ contract BasicAMB is BasicBridge, VersionableAMB {
 
     /**
      * Internal function for validating destination chain id of the received message
-     * @param _chainId destination chain id of the received message, left-aligned
+     * @param _chainId destination chain id of the received message
      */
     function _isDestinationChainIdValid(uint256 _chainId) internal returns (bool res) {
         bytes memory sourceChainId = _sourceChainId();

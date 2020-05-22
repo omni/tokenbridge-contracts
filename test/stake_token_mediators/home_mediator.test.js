@@ -257,8 +257,8 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         const events = await getEvents(homeBridge, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
-        const bridgedValue = toBN(events[0].returnValues.encodedData.slice(252 + 40))
-
+        const message = events[0].returnValues.encodedData
+        const bridgedValue = toBN(message.slice(message.length - 64))
         expect(bridgedValue).to.be.bignumber.equal(halfEther)
         expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
@@ -274,7 +274,8 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         const events = await getEvents(homeBridge, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
-        const bridgedValue = toBN(events[0].returnValues.encodedData.slice(252 + 40))
+        const message = events[0].returnValues.encodedData
+        const bridgedValue = toBN(message.slice(message.length - 64))
 
         expect(bridgedValue).to.be.bignumber.equal(ether('0.45'))
         expect(await token.totalSupply()).to.be.bignumber.equal(ether('0.55'))
@@ -290,7 +291,8 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         const events = await getEvents(homeBridge, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
-        const bridgedValue = toBN(events[0].returnValues.encodedData.slice(252 + 40))
+        const message = events[0].returnValues.encodedData
+        const bridgedValue = toBN(message.slice(message.length - 64))
 
         expect(bridgedValue).to.be.bignumber.equal(halfEther)
         expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)

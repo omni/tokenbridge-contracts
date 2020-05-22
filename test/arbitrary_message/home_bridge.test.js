@@ -1,4 +1,5 @@
 const HomeAMB = artifacts.require('HomeAMB.sol')
+const ForeignAMB = artifacts.require('ForeignAMB.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const Box = artifacts.require('Box.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
@@ -12,8 +13,10 @@ const gasPrice = web3.utils.toWei('1', 'gwei')
 const oneEther = ether('1')
 const twoEther = ether('2')
 const ZERO = toBN(0)
-const CHAIN_ID = 77
-const CHAIN_ID_HEX = `0x${CHAIN_ID.toString(16).padStart(64, '0')}`
+const HOME_CHAIN_ID = 77
+const HOME_CHAIN_ID_HEX = `0x${HOME_CHAIN_ID.toString(16).padStart(2, '0')}`
+const FOREIGN_CHAIN_ID = 88
+const FOREIGN_CHAIN_ID_HEX = `0x${FOREIGN_CHAIN_ID.toString(16).padStart(2, '0')}`
 
 contract('HomeAMB', async accounts => {
   let validatorContract
@@ -53,7 +56,8 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.isInitialized()).to.be.equal(false)
 
       const { logs } = await homeBridge.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -80,22 +84,99 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.isInitialized()).to.be.equal(false)
 
       await homeBridge
-        .initialize(0, validatorContract.address, oneEther, gasPrice, requiredBlockConfirmations, owner)
+        .initialize(
+          '0x',
+          FOREIGN_CHAIN_ID_HEX,
+          validatorContract.address,
+          oneEther,
+          gasPrice,
+          requiredBlockConfirmations,
+          owner
+        )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(CHAIN_ID, ZERO_ADDRESS, oneEther, gasPrice, requiredBlockConfirmations, owner)
+        .initialize(
+          '0x00',
+          FOREIGN_CHAIN_ID_HEX,
+          validatorContract.address,
+          oneEther,
+          gasPrice,
+          requiredBlockConfirmations,
+          owner
+        )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(CHAIN_ID, accounts[0], oneEther, gasPrice, requiredBlockConfirmations, owner)
+        .initialize(
+          '0x0001',
+          FOREIGN_CHAIN_ID_HEX,
+          validatorContract.address,
+          oneEther,
+          gasPrice,
+          requiredBlockConfirmations,
+          owner
+        )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(CHAIN_ID, validatorContract.address, oneEther, 0, requiredBlockConfirmations, owner)
+        .initialize(
+          '0x112233445566778811223344556677881122334455667788112233445566778899',
+          FOREIGN_CHAIN_ID_HEX,
+          validatorContract.address,
+          oneEther,
+          gasPrice,
+          requiredBlockConfirmations,
+          owner
+        )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(CHAIN_ID, validatorContract.address, oneEther, gasPrice, 0, owner)
+        .initialize(
+          FOREIGN_CHAIN_ID_HEX,
+          FOREIGN_CHAIN_ID_HEX,
+          validatorContract.address,
+          oneEther,
+          gasPrice,
+          requiredBlockConfirmations,
+          owner
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeBridge
+        .initialize(
+          HOME_CHAIN_ID_HEX,
+          FOREIGN_CHAIN_ID_HEX,
+          ZERO_ADDRESS,
+          oneEther,
+          gasPrice,
+          requiredBlockConfirmations,
+          owner
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeBridge
+        .initialize(
+          HOME_CHAIN_ID_HEX,
+          FOREIGN_CHAIN_ID_HEX,
+          accounts[0],
+          oneEther,
+          gasPrice,
+          requiredBlockConfirmations,
+          owner
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeBridge
+        .initialize(
+          HOME_CHAIN_ID_HEX,
+          FOREIGN_CHAIN_ID_HEX,
+          validatorContract.address,
+          oneEther,
+          0,
+          requiredBlockConfirmations,
+          owner
+        )
+        .should.be.rejectedWith(ERROR_MSG)
+      await homeBridge
+        .initialize(HOME_CHAIN_ID_HEX, FOREIGN_CHAIN_ID_HEX, validatorContract.address, oneEther, gasPrice, 0, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -111,7 +192,8 @@ contract('HomeAMB', async accounts => {
       const homeBridge = await HomeAMB.new()
 
       await homeBridge.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -149,7 +231,8 @@ contract('HomeAMB', async accounts => {
 
       const homeBridgeProxy = await HomeAMB.at(proxy.address)
       await homeBridgeProxy.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -168,7 +251,15 @@ contract('HomeAMB', async accounts => {
       const proxy = await EternalStorageProxy.new()
 
       const data = homeBridgeV1.contract.methods
-        .initialize(CHAIN_ID, validatorContract.address, '1', '1', requiredBlockConfirmations, owner)
+        .initialize(
+          HOME_CHAIN_ID_HEX,
+          FOREIGN_CHAIN_ID_HEX,
+          validatorContract.address,
+          '1',
+          '1',
+          requiredBlockConfirmations,
+          owner
+        )
         .encodeABI()
       await proxy.upgradeToAndCall('1', homeBridgeV1.address, data).should.be.fulfilled
 
@@ -185,7 +276,8 @@ contract('HomeAMB', async accounts => {
 
       const homeBridgeProxy = await HomeAMB.at(proxy.address)
       await homeBridgeProxy.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -210,14 +302,15 @@ contract('HomeAMB', async accounts => {
 
       homeBridge = await HomeAMB.at(proxy.address)
       await homeBridge.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
         requiredBlockConfirmations,
         owner
       )
-      bridgeId = web3.utils.soliditySha3(CHAIN_ID_HEX + homeBridge.address.slice(2)).slice(10, 50)
+      bridgeId = web3.utils.soliditySha3(HOME_CHAIN_ID_HEX + homeBridge.address.slice(2)).slice(10, 50)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       const tx = await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
@@ -291,6 +384,7 @@ contract('HomeAMB', async accounts => {
   })
   describe('executeAffirmation', () => {
     let homeBridge
+    let foreignBridge
     let setValueData
     let box
     beforeEach(async () => {
@@ -301,7 +395,20 @@ contract('HomeAMB', async accounts => {
 
       homeBridge = await HomeAMB.at(proxy.address)
       await homeBridge.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
+
+      foreignBridge = await ForeignAMB.new()
+
+      await foreignBridge.initialize(
+        FOREIGN_CHAIN_ID_HEX,
+        HOME_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -320,7 +427,7 @@ contract('HomeAMB', async accounts => {
       boxInitialValue.should.be.bignumber.equal(ZERO)
 
       // Use these calls to simulate foreign bridge on Foreign network
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 221254, {
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 221254, {
         from: user
       })
 
@@ -354,7 +461,8 @@ contract('HomeAMB', async accounts => {
       // set bridge
       const homeBridgeWithThreeSigs = await HomeAMB.new()
       await homeBridgeWithThreeSigs.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContractWith3Signatures.address,
         oneEther,
         gasPrice,
@@ -368,12 +476,9 @@ contract('HomeAMB', async accounts => {
       boxInitialValue.should.be.bignumber.equal(ZERO)
 
       // Use these calls to simulate foreign bridge on Foreign network
-      const resultPassMessageTx = await homeBridgeWithThreeSigs.requireToPassMessage(
-        box.address,
-        setValueData,
-        821254,
-        { from: user }
-      )
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 821254, {
+        from: user
+      })
 
       const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
       const msgHash = web3.utils.soliditySha3(message)
@@ -435,7 +540,7 @@ contract('HomeAMB', async accounts => {
       const user = accounts[8]
 
       // Use these calls to simulate foreign bridge on Foreign network
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 821254, {
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 821254, {
         from: user
       })
 
@@ -458,7 +563,7 @@ contract('HomeAMB', async accounts => {
       const user = accounts[8]
 
       // Use these calls to simulate foreign bridge on Foreign network
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 821254, {
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 821254, {
         from: user
       })
 
@@ -478,7 +583,7 @@ contract('HomeAMB', async accounts => {
       const methodWillFailData = box.contract.methods.methodWillFail().encodeABI()
 
       // Use these calls to simulate foreign bridge on Foreign network
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, methodWillFailData, 141647, {
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, methodWillFailData, 141647, {
         from: user
       })
 
@@ -508,7 +613,7 @@ contract('HomeAMB', async accounts => {
       const methodOutOfGasData = box.contract.methods.methodOutOfGas().encodeABI()
 
       // Use these calls to simulate foreign bridge on Foreign network
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, methodOutOfGasData, 1000, {
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, methodOutOfGasData, 1000, {
         from: user
       })
 
@@ -536,12 +641,26 @@ contract('HomeAMB', async accounts => {
       const user = accounts[8]
 
       // Use these calls to simulate home bridge on home network
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 821254, {
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 821254, {
         from: user
       })
 
       const { encodedData } = resultPassMessageTx.logs[0].args
       const message = `0x99${encodedData.slice(4)}`
+
+      await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejected
+    })
+    it('should not allow to process messages with different destination chain id', async () => {
+      const user = accounts[8]
+
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 821254, {
+        from: user
+      })
+
+      const message = resultPassMessageTx.logs[0].args.encodedData
+
+      await homeBridge.setChainIds(FOREIGN_CHAIN_ID_HEX, HOME_CHAIN_ID_HEX)
 
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejected
     })
@@ -558,7 +677,8 @@ contract('HomeAMB', async accounts => {
 
       homeBridge = await HomeAMB.at(proxy.address)
       await homeBridge.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -612,7 +732,8 @@ contract('HomeAMB', async accounts => {
       // set bridge
       const homeBridgeWithThreeSigs = await HomeAMB.new()
       await homeBridgeWithThreeSigs.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContractWith3Signatures.address,
         oneEther,
         gasPrice,
@@ -721,16 +842,21 @@ contract('HomeAMB', async accounts => {
       logs[1].event.should.be.equal('CollectedSignatures')
     })
   })
-  describe('setChainId', async () => {
+  describe('setChainIds', async () => {
     let homeContract
-    const storageKey = web3.utils.soliditySha3(
-      '0x8ed9144e2f2122812934305f889c544efe55db33a5fd4b235aaab787c3f913d4' +
-        '0000000000000000000000000000000000000000000000000000000000000000'
+    const srcChainIdStorageKey = web3.utils.soliditySha3(
+      '0x67d6f42a1ed69c62022f2d160ddc6f2f0acd37ad1db0c24f4702d7d3343a4add' +
+        '0000000000000000000000000000000000000000000000000000000000000003'
+    )
+    const dstChainIdStorageKey = web3.utils.soliditySha3(
+      '0xbbd454018e72a3f6c02bbd785bacc49e46292744f3f6761276723823aa332320' +
+        '0000000000000000000000000000000000000000000000000000000000000003'
     )
     beforeEach(async () => {
       homeContract = await HomeAMB.new()
       await homeContract.initialize(
-        CHAIN_ID,
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
         gasPrice,
@@ -740,15 +866,25 @@ contract('HomeAMB', async accounts => {
     })
 
     it('should allow to set chain id', async () => {
-      expect(await web3.eth.getStorageAt(homeContract.address, storageKey)).to.be.equal('0x4d')
+      expect(await web3.eth.getStorageAt(homeContract.address, srcChainIdStorageKey)).to.include(HOME_CHAIN_ID_HEX)
+      expect(await web3.eth.getStorageAt(homeContract.address, dstChainIdStorageKey)).to.include(FOREIGN_CHAIN_ID_HEX)
 
-      await homeContract.setChainId(1337, { from: owner }).should.be.fulfilled
+      await homeContract.setChainIds('0x112233', '0x4455', { from: owner }).should.be.fulfilled
 
-      expect(await web3.eth.getStorageAt(homeContract.address, storageKey)).to.be.equal('0x0539')
+      expect(await web3.eth.getStorageAt(homeContract.address, srcChainIdStorageKey)).to.include('0x112233')
+      expect(await web3.eth.getStorageAt(homeContract.address, dstChainIdStorageKey)).to.include('0x4455')
+    })
+
+    it('should not allow to set invalid chain ids', async () => {
+      await homeContract.setChainIds('0x', '0x01', { from: owner }).should.be.rejected
+      await homeContract.setChainIds('0x01', '0x01', { from: owner }).should.be.rejected
+      await homeContract.setChainIds('0x0011', '0x01', { from: owner }).should.be.rejected
+      await homeContract.setChainIds('0x01', '0x0022', { from: owner }).should.be.rejected
+      await homeContract.setChainIds('0x1122', '0x1122', { from: owner }).should.be.rejected
     })
 
     it('should not allow to set chain id if not an owner', async () => {
-      await homeContract.setChainId(1337, { from: accounts[1] }).should.be.rejected
+      await homeContract.setChainIds('0x112233', '0x4455', { from: accounts[1] }).should.be.rejected
     })
   })
 })

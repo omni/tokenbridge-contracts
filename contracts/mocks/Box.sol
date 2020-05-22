@@ -7,12 +7,14 @@ contract Box {
     address public lastSender;
     bytes32 public messageId;
     bytes32 public txHash;
+    uint256 public messageSourceChainId;
 
     function setValue(uint256 _value) public {
         value = _value;
         lastSender = IAMB(msg.sender).messageSender();
         messageId = IAMB(msg.sender).messageId();
         txHash = IAMB(msg.sender).transactionHash();
+        messageSourceChainId = uint256(IAMB(msg.sender).messageSourceChainId());
     }
 
     function methodWillFail() public {

@@ -17,20 +17,27 @@ contract MessageDelivery is BasicAMB {
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public returns (bytes32) {
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
 
-        uint256 chainId = _chainId();
-        bytes32 bridgeId = keccak256(abi.encodePacked(chainId, address(this))) &
-            0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
-        uint64 nonce = _nonce();
-        _setNonce(nonce + 1);
+        bytes memory sourceChainId = _sourceChainId();
+        bytes memory destinationChainId = _destinationChainId();
 
-        bytes32 messageId = MESSAGE_PACKING_VERSION | bridgeId | bytes32(nonce);
+        // 4 bytes - message version
+        // 20 bytes - bridge id
+        // 8 bytes - message nonce
+        bytes32 messageId = MESSAGE_PACKING_VERSION |
+            (keccak256(abi.encodePacked(sourceChainId, address(this))) &
+                0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000) |
+            bytes32(_nonce());
+        _setNonce(_nonce() + 1);
         bytes memory eventData = abi.encodePacked(
             messageId,
-            chainId,
             msg.sender,
             _contract,
             uint32(_gas),
+            uint8(sourceChainId.length),
+            uint8(destinationChainId.length),
             uint8(0x00),
+            sourceChainId,
+            destinationChainId,
             _data
         );
 

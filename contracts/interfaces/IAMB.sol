@@ -5,6 +5,7 @@ interface IAMB {
     function maxGasPerTx() external view returns (uint256);
     function transactionHash() external view returns (bytes32);
     function messageId() external view returns (bytes32);
+    function messageSourceChainId() external view returns (bytes32);
     function messageCallStatus(bytes32 _messageId) external view returns (bool);
     function failedMessageDataHash(bytes32 _messageId) external view returns (bytes32);
     function failedMessageReceiver(bytes32 _messageId) external view returns (address);

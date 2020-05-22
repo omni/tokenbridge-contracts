@@ -6,6 +6,7 @@ import "../../libraries/Bytes.sol";
 contract MessageProcessor is EternalStorage {
     bytes32 internal constant MESSAGE_SENDER = 0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b; // keccak256(abi.encodePacked("messageSender"))
     bytes32 internal constant MESSAGE_ID = 0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304; // keccak256(abi.encodePacked("messageId"))
+    bytes32 internal constant MESSAGE_SOURCE_CHAIN_ID = 0x7f0fcd9e49860f055dd0c1682d635d309ecb5e3011654c716d9eb59a7ddec7d2; // keccak256(abi.encodePacked("messageSourceChainId"))
 
     /**
     * @dev Returns a status of the message that came from the other side.
@@ -127,12 +128,29 @@ contract MessageProcessor is EternalStorage {
     }
 
     /**
+    * @dev Returns an originating chain id of the currently processed message.
+    * @return source chain id of the message that originated on the other side.
+    */
+    function messageSourceChainId() external view returns (uint256) {
+        return uintStorage[MESSAGE_SOURCE_CHAIN_ID];
+    }
+
+    /**
+    * @dev Returns an originating chain id of the currently processed message.
+    * @return source chain id of the message that originated on the other side.
+    */
+    function setMessageSourceChainId(uint256 _sourceChainId) internal returns (uint256) {
+        uintStorage[MESSAGE_SOURCE_CHAIN_ID] = _sourceChainId;
+    }
+
+    /**
     * @dev Processes received message. Makes a call to the message executor,
     * sets dataHash, receive, sender variables for failed messages.
     * @param _sender sender address on the other side.
     * @param _executor address of an executor.
     * @param _messageId id of the processed message.
     * @param _gasLimit gas limit for a call to executor.
+    * @param _sourceChainId source chain id is of the received message.
     * @param _data calldata for a call to executor.
     */
     function processMessage(
@@ -142,9 +160,10 @@ contract MessageProcessor is EternalStorage {
         uint256 _gasLimit,
         bytes1, /* dataType */
         uint256, /* gasPrice */
+        uint256 _sourceChainId,
         bytes memory _data
     ) internal {
-        bool status = _passMessage(_sender, _executor, _data, _gasLimit, _messageId);
+        bool status = _passMessage(_sender, _executor, _data, _gasLimit, _messageId, _sourceChainId);
 
         setMessageCallStatus(_messageId, status);
         if (!status) {
@@ -162,16 +181,23 @@ contract MessageProcessor is EternalStorage {
     * @param _data calldata for a call to executor.
     * @param _gas gas limit for a call to executor.
     * @param _messageId id of the processed message.
+    * @param _sourceChainId source chain id is of the received message.
     */
-    function _passMessage(address _sender, address _contract, bytes _data, uint256 _gas, bytes32 _messageId)
-        internal
-        returns (bool)
-    {
+    function _passMessage(
+        address _sender,
+        address _contract,
+        bytes _data,
+        uint256 _gas,
+        bytes32 _messageId,
+        uint256 _sourceChainId
+    ) internal returns (bool) {
         setMessageSender(_sender);
         setMessageId(_messageId);
+        setMessageSourceChainId(_sourceChainId);
         bool status = _contract.call.gas(_gas)(_data);
         setMessageSender(address(0));
         setMessageId(bytes32(0));
+        setMessageSourceChainId(0);
         return status;
     }
 

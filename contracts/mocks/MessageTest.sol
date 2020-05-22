@@ -8,16 +8,16 @@ contract MessageTest {
         pure
         returns (
             bytes32 messageId,
-            uint256 chainId,
             address sender,
             address executor,
             uint32 gasLimit,
             bytes1 dataType,
+            uint256[2] chainIds,
             uint256 gasPrice,
             bytes memory data
         )
     {
-        (messageId, chainId, sender, executor, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(
+        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
             _data,
             false
         );
@@ -31,16 +31,16 @@ contract MessageTest {
         pure
         returns (
             bytes32 messageId,
-            uint256 chainId,
             address sender,
             address executor,
-            uint256 gasLimit,
+            uint32 gasLimit,
             bytes1 dataType,
+            uint256[2] chainIds,
             uint256 gasPrice,
             bytes memory data
         )
     {
-        (messageId, chainId, sender, executor, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(
+        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
             _data,
             true
         );

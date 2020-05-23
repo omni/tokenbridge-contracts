@@ -43,7 +43,7 @@ library ArbitraryMessage {
             messageId := mload(add(_data, 32)) // 32 bytes
             sender := and(mload(add(_data, 52)), 0xffffffffffffffffffffffffffffffffffffffff) // 20 bytes
 
-            // executor (20 bytes) + gasLimit (4 bytes) + srcChainIdLength (1 byte) + srcChainIdLength (1 bytes) + dataType (1 byte) + remainder (5 bytes)
+            // executor (20 bytes) + gasLimit (4 bytes) + srcChainIdLength (1 byte) + dstChainIdLength (1 bytes) + dataType (1 byte) + remainder (5 bytes)
             let blob := mload(add(_data, 84))
 
             // after bit shift left 12 bytes are zeros automatically
@@ -51,7 +51,7 @@ library ArbitraryMessage {
             gasLimit := and(shr(64, blob), 0xffffffff)
 
             // load source chain id length
-            let chainIdLength := and(shr(56, blob), 0xff)
+            let chainIdLength := byte(24, blob)
 
             dataType := and(shl(208, blob), 0xFF00000000000000000000000000000000000000000000000000000000000000)
             switch dataType
@@ -82,7 +82,7 @@ library ArbitraryMessage {
             // at this moment srcdataptr points to destinationChainId
 
             // load destination chain id length
-            chainIdLength := and(shr(48, blob), 0xff)
+            chainIdLength := byte(25, blob)
 
             // mask for destinationChainId
             // e.g. length X -> (1 << (X * 8)) - 1
@@ -102,7 +102,7 @@ library ArbitraryMessage {
 
         data = new bytes(datasize);
         assembly {
-            // 36 = 4 (selector) + 32 (bytes length)
+            // 36 = 4 (selector) + 32 (bytes length header)
             srcdataptr := add(srcdataptr, 36)
 
             // calldataload(4) - offset of first bytes argument in the calldata

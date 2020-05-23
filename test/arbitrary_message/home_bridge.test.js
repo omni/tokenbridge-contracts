@@ -13,10 +13,10 @@ const gasPrice = web3.utils.toWei('1', 'gwei')
 const oneEther = ether('1')
 const twoEther = ether('2')
 const ZERO = toBN(0)
-const HOME_CHAIN_ID = 77
-const HOME_CHAIN_ID_HEX = `0x${HOME_CHAIN_ID.toString(16).padStart(2, '0')}`
-const FOREIGN_CHAIN_ID = 88
-const FOREIGN_CHAIN_ID_HEX = `0x${FOREIGN_CHAIN_ID.toString(16).padStart(2, '0')}`
+const HOME_CHAIN_ID = 1337
+const HOME_CHAIN_ID_HEX = `0x${HOME_CHAIN_ID.toString(16).padStart(4, '0')}`
+const FOREIGN_CHAIN_ID = 1338
+const FOREIGN_CHAIN_ID_HEX = `0x${FOREIGN_CHAIN_ID.toString(16).padStart(4, '0')}`
 
 contract('HomeAMB', async accounts => {
   let validatorContract

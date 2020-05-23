@@ -61,7 +61,7 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     }
 
     /**
-     * Updating chain ids of used networks
+     * Updates chain ids of used networks
      * @param _sourceChainId chain id for current network
      * @param _destinationChainId chain id for opposite network
      */
@@ -136,9 +136,9 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     function _isDestinationChainIdValid(uint256 _chainId) internal returns (bool res) {
         bytes memory sourceChainId = _sourceChainId();
         assembly {
-            // chainId, shifted to the right
+            // chainId, left-aligned
             let shiftedChainId := mload(add(sourceChainId, 32))
-            // bit shift, 256 bits - chainIdLength * 8 bits
+            // value of bit shift, 256 bits - chainIdLength * 8 bits
             let shift := sub(256, shl(3, mload(sourceChainId)))
             res := eq(_chainId, shr(shift, shiftedChainId))
         }

@@ -25,10 +25,10 @@ const ZERO = toBN(0)
 const MAX_VALIDATORS = 50
 const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
-const HOME_CHAIN_ID = 77
-const HOME_CHAIN_ID_HEX = `0x${HOME_CHAIN_ID.toString(16).padStart(2, '0')}`
-const FOREIGN_CHAIN_ID = 88
-const FOREIGN_CHAIN_ID_HEX = `0x${FOREIGN_CHAIN_ID.toString(16).padStart(2, '0')}`
+const HOME_CHAIN_ID = 1337
+const HOME_CHAIN_ID_HEX = `0x${HOME_CHAIN_ID.toString(16).padStart(4, '0')}`
+const FOREIGN_CHAIN_ID = 1338
+const FOREIGN_CHAIN_ID_HEX = `0x${FOREIGN_CHAIN_ID.toString(16).padStart(4, '0')}`
 
 contract('ForeignAMB', async accounts => {
   let validatorContract

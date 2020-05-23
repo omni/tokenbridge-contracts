@@ -1,8 +1,5 @@
 pragma solidity 0.4.24;
 
-import "../interfaces/IBridgeValidators.sol";
-import "./Message.sol";
-
 library ArbitraryMessage {
     /**
     * @dev Unpacks data fields from AMB message
@@ -12,8 +9,8 @@ library ArbitraryMessage {
     * offset 64              : 20 bytes :: address - sender address
     * offset 84              : 20 bytes :: address - executor contract
     * offset 104             : 4 bytes  :: uint32  - gasLimit
-    * offset 108             : 1 bytes  :: uint8   - source chain id length
-    * offset 109             : 1 bytes  :: uint8   - destination chain id length
+    * offset 108             : 1 bytes  :: uint8   - source chain id length (X)
+    * offset 109             : 1 bytes  :: uint8   - destination chain id length (Y)
     * offset 110             : 1 bytes  :: bytes1  - dataType
     * (optional) 111         : 32 bytes :: uint256 - gasPrice
     * (optional) 111         : 1 bytes  :: bytes1  - gasPriceSpeed
@@ -32,10 +29,10 @@ library ArbitraryMessage {
     * https://github.com/paritytech/parity-bridge/issues/61
 
     * NOTE: when message structure is changed, make sure that MESSAGE_PACKING_VERSION from VersionableAMB is updated as well
+    * NOTE: assembly code uses calldatacopy, make sure that message is passed as the first argument in the calldata
     * @param _data encoded message
-    * @param applyDataOffset indicates if a calldata contains a second argument after message itself
     */
-    function unpackData(bytes _data, bool applyDataOffset)
+    function unpackData(bytes _data)
         internal
         pure
         returns (
@@ -53,16 +50,14 @@ library ArbitraryMessage {
         uint256 srcdataptr = 32 + 20 + 20 + 4 + 1 + 1 + 1;
         uint256 datasize;
 
-        // most significant byte - length of source chain id
-        // least significant byte - length of destination chain id
-        uint16 chainIdLengths;
         assembly {
             messageId := mload(add(_data, 32))
             sender := mload(add(_data, 52))
             executor := mload(add(_data, 72))
             gasLimit := mload(add(_data, 76))
 
-            chainIdLengths := and(mload(add(_data, 78)), 0xffff)
+            let srcChainIdLength := and(mload(add(_data, 77)), 0xff)
+            let dstChainIdLength := and(mload(add(_data, 78)), 0xff)
 
             dataType := and(mload(add(_data, 110)), 0xFF00000000000000000000000000000000000000000000000000000000000000)
             switch dataType
@@ -81,10 +76,11 @@ library ArbitraryMessage {
             // at this moment srcdataptr points to sourceChainId
 
             // mask for sourceChainId
-            // e.g. 0x0a0b -> 0x0a00 -> 0x50 -> 0x0100..00 (11 bytes) -> 0xff..ff (10 bytes)
-            let mask := sub(shl(shr(5, and(chainIdLengths, 0xff00)), 1), 1)
+            // e.g. length X -> (1 << (X * 8)) - 1
+            let mask := sub(shl(shl(3, srcChainIdLength), 1), 1)
 
-            srcdataptr := add(srcdataptr, shr(8, chainIdLengths))
+            // increase payload offset by length of source chain id
+            srcdataptr := add(srcdataptr, srcChainIdLength)
 
             // write sourceChainId
             mstore(chainIds, and(mload(add(_data, srcdataptr)), mask))
@@ -92,32 +88,28 @@ library ArbitraryMessage {
             // at this moment srcdataptr points to destinationChainId
 
             // mask for destinationChainId
-            // e.g. 0x0a0b -> 0x0b -> 0x58 -> 0x0100..00 (12 bytes) -> 0xff..ff (11 bytes)
-            mask := sub(shl(shl(3, and(chainIdLengths, 0xff)), 1), 1)
+            // e.g. length X -> (1 << (X * 8)) - 1
+            mask := sub(shl(shl(3, dstChainIdLength), 1), 1)
 
-            srcdataptr := add(srcdataptr, and(chainIdLengths, 0xff))
+            // increase payload offset by length of destination chain id
+            srcdataptr := add(srcdataptr, dstChainIdLength)
 
             // write destinationChainId
             mstore(add(chainIds, 32), and(mload(add(_data, srcdataptr)), mask))
 
             // at this moment srcdataptr points to payload
 
+            // datasize = message length - payload offset
             datasize := sub(mload(_data), srcdataptr)
         }
 
         data = new bytes(datasize);
         assembly {
-            switch applyDataOffset
-                case 1 {
-                    // 100 = 4 (selector) + 32 (bytes header) + 32 (bytes header) + 32 (bytes length)
-                    srcdataptr := add(srcdataptr, 100)
-                }
-                default {
-                    // 68 = 4 (selector) + 32 (bytes header) + 32 (bytes length)
-                    srcdataptr := add(srcdataptr, 68)
-                }
+            // 36 = 4 (selector) + 32 (bytes length)
+            srcdataptr := add(srcdataptr, 36)
 
-            calldatacopy(add(data, 32), srcdataptr, datasize)
+            // calldataload(4) - offset of first bytes argument in the calldata
+            calldatacopy(add(data, 32), add(calldataload(4), srcdataptr), datasize)
         }
     }
 }

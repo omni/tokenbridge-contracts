@@ -26,8 +26,7 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery, MessageProc
         bytes memory data;
 
         (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
-            _data,
-            true
+            _data
         );
         require(_isMessageVersionValid(messageId));
         require(_isDestinationChainIdValid(chainIds[1]));

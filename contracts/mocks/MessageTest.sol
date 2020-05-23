@@ -18,8 +18,7 @@ contract MessageTest {
         )
     {
         (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
-            _data,
-            false
+            _data
         );
     }
 
@@ -41,8 +40,7 @@ contract MessageTest {
         )
     {
         (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
-            _data,
-            true
+            _data
         );
     }
 

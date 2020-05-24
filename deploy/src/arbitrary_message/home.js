@@ -11,7 +11,7 @@ const {
   transferProxyOwnership,
   assertStateWithRetry
 } = require('../deploymentUtils')
-const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
+const { web3Home, web3Foreign, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
 const {
   homeContracts: { EternalStorageProxy, BridgeValidators, HomeAMB: HomeBridge }
@@ -35,16 +35,18 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
 
-  const chainId = await web3Home.eth.net.getId()
+  const homeChainId = await web3Home.eth.net.getId()
+  const foreignChainId = await web3Foreign.eth.net.getId()
 
   console.log('\ninitializing Home Bridge with following parameters:\n')
-  console.log(`CHAIN_ID: ${chainId}, Home Validators: ${validatorsBridge.options.address},
+  console.log(`SOURCE_CHAIN_ID: ${homeChainId}, DESTINATION_CHAIN_ID: ${foreignChainId}, Home Validators: ${validatorsBridge.options.address},
   HOME_MAX_AMOUNT_PER_TX (gas limit per call): ${HOME_MAX_AMOUNT_PER_TX},
   HOME_GAS_PRICE: ${HOME_GAS_PRICE}, HOME_REQUIRED_BLOCK_CONFIRMATIONS : ${HOME_REQUIRED_BLOCK_CONFIRMATIONS}
   `)
   const initializeHomeBridgeData = await bridge.methods
     .initialize(
-      chainId,
+      homeChainId,
+      foreignChainId,
       validatorsBridge.options.address,
       HOME_MAX_AMOUNT_PER_TX,
       HOME_GAS_PRICE,

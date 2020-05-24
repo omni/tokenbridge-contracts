@@ -27,8 +27,8 @@ const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
 const HOME_CHAIN_ID = 1337
 const HOME_CHAIN_ID_HEX = `0x${HOME_CHAIN_ID.toString(16).padStart(4, '0')}`
-const FOREIGN_CHAIN_ID = 1338
-const FOREIGN_CHAIN_ID_HEX = `0x${FOREIGN_CHAIN_ID.toString(16).padStart(4, '0')}`
+const FOREIGN_CHAIN_ID = 1234567890
+const FOREIGN_CHAIN_ID_HEX = `0x${FOREIGN_CHAIN_ID.toString(16).padStart(8, '0')}`
 
 contract('ForeignAMB', async accounts => {
   let validatorContract
@@ -94,40 +94,7 @@ contract('ForeignAMB', async accounts => {
 
       await foreignBridge
         .initialize(
-          '0x',
-          HOME_CHAIN_ID_HEX,
-          validatorContract.address,
-          oneEther,
-          gasPrice,
-          requiredBlockConfirmations,
-          owner
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge
-        .initialize(
           '0x00',
-          HOME_CHAIN_ID_HEX,
-          validatorContract.address,
-          oneEther,
-          gasPrice,
-          requiredBlockConfirmations,
-          owner
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge
-        .initialize(
-          '0x0001',
-          HOME_CHAIN_ID_HEX,
-          validatorContract.address,
-          oneEther,
-          gasPrice,
-          requiredBlockConfirmations,
-          owner
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-      await foreignBridge
-        .initialize(
-          '0x112233445566778811223344556677881122334455667788112233445566778899',
           HOME_CHAIN_ID_HEX,
           validatorContract.address,
           oneEther,
@@ -322,7 +289,8 @@ contract('ForeignAMB', async accounts => {
         requiredBlockConfirmations,
         owner
       )
-      bridgeId = web3.utils.soliditySha3(FOREIGN_CHAIN_ID_HEX + foreignBridge.address.slice(2)).slice(10, 50)
+      const paddedChainId = `0x${FOREIGN_CHAIN_ID.toString(16).padStart(64, '0')}`
+      bridgeId = web3.utils.soliditySha3(paddedChainId + foreignBridge.address.slice(2)).slice(10, 50)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
       const tx = await foreignBridge.methods['requireToPassMessage(address,bytes,uint256)'](
@@ -979,11 +947,19 @@ contract('ForeignAMB', async accounts => {
     let foreignContract
     const srcChainIdStorageKey = web3.utils.soliditySha3(
       '0x67d6f42a1ed69c62022f2d160ddc6f2f0acd37ad1db0c24f4702d7d3343a4add' +
-        '0000000000000000000000000000000000000000000000000000000000000003'
+        '0000000000000000000000000000000000000000000000000000000000000000'
+    )
+    const srcChainIdLengthStorageKey = web3.utils.soliditySha3(
+      '0xe504ae1fd6471eea80f18b8532a61a9bb91fba4f5b837f80a1cfb6752350af44' +
+        '0000000000000000000000000000000000000000000000000000000000000000'
     )
     const dstChainIdStorageKey = web3.utils.soliditySha3(
       '0xbbd454018e72a3f6c02bbd785bacc49e46292744f3f6761276723823aa332320' +
-        '0000000000000000000000000000000000000000000000000000000000000003'
+        '0000000000000000000000000000000000000000000000000000000000000000'
+    )
+    const dstChainIdLengthStorageKey = web3.utils.soliditySha3(
+      '0xfb792ae4ad11102b93f26a51b3749c2b3667f8b561566a4806d4989692811594' +
+        '0000000000000000000000000000000000000000000000000000000000000000'
     )
     beforeEach(async () => {
       foreignContract = await ForeignBridge.new()
@@ -999,22 +975,27 @@ contract('ForeignAMB', async accounts => {
     })
 
     it('should allow to set chain id', async () => {
-      expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdStorageKey)).to.include(
+      expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdStorageKey)).to.be.equal(
         FOREIGN_CHAIN_ID_HEX
       )
-      expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdStorageKey)).to.include(HOME_CHAIN_ID_HEX)
+      expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdLengthStorageKey)).to.be.equal('0x04')
+      expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdStorageKey)).to.be.equal(HOME_CHAIN_ID_HEX)
+      expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdLengthStorageKey)).to.be.equal('0x02')
 
-      await foreignContract.setChainIds('0x112233', '0x4455', { from: owner }).should.be.fulfilled
+      const newSrcChainId = '0x11000000000000'
+      const newDstChainId = '0x22000000000000000000000000'
+      await foreignContract.setChainIds(newSrcChainId, newDstChainId, { from: owner }).should.be.fulfilled
 
-      expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdStorageKey)).to.include('0x112233')
-      expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdStorageKey)).to.include('0x4455')
+      expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdStorageKey)).to.be.equal(newSrcChainId)
+      expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdLengthStorageKey)).to.be.equal('0x07')
+      expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdStorageKey)).to.be.equal(newDstChainId)
+      expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdLengthStorageKey)).to.be.equal('0x0d')
     })
 
     it('should not allow to set invalid chain ids', async () => {
-      await foreignContract.setChainIds('0x', '0x01', { from: owner }).should.be.rejected
+      await foreignContract.setChainIds('0x00', '0x01', { from: owner }).should.be.rejected
+      await foreignContract.setChainIds('0x1122', '0x00', { from: owner }).should.be.rejected
       await foreignContract.setChainIds('0x01', '0x01', { from: owner }).should.be.rejected
-      await foreignContract.setChainIds('0x0011', '0x01', { from: owner }).should.be.rejected
-      await foreignContract.setChainIds('0x01', '0x0022', { from: owner }).should.be.rejected
       await foreignContract.setChainIds('0x1122', '0x1122', { from: owner }).should.be.rejected
     })
 

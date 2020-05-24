@@ -17,39 +17,65 @@ contract MessageDelivery is BasicAMB {
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public returns (bytes32) {
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
 
-        bytes memory sourceChainId = _sourceChainId();
-        bytes memory destinationChainId = _destinationChainId();
-
-        // 4 bytes - message version
-        // 20 bytes - bridge id
-        // 8 bytes - message nonce
-        bytes32 messageId = MESSAGE_PACKING_VERSION |
-            (keccak256(abi.encodePacked(sourceChainId, address(this))) &
-                0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000) |
-            bytes32(_nonce());
+        bytes32 messageId;
+        bytes memory header = _packHeader(_contract, _gas);
         _setNonce(_nonce() + 1);
-        bytes memory eventData = abi.encodePacked(
-            messageId,
-            msg.sender,
-            _contract,
-            uint32(_gas),
-            uint8(sourceChainId.length),
-            uint8(destinationChainId.length),
-            uint8(0x00),
-            sourceChainId,
-            destinationChainId,
-            _data
-        );
+
+        assembly {
+            messageId := mload(add(header, 32))
+        }
+
+        bytes memory eventData = abi.encodePacked(header, _data);
 
         emitEventOnMessageRequest(messageId, eventData);
         return messageId;
     }
 
+    /**
+    * @dev Returns a lower limit on gas limit for the particular message data
+    * @param _data calldata passed to the executor on the other side
+    */
     function getMinimumGasUsage(bytes _data) public pure returns (uint256 gas) {
         // From Ethereum Yellow Paper
         // 68 gas is paid for every non-zero byte of data or code for a transaction
         // Starting from Istanbul hardfork, 16 gas is paid (EIP-2028)
         return _data.length.mul(16);
+    }
+
+    /**
+    * @dev Packs message header into a single bytes blob
+    * @param _contract executor address on the other side
+    * @param _gas gas limit used on the other network for executing a message
+    */
+    function _packHeader(address _contract, uint256 _gas) internal view returns (bytes memory header) {
+        uint256 sourceChainId = _sourceChainId();
+        uint256 sourceChainIdLength = _sourceChainIdLength();
+        uint256 destinationChainId = _destinationChainId();
+        uint256 destinationChainIdLength = _destinationChainIdLength();
+
+        bytes32 mVer = MESSAGE_PACKING_VERSION;
+        uint256 nonce = _nonce();
+
+        bytes32 bridgeId = keccak256(abi.encodePacked(sourceChainId, address(this))) &
+            0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
+        // 79 = 4 + 20 + 8 + 20 + 20 + 4 + 1 + 1 + 1
+        header = new bytes(79 + sourceChainIdLength + destinationChainIdLength);
+
+        assembly {
+            let ptr := add(header, mload(header)) // points to the last word of header
+            mstore(ptr, destinationChainId)
+            mstore(sub(ptr, destinationChainIdLength), sourceChainId)
+
+            // can be ommitted for dataType 0x00, since header is already initialized with zeros
+            // mstore(add(header, 79), 0x00)
+            mstore(add(header, 78), destinationChainIdLength)
+            mstore(add(header, 77), sourceChainIdLength)
+            mstore(add(header, 76), _gas)
+            mstore(add(header, 72), _contract)
+            mstore(add(header, 52), caller)
+
+            mstore(add(header, 32), or(mVer, or(bridgeId, nonce)))
+        }
     }
 
     /* solcov ignore next */

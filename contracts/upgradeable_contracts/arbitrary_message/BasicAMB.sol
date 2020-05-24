@@ -7,7 +7,9 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     bytes32 internal constant MAX_GAS_PER_TX = 0x2670ecc91ec356e32067fd27b36614132d727b84a1e03e08f412a4f2cf075974; // keccak256(abi.encodePacked("maxGasPerTx"))
     bytes32 internal constant NONCE = 0x7ab1577440dd7bedf920cb6de2f9fc6bf7ba98c78c85a3fa1f8311aac95e1759; // keccak256(abi.encodePacked("nonce"))
     bytes32 internal constant SOURCE_CHAIN_ID = 0x67d6f42a1ed69c62022f2d160ddc6f2f0acd37ad1db0c24f4702d7d3343a4add; // keccak256(abi.encodePacked("sourceChainId"))
+    bytes32 internal constant SOURCE_CHAIN_ID_LENGTH = 0xe504ae1fd6471eea80f18b8532a61a9bb91fba4f5b837f80a1cfb6752350af44; // keccak256(abi.encodePacked("sourceChainIdLength"))
     bytes32 internal constant DESTINATION_CHAIN_ID = 0xbbd454018e72a3f6c02bbd785bacc49e46292744f3f6761276723823aa332320; // keccak256(abi.encodePacked("destinationChainId"))
+    bytes32 internal constant DESTINATION_CHAIN_ID_LENGTH = 0xfb792ae4ad11102b93f26a51b3749c2b3667f8b561566a4806d4989692811594; // keccak256(abi.encodePacked("destinationChainIdLength"))
 
     /**
      * Initializes AMB contract
@@ -20,8 +22,8 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      * @param _owner address of new bridge owner
      */
     function initialize(
-        bytes _sourceChainId,
-        bytes _destinationChainId,
+        uint256 _sourceChainId,
+        uint256 _destinationChainId,
         address _validatorContract,
         uint256 _maxGasPerTx,
         uint256 _gasPrice,
@@ -65,7 +67,7 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      * @param _sourceChainId chain id for current network
      * @param _destinationChainId chain id for opposite network
      */
-    function setChainIds(bytes _sourceChainId, bytes _destinationChainId) external onlyOwner {
+    function setChainIds(uint256 _sourceChainId, uint256 _destinationChainId) external onlyOwner {
         _setChainIds(_sourceChainId, _destinationChainId);
     }
 
@@ -90,34 +92,59 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      * @param _sourceChainId chain id for current network
      * @param _destinationChainId chain id for opposite network
      */
-    function _setChainIds(bytes memory _sourceChainId, bytes memory _destinationChainId) internal {
-        require(
-            _sourceChainId.length > 0 &&
-                _destinationChainId.length > 0 &&
-                _sourceChainId.length <= 32 &&
-                _destinationChainId.length <= 32 &&
-                _sourceChainId[0] > 0 &&
-                _destinationChainId[0] > 0 &&
-                keccak256(_destinationChainId) != keccak256(_sourceChainId)
-        );
-        bytesStorage[SOURCE_CHAIN_ID] = _sourceChainId;
-        bytesStorage[DESTINATION_CHAIN_ID] = _destinationChainId;
+    function _setChainIds(uint256 _sourceChainId, uint256 _destinationChainId) internal {
+        require(_sourceChainId > 0 && _destinationChainId > 0);
+        require(_sourceChainId != _destinationChainId);
+        uint256 sourceChainIdLength = 0;
+        uint256 destinationChainIdLength = 0;
+        uint256 mask = 0xff;
+
+        for (uint256 i = 1; sourceChainIdLength == 0 || destinationChainIdLength == 0; i++) {
+            if (sourceChainIdLength == 0 && _sourceChainId & mask == _sourceChainId) {
+                sourceChainIdLength = i;
+            }
+            if (destinationChainIdLength == 0 && _destinationChainId & mask == _destinationChainId) {
+                destinationChainIdLength = i;
+            }
+            mask = (mask << 8) | 0xff;
+        }
+
+        uintStorage[SOURCE_CHAIN_ID] = _sourceChainId;
+        uintStorage[SOURCE_CHAIN_ID_LENGTH] = sourceChainIdLength;
+        uintStorage[DESTINATION_CHAIN_ID] = _destinationChainId;
+        uintStorage[DESTINATION_CHAIN_ID_LENGTH] = destinationChainIdLength;
     }
 
     /**
      * Internal function for retrieving chain id for the source network
      * @return chain id for the current network
      */
-    function _sourceChainId() internal view returns (bytes memory) {
-        return bytesStorage[SOURCE_CHAIN_ID];
+    function _sourceChainId() internal view returns (uint256) {
+        return uintStorage[SOURCE_CHAIN_ID];
+    }
+
+    /**
+     * Internal function for retrieving chain id length for the source network
+     * @return chain id for the current network
+     */
+    function _sourceChainIdLength() internal view returns (uint256) {
+        return uintStorage[SOURCE_CHAIN_ID_LENGTH];
     }
 
     /**
      * Internal function for retrieving chain id for the destination network
      * @return chain id for the destination network
      */
-    function _destinationChainId() internal view returns (bytes memory) {
-        return bytesStorage[DESTINATION_CHAIN_ID];
+    function _destinationChainId() internal view returns (uint256) {
+        return uintStorage[DESTINATION_CHAIN_ID];
+    }
+
+    /**
+     * Internal function for retrieving chain id length for the destination network
+     * @return chain id for the destination network
+     */
+    function _destinationChainIdLength() internal view returns (uint256) {
+        return uintStorage[DESTINATION_CHAIN_ID_LENGTH];
     }
 
     /**
@@ -134,13 +161,6 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      * @param _chainId destination chain id of the received message
      */
     function _isDestinationChainIdValid(uint256 _chainId) internal returns (bool res) {
-        bytes memory sourceChainId = _sourceChainId();
-        assembly {
-            // chainId, left-aligned
-            let shiftedChainId := mload(add(sourceChainId, 32))
-            // value of bit shift, 256 bits - chainIdLength * 8 bits
-            let shift := sub(256, shl(3, mload(sourceChainId)))
-            res := eq(_chainId, shr(shift, shiftedChainId))
-        }
+        return _chainId == _sourceChainId();
     }
 }

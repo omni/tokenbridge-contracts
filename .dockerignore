@@ -5,6 +5,7 @@ deploy/node_modules
 .dockerignore
 deploy/.env
 deploy/*.config
+deploy/*.env
 docker-compose.yml
 Dockerfile
 *.log

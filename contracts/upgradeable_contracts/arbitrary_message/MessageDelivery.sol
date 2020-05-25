@@ -69,8 +69,7 @@ contract MessageDelivery is BasicAMB {
             mstore(ptr, destinationChainId)
             mstore(sub(ptr, destinationChainIdLength), sourceChainId)
 
-            // can be ommitted for dataType 0x00, since header is already initialized with zeros
-            // mstore(add(header, 79), 0x00)
+            mstore(add(header, 79), 0x00)
             mstore(add(header, 78), destinationChainIdLength)
             mstore(add(header, 77), sourceChainIdLength)
             mstore(add(header, 76), _gas)

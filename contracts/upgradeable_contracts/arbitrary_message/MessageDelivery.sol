@@ -56,11 +56,14 @@ contract MessageDelivery is BasicAMB {
         bytes32 mVer = MESSAGE_PACKING_VERSION;
         uint256 nonce = _nonce();
 
+        // Bridge id is recalculated every time again and again, since it is still cheaper than using SLOAD opcode (800 gas)
         bytes32 bridgeId = keccak256(abi.encodePacked(sourceChainId, address(this))) &
             0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
         // 79 = 4 + 20 + 8 + 20 + 20 + 4 + 1 + 1 + 1
         header = new bytes(79 + sourceChainIdLength + destinationChainIdLength);
 
+        // In order to save the gas, the header is packed in the reverse order.
+        // With such approach, it is possible to store right-aligned values without any additional bit shifts.
         assembly {
             let ptr := add(header, mload(header)) // points to the last word of header
             mstore(ptr, destinationChainId)

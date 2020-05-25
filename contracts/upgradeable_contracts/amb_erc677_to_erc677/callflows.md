@@ -36,7 +36,6 @@ ERC677BridgeToken::transferAndCall
 ........TokenBridgeMediator::passMessage
 ..........TokenBridgeMediator::setMessageHashValue
 ..........TokenBridgeMediator::setMessageHashRecipient
-..........TokenBridgeMediator::setNonce
 >>Bridge
 ..........MessageDelivery::requireToPassMessage
 ............ForeignAMB::emitEventOnMessageRequest
@@ -95,7 +94,6 @@ ERC677BridgeToken::transferAndCall
 ........TokenBridgeMediator::passMessage
 ..........TokenBridgeMediator::setMessageHashValue
 ..........TokenBridgeMediator::setMessageHashRecipient
-..........TokenBridgeMediator::setNonce
 >>Bridge
 ..........MessageDelivery::requireToPassMessage
 ............ForeignAMB::emitEventOnMessageRequest
@@ -338,7 +336,6 @@ BasicAMBErc677ToErc677::relayTokens
 ..............TokenBridgeMediator::passMessage
 ................TokenBridgeMediator::setMessageHashValue
 ................TokenBridgeMediator::setMessageHashRecipient
-................TokenBridgeMediator::setNonce
 >>Bridge
 ................MessageDelivery::requireToPassMessage
 ..................ForeignAMB::emitEventOnMessageRequest
@@ -375,7 +372,6 @@ BasicAMBErc677ToErc677::relayTokens
 ................TokenBridgeMediator::passMessage
 ..................TokenBridgeMediator::setMessageHashValue
 ..................TokenBridgeMediator::setMessageHashRecipient
-..................TokenBridgeMediator::setNonce
 >>Bridge
 ..................MessageDelivery::requireToPassMessage
 ....................ForeignAMB::emitEventOnMessageRequest

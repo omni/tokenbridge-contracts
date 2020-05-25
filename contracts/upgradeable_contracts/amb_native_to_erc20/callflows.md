@@ -28,7 +28,6 @@ HomeAMBNativeToErc20::()
 ....TokenBridgeMediator::passMessage
 ......TokenBridgeMediator::setMessageHashValue
 ......TokenBridgeMediator::setMessageHashRecipient
-......TokenBridgeMediator::setNonce
 >>Bridge
 ......MessageDelivery::requireToPassMessage
 ........HomeAMB::emitEventOnMessageRequest
@@ -107,7 +106,6 @@ ERC677BridgeToken::transferAndCall
 ........TokenBridgeMediator::passMessage
 ..........TokenBridgeMediator::setMessageHashValue
 ..........TokenBridgeMediator::setMessageHashRecipient
-..........TokenBridgeMediator::setNonce
 >>Bridge
 ..........MessageDelivery::requireToPassMessage
 ............ForeignAMB::emitEventOnMessageRequest
@@ -318,7 +316,6 @@ HomeAMBNativeToErc20::relayTokens
 ....TokenBridgeMediator::passMessage
 ......TokenBridgeMediator::setMessageHashValue
 ......TokenBridgeMediator::setMessageHashRecipient
-......TokenBridgeMediator::setNonce
 >>Bridge
 ......MessageDelivery::requireToPassMessage
 ........HomeAMB::emitEventOnMessageRequest
@@ -360,7 +357,6 @@ ForeignAMBNativeToErc20::relayTokens
 ..............TokenBridgeMediator::passMessage
 ................TokenBridgeMediator::setMessageHashValue
 ................TokenBridgeMediator::setMessageHashRecipient
-................TokenBridgeMediator::setNonce
 >>Bridge
 ................MessageDelivery::requireToPassMessage
 ..................ForeignAMB::emitEventOnMessageRequest

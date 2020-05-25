@@ -87,18 +87,18 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         uint256 valueToTransfer = _value.mul(10**decimalShift());
         setMediatorBalance(mediatorBalance().sub(valueToTransfer));
 
-        bytes32 txHash = transactionHash();
+        bytes32 _messageId = messageId();
         IMediatorFeeManager feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = feeManager.calculateFee(valueToTransfer);
             if (fee != 0) {
-                distributeFee(feeManager, fee, txHash);
+                distributeFee(feeManager, fee, _messageId);
                 valueToTransfer = valueToTransfer.sub(fee);
             }
         }
 
         Address.safeSendValue(_receiver, valueToTransfer);
-        emit TokensBridged(_receiver, valueToTransfer, txHash);
+        emit TokensBridged(_receiver, valueToTransfer, _messageId);
     }
 
     /**

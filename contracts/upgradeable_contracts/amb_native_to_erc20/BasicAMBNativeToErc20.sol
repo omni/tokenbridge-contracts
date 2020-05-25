@@ -63,7 +63,6 @@ contract BasicAMBNativeToErc20 is
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
         setOwner(_owner);
-        setNonce(keccak256(abi.encodePacked(address(this))));
 
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
         emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxArray[0]);

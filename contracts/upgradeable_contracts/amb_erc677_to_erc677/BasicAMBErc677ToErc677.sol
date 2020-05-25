@@ -54,7 +54,6 @@ contract BasicAMBErc677ToErc677 is
         _setRequestGasLimit(_requestGasLimit);
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
         setOwner(_owner);
-        setNonce(keccak256(abi.encodePacked(address(this))));
         setInitialize();
 
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
@@ -117,38 +116,38 @@ contract BasicAMBErc677ToErc677 is
     * @param _value amount of tokens to be received
     */
     function executeActionOnBridgedTokensOutOfLimit(address _recipient, uint256 _value) internal {
-        bytes32 txHash = transactionHash();
+        bytes32 _messageId = messageId();
         address recipient;
         uint256 value;
-        (recipient, value) = txAboveLimits(txHash);
+        (recipient, value) = txAboveLimits(_messageId);
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
-        setTxAboveLimits(_recipient, _value, txHash);
-        emit AmountLimitExceeded(_recipient, _value, txHash);
+        setTxAboveLimits(_recipient, _value, _messageId);
+        emit AmountLimitExceeded(_recipient, _value, _messageId);
     }
 
     /**
     * @dev Fixes locked tokens, that were out of execution limits during the call to handleBridgedTokens
-    * @param txHash reference transaction hash for bridge operation that was out of execution limits
+    * @param messageId reference for bridge operation that was out of execution limits
     * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge
     * @param valueToUnlock unlocked amount of tokens, should be less than maxPerTx() and saved txAboveLimitsValue
     */
-    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
+    function fixAssetsAboveLimits(bytes32 messageId, bool unlockOnForeign, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
     {
-        require(!fixedAssets(txHash));
+        require(!fixedAssets(messageId));
         require(valueToUnlock <= maxPerTx());
         address recipient;
         uint256 value;
-        (recipient, value) = txAboveLimits(txHash);
+        (recipient, value) = txAboveLimits(messageId);
         require(recipient != address(0) && value > 0 && value >= valueToUnlock);
         setOutOfLimitAmount(outOfLimitAmount().sub(valueToUnlock));
         uint256 pendingValue = value.sub(valueToUnlock);
-        setTxAboveLimitsValue(pendingValue, txHash);
-        emit AssetAboveLimitsFixed(txHash, valueToUnlock, pendingValue);
+        setTxAboveLimitsValue(pendingValue, messageId);
+        emit AssetAboveLimitsFixed(messageId, valueToUnlock, pendingValue);
         if (pendingValue == 0) {
-            setFixedAssets(txHash);
+            setFixedAssets(messageId);
         }
         if (unlockOnForeign) {
             passMessage(recipient, recipient, valueToUnlock);

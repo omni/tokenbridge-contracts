@@ -197,12 +197,6 @@ function createFullAccounts(web3, amount) {
 
 module.exports.createFullAccounts = createFullAccounts
 
-function addTxHashToAMBData(encodedData, transactionHash) {
-  return encodedData.slice(0, 2) + strip0x(transactionHash) + encodedData.slice(2)
-}
-
-module.exports.addTxHashToAMBData = addTxHashToAMBData
-
 async function delay(ms) {
   return new Promise(res => setTimeout(res, ms))
 }

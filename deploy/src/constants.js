@@ -8,7 +8,7 @@ const EXPLORER_TYPES = {
   BLOCKSCOUT: 'blockscout'
 }
 const REQUEST_STATUS = {
-  OK: 'OK',
+  OK: 'OK'
 }
 
 module.exports = {

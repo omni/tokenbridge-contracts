@@ -51,7 +51,7 @@ const callMultiSigWallet = async ({ role, contract, destination, fromBlock, gasP
     const gas = await contract.methods.submitTransaction(destination, 0, data).estimateGas({ from: address })
     const receipt = await contract.methods
       .submitTransaction(destination, 0, data)
-      .send({ from: address, gas, gasPrice })
+      .send({ from: address, gas: addExtraGas(gas), gasPrice })
     console.log(`Submission status: ${receipt.status} - Tx Hash: ${receipt.transactionHash}`)
   } else {
     await confirmTransaction({

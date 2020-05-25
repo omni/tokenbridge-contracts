@@ -15,9 +15,9 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _value.div(10**decimalShift());
-        bytes32 txHash = transactionHash();
+        bytes32 _messageId = messageId();
         erc677token().transfer(_recipient, value);
-        emit TokensBridged(_recipient, value, txHash);
+        emit TokensBridged(_recipient, value, _messageId);
     }
 
     /**

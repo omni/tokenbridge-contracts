@@ -2,14 +2,14 @@ const axios = require('axios')
 const querystring = require('querystring')
 const fs = require('fs')
 const path = require('path')
-const { EXPLORER_TYPES, REQUEST_STATUS } = require('../constants')
 const promiseRetry = require('promise-retry')
+const { EXPLORER_TYPES, REQUEST_STATUS } = require('../constants')
 
 const basePath = path.join(__dirname, '..', '..', '..', 'flats')
 
-const isBridgeToken = (name) => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol'
-const isValidators = (name) => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
-const isInterestReceiver = (name) => name === 'InterestReceiver.sol'
+const isBridgeToken = name => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol'
+const isValidators = name => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
+const isInterestReceiver = name => name === 'InterestReceiver.sol'
 
 const flat = async contractPath => {
   const pathArray = contractPath.split('/')
@@ -71,20 +71,23 @@ const sendVerifyRequestBlockscout = async (contractPath, options) => {
   return sendRequest(options.apiUrl, postQueries)
 }
 
-const getExplorerType = apiUrl => {
-  return apiUrl && apiUrl.includes('etherscan') ? EXPLORER_TYPES.ETHERSCAN : EXPLORER_TYPES.BLOCKSCOUT
-}
+const getExplorerType = apiUrl =>
+  apiUrl && apiUrl.includes('etherscan') ? EXPLORER_TYPES.ETHERSCAN : EXPLORER_TYPES.BLOCKSCOUT
 
 const verifyContract = async (contract, params, type) => {
-  let result
-  if (type === EXPLORER_TYPES.ETHERSCAN) {
-    result = await sendVerifyRequestEtherscan(contract, params)
-  } else {
-    result = await sendVerifyRequestBlockscout(contract, params)
-  }
-  if (result.data.message === REQUEST_STATUS.OK) {
-    console.log(`${params.address} verified in ${type}`)
-    return true
+  try {
+    let result
+    if (type === EXPLORER_TYPES.ETHERSCAN) {
+      result = await sendVerifyRequestEtherscan(contract, params)
+    } else {
+      result = await sendVerifyRequestBlockscout(contract, params)
+    }
+    if (result.data.message === REQUEST_STATUS.OK) {
+      console.log(`${params.address} verified in ${type}`)
+      return true
+    }
+  } catch (e) {
+    return false
   }
   return false
 }

@@ -9,3 +9,4 @@ coverage
 upgrade/.env*
 deploy/.env
 deploy/*.config
+deploy/*.env

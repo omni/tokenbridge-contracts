@@ -7,16 +7,19 @@ contract MessageTest {
         public
         pure
         returns (
+            bytes32 messageId,
             address sender,
             address executor,
-            bytes32 txHash,
-            uint256 gasLimit,
+            uint32 gasLimit,
             bytes1 dataType,
+            uint256[2] chainIds,
             uint256 gasPrice,
             bytes memory data
         )
     {
-        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data, false);
+        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
+            _data
+        );
     }
 
     function unpackDataWithExtraParams(
@@ -26,16 +29,19 @@ contract MessageTest {
         public
         pure
         returns (
+            bytes32 messageId,
             address sender,
             address executor,
-            bytes32 txHash,
-            uint256 gasLimit,
+            uint32 gasLimit,
             bytes1 dataType,
+            uint256[2] chainIds,
             uint256 gasPrice,
             bytes memory data
         )
     {
-        (sender, executor, txHash, gasLimit, dataType, gasPrice, data) = ArbitraryMessage.unpackData(_data, true);
+        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
+            _data
+        );
     }
 
 }

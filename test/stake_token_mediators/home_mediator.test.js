@@ -20,7 +20,7 @@ const minPerTx = ether('0.01')
 const homeFee = ether('0.01')
 const executionDailyLimit = dailyLimit
 const executionMaxPerTx = maxPerTx
-const exampleTxHash = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
+const exampleMessageId = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const decimalShiftZero = 0
 
 contract('HomeStakeTokenMediator', async accounts => {
@@ -35,7 +35,7 @@ contract('HomeStakeTokenMediator', async accounts => {
   beforeEach(async () => {
     homeBridge = await AMBMock.new()
     await homeBridge.setMaxGasPerTx(maxGasPerTx)
-    token = await ERC677BridgeTokenRewardable.new('Test token', 'TST', 18)
+    token = await ERC677BridgeTokenRewardable.new('Test token', 'TST', 18, 100)
     blockReward = await BlockReward.new()
     await blockReward.setValidatorsRewards(authorities)
     await blockReward.setToken(token.address)
@@ -198,6 +198,31 @@ contract('HomeStakeTokenMediator', async accounts => {
       })
     })
 
+    describe('isFeeCollectingActivated', async () => {
+      it('should return false when no block reward and no fee', async () => {
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return false when block reward is configured but no fee', async () => {
+        await homeMediator.setBlockRewardContract(blockReward.address)
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return false when no block reward but fee is set', async () => {
+        await homeMediator.setFee(ether('0.05'), { from: owner }).should.be.fulfilled
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(false)
+      })
+
+      it('should return true when both block reward and fee are configured', async () => {
+        await homeMediator.setFee(ether('0.05'), { from: owner }).should.be.fulfilled
+        await homeMediator.setBlockRewardContract(blockReward.address)
+
+        expect(await homeMediator.isFeeCollectingActivated()).to.be.equal(true)
+      })
+    })
+
     describe('calculateFee', async () => {
       it('should calculate fee for given value', async () => {
         expect(await homeMediator.calculateFee(ether('0'))).to.be.bignumber.equal(ZERO)
@@ -232,8 +257,8 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         const events = await getEvents(homeBridge, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
-        const bridgedValue = toBN(events[0].returnValues.encodedData.slice(148 + 72, 148 + 136))
-
+        const message = events[0].returnValues.encodedData
+        const bridgedValue = toBN(message.slice(message.length - 64))
         expect(bridgedValue).to.be.bignumber.equal(halfEther)
         expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
@@ -249,7 +274,8 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         const events = await getEvents(homeBridge, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
-        const bridgedValue = toBN(events[0].returnValues.encodedData.slice(148 + 72, 148 + 136))
+        const message = events[0].returnValues.encodedData
+        const bridgedValue = toBN(message.slice(message.length - 64))
 
         expect(bridgedValue).to.be.bignumber.equal(ether('0.45'))
         expect(await token.totalSupply()).to.be.bignumber.equal(ether('0.55'))
@@ -265,7 +291,8 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         const events = await getEvents(homeBridge, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
-        const bridgedValue = toBN(events[0].returnValues.encodedData.slice(148 + 72, 148 + 136))
+        const message = events[0].returnValues.encodedData
+        const bridgedValue = toBN(message.slice(message.length - 64))
 
         expect(bridgedValue).to.be.bignumber.equal(halfEther)
         expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
@@ -292,11 +319,14 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
 
-        const data = homeMediator.contract.methods
-          .handleBridgedTokens(user, halfEther.toString(10), exampleTxHash)
-          .encodeABI()
-        await homeBridge.executeMessageCall(homeMediator.address, foreignMediator.address, data, exampleTxHash, 1000000)
-          .should.be.fulfilled
+        const data = homeMediator.contract.methods.handleBridgedTokens(user, halfEther.toString(10)).encodeABI()
+        await homeBridge.executeMessageCall(
+          homeMediator.address,
+          foreignMediator.address,
+          data,
+          exampleMessageId,
+          1000000
+        ).should.be.fulfilled
 
         expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
@@ -306,7 +336,7 @@ contract('HomeStakeTokenMediator', async accounts => {
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.recipient).to.be.equal(user)
         expect(events[0].returnValues.value).to.be.equal(halfEther.toString())
-        expect(events[0].returnValues.messageId).to.be.equal(exampleTxHash)
+        expect(events[0].returnValues.messageId).to.be.equal(exampleMessageId)
       })
     })
 
@@ -321,13 +351,18 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         const events = await getEvents(homeBridge, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
-        const dataHash = web3.utils.soliditySha3(`0x${events[0].returnValues.encodedData.slice(148)}`)
+        const transferMessageId = events[0].returnValues.messageId
         expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
         expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
 
-        const data = homeMediator.contract.methods.fixFailedMessage(dataHash).encodeABI()
-        await homeBridge.executeMessageCall(homeMediator.address, foreignMediator.address, data, exampleTxHash, 1000000)
-          .should.be.fulfilled
+        const data = homeMediator.contract.methods.fixFailedMessage(transferMessageId).encodeABI()
+        await homeBridge.executeMessageCall(
+          homeMediator.address,
+          foreignMediator.address,
+          data,
+          exampleMessageId,
+          1000000
+        ).should.be.fulfilled
 
         expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
@@ -387,11 +422,14 @@ contract('HomeStakeTokenMediator', async accounts => {
 
         expect(await token.totalSupply()).to.be.bignumber.equal(ZERO)
 
-        const data = homeMediator.contract.methods
-          .handleBridgedTokens(user, halfEther.toString(10), exampleTxHash)
-          .encodeABI()
-        await homeBridge.executeMessageCall(homeMediator.address, foreignMediator.address, data, exampleTxHash, 1000000)
-          .should.be.fulfilled
+        const data = homeMediator.contract.methods.handleBridgedTokens(user, halfEther.toString(10)).encodeABI()
+        await homeBridge.executeMessageCall(
+          homeMediator.address,
+          foreignMediator.address,
+          data,
+          exampleMessageId,
+          1000000
+        ).should.be.fulfilled
 
         expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)

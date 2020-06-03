@@ -7,7 +7,9 @@ import "./EternalStorageProxy.sol";
  * @dev This proxy holds the storage of the token contract and delegates every call to the current implementation set.
  * Besides, it allows to upgrade the token's behaviour towards further implementations, and provides basic
  * authorization control functionalities.
- * The only differency between this contract and EternalStorageProxy is a provided support of pre-Byzantium environment.
+ * The only difference between this contract and EternalStorageProxy is a provided support of pre-Byzantium environment.
+ * The fallback proxy will return values with a default size of 32. If a method will be returning a different size,
+ * the size needs to be stored for the signature so the method getSize() can get it.
  */
 contract ClassicEternalStorageProxy is EternalStorageProxy {
     // solhint-disable-next-line no-complex-fallback

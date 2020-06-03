@@ -2,10 +2,11 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./BasicAMB.sol";
+import "./MessageProcessor.sol";
 import "../../libraries/ArbitraryMessage.sol";
 import "../../libraries/Bytes.sol";
 
-contract MessageDelivery is BasicAMB {
+contract MessageDelivery is BasicAMB, MessageProcessor {
     using SafeMath for uint256;
 
     /**
@@ -15,20 +16,23 @@ contract MessageDelivery is BasicAMB {
     * @param _gas gas limit used on the other network for executing a message
     */
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public returns (bytes32) {
+        // it is not allowed to pass messages while other messages are processed
+        require(messageId() == bytes32(0));
+
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
 
-        bytes32 messageId;
+        bytes32 _messageId;
         bytes memory header = _packHeader(_contract, _gas);
         _setNonce(_nonce() + 1);
 
         assembly {
-            messageId := mload(add(header, 32))
+            _messageId := mload(add(header, 32))
         }
 
         bytes memory eventData = abi.encodePacked(header, _data);
 
-        emitEventOnMessageRequest(messageId, eventData);
-        return messageId;
+        emitEventOnMessageRequest(_messageId, eventData);
+        return _messageId;
     }
 
     /**

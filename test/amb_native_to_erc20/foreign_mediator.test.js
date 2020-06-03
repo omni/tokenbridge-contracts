@@ -1541,6 +1541,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
 
       const initialBalanceRewardAddress1 = await token.balanceOf(rewardAccountList[0])
       const initialBalanceRewardAddress2 = await token.balanceOf(rewardAccountList[1])
+      const initialBalanceRewardAddress3 = await token.balanceOf(rewardAccountList[2])
 
       await ambBridgeContract.executeMessageCall(
         contract.address,
@@ -1561,17 +1562,15 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       const erc20Token = await ERC20Mock.at(token.address)
       const transferEvents = await getEvents(erc20Token, { event: 'Transfer' })
       // 5 transfer events: 1 Mint to user, 1 Mint to fee manager, fee manager 1 transfer to each reward account,
-      // 1 feeReceiver contract transfer to mediator, 1 transfer to 0 to burn the tokens
-      expect(transferEvents.length).to.be.equal(7)
+      // bridge should not allow to send messages in backward direction, so fee manager should not be able to send tokens through the bridge
+      expect(transferEvents.length).to.be.equal(5)
 
       const burnEvents = await getEvents(token, { event: 'Burn' })
-      expect(burnEvents.length).to.be.equal(1)
+      expect(burnEvents.length).to.be.equal(0)
 
       const totalSupply = await token.totalSupply()
 
-      expect(totalSupply.eq(value.sub(feePerValidator)) || totalSupply.eq(value.sub(feePerValidatorPlusDiff))).to.equal(
-        true
-      )
+      expect(totalSupply).to.be.bignumber.equal(value)
 
       expect(await token.balanceOf(user)).to.be.bignumber.equal(finalUserValue)
 
@@ -1587,7 +1586,10 @@ contract('ForeignAMBNativeToErc20', async accounts => {
         updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator)) ||
           updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))
       ).to.equal(true)
-      expect(updatedBalanceRewardAddress3).to.be.bignumber.equal(ZERO)
+      expect(
+        updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidator)) ||
+          updatedBalanceRewardAddress3.eq(initialBalanceRewardAddress3.add(feePerValidatorPlusDiff))
+      ).to.equal(true)
 
       const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
       expect(feeEvents.length).to.be.equal(1)
@@ -1661,6 +1663,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
 
       expect(await ambBridgeContract.messageCallStatus(failedMessageId)).to.be.equal(false)
 
+      const initialBalanceRewardAddress1 = await token.balanceOf(rewardAccountList[0])
       const initialBalanceRewardAddress2 = await token.balanceOf(rewardAccountList[1])
       const initialBalanceRewardAddress3 = await token.balanceOf(rewardAccountList[2])
 
@@ -1684,16 +1687,14 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       const transferEvents = await getEvents(erc20Token, { event: 'Transfer' })
       // 5 transfer events: 1 Mint to user, 1 Mint to fee manager, fee manager 1 transfer to each reward account,
       // 1 feeReceiver contract transfer to mediator, 1 transfer to 0 to burn the tokens
-      expect(transferEvents.length).to.be.equal(7)
+      expect(transferEvents.length).to.be.equal(5)
 
       const burnEvents = await getEvents(token, { event: 'Burn' })
-      expect(burnEvents.length).to.be.equal(1)
+      expect(burnEvents.length).to.be.equal(0)
 
       const totalSupply = await token.totalSupply()
 
-      expect(totalSupply.eq(value.sub(feePerValidator)) || totalSupply.eq(value.sub(feePerValidatorPlusDiff))).to.equal(
-        true
-      )
+      expect(totalSupply).to.be.bignumber.equal(value)
 
       expect(await token.balanceOf(user)).to.be.bignumber.equal(finalUserValue)
 
@@ -1701,7 +1702,10 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       const updatedBalanceRewardAddress2 = await token.balanceOf(rewardAccountList[1])
       const updatedBalanceRewardAddress3 = await token.balanceOf(rewardAccountList[2])
 
-      expect(updatedBalanceRewardAddress1).to.be.bignumber.equal(ZERO)
+      expect(
+        updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidator)) ||
+          updatedBalanceRewardAddress1.eq(initialBalanceRewardAddress1.add(feePerValidatorPlusDiff))
+      ).to.equal(true)
       expect(
         updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidator)) ||
           updatedBalanceRewardAddress2.eq(initialBalanceRewardAddress2.add(feePerValidatorPlusDiff))

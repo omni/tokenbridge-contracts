@@ -4,10 +4,9 @@ import "../../libraries/Message.sol";
 import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
-import "./MessageProcessor.sol";
 import "../MessageRelay.sol";
 
-contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery, MessageProcessor {
+contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
     /**
     * @dev Validates provided signatures and relays a given message
     * @param _data bytes to be relayed

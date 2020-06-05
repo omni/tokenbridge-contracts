@@ -42,6 +42,7 @@ contract AMBMock {
     }
 
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32) {
+        require(messageId == bytes32(0));
         bytes32 bridgeId = keccak256(abi.encodePacked(uint16(1337), address(this))) &
             0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
 

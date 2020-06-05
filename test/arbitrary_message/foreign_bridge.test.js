@@ -700,6 +700,31 @@ contract('ForeignAMB', async accounts => {
         gasPrice
       }).should.be.rejected
     })
+    it('should not allow to pass message back through the bridge', async () => {
+      const user = accounts[8]
+
+      const data = await foreignBridge.contract.methods
+        .requireToPassMessage(box.address, setValueData, 100000)
+        .encodeABI()
+      // Use these calls to simulate home bridge on home network
+      const resultPassMessageTx = await homeBridge.requireToPassMessage(foreignBridge.address, data, 821254, {
+        from: user
+      })
+
+      const { encodedData: message, messageId } = resultPassMessageTx.logs[0].args
+
+      const signature = await sign(authorities[0], message)
+      const vrs = signatureToVRS(signature)
+      const signatures = packSignatures([vrs])
+
+      await foreignBridge.executeSignatures(message, signatures, {
+        from: authorities[0],
+        gasPrice
+      }).should.be.fulfilled
+
+      // means that call to requireToPassMessage inside MessageProcessor reverted, since messageId flag was set up
+      expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(false)
+    })
   })
 
   describe('gasToken functionality', async () => {

@@ -4,9 +4,8 @@ import "../../libraries/Message.sol";
 import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
-import "./MessageProcessor.sol";
 
-contract BasicHomeAMB is BasicAMB, MessageDelivery, MessageProcessor {
+contract BasicHomeAMB is BasicAMB, MessageDelivery {
     event SignedForUserRequest(address indexed signer, bytes32 messageHash);
     event SignedForAffirmation(address indexed signer, bytes32 messageHash);
 

@@ -35,8 +35,8 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
 
-  const homeChainId = await web3Home.eth.net.getId()
-  const foreignChainId = await web3Foreign.eth.net.getId()
+  const homeChainId = await web3Home.eth.getChainId()
+  const foreignChainId = await web3Foreign.eth.getChainId()
 
   console.log('\ninitializing Home Bridge with following parameters:\n')
   console.log(`SOURCE_CHAIN_ID: ${homeChainId}, DESTINATION_CHAIN_ID: ${foreignChainId}, Home Validators: ${validatorsBridge.options.address},

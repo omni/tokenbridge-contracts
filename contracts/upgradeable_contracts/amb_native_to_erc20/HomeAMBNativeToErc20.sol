@@ -159,4 +159,45 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         setMediatorBalance(mediatorBalance().add(diff));
         passMessage(_receiver, _receiver, diff);
     }
+
+    /**
+    * @dev Method to migrate home WETC native-to-erc bridge to a mediator
+    * implementation on top of AMB
+    */
+    function migrateToMediator() external {
+        bytes32 REQUIRED_BLOCK_CONFIRMATIONS = 0x916daedf6915000ff68ced2f0b6773fe6f2582237f92c3c95bb4d79407230071; // keccak256(abi.encodePacked("requiredBlockConfirmations"))
+        bytes32 GAS_PRICE = 0x55b3774520b5993024893d303890baa4e84b1244a43c60034d1ced2d3cf2b04b; // keccak256(abi.encodePacked("gasPrice"))
+        bytes32 DEPLOYED_AT_BLOCK = 0xb120ceec05576ad0c710bc6e85f1768535e27554458f05dcbb5c65b8c7a749b0; // keccak256(abi.encodePacked("deployedAtBlock"))
+        bytes32 HOME_FEE_STORAGE_KEY = 0xc3781f3cec62d28f56efe98358f59c2105504b194242dbcb2cc0806850c306e7; // keccak256(abi.encodePacked("homeFee"))
+        bytes32 FOREIGN_FEE_STORAGE_KEY = 0x68c305f6c823f4d2fa4140f9cf28d32a1faccf9b8081ff1c2de11cf32c733efc; // keccak256(abi.encodePacked("foreignFee"))
+        bytes32 VALIDATOR_CONTRACT = 0x5a74bb7e202fb8e4bf311841c7d64ec19df195fee77d7e7ae749b27921b6ddfe; // keccak256(abi.encodePacked("validatorContract"))
+
+        bytes32 migrationToMediatorStorage = 0x131ab4848a6da904c5c205972a9dfe59f6d2afb8c9c3acd56915f89558369213; // keccak256(abi.encodePacked("migrationToMediator"))
+        require(!boolStorage[migrationToMediatorStorage]);
+
+        // Assign new AMB parameters
+        _setBridgeContract(0x0); // Will be filled with a value later
+        _setMediatorContractOnOtherSide(0x0); // Will be filled with a value later
+        _setRequestGasLimit(500000);
+
+        // Update fee manager
+        addressStorage[FEE_MANAGER_CONTRACT] = 0x0; // Will be filled with a value later
+
+        // Set the balance of the mediator contract
+        setMediatorBalance(address(this).balance);
+
+        // Free old storage
+        delete addressStorage[VALIDATOR_CONTRACT];
+        delete uintStorage[GAS_PRICE];
+        delete uintStorage[DEPLOYED_AT_BLOCK];
+        delete uintStorage[REQUIRED_BLOCK_CONFIRMATIONS];
+        delete uintStorage[HOME_FEE_STORAGE_KEY];
+        delete uintStorage[FOREIGN_FEE_STORAGE_KEY];
+
+        // Free storage related to proxy size returns.
+        delete uintStorage[0x5e16d82565fc7ee8775cc18db290ff4010745d3fd46274a7bc7ddbebb727fa54]; // keccak256(abi.encodePacked("dataSizes", bytes4(keccak256("signature(bytes32,uint256)"))))
+        delete uintStorage[0x3b0a1ac531be1657049cf649eca2510ce9e3ef7df1be26d5c248fe8b298f4374]; // keccak256(abi.encodePacked("dataSizes", bytes4(keccak256("message(bytes32)"))))
+
+        boolStorage[migrationToMediatorStorage] = true;
+    }
 }

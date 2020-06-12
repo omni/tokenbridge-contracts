@@ -172,7 +172,7 @@ async function deployForeign(homeBridgeAddress) {
   console.log('\n[Foreign] deploying bridgeable token')
   let args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS]
   if (DEPLOY_REWARDABLE_TOKEN) {
-    const chainId = await web3Foreign.eth.net.getId()
+    const chainId = await web3Foreign.eth.getChainId()
     assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
     args.push(chainId)
   }

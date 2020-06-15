@@ -970,16 +970,8 @@ contract('ForeignAMB', async accounts => {
   })
   describe('setChainIds', async () => {
     let foreignContract
-    const srcChainIdStorageKey = web3.utils.soliditySha3(
-      '0x67d6f42a1ed69c62022f2d160ddc6f2f0acd37ad1db0c24f4702d7d3343a4add' +
-        '0000000000000000000000000000000000000000000000000000000000000000'
-    )
     const srcChainIdLengthStorageKey = web3.utils.soliditySha3(
       '0xe504ae1fd6471eea80f18b8532a61a9bb91fba4f5b837f80a1cfb6752350af44' +
-        '0000000000000000000000000000000000000000000000000000000000000000'
-    )
-    const dstChainIdStorageKey = web3.utils.soliditySha3(
-      '0xbbd454018e72a3f6c02bbd785bacc49e46292744f3f6761276723823aa332320' +
         '0000000000000000000000000000000000000000000000000000000000000000'
     )
     const dstChainIdLengthStorageKey = web3.utils.soliditySha3(
@@ -1000,20 +992,18 @@ contract('ForeignAMB', async accounts => {
     })
 
     it('should allow to set chain id', async () => {
-      expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdStorageKey)).to.be.equal(
-        FOREIGN_CHAIN_ID_HEX
-      )
+      expect(await foreignContract.sourceChainId()).to.be.bignumber.equal(FOREIGN_CHAIN_ID.toString())
       expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdLengthStorageKey)).to.be.equal('0x04')
-      expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdStorageKey)).to.be.equal(HOME_CHAIN_ID_HEX)
+      expect(await foreignContract.destinationChainId()).to.be.bignumber.equal(HOME_CHAIN_ID.toString())
       expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdLengthStorageKey)).to.be.equal('0x02')
 
       const newSrcChainId = '0x11000000000000'
       const newDstChainId = '0x22000000000000000000000000'
       await foreignContract.setChainIds(newSrcChainId, newDstChainId, { from: owner }).should.be.fulfilled
 
-      expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdStorageKey)).to.be.equal(newSrcChainId)
+      expect((await foreignContract.sourceChainId()).toString(16)).to.be.equal(newSrcChainId.slice(2))
       expect(await web3.eth.getStorageAt(foreignContract.address, srcChainIdLengthStorageKey)).to.be.equal('0x07')
-      expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdStorageKey)).to.be.equal(newDstChainId)
+      expect((await foreignContract.destinationChainId()).toString(16)).to.be.equal(newDstChainId.slice(2))
       expect(await web3.eth.getStorageAt(foreignContract.address, dstChainIdLengthStorageKey)).to.be.equal('0x0d')
     })
 

@@ -843,6 +843,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
 
       expect(await ambBridgeContract.messageCallStatus(otherMessageId)).to.be.equal(false)
       expect(await contract.messageFixed(transferMessageId)).to.be.equal(false)
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(oneEther)
 
       await ambBridgeContract.executeMessageCall(
         contract.address,
@@ -856,6 +857,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
 
       expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
       expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(ZERO)
       expect(toBN(await web3.eth.getBalance(user))).to.be.bignumber.equal(balanceUserBefore.add(oneEther))
       expect(await contract.messageFixed(transferMessageId)).to.be.equal(true)
 

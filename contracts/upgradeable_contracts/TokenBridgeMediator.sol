@@ -86,8 +86,6 @@ contract TokenBridgeMediator is BasicAMBMediator, BasicTokenBridge {
     /**
     * @dev Handles the bridged tokens. Checks that the value is inside the execution limits and invokes the method
     * to execute the Mint or Unlock accordingly.
-    * nonce parameter is a unique message identifier on AMB bridge, it is not actually used by this method,
-    * it serves as unique reference.
     * @param _recipient address that will receive the tokens
     * @param _value amount of tokens to be received
     */

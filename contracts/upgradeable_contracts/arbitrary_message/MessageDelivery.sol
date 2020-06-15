@@ -52,30 +52,30 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
     * @param _gas gas limit used on the other network for executing a message
     */
     function _packHeader(address _contract, uint256 _gas) internal view returns (bytes memory header) {
-        uint256 sourceChainId = _sourceChainId();
-        uint256 sourceChainIdLength = _sourceChainIdLength();
-        uint256 destinationChainId = _destinationChainId();
-        uint256 destinationChainIdLength = _destinationChainIdLength();
+        uint256 srcChainId = sourceChainId();
+        uint256 srcChainIdLength = _sourceChainIdLength();
+        uint256 dstChainId = destinationChainId();
+        uint256 dstChainIdLength = _destinationChainIdLength();
 
         bytes32 mVer = MESSAGE_PACKING_VERSION;
         uint256 nonce = _nonce();
 
         // Bridge id is recalculated every time again and again, since it is still cheaper than using SLOAD opcode (800 gas)
-        bytes32 bridgeId = keccak256(abi.encodePacked(sourceChainId, address(this))) &
+        bytes32 bridgeId = keccak256(abi.encodePacked(srcChainId, address(this))) &
             0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
         // 79 = 4 + 20 + 8 + 20 + 20 + 4 + 1 + 1 + 1
-        header = new bytes(79 + sourceChainIdLength + destinationChainIdLength);
+        header = new bytes(79 + srcChainIdLength + dstChainIdLength);
 
         // In order to save the gas, the header is packed in the reverse order.
         // With such approach, it is possible to store right-aligned values without any additional bit shifts.
         assembly {
             let ptr := add(header, mload(header)) // points to the last word of header
-            mstore(ptr, destinationChainId)
-            mstore(sub(ptr, destinationChainIdLength), sourceChainId)
+            mstore(ptr, dstChainId)
+            mstore(sub(ptr, dstChainIdLength), srcChainId)
 
             mstore(add(header, 79), 0x00)
-            mstore(add(header, 78), destinationChainIdLength)
-            mstore(add(header, 77), sourceChainIdLength)
+            mstore(add(header, 78), dstChainIdLength)
+            mstore(add(header, 77), srcChainIdLength)
             mstore(add(header, 76), _gas)
             mstore(add(header, 72), _contract)
             mstore(add(header, 52), caller)

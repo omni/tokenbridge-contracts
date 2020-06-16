@@ -20,7 +20,7 @@
     "pkg": "^4.3.1",
     "promise-retry": "^1.1.1",
     "querystring": "^0.2.0",
-    "web3": "1.0.0-beta.33"
+    "web3": "^1.2.9"
   },
   "devDependencies": {
     "eslint": "^5.6.0",

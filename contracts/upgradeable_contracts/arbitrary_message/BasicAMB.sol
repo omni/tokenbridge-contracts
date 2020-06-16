@@ -63,6 +63,22 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     }
 
     /**
+     * Internal function for retrieving chain id for the source network
+     * @return chain id for the current network
+     */
+    function sourceChainId() public view returns (uint256) {
+        return uintStorage[SOURCE_CHAIN_ID];
+    }
+
+    /**
+     * Internal function for retrieving chain id for the destination network
+     * @return chain id for the destination network
+     */
+    function destinationChainId() public view returns (uint256) {
+        return uintStorage[DESTINATION_CHAIN_ID];
+    }
+
+    /**
      * Updates chain ids of used networks
      * @param _sourceChainId chain id for current network
      * @param _destinationChainId chain id for opposite network
@@ -116,27 +132,11 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     }
 
     /**
-     * Internal function for retrieving chain id for the source network
-     * @return chain id for the current network
-     */
-    function _sourceChainId() internal view returns (uint256) {
-        return uintStorage[SOURCE_CHAIN_ID];
-    }
-
-    /**
      * Internal function for retrieving chain id length for the source network
      * @return chain id for the current network
      */
     function _sourceChainIdLength() internal view returns (uint256) {
         return uintStorage[SOURCE_CHAIN_ID_LENGTH];
-    }
-
-    /**
-     * Internal function for retrieving chain id for the destination network
-     * @return chain id for the destination network
-     */
-    function _destinationChainId() internal view returns (uint256) {
-        return uintStorage[DESTINATION_CHAIN_ID];
     }
 
     /**
@@ -161,6 +161,6 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      * @param _chainId destination chain id of the received message
      */
     function _isDestinationChainIdValid(uint256 _chainId) internal returns (bool res) {
-        return _chainId == _sourceChainId();
+        return _chainId == sourceChainId();
     }
 }

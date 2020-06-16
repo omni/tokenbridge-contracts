@@ -233,7 +233,7 @@ async function deployHome() {
   const erc677Contract = rewardable ? ERC677BridgeTokenRewardable : ERC677BridgeToken
   let args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS]
   if (rewardable) {
-    const chainId = await web3Home.eth.net.getId()
+    const chainId = await web3Home.eth.getChainId()
     assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
     args.push(chainId)
   }

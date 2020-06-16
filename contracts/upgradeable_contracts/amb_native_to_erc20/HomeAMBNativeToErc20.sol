@@ -107,6 +107,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     * @param _value amount of native tokens to be received
     */
     function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
+        setMediatorBalance(mediatorBalance().sub(_value));
         Address.safeSendValue(_receiver, _value);
     }
 
@@ -156,7 +157,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         require(balance > mediatorBalance());
         uint256 diff = balance.sub(mediatorBalance());
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(diff));
-        setMediatorBalance(mediatorBalance().add(diff));
+        setMediatorBalance(balance);
         passMessage(_receiver, _receiver, diff);
     }
 }

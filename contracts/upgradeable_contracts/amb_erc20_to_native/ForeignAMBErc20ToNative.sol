@@ -137,7 +137,6 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
 
     /**
     * @dev Locks the amount of tokens and makes the request to mint the native tokens on the other network.
-    * @param _token address of the ERC677 token.
     * @param _from address that transferred the tokens.
     * @param _value amount of tokens transferred.
     * @param _data this parameter could contain the address of an alternative receiver of the native tokens on the other

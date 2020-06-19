@@ -18,7 +18,8 @@ const validBridgeModes = [
   'ARBITRARY_MESSAGE',
   'AMB_ERC_TO_ERC',
   'STAKE_AMB_ERC_TO_ERC',
-  'AMB_NATIVE_TO_ERC'
+  'AMB_NATIVE_TO_ERC',
+  'AMB_ERC_TO_NATIVE',
 ]
 const validRewardModes = ['false', 'ONE_DIRECTION', 'BOTH_DIRECTIONS']
 const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
@@ -129,12 +130,18 @@ if (BRIDGE_MODE.includes('AMB_')) {
     FOREIGN_AMB_BRIDGE: addressValidator(),
     HOME_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
     FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
-    BRIDGEABLE_TOKEN_NAME: envalid.str(),
-    BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
-    BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool({ default: false })
+  }
+
+  if (BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE') {
+    validations = {
+      ...validations,
+      BRIDGEABLE_TOKEN_NAME: envalid.str(),
+      BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
+      BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
+      DEPLOY_REWARDABLE_TOKEN: envalid.bool({ default: false })
+    }
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -180,7 +187,7 @@ if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
     FOREIGN_DAILY_LIMIT: bigNumValidator()
   }
 
-  if (BRIDGE_MODE !== 'AMB_ERC_TO_ERC' && BRIDGE_MODE !== 'STAKE_AMB_ERC_TO_ERC') {
+  if (BRIDGE_MODE !== 'AMB_ERC_TO_ERC' && BRIDGE_MODE !== 'STAKE_AMB_ERC_TO_ERC' && BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE') {
     if (!validRewardModes.includes(HOME_REWARDABLE)) {
       throw new Error(`Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`)
     }
@@ -289,6 +296,17 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
+if (BRIDGE_MODE === 'AMB_ERC_TO_NATIVE') {
+  validations = {
+    ...validations,
+    ERC20_TOKEN_ADDRESS: addressValidator(),
+    BLOCK_REWARD_ADDRESS: addressValidator({
+      default: ZERO_ADDRESS
+    }),
+    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
+  }
+}
+
 const env = envalid.cleanEnv(process.env, validations)
 
 if (!env.BRIDGE_MODE.includes('AMB_')) {
@@ -362,7 +380,7 @@ if (env.BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (env.BRIDGE_MODE === 'AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC') {
+if (env.BRIDGE_MODE === 'AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'AMB_ERC_TO_NATIVE') {
   checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
 }
 

@@ -50,7 +50,6 @@ contract BasicAMBNativeToErc20 is
         );
         require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // foreignMaxPerTx < foreignDailyLimit
         require(_owner != address(0));
-        require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
@@ -61,7 +60,7 @@ contract BasicAMBNativeToErc20 is
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
+        _setFeeManagerContract(_feeManager);
         setOwner(_owner);
 
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);

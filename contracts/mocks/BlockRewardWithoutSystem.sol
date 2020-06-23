@@ -9,6 +9,10 @@ contract BlockRewardWithoutSystem is BlockReward {
         _;
     }
 
+    modifier onlyBridgeContract {
+        _;
+    }
+
     function setBridgeContractAddress(address _addr) external {
         bridgeContractAddress = _addr;
     }

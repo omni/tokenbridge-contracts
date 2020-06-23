@@ -1,15 +1,17 @@
 pragma solidity 0.4.24;
 
 import "./BasicAMBErc20ToNative.sol";
+import "../../interfaces/IMediatorFeeManagerBothDirections.sol";
 import "../BlockRewardBridge.sol";
+import "../RewardableMediator.sol";
 
 /**
 * @title HomeAMBErc20ToNative
 * @dev Home mediator implementation for erc20-to-native bridge intended to work on top of AMB bridge.
 * It is design to be used as implementation contract of EternalStorageProxy contract.
 */
-contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
-    bytes32 internal constant TOTAL_BURNT_COINS = 0x17f187b2e5d1f8770602b32c1159b85c9600859277fae1eaa9982e9bcf63384c; // keccak256(abi.encodePacked("totalBurntCoins"))
+contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, RewardableMediator {
+    bytes32 internal constant TOTAL_SUPPLY_COINS = 0xb32740a8fb91550d50618ece1336a41a472ba5977838b1cd512bba896c895fc6; // keccak256(abi.encodePacked("totalSupplyCoins"))
 
     /**
     * @dev Stores the initial parameters of the mediator.
@@ -21,6 +23,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
     *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _decimalShift number of decimals shift required to adjust the amount of tokens bridged.
+    * @param _feeManager address of the fee manager contract
     * @param _owner address of the owner of the mediator contract
     */
     function initialize(
@@ -31,6 +34,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
         uint256 _requestGasLimit,
         uint256 _decimalShift,
         address _owner,
+        address _feeManager,
         address _blockReward
     ) external onlyRelevantSender returns (bool) {
         _initialize(
@@ -42,6 +46,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
             _decimalShift,
             _owner
         );
+        _setFeeManagerContract(_feeManager);
         _setBlockRewardContract(_blockReward);
         setInitialize();
         return isInitialized();
@@ -82,11 +87,11 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
     }
 
     /**
-    * @dev Retrieves total amount of burnt coins by bridge that happened during the withdrawal procedure.
-    * @return amount of burnt coins.
+    * @dev Retrieves total supply of tokens created by this bridge.
+    * @return amount of coins (total supply = minted coins - burnt coins).
     */
-    function totalBurntCoins() public view returns (uint256) {
-        return uintStorage[TOTAL_BURNT_COINS];
+    function totalSupply() public view returns (uint256) {
+        return uintStorage[TOTAL_SUPPLY_COINS];
     }
 
     /**
@@ -98,23 +103,42 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
         require(withinLimit(msg.value));
 
         IBlockReward blockReward = blockRewardContract();
-        uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
-        uint256 totalBurnt = totalBurntCoins();
-        require(msg.value <= totalMinted.sub(totalBurnt));
+        uint256 _totalSupply = totalSupply();
+        require(msg.value <= _totalSupply);
 
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
-        passMessage(msg.sender, _receiver, msg.value);
 
-        setTotalBurntCoins(totalBurnt.add(msg.value));
-        address(0).transfer(msg.value);
+        uint256 valueToTransfer = msg.value;
+        bytes32 _messageId = messageId();
+        IMediatorFeeManager feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            uint256 fee = feeManager.calculateFee(valueToTransfer);
+            if (fee != 0) {
+                distributeFee(feeManager, fee, _messageId);
+                valueToTransfer = valueToTransfer.sub(fee);
+            }
+        }
+
+        _setTotalSupply(_totalSupply.sub(valueToTransfer));
+        passMessage(msg.sender, _receiver, valueToTransfer);
+        address(0).transfer(valueToTransfer);
     }
 
     /**
-    * @dev Internal function for updating amount of burnt coins by this bridge.
-    * @param _amount new amount of burnt coins.
+    * @dev Transfer the fee amount as native tokens to the fee manager contract.
+    * @param _feeManager address that will receive the native tokens.
+    * @param _fee amount of native tokens to be distribute.
     */
-    function setTotalBurntCoins(uint256 _amount) internal {
-        uintStorage[TOTAL_BURNT_COINS] = _amount;
+    function onFeeDistribution(address _feeManager, uint256 _fee) internal {
+        Address.safeSendValue(_feeManager, _fee);
+    }
+
+    /**
+    * @dev Internal function for updating total supply of coins minted by this bridge.
+    * @param _amount difference between minted and burned coins by this bridge.
+    */
+    function _setTotalSupply(uint256 _amount) internal {
+        uintStorage[TOTAL_SUPPLY_COINS] = _amount;
     }
 
     /**
@@ -125,6 +149,17 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
         uint256 valueToMint = _value.mul(10**decimalShift());
         bytes32 _messageId = messageId();
+
+        IMediatorFeeManagerBothDirections feeManager = IMediatorFeeManagerBothDirections(feeManagerContract());
+        _setTotalSupply(totalSupply().add(valueToMint));
+        if (feeManager != address(0)) {
+            uint256 fee = feeManager.calculateOppositeFee(valueToMint);
+            if (fee != 0) {
+                feeManager.call(abi.encodeWithSelector(feeManager.distributeOppositeFee.selector, fee));
+                valueToMint = valueToMint.sub(fee);
+                emit FeeDistributed(fee, _messageId);
+            }
+        }
 
         IBlockReward blockReward = blockRewardContract();
         blockReward.addExtraReceiver(valueToMint, _receiver);
@@ -138,6 +173,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
     */
     function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
         IBlockReward blockReward = blockRewardContract();
+        _setTotalSupply(totalSupply().add(_value));
         blockReward.addExtraReceiver(_value, _receiver);
     }
 
@@ -161,6 +197,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge {
         uint256 balance = address(this).balance;
         require(balance > 0);
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(balance));
+        _setTotalSupply(totalSupply().sub(balance));
         passMessage(_receiver, _receiver, balance);
         address(0).transfer(balance);
     }

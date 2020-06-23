@@ -5,7 +5,6 @@ import "../Upgradeable.sol";
 import "../Claimable.sol";
 import "../VersionableBridge.sol";
 import "../TokenBridgeMediator.sol";
-import "../RewardableMediator.sol";
 
 /**
 * @title BasicAMBErc20ToNative

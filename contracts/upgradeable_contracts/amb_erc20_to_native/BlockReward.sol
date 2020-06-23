@@ -164,7 +164,7 @@ contract BlockReward is EternalStorage {
 
     function _setMinted(uint256 _amount, address _account) private {
         bytes32 hash = keccak256(abi.encodePacked(MINTED_FOR_ACCOUNT_IN_BLOCK, _account, block.number));
-        uintStorage[keccak256(abi.encodePacked(MINTED_FOR_ACCOUNT_IN_BLOCK, _account, block.number))] = _amount;
+        uintStorage[hash] = _amount;
 
         hash = keccak256(abi.encodePacked(MINTED_FOR_ACCOUNT, _account));
         uintStorage[hash] = uintStorage[hash].add(_amount);
@@ -172,7 +172,6 @@ contract BlockReward is EternalStorage {
         hash = keccak256(abi.encodePacked(MINTED_IN_BLOCK, block.number));
         uintStorage[hash] = uintStorage[hash].add(_amount);
 
-        hash = MINTED_TOTALLY;
-        uintStorage[hash] = uintStorage[hash].add(_amount);
+        uintStorage[MINTED_TOTALLY] = uintStorage[MINTED_TOTALLY].add(_amount);
     }
 }

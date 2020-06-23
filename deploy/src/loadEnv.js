@@ -187,7 +187,7 @@ if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
     FOREIGN_DAILY_LIMIT: bigNumValidator()
   }
 
-  if (BRIDGE_MODE !== 'AMB_ERC_TO_ERC' && BRIDGE_MODE !== 'STAKE_AMB_ERC_TO_ERC' && BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE') {
+  if (BRIDGE_MODE !== 'AMB_ERC_TO_ERC' && BRIDGE_MODE !== 'STAKE_AMB_ERC_TO_ERC') {
     if (!validRewardModes.includes(HOME_REWARDABLE)) {
       throw new Error(`Invalid HOME_REWARDABLE: ${HOME_REWARDABLE}. Supported values are ${validRewardModes}`)
     }
@@ -226,7 +226,7 @@ if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
             default: ZERO_ADDRESS
           })
         }
-      } else {
+      } else if (BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE') {
         validations = {
           ...validations,
           VALIDATORS_REWARD_ACCOUNTS: addressesValidator()
@@ -392,6 +392,25 @@ if (env.BRIDGE_MODE === 'AMB_NATIVE_TO_ERC') {
 
   if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS') {
     throw new Error(`HOME_REWARDABLE: ${env.HOME_REWARDABLE} is not supported on ${env.BRIDGE_MODE} bridge mode.`)
+  }
+}
+
+if (env.BRIDGE_MODE === 'AMB_ERC_TO_NATIVE') {
+  if (HOME_REWARDABLE === 'ONE_DIRECTION') {
+    throw new Error(
+      `Only BOTH_DIRECTIONS is supported for collecting fees on Home Network on ${BRIDGE_MODE} bridge mode.`
+    )
+  }
+
+  if (FOREIGN_REWARDABLE !== 'false') {
+    throw new Error(`Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`)
+  }
+
+  if (HOME_REWARDABLE === 'BOTH_DIRECTIONS') {
+    validations = {
+      ...validations,
+      HOME_MEDIATOR_REWARD_ACCOUNTS: addressesValidator()
+    }
   }
 }
 

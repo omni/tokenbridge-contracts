@@ -45,6 +45,7 @@ function getContracts(evmVersion) {
     ForeignFeeManagerAMBNativeToErc20: require(`../../build/${buildPath}/ForeignFeeManagerAMBNativeToErc20.json`),
     ForeignAMBErc20ToNative: require(`../../build/${buildPath}/ForeignAMBErc20ToNative.json`),
     HomeAMBErc20ToNative: require(`../../build/${buildPath}/HomeAMBErc20ToNative.json`),
+    HomeFeeManagerAMBErc20ToNative: require(`../../build/${buildPath}/HomeFeeManagerAMBErc20ToNative.json`),
   }
 }
 

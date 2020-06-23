@@ -41,6 +41,7 @@ async function initializeMediator({
     requestGasLimit,
     foreignToHomeDecimalShift,
     owner,
+    feeManager,
     blockRewardContract
   }
 }) {
@@ -55,6 +56,7 @@ async function initializeMediator({
     FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
     OWNER: ${owner},
+    FEE_MANAGER: ${feeManager},
     BLOCK_REWARD_ADDRESS: ${blockRewardContract}
   `)
 
@@ -67,12 +69,13 @@ async function initializeMediator({
       requestGasLimit,
       foreignToHomeDecimalShift,
       owner,
+      feeManager,
       blockRewardContract
     )
     .encodeABI()
 }
 
-async function initialize({ homeBridge, foreignBridge }) {
+async function initialize({ homeBridge, foreignBridge, homeFeeManager }) {
   const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
   let nonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
   const mediatorContract = new web3Home.eth.Contract(HomeAMBErc20ToNative.abi, homeBridge)
@@ -92,6 +95,7 @@ async function initialize({ homeBridge, foreignBridge }) {
       requestGasLimit: HOME_MEDIATOR_REQUEST_GAS_LIMIT,
       foreignToHomeDecimalShift,
       owner: HOME_BRIDGE_OWNER,
+      feeManager: homeFeeManager,
       blockRewardContract: BLOCK_REWARD_ADDRESS
     }
   })

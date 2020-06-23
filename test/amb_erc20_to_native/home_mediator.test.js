@@ -207,7 +207,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
   })
 
   describe('getBridgeMode', () => {
-    it('should return mediator mode and interface', async function () {
+    it('should return mediator mode and interface', async function() {
       const bridgeModeHash = '0xe177c00f' // 4 bytes of keccak256('erc-to-native-amb')
       expect(await contract.getBridgeMode()).to.be.equal(bridgeModeHash)
 
@@ -252,7 +252,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
 
     it('should not work for native coins', async () => {
       // Contract doesn't have a fallback method to accept native coins so it transfers using a self destruct contract
-      await Sacrifice.new(contract.address, { value: oneEther }).catch(() => { })
+      await Sacrifice.new(contract.address, { value: oneEther }).catch(() => {})
       expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(oneEther)
 
       await contract.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.rejected
@@ -443,7 +443,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
 
       describe('fixFailedMessage', () => {
         let transferMessageId
-        beforeEach(async function () {
+        beforeEach(async function() {
           // User transfer coins
           await contract.sendTransaction({
             from: user,
@@ -521,7 +521,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
 
       describe('fixFailedMessage with alternative receiver', () => {
         let transferMessageId
-        beforeEach(async function () {
+        beforeEach(async function() {
           // User transfer tokens
           await contract.relayTokens(user2, {
             from: user,
@@ -824,7 +824,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
       })
       it('should fix mediator imbalance', async () => {
         // force some native tokens to the contract without calling the fallback method
-        await Sacrifice.new(contract.address, { value: ether('0.1') }).catch(() => { })
+        await Sacrifice.new(contract.address, { value: ether('0.1') }).catch(() => {})
         expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ether('0.1'))
         expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
 
@@ -863,7 +863,14 @@ contract('HomeAMBErc20ToNative', async accounts => {
     let feeManager
 
     beforeEach(async () => {
-      feeManager = await FeeManager.new(owner, ether('0.01'), ether('0.02'), [owner], contract.address, blockReward.address)
+      feeManager = await FeeManager.new(
+        owner,
+        ether('0.01'),
+        ether('0.02'),
+        [owner],
+        contract.address,
+        blockReward.address
+      )
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
@@ -960,7 +967,9 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(await blockReward.mintedTotally()).to.be.bignumber.equal(value)
         expect(await blockReward.mintedForAccount(user)).to.be.bignumber.equal(ether('0.98'))
         expect(await blockReward.mintedInBlock(receipt.blockNumber)).to.be.bignumber.equal(value)
-        expect(await blockReward.mintedForAccountInBlock(user, receipt.blockNumber)).to.be.bignumber.equal(ether('0.98'))
+        expect(await blockReward.mintedForAccountInBlock(user, receipt.blockNumber)).to.be.bignumber.equal(
+          ether('0.98')
+        )
         expect(await contract.totalSupply()).to.be.bignumber.equal(value)
 
         const event = await getEvents(contract, { event: 'TokensBridged' })

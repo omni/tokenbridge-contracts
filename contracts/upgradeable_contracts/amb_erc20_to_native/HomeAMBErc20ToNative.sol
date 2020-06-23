@@ -102,7 +102,6 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, Rewar
         // this check also validates that msg.value is positive, since minPerTx() > 0
         require(withinLimit(msg.value));
 
-        IBlockReward blockReward = blockRewardContract();
         uint256 _totalSupply = totalSupply();
         require(msg.value <= _totalSupply);
 

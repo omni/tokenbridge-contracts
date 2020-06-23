@@ -18,10 +18,14 @@ contract HomeFeeManagerAMBErc20ToNative is BaseMediatorFeeManagerBothDirections 
     * @param _fee the fee percentage amount.
     * @param _rewardAccountList list of addresses that will receive the fee rewards.
     */
-    constructor(address _owner, uint256 _fee, uint256 _oppositeFee, address[] _rewardAccountList, address _mediatorContract, address _blockReward)
-        public
-        BaseMediatorFeeManagerBothDirections(_owner, _fee, _oppositeFee, _rewardAccountList, _mediatorContract)
-    {
+    constructor(
+        address _owner,
+        uint256 _fee,
+        uint256 _oppositeFee,
+        address[] _rewardAccountList,
+        address _mediatorContract,
+        address _blockReward
+    ) public BaseMediatorFeeManagerBothDirections(_owner, _fee, _oppositeFee, _rewardAccountList, _mediatorContract) {
         blockReward = _blockReward;
     }
 

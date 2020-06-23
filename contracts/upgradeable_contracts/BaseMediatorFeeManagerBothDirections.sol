@@ -20,10 +20,13 @@ contract BaseMediatorFeeManagerBothDirections is BaseMediatorFeeManager {
     * @param _oppositeFee the fee percentage amount for the opposite direction.
     * @param _rewardAccountList list of addresses that will receive the fee rewards.
     */
-    constructor(address _owner, uint256 _fee, uint256 _oppositeFee, address[] _rewardAccountList, address _mediatorContract)
-        public
-        BaseMediatorFeeManager(_owner, _fee, _rewardAccountList, _mediatorContract)
-    {
+    constructor(
+        address _owner,
+        uint256 _fee,
+        uint256 _oppositeFee,
+        address[] _rewardAccountList,
+        address _mediatorContract
+    ) public BaseMediatorFeeManager(_owner, _fee, _rewardAccountList, _mediatorContract) {
         _setOppositeFee(_oppositeFee);
     }
 

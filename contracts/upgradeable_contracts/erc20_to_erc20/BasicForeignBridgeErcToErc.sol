@@ -17,7 +17,6 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_requiredBlockConfirmations != 0);
-        require(_gasPrice > 0);
         require(
             _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
                 _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
@@ -30,7 +29,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         setErc20token(_erc20token);
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        uintStorage[GAS_PRICE] = _gasPrice;
+        _setGasPrice(_gasPrice);
         uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
@@ -41,7 +40,6 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         setInitialize();
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit GasPriceChanged(_gasPrice);
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
         emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
     }

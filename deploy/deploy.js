@@ -218,7 +218,8 @@ async function deployAMBErcToNative() {
   console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
   writeDeploymentResults({
     homeBridge: {
-      homeBridgeMediator
+      homeBridgeMediator,
+      homeFeeManager
     },
     foreignBridge: {
       foreignBridgeMediator

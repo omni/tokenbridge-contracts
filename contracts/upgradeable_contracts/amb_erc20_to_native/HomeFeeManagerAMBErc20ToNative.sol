@@ -1,56 +1,98 @@
 pragma solidity 0.4.24;
 
-import "../../interfaces/IBlockReward.sol";
-import "../../libraries/Address.sol";
-import "../BaseMediatorFeeManagerBothDirections.sol";
+import "../BaseRewardAddressList.sol";
+import "../Ownable.sol";
 
 /**
 * @title HomeFeeManagerAMBErc20ToNative
 * @dev Implements the logic to distribute fees from the erc20 to native mediator contract operations.
 * The fees are distributed in the form of native tokens to the list of reward accounts.
 */
-contract HomeFeeManagerAMBErc20ToNative is BaseMediatorFeeManagerBothDirections {
-    address public blockReward;
+contract HomeFeeManagerAMBErc20ToNative is BaseRewardAddressList, Ownable {
+    using SafeMath for uint256;
 
-    /**
-    * @dev Stores the initial parameters of the fee manager.
-    * @param _owner address of the owner of the fee manager contract.
-    * @param _fee the fee percentage amount.
-    * @param _rewardAccountList list of addresses that will receive the fee rewards.
-    */
-    constructor(
-        address _owner,
-        uint256 _fee,
-        uint256 _oppositeFee,
-        address[] _rewardAccountList,
-        address _mediatorContract,
-        address _blockReward
-    ) public BaseMediatorFeeManagerBothDirections(_owner, _fee, _oppositeFee, _rewardAccountList, _mediatorContract) {
-        blockReward = _blockReward;
+    event FeeUpdated(bytes32 feeType, uint256 fee);
+    event FeeDistributed(uint256 fee, bytes32 indexed messageId);
+
+    // This is not a real fee value but a relative value used to calculate the fee percentage
+    uint256 internal constant MAX_FEE = 1 ether;
+    bytes32 public constant HOME_TO_FOREIGN_FEE = 0x741ede137d0537e88e0ea0ff25b1f22d837903dbbee8980b4a06e8523247ee26; // keccak256(abi.encodePacked("homeToForeignFee"))
+    bytes32 public constant FOREIGN_TO_HOME_FEE = 0x03be2b2875cb41e0e77355e802a16769bb8dfcf825061cde185c73bf94f12625; // keccak256(abi.encodePacked("foreignToHomeFee"))
+
+    modifier validFee(uint256 _fee) {
+        require(_fee < MAX_FEE);
+        /* solcov ignore next */
+        _;
     }
 
-    /**
-    * @dev Fallback method to receive the fees.
-    */
-    function() public payable {
-        // solhint-disable-previous-line no-empty-blocks
+    modifier validFeeType(bytes32 _feeType) {
+        require(_feeType == HOME_TO_FOREIGN_FEE || _feeType == FOREIGN_TO_HOME_FEE);
+        /* solcov ignore next */
+        _;
     }
 
-    /**
-    * @dev Transfer the fee as native tokens to the reward account.
-    * @param _rewardAddress address that will receive the native tokens.
-    * @param _fee amount of native tokens to be distribute.
-    */
-    function onFeeDistribution(address _rewardAddress, uint256 _fee) internal {
-        if (isOppositeDirection) {
-            IBlockReward(blockReward).addExtraReceiver(_fee, _rewardAddress);
-        } else {
-            Address.safeSendValue(_rewardAddress, _fee);
+    function addRewardAddress(address _addr) external onlyOwner {
+        _addRewardAddress(_addr);
+    }
+
+    function removeRewardAddress(address _addr) external onlyOwner {
+        _removeRewardAddress(_addr);
+    }
+
+    function setFee(bytes32 _feeType, uint256 _fee) external onlyOwner {
+        _setFee(_feeType, _fee);
+    }
+
+    function getFee(bytes32 _feeType) public view validFeeType(_feeType) returns (uint256) {
+        return uintStorage[_feeType];
+    }
+
+    function calculateFee(bytes32 _feeType, uint256 _value) public view returns (uint256) {
+        uint256 _fee = getFee(_feeType);
+        return _value.mul(_fee).div(MAX_FEE);
+    }
+
+    function _setFee(bytes32 _feeType, uint256 _fee) internal validFeeType(_feeType) validFee(_fee) {
+        uintStorage[_feeType] = _fee;
+        emit FeeUpdated(_feeType, _fee);
+    }
+
+    function random(uint256 _count) internal view returns (uint256) {
+        return uint256(blockhash(block.number.sub(1))) % _count;
+    }
+
+    function _distributeFee(bytes32 _feeType, uint256 _value) internal returns (uint256) {
+        uint256 numOfAccounts = rewardAddressCount();
+        uint256 _fee = calculateFee(_feeType, _value);
+        if (numOfAccounts == 0 || _fee == 0) {
+            return 0;
         }
+        uint256 feePerAccount = _fee.div(numOfAccounts);
+        uint256 randomAccountIndex;
+        uint256 diff = _fee.sub(feePerAccount.mul(numOfAccounts));
+        if (diff > 0) {
+            randomAccountIndex = random(numOfAccounts);
+        }
+
+        address nextAddr = getNextRewardAddress(F_ADDR);
+        require(nextAddr != F_ADDR && nextAddr != address(0));
+
+        uint256 i = 0;
+        while (nextAddr != F_ADDR) {
+            uint256 feeToDistribute = feePerAccount;
+            if (diff > 0 && randomAccountIndex == i) {
+                feeToDistribute = feeToDistribute.add(diff);
+            }
+
+            onFeeDistribution(_feeType, nextAddr, feeToDistribute);
+
+            nextAddr = getNextRewardAddress(nextAddr);
+            require(nextAddr != address(0));
+            i = i + 1;
+        }
+        return _fee;
     }
 
-    function distributeOppositeFee(uint256 _fee) public {
-        require(msg.sender == mediatorContract);
-        super.distributeOppositeFee(_fee);
-    }
+    /* solcov ignore next */
+    function onFeeDistribution(bytes32 _feeType, address _receiver, uint256 _value) internal;
 }

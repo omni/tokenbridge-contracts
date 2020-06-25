@@ -1,5 +1,4 @@
 const HomeAMBErc20ToNative = artifacts.require('HomeAMBErc20ToNative.sol')
-const FeeManager = artifacts.require('HomeFeeManagerAMBErc20ToNative.sol')
 const BlockReward = artifacts.require('BlockRewardWithoutSystem.sol')
 const ForeignAMBErc20ToNative = artifacts.require('ForeignAMBErc20ToNative.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
@@ -67,7 +66,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.rejected
 
@@ -80,7 +78,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.rejected
 
@@ -93,7 +90,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.rejected
 
@@ -106,7 +102,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.rejected
 
@@ -119,7 +114,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         twoEthers,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.rejected
 
@@ -132,11 +126,10 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         ZERO_ADDRESS
       ).should.be.rejected
 
-      // invalid fee manager address
+      // invalid block reward address
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
@@ -145,8 +138,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        user,
-        ZERO_ADDRESS
+        ambBridgeContract.address
       ).should.be.rejected
 
       // not valid owner
@@ -157,7 +149,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         decimalShiftZero,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         blockReward.address
       ).should.be.rejected
@@ -170,7 +161,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.fulfilled
 
@@ -183,7 +173,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.rejected
 
@@ -206,8 +195,148 @@ contract('HomeAMBErc20ToNative', async accounts => {
     })
   })
 
+  describe('rewardableInitialize', () => {
+    it('should initialize parameters for rewardable mediator', async () => {
+      // Given
+      expect(await contract.isInitialized()).to.be.equal(false)
+      expect(await contract.bridgeContract()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.mediatorContractOnOtherSide()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.dailyLimit()).to.be.bignumber.equal(ZERO)
+      expect(await contract.maxPerTx()).to.be.bignumber.equal(ZERO)
+      expect(await contract.minPerTx()).to.be.bignumber.equal(ZERO)
+      expect(await contract.executionDailyLimit()).to.be.bignumber.equal(ZERO)
+      expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(ZERO)
+      expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
+      expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
+      expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.blockRewardContract()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.getFee(await contract.HOME_TO_FOREIGN_FEE())).to.be.bignumber.equal(ZERO)
+      expect(await contract.getFee(await contract.FOREIGN_TO_HOME_FEE())).to.be.bignumber.equal(ZERO)
+      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('0')
+      expect(await contract.isRewardAddress(owner)).to.be.equal(false)
+      await contract.getFee(exampleMessageId).should.be.rejected
+
+      // empty reward list
+      await contract.rewardableInitialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        blockReward.address,
+        [],
+        [ether('0.01'), ether('0.02')]
+      ).should.be.rejected
+
+      // too high fee
+      await contract.rewardableInitialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        blockReward.address,
+        [owner],
+        [ether('1.01'), ether('0.02')]
+      ).should.be.rejected
+
+      // too high fee
+      await contract.rewardableInitialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        blockReward.address,
+        [owner],
+        [ether('0.01'), ether('1')]
+      ).should.be.rejected
+
+      // invalid fees list
+      await contract.rewardableInitialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        blockReward.address,
+        [owner],
+        [ether('0.01')]
+      ).should.be.rejected
+
+      const { logs } = await contract.rewardableInitialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        blockReward.address,
+        [owner],
+        [ether('0.01'), ether('0.02')]
+      ).should.be.fulfilled
+
+      // already initialized
+      await contract.rewardableInitialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        blockReward.address,
+        [owner],
+        [ether('0.01'), ether('0.02')]
+      ).should.be.rejected
+
+      // already initialized
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        blockReward.address
+      ).should.be.rejected
+
+      // Then
+      expect(await contract.isInitialized()).to.be.equal(true)
+      expect(await contract.bridgeContract()).to.be.equal(ambBridgeContract.address)
+      expect(await contract.mediatorContractOnOtherSide()).to.be.equal(otherSideMediator.address)
+      expect(await contract.dailyLimit()).to.be.bignumber.equal(dailyLimit)
+      expect(await contract.maxPerTx()).to.be.bignumber.equal(maxPerTx)
+      expect(await contract.minPerTx()).to.be.bignumber.equal(minPerTx)
+      expect(await contract.executionDailyLimit()).to.be.bignumber.equal(executionDailyLimit)
+      expect(await contract.executionMaxPerTx()).to.be.bignumber.equal(executionMaxPerTx)
+      expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
+      expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
+      expect(await contract.owner()).to.be.equal(owner)
+      expect(await contract.blockRewardContract()).to.be.equal(blockReward.address)
+      expect(await contract.getFee(await contract.HOME_TO_FOREIGN_FEE())).to.be.bignumber.equal(ether('0.01'))
+      expect(await contract.getFee(await contract.FOREIGN_TO_HOME_FEE())).to.be.bignumber.equal(ether('0.02'))
+      expect(await contract.rewardAddressList()).to.be.eql([owner])
+      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('1')
+      expect(await contract.isRewardAddress(owner)).to.be.equal(true)
+
+      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })
+      expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })
+    })
+  })
+
   describe('getBridgeMode', () => {
-    it('should return mediator mode and interface', async function() {
+    it('should return mediator mode and interface', async () => {
       const bridgeModeHash = '0xe177c00f' // 4 bytes of keccak256('erc-to-native-amb')
       expect(await contract.getBridgeMode()).to.be.equal(bridgeModeHash)
 
@@ -231,7 +360,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.fulfilled
     })
@@ -271,7 +399,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        ZERO_ADDRESS,
         blockReward.address
       ).should.be.fulfilled
 
@@ -347,7 +474,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
           // Include handleBridgedTokens method selector
           expect(events[0].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
           expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
-          expect(await contract.totalSupply()).to.be.bignumber.equal(ether('9'))
+          expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('1'))
         })
 
         it('native coins amount should be inside limits ', async () => {
@@ -379,7 +506,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
             value
           }).should.be.rejected
 
-          expect(await contract.totalSupply()).to.be.bignumber.equal(ether('8'))
+          expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('2'))
         })
       })
 
@@ -404,7 +531,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
           ).to.be.equal(true)
           // Include handleBridgedTokens method selector
           expect(events[0].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
-          expect(await contract.totalSupply()).to.be.bignumber.equal(ether('9'))
+          expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('1'))
         })
         it('native coins amount should be inside limits ', async () => {
           // value > maxPerTx
@@ -424,7 +551,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
             value
           }).should.be.fulfilled
 
-          expect(await contract.totalSupply()).to.be.bignumber.equal(ether('9'))
+          expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('1'))
 
           await contract.relayTokens(user2, {
             from: user,
@@ -437,13 +564,13 @@ contract('HomeAMBErc20ToNative', async accounts => {
             value
           }).should.be.rejected
 
-          expect(await contract.totalSupply()).to.be.bignumber.equal(ether('8'))
+          expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('2'))
         })
       })
 
       describe('fixFailedMessage', () => {
         let transferMessageId
-        beforeEach(async function() {
+        beforeEach(async () => {
           // User transfer coins
           await contract.sendTransaction({
             from: user,
@@ -521,7 +648,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
 
       describe('fixFailedMessage with alternative receiver', () => {
         let transferMessageId
-        beforeEach(async function() {
+        beforeEach(async () => {
           // User transfer tokens
           await contract.relayTokens(user2, {
             from: user,
@@ -634,7 +761,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
           maxGasPerTx,
           decimalShiftTwo,
           owner,
-          ZERO_ADDRESS,
           blockReward.address
         ).should.be.fulfilled
         await blockReward.setBridgeContractAddress(contract.address)
@@ -804,7 +930,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
           maxGasPerTx,
           decimalShiftZero,
           owner,
-          ZERO_ADDRESS,
           blockReward.address
         ).should.be.fulfilled
 
@@ -820,7 +945,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
           1000000
         ).should.be.fulfilled
 
-        expect(await contract.totalSupply()).to.be.bignumber.equal(value)
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ZERO)
       })
       it('should fix mediator imbalance', async () => {
         // force some native tokens to the contract without calling the fallback method
@@ -834,7 +959,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
 
         await contract.fixMediatorBalance(user, { from: owner }).should.be.fulfilled
 
-        expect(await contract.totalSupply()).to.be.bignumber.equal(ether('0.9'))
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('0.1'))
 
         // imbalance was already fixed
         await contract.fixMediatorBalance(user, { from: owner }).should.be.rejected
@@ -860,18 +985,9 @@ contract('HomeAMBErc20ToNative', async accounts => {
   describe('fee management', () => {
     const value = oneEther
     let currentDay
-    let feeManager
 
     beforeEach(async () => {
-      feeManager = await FeeManager.new(
-        owner,
-        ether('0.01'),
-        ether('0.02'),
-        [owner],
-        contract.address,
-        blockReward.address
-      )
-      await contract.initialize(
+      await contract.rewardableInitialize(
         ambBridgeContract.address,
         otherSideMediator.address,
         [dailyLimit, maxPerTx, minPerTx],
@@ -879,8 +995,9 @@ contract('HomeAMBErc20ToNative', async accounts => {
         maxGasPerTx,
         decimalShiftZero,
         owner,
-        feeManager.address,
-        blockReward.address
+        blockReward.address,
+        [owner],
+        [ether('0.01'), ether('0.02')]
       ).should.be.fulfilled
       await blockReward.setBridgeContractAddress(contract.address).should.be.fulfilled
 
@@ -890,27 +1007,68 @@ contract('HomeAMBErc20ToNative', async accounts => {
       expect(initialEvents.length).to.be.equal(0)
     })
 
+    it('change reward addresses', async () => {
+      await contract.addRewardAddress(accounts[8], { from: user }).should.be.rejected
+      await contract.addRewardAddress(owner).should.be.rejected
+      await contract.addRewardAddress(accounts[8]).should.be.fulfilled
+
+      expect(await contract.rewardAddressList()).to.be.eql([accounts[8], owner])
+      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
+      expect(await contract.isRewardAddress(owner)).to.be.equal(true)
+      expect(await contract.isRewardAddress(accounts[8])).to.be.equal(true)
+
+      await contract.addRewardAddress(accounts[9]).should.be.fulfilled
+      expect(await contract.rewardAddressList()).to.be.eql([accounts[9], accounts[8], owner])
+      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('3')
+
+      await contract.removeRewardAddress(owner, { from: user }).should.be.rejected
+      await contract.removeRewardAddress(accounts[7]).should.be.rejected
+      await contract.removeRewardAddress(accounts[8]).should.be.fulfilled
+      await contract.removeRewardAddress(accounts[8]).should.be.rejected
+
+      expect(await contract.rewardAddressList()).to.be.eql([accounts[9], owner])
+      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
+      expect(await contract.isRewardAddress(accounts[8])).to.be.equal(false)
+
+      await contract.removeRewardAddress(owner).should.be.fulfilled
+      expect(await contract.rewardAddressList()).to.be.eql([accounts[9]])
+      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('1')
+      expect(await contract.isRewardAddress(owner)).to.be.equal(false)
+
+      await contract.removeRewardAddress(accounts[9]).should.be.fulfilled
+      expect(await contract.rewardAddressList()).to.be.eql([])
+      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('0')
+      expect(await contract.isRewardAddress(accounts[9])).to.be.equal(false)
+    })
+
     describe('update fee parameters', () => {
       it('should update fee value', async () => {
-        await feeManager.setFee(ether('0.1'), { from: user }).should.be.rejected
-        await feeManager.setFee(ether('1.1'), { from: owner }).should.be.rejected
-        await feeManager.setFee(ether('0.1'), { from: owner }).should.be.fulfilled
+        const feeType = await contract.HOME_TO_FOREIGN_FEE()
+        await contract.setFee(feeType, ether('0.1'), { from: user }).should.be.rejected
+        await contract.setFee(feeType, ether('1.1'), { from: owner }).should.be.rejected
+        const { logs } = await contract.setFee(feeType, ether('0.1'), { from: owner }).should.be.fulfilled
 
-        expect(await feeManager.fee()).to.be.bignumber.equal(ether('0.1'))
+        expectEventInLogs(logs, 'FeeUpdated')
+        expect(await contract.getFee(feeType)).to.be.bignumber.equal(ether('0.1'))
+        expect(await contract.getFee(await contract.FOREIGN_TO_HOME_FEE())).to.be.bignumber.equal(ether('0.02'))
       })
 
       it('should update opposite direction fee value', async () => {
-        await feeManager.setOppositeFee(ether('0.1'), { from: user }).should.be.rejected
-        await feeManager.setOppositeFee(ether('1.1'), { from: owner }).should.be.rejected
-        await feeManager.setOppositeFee(ether('0.1'), { from: owner }).should.be.fulfilled
+        const feeType = await contract.FOREIGN_TO_HOME_FEE()
 
-        expect(await feeManager.oppositeFee()).to.be.bignumber.equal(ether('0.1'))
+        await contract.setFee(feeType, ether('0.1'), { from: user }).should.be.rejected
+        await contract.setFee(feeType, ether('1.1'), { from: owner }).should.be.rejected
+        const { logs } = await contract.setFee(feeType, ether('0.1'), { from: owner }).should.be.fulfilled
+
+        expectEventInLogs(logs, 'FeeUpdated')
+        expect(await contract.getFee(feeType)).to.be.bignumber.equal(ether('0.1'))
+        expect(await contract.getFee(await contract.HOME_TO_FOREIGN_FEE())).to.be.bignumber.equal(ether('0.01'))
       })
     })
 
     describe('distribute fee for foreign => home direction', async () => {
       it('should collect and distribute 0% fee', async () => {
-        await feeManager.setOppositeFee(ZERO).should.be.fulfilled
+        await contract.setFee(await contract.FOREIGN_TO_HOME_FEE(), ZERO).should.be.fulfilled
 
         const data = await contract.contract.methods.handleBridgedTokens(user, value.toString()).encodeABI()
 
@@ -927,7 +1085,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(await blockReward.extraReceiversLength()).to.be.bignumber.equal('1')
         expect(await blockReward.extraReceiverByIndex(0)).to.be.equal(user)
         expect(await blockReward.extraReceiverAmount(user)).to.be.bignumber.equal(value)
-        expect(await contract.totalSupply()).to.be.bignumber.equal(value)
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ZERO)
 
         const event = await getEvents(contract, { event: 'TokensBridged' })
         expect(event.length).to.be.equal(1)
@@ -963,14 +1121,14 @@ contract('HomeAMBErc20ToNative', async accounts => {
 
         expect(await blockReward.extraReceiversLength()).to.be.bignumber.equal('0')
         expect(await blockReward.extraReceiverAmount(user)).to.be.bignumber.equal(ZERO)
-        expect(await blockReward.mintedTotallyByBridge(contract.address)).to.be.bignumber.equal(ether('0.98'))
+        expect(await blockReward.mintedTotallyByBridge(contract.address)).to.be.bignumber.equal(value)
         expect(await blockReward.mintedTotally()).to.be.bignumber.equal(value)
         expect(await blockReward.mintedForAccount(user)).to.be.bignumber.equal(ether('0.98'))
         expect(await blockReward.mintedInBlock(receipt.blockNumber)).to.be.bignumber.equal(value)
         expect(await blockReward.mintedForAccountInBlock(user, receipt.blockNumber)).to.be.bignumber.equal(
           ether('0.98')
         )
-        expect(await contract.totalSupply()).to.be.bignumber.equal(value)
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ZERO)
 
         const event = await getEvents(contract, { event: 'TokensBridged' })
         expect(event.length).to.be.equal(1)
@@ -985,7 +1143,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
 
     describe('distribute fee for home => foreign direction', async () => {
       beforeEach(async () => {
-        await feeManager.setOppositeFee(ZERO).should.be.fulfilled
+        await contract.setFee(await contract.FOREIGN_TO_HOME_FEE(), ZERO).should.be.fulfilled
 
         const data = await contract.contract.methods.handleBridgedTokens(user, value.toString()).encodeABI()
 
@@ -998,10 +1156,11 @@ contract('HomeAMBErc20ToNative', async accounts => {
         ).should.be.fulfilled
 
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
+        await blockReward.reward([], []).should.be.fulfilled
       })
 
       it('should collect and distribute 0% fee', async () => {
-        await feeManager.setFee(ZERO).should.be.fulfilled
+        await contract.setFee(await contract.HOME_TO_FOREIGN_FEE(), ZERO).should.be.fulfilled
 
         const initialRewardBalance = toBN(await web3.eth.getBalance(owner))
 
@@ -1017,7 +1176,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(events[0].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
         expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
         expect(toBN(await web3.eth.getBalance(owner))).to.be.bignumber.equal(initialRewardBalance)
-        expect(await contract.totalSupply()).to.be.bignumber.equal(ZERO)
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(value)
 
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
         expect(feeEvents.length).to.be.equal(0)
@@ -1038,7 +1197,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(events[0].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
         expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
         expect(toBN(await web3.eth.getBalance(owner))).to.be.bignumber.equal(initialRewardBalance.add(ether('0.01')))
-        expect(await contract.totalSupply()).to.be.bignumber.equal(ether('0.01'))
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('0.99'))
 
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
         expect(feeEvents.length).to.be.equal(1)

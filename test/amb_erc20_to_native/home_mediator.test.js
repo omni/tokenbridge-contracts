@@ -1139,6 +1139,43 @@ contract('HomeAMBErc20ToNative', async accounts => {
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
         expect(feeEvents.length).to.be.equal(1)
       })
+
+      it('should collect and distribute 2% fee between two reward addresses', async () => {
+        await contract.addRewardAddress(accounts[9]).should.be.fulfilled
+        expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
+
+        const data = await contract.contract.methods
+          .handleBridgedTokens(user, ether('0.100000000000000100').toString(10))
+          .encodeABI()
+
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data,
+          exampleMessageId,
+          1000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
+        expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ether('0.100000000000000100'))
+        expect(await blockReward.extraReceiversLength()).to.be.bignumber.equal('3')
+        expect(await blockReward.extraReceiverByIndex(0)).to.be.equal(accounts[9])
+        expect(await blockReward.extraReceiverByIndex(1)).to.be.equal(owner)
+        expect(await blockReward.extraReceiverByIndex(2)).to.be.equal(user)
+        const amount1 = await blockReward.extraReceiverAmount(owner)
+        const amount2 = await blockReward.extraReceiverAmount(accounts[9])
+        expect(amount1.eq(ether('0.001')) || amount1.eq(ether('0.001000000000000001'))).to.be.equal(true)
+        expect(amount2.eq(ether('0.001')) || amount2.eq(ether('0.001000000000000001'))).to.be.equal(true)
+        expect(await blockReward.mintedTotallyByBridge(contract.address)).to.be.bignumber.equal(ZERO)
+
+        await blockReward.reward([], []).should.be.fulfilled
+
+        const event = await getEvents(contract, { event: 'TokensBridged' })
+        expect(event.length).to.be.equal(1)
+
+        const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
+        expect(feeEvents.length).to.be.equal(1)
+      })
     })
 
     describe('distribute fee for home => foreign direction', async () => {
@@ -1182,7 +1219,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(feeEvents.length).to.be.equal(0)
       })
 
-      it('should collect and distribute 2% fee', async () => {
+      it('should collect and distribute 1% fee', async () => {
         const initialRewardBalance = toBN(await web3.eth.getBalance(owner))
 
         await contract.sendTransaction({
@@ -1198,6 +1235,38 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
         expect(toBN(await web3.eth.getBalance(owner))).to.be.bignumber.equal(initialRewardBalance.add(ether('0.01')))
         expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('0.99'))
+
+        const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
+        expect(feeEvents.length).to.be.equal(1)
+      })
+
+      it('should collect and distribute 1% fee between two reward addresses', async () => {
+        await contract.addRewardAddress(accounts[9]).should.be.fulfilled
+        expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
+
+        const initialBalance1 = toBN(await web3.eth.getBalance(owner))
+        const initialBalance2 = toBN(await web3.eth.getBalance(accounts[9]))
+
+        await contract.sendTransaction({
+          from: user,
+          value: ether('0.200000000000000100')
+        })
+
+        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+
+        expect(events[0].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
+        expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
+
+        const balance1 = toBN(await web3.eth.getBalance(owner))
+        const balance2 = toBN(await web3.eth.getBalance(accounts[9]))
+        expect(
+          balance1.eq(initialBalance1.add(ether('0.001'))) || 
+          balance1.eq(initialBalance1.add(ether('0.001000000000000001')))
+        ).to.be.equal(true)
+        expect(
+          balance2.eq(initialBalance2.add(ether('0.001'))) ||
+          balance2.eq(initialBalance2.add(ether('0.001000000000000001')))
+        ).to.be.equal(true)
 
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
         expect(feeEvents.length).to.be.equal(1)

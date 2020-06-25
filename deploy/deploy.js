@@ -199,13 +199,12 @@ async function deployAMBErcToNative() {
   const initializeHome = require('./src/amb_erc20_to_native/initializeHome')
   const initializeForeign = require('./src/amb_erc20_to_native/initializeForeign')
   await preDeploy()
-  const { homeBridgeMediator, homeFeeManager } = await deployHome()
+  const { homeBridgeMediator } = await deployHome()
   const { foreignBridgeMediator } = await deployForeign()
 
   await initializeHome({
     homeBridge: homeBridgeMediator.address,
-    foreignBridge: foreignBridgeMediator.address,
-    homeFeeManager: homeFeeManager.address
+    foreignBridge: foreignBridgeMediator.address
   })
 
   await initializeForeign({
@@ -218,8 +217,7 @@ async function deployAMBErcToNative() {
   console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
   writeDeploymentResults({
     homeBridge: {
-      homeBridgeMediator,
-      homeFeeManager
+      homeBridgeMediator
     },
     foreignBridge: {
       foreignBridgeMediator

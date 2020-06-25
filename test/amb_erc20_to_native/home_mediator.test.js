@@ -1260,12 +1260,12 @@ contract('HomeAMBErc20ToNative', async accounts => {
         const balance1 = toBN(await web3.eth.getBalance(owner))
         const balance2 = toBN(await web3.eth.getBalance(accounts[9]))
         expect(
-          balance1.eq(initialBalance1.add(ether('0.001'))) || 
-          balance1.eq(initialBalance1.add(ether('0.001000000000000001')))
+          balance1.eq(initialBalance1.add(ether('0.001'))) ||
+            balance1.eq(initialBalance1.add(ether('0.001000000000000001')))
         ).to.be.equal(true)
         expect(
           balance2.eq(initialBalance2.add(ether('0.001'))) ||
-          balance2.eq(initialBalance2.add(ether('0.001000000000000001')))
+            balance2.eq(initialBalance2.add(ether('0.001000000000000001')))
         ).to.be.equal(true)
 
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })

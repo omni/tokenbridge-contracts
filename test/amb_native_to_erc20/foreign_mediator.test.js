@@ -74,7 +74,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.erc20token()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.erc677token()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.feeManagerContract()).to.be.equal(ZERO_ADDRESS)
 
       // When
@@ -237,7 +237,7 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(owner)
-      expect(await contract.erc20token()).to.be.equal(token.address)
+      expect(await contract.erc677token()).to.be.equal(token.address)
       expect(await contract.feeManagerContract()).to.be.equal(feeManager.address)
 
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })

@@ -234,6 +234,12 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
         address(0).transfer(_amount);
     }
 
+    /**
+    * @dev Internal function distributing a piece of collected fee to the particular reward address.
+    * @param _feeType used fee type, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+    * @param _receiver particular reward address, where the fee should be sent/minted.
+    * @param _fee amount of fee to send/mint to given address.
+    */
     function onFeeDistribution(bytes32 _feeType, address _receiver, uint256 _fee) internal {
         if (_feeType == HOME_TO_FOREIGN_FEE) {
             Address.safeSendValue(_receiver, _fee);

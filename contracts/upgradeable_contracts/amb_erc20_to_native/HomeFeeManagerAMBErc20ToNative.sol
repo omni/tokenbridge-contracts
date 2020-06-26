@@ -19,48 +19,97 @@ contract HomeFeeManagerAMBErc20ToNative is BaseRewardAddressList, Ownable {
     bytes32 public constant HOME_TO_FOREIGN_FEE = 0x741ede137d0537e88e0ea0ff25b1f22d837903dbbee8980b4a06e8523247ee26; // keccak256(abi.encodePacked("homeToForeignFee"))
     bytes32 public constant FOREIGN_TO_HOME_FEE = 0x03be2b2875cb41e0e77355e802a16769bb8dfcf825061cde185c73bf94f12625; // keccak256(abi.encodePacked("foreignToHomeFee"))
 
+    /**
+    * @dev Throws if given fee percentage is >= 100%.
+    */
     modifier validFee(uint256 _fee) {
         require(_fee < MAX_FEE);
         /* solcov ignore next */
         _;
     }
 
+    /**
+    * @dev Throws if given fee type is unknown.
+    */
     modifier validFeeType(bytes32 _feeType) {
         require(_feeType == HOME_TO_FOREIGN_FEE || _feeType == FOREIGN_TO_HOME_FEE);
         /* solcov ignore next */
         _;
     }
 
+    /**
+    * @dev Adds a new reward address to the list, which will receive fees collected from the bridge operations.
+    * Only the owner can call this method.
+    * @param _addr new reward account.
+    */
     function addRewardAddress(address _addr) external onlyOwner {
         _addRewardAddress(_addr);
     }
 
+    /**
+    * @dev Removes a reward address from the rewards list.
+    * Only the owner can call this method.
+    * @param _addr old reward account, that should be removed.
+    */
     function removeRewardAddress(address _addr) external onlyOwner {
         _removeRewardAddress(_addr);
     }
 
+    /**
+    * @dev Updates the value for the particular fee type.
+    * Only the owner can call this method.
+    * @param _feeType type of the updated fee, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+    * @param _fee new fee value, in percentage (1 ether == 10**18 == 100%).
+    */
     function setFee(bytes32 _feeType, uint256 _fee) external onlyOwner {
         _setFee(_feeType, _fee);
     }
 
+    /**
+    * @dev Retrieves the value for the particular fee type.
+    * @param _feeType type of the updated fee, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+    * @return fee value associated with the requested fee type.
+    */
     function getFee(bytes32 _feeType) public view validFeeType(_feeType) returns (uint256) {
         return uintStorage[_feeType];
     }
 
+    /**
+    * @dev Calculates the amount of fee to pay for the value of the particular fee type.
+    * @param _feeType type of the updated fee, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+    * @param _value bridged value, for which fee should be evaluated.
+    * @return amount of fee to be subtracted from the transferred value.
+    */
     function calculateFee(bytes32 _feeType, uint256 _value) public view returns (uint256) {
         uint256 _fee = getFee(_feeType);
         return _value.mul(_fee).div(MAX_FEE);
     }
 
+    /**
+    * @dev Internal function for updating the fee value for the given fee type.
+    * @param _feeType type of the updated fee, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+    * @param _fee new fee value, in percentage (1 ether == 10**18 == 100%).
+    */
     function _setFee(bytes32 _feeType, uint256 _fee) internal validFeeType(_feeType) validFee(_fee) {
         uintStorage[_feeType] = _fee;
         emit FeeUpdated(_feeType, _fee);
     }
 
+    /**
+    * @dev Calculates a random number based on the block number.
+    * @param _count the max value for the random number.
+    * @return a number between 0 and _count.
+    */
     function random(uint256 _count) internal view returns (uint256) {
         return uint256(blockhash(block.number.sub(1))) % _count;
     }
 
+    /**
+    * @dev Calculates and distributes the amount of fee proportionally between registered reward addresses.
+    * @param _feeType type of the updated fee, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+    * @param _value bridged value, for which fee should be evaluated.
+    * @return total amount of fee subtracted from the transferred value and distributed between the reward accounts.
+    */
     function _distributeFee(bytes32 _feeType, uint256 _value) internal returns (uint256) {
         uint256 numOfAccounts = rewardAddressCount();
         uint256 _fee = calculateFee(_feeType, _value);

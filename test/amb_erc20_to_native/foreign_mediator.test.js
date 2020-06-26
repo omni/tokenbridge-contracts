@@ -55,7 +55,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.erc677token()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.erc20token()).to.be.equal(ZERO_ADDRESS)
 
       // When
       // not valid bridge address
@@ -177,7 +177,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.decimalShift()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(owner)
-      expect(await contract.erc677token()).to.be.equal(token.address)
+      expect(await contract.erc20token()).to.be.equal(token.address)
 
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { newLimit: executionDailyLimit })
       expectEventInLogs(logs, 'DailyLimitChanged', { newLimit: dailyLimit })

@@ -4,6 +4,10 @@ import "./BaseERC677Bridge.sol";
 import "./OtherSideBridgeStorage.sol";
 
 contract ERC677Bridge is BaseERC677Bridge, OtherSideBridgeStorage {
+    function erc677token() public view returns (ERC677) {
+        return _erc677token();
+    }
+
     function bridgeSpecificActionsOnTokenTransfer(
         ERC677, /*_token*/
         address _from,

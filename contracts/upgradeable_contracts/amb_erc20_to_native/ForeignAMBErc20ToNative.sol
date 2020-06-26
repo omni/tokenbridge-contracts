@@ -50,6 +50,15 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     }
 
     /**
+    * @dev Public getter for token contract.
+    * Internal _erc677token() is hidden from the end users, in order to not confuse them with the supported token standard.
+    * @return address of the used token contract
+    */
+    function erc20token() external view returns (ERC677) {
+        return _erc677token();
+    }
+
+    /**
     * @dev It will initiate the bridge operation that will lock the amount of tokens transferred and mint the native tokens on
     * the other network. The user should first call Approve method of the ERC677 token.
     * @param _from address that will transfer the tokens to be locked.
@@ -81,7 +90,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     * otherwise it will be empty.
     */
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
-        ERC677 token = erc677token();
+        ERC677 token = _erc677token();
         require(msg.sender == address(token));
         if (!lock()) {
             require(withinLimit(_value));
@@ -98,7 +107,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     * @param _to address that will receive the locked tokens on this contract.
     */
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
-        require(_token != address(erc677token()));
+        require(_token != address(_erc677token()));
         claimValues(_token, _to);
     }
 
@@ -116,7 +125,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     * @param _receiver the address that will receive the tokens on the other network
     */
     function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
-        uint256 balance = erc677token().balanceOf(address(this));
+        uint256 balance = _erc677token().balanceOf(address(this));
         require(balance > mediatorBalance());
         uint256 diff = balance.sub(mediatorBalance());
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(diff));
@@ -134,7 +143,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
         bytes32 _messageId = messageId();
 
         _setMediatorBalance(mediatorBalance().sub(valueToTransfer));
-        erc677token().transfer(_receiver, valueToTransfer);
+        _erc677token().transfer(_receiver, valueToTransfer);
         emit TokensBridged(_receiver, valueToTransfer, _messageId);
     }
 
@@ -145,7 +154,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     */
     function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
         _setMediatorBalance(mediatorBalance().sub(_value));
-        erc677token().transfer(_receiver, _value);
+        _erc677token().transfer(_receiver, _value);
     }
 
     /**
@@ -179,7 +188,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
         require(!lock());
-        ERC677 token = erc677token();
+        ERC677 token = _erc677token();
         address to = address(this);
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));

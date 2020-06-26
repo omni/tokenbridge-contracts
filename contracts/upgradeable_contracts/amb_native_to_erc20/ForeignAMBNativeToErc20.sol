@@ -53,6 +53,15 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     }
 
     /**
+    * @dev Public getter for token contract.
+    * Internal _erc677token() is hidden from the end users, in order to not confuse them with the supported token standard.
+    * @return address of the used token contract
+    */
+    function erc20token() external view returns (ERC677) {
+        return _erc677token();
+    }
+
+    /**
     * @dev Mint the amount of tokens that were bridged from the other network.
     * If configured, it calculates, subtract and distribute the fees among the reward accounts.
     * @param _receiver address that will receive the tokens
@@ -71,7 +80,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
             }
         }
 
-        IBurnableMintableERC677Token(erc677token()).mint(_receiver, valueToMint);
+        IBurnableMintableERC677Token(_erc677token()).mint(_receiver, valueToMint);
         emit TokensBridged(_receiver, valueToMint, _messageId);
     }
 
@@ -81,7 +90,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     * @param _value amount of tokens to be received
     */
     function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
-        IBurnableMintableERC677Token(erc677token()).mint(_receiver, _value);
+        IBurnableMintableERC677Token(_erc677token()).mint(_receiver, _value);
     }
 
     /**
@@ -109,7 +118,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
         require(!lock());
-        ERC677 token = erc677token();
+        ERC677 token = _erc677token();
         address to = address(this);
         require(withinLimit(_value));
         setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
@@ -140,7 +149,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     * otherwise it will be empty.
     */
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external bridgeMessageAllowed returns (bool) {
-        ERC677 token = erc677token();
+        ERC677 token = _erc677token();
         require(msg.sender == address(token));
         if (!lock()) {
             require(withinLimit(_value));
@@ -171,7 +180,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     * @param _fee amount of tokens to be minted.
     */
     function onFeeDistribution(address _feeManager, uint256 _fee) internal {
-        IBurnableMintableERC677Token(erc677token()).mint(_feeManager, _fee);
+        IBurnableMintableERC677Token(_erc677token()).mint(_feeManager, _fee);
     }
 
     /**
@@ -180,7 +189,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     * @param _to address that will receive the locked tokens on this contract.
     */
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
-        IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
+        IBurnableMintableERC677Token(_erc677token()).claimTokens(_token, _to);
     }
 
     /**

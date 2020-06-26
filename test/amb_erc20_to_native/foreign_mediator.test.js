@@ -294,6 +294,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(halfEther)
       })
 
       it('should be able to specify a different receiver', async () => {
@@ -308,6 +309,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(halfEther)
       })
     })
     describe('relayTokens', () => {
@@ -413,6 +415,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
         await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
 
         // can't be called by user
         await contract.handleBridgedTokens(user, value, { from: user }).should.be.rejected
@@ -439,6 +442,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
 
         // Then
         expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(value)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(value)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
 
@@ -467,6 +471,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
         await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
 
         const valueOnForeign = toBN('1000')
         const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
@@ -486,6 +491,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         // Then
         expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(valueOnHome)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(valueOnForeign)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers.sub(valueOnForeign))
 
         const event = await getEvents(contract, { event: 'TokensBridged' })
         expect(event.length).to.be.equal(1)
@@ -498,6 +504,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
         await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
 
         // Given
         const outOfLimitValueData = await contract.contract.methods
@@ -631,6 +638,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       beforeEach(async function() {
         // User transfer tokens
         await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(value)
 
         expect(await token.balanceOf(user)).to.be.bignumber.equal(value)
 
@@ -669,6 +677,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         // Then
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(ZERO)
         expect(await contract.messageFixed(transferMessageId)).to.be.equal(true)
 
         const event = await getEvents(contract, { event: 'FailedMessageFixed' })
@@ -688,6 +697,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
 
         expect(await ambBridgeContract.messageCallStatus(otherMessageId)).to.be.equal(false)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(ZERO)
       })
 
       it('should be called by amb bridge', async () => {
@@ -700,6 +710,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       beforeEach(async function() {
         // User transfer tokens
         await token.transferAndCall(contract.address, value, user2, { from: user }).should.be.fulfilled
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(value)
 
         expect(await token.balanceOf(user)).to.be.bignumber.equal(value)
 
@@ -726,6 +737,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         // Then
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+        expect(await contract.mediatorBalance()).to.be.bignumber.equal(ZERO)
         expect(await contract.messageFixed(transferMessageId)).to.be.equal(true)
 
         const event = await getEvents(contract, { event: 'FailedMessageFixed' })
@@ -734,6 +746,57 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         expect(event[0].returnValues.recipient).to.be.equal(user)
         expect(event[0].returnValues.value).to.be.equal(value.toString())
       })
+    })
+  })
+  describe('fixMediatorBalance', () => {
+    let currentDay
+    beforeEach(async () => {
+      const storageProxy = await EternalStorageProxy.new()
+      await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
+      contract = await ForeignAMBErc20ToNative.at(storageProxy.address)
+
+      await token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      await token.mint(contract.address, twoEthers, { from: owner }).should.be.fulfilled
+
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        token.address
+      ).should.be.fulfilled
+
+      currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(initialEvents.length).to.be.equal(0)
+    })
+
+    it('should allow to fix extra mediator balance', async () => {
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
+
+      await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
+
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(halfEther)
+      expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+      let events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+
+      await contract.fixMediatorBalance(owner, { from: user }).should.be.rejected
+      await contract.fixMediatorBalance(owner, { from: owner }).should.be.fulfilled
+      await contract.fixMediatorBalance(owner, { from: owner }).should.be.rejected
+
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers.add(halfEther))
+      expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
+
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(2)
     })
   })
 })

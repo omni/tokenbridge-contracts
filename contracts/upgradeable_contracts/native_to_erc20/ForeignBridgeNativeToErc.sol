@@ -95,7 +95,6 @@ contract ForeignBridgeNativeToErc is
                 _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
         );
         require(_requiredBlockConfirmations > 0);
-        require(_foreignGasPrice > 0);
         require(_homeDailyLimitHomeMaxPerTxArray[1] < _homeDailyLimitHomeMaxPerTxArray[0]); // _homeMaxPerTx < _homeDailyLimit
         require(_owner != address(0));
 
@@ -105,7 +104,7 @@ contract ForeignBridgeNativeToErc is
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[GAS_PRICE] = _foreignGasPrice;
+        _setGasPrice(_foreignGasPrice);
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
@@ -114,7 +113,6 @@ contract ForeignBridgeNativeToErc is
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit GasPriceChanged(_foreignGasPrice);
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
         emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
     }

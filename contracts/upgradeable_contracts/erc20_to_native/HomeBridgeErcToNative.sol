@@ -146,7 +146,7 @@ contract HomeBridgeErcToNative is
         uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[GAS_PRICE] = _homeGasPrice;
+        _setGasPrice(_homeGasPrice);
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         addressStorage[BLOCK_REWARD_CONTRACT] = _blockReward;
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxArray[0];
@@ -155,7 +155,6 @@ contract HomeBridgeErcToNative is
         setOwner(_owner);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit GasPriceChanged(_homeGasPrice);
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
         emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxArray[0]);
     }

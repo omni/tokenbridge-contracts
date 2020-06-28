@@ -128,17 +128,6 @@ contract('HomeAMB', async accounts => {
         )
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge
-        .initialize(
-          HOME_CHAIN_ID_HEX,
-          FOREIGN_CHAIN_ID_HEX,
-          validatorContract.address,
-          oneEther,
-          0,
-          requiredBlockConfirmations,
-          owner
-        )
-        .should.be.rejectedWith(ERROR_MSG)
-      await homeBridge
         .initialize(HOME_CHAIN_ID_HEX, FOREIGN_CHAIN_ID_HEX, validatorContract.address, oneEther, gasPrice, 0, owner)
         .should.be.rejectedWith(ERROR_MSG)
       await homeBridge.initialize(
@@ -146,7 +135,7 @@ contract('HomeAMB', async accounts => {
         FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
         oneEther,
-        gasPrice,
+        0,
         requiredBlockConfirmations,
         owner
       ).should.be.fulfilled
@@ -172,7 +161,7 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.gasPrice()).to.be.bignumber.equal(gasPrice)
       expect(await homeBridge.requiredBlockConfirmations()).to.be.bignumber.equal(toBN(requiredBlockConfirmations))
 
-      await homeBridge.setGasPrice(0).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.setGasPrice(0).should.be.fulfilled
       await homeBridge.setRequiredBlockConfirmations(0).should.be.rejectedWith(ERROR_MSG)
 
       await homeBridge.setMaxGasPerTx(twoEther).should.be.fulfilled

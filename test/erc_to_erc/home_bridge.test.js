@@ -6,7 +6,7 @@ const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const ERC677BridgeTokenRewardable = artifacts.require('ERC677BridgeTokenRewardable.sol')
 const FeeManagerErcToErcPOSDAO = artifacts.require('FeeManagerErcToErcPOSDAO.sol')
 const RewardableValidators = artifacts.require('RewardableValidators.sol')
-const BlockReward = artifacts.require('BlockReward')
+const BlockReward = artifacts.require('BlockRewardMock.sol')
 const OldBlockReward = artifacts.require('OldBlockReward')
 
 const { expect } = require('chai')

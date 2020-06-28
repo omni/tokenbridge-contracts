@@ -19,6 +19,14 @@ contract RewardableMediator is Ownable {
     * @param _feeManager the address of the fee manager contract.
     */
     function setFeeManagerContract(address _feeManager) external onlyOwner {
+        _setFeeManagerContract(_feeManager);
+    }
+
+    /**
+    * @dev Internal function for enabling new / disabling fee manage contract.
+    * @param _feeManager the address of the fee manager contract.
+    */
+    function _setFeeManagerContract(address _feeManager) internal {
         require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
     }

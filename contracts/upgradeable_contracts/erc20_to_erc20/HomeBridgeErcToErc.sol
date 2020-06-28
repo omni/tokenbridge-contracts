@@ -122,7 +122,7 @@ contract HomeBridgeErcToErc is
         uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[GAS_PRICE] = _homeGasPrice;
+        _setGasPrice(_homeGasPrice);
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignDailyLimitForeignMaxPerTxArray[1];
@@ -131,7 +131,6 @@ contract HomeBridgeErcToErc is
         setErc677token(_erc677token);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit GasPriceChanged(_homeGasPrice);
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
         emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxArray[0]);
     }

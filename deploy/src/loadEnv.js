@@ -18,7 +18,8 @@ const validBridgeModes = [
   'ARBITRARY_MESSAGE',
   'AMB_ERC_TO_ERC',
   'STAKE_AMB_ERC_TO_ERC',
-  'AMB_NATIVE_TO_ERC'
+  'AMB_NATIVE_TO_ERC',
+  'AMB_ERC_TO_NATIVE',
 ]
 const validRewardModes = ['false', 'ONE_DIRECTION', 'BOTH_DIRECTIONS']
 const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
@@ -129,12 +130,18 @@ if (BRIDGE_MODE.includes('AMB_')) {
     FOREIGN_AMB_BRIDGE: addressValidator(),
     HOME_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
     FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
-    BRIDGEABLE_TOKEN_NAME: envalid.str(),
-    BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
-    BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
     FOREIGN_DAILY_LIMIT: bigNumValidator(),
-    DEPLOY_REWARDABLE_TOKEN: envalid.bool({ default: false })
+  }
+
+  if (BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE') {
+    validations = {
+      ...validations,
+      BRIDGEABLE_TOKEN_NAME: envalid.str(),
+      BRIDGEABLE_TOKEN_SYMBOL: envalid.str(),
+      BRIDGEABLE_TOKEN_DECIMALS: envalid.num(),
+      DEPLOY_REWARDABLE_TOKEN: envalid.bool({ default: false })
+    }
   }
 
   if (DEPLOY_REWARDABLE_TOKEN === 'true') {
@@ -219,7 +226,7 @@ if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
             default: ZERO_ADDRESS
           })
         }
-      } else {
+      } else if (BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE') {
         validations = {
           ...validations,
           VALIDATORS_REWARD_ACCOUNTS: addressesValidator()
@@ -286,6 +293,17 @@ if (BRIDGE_MODE === 'ERC_TO_NATIVE') {
       ...validations,
       FOREIGN_INTEREST_RECEIVER_OWNER: addressValidator()
     }
+  }
+}
+
+if (BRIDGE_MODE === 'AMB_ERC_TO_NATIVE') {
+  validations = {
+    ...validations,
+    ERC20_TOKEN_ADDRESS: addressValidator(),
+    BLOCK_REWARD_ADDRESS: addressValidator({
+      default: ZERO_ADDRESS
+    }),
+    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator()
   }
 }
 
@@ -362,7 +380,7 @@ if (env.BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (env.BRIDGE_MODE === 'AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC') {
+if (env.BRIDGE_MODE === 'AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'AMB_ERC_TO_NATIVE') {
   checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
 }
 
@@ -374,6 +392,25 @@ if (env.BRIDGE_MODE === 'AMB_NATIVE_TO_ERC') {
 
   if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS') {
     throw new Error(`HOME_REWARDABLE: ${env.HOME_REWARDABLE} is not supported on ${env.BRIDGE_MODE} bridge mode.`)
+  }
+}
+
+if (env.BRIDGE_MODE === 'AMB_ERC_TO_NATIVE') {
+  if (HOME_REWARDABLE === 'ONE_DIRECTION') {
+    throw new Error(
+      `Only BOTH_DIRECTIONS is supported for collecting fees on Home Network on ${BRIDGE_MODE} bridge mode.`
+    )
+  }
+
+  if (FOREIGN_REWARDABLE !== 'false') {
+    throw new Error(`Collecting fees on Foreign Network on ${BRIDGE_MODE} bridge mode is not supported.`)
+  }
+
+  if (HOME_REWARDABLE === 'BOTH_DIRECTIONS') {
+    validations = {
+      ...validations,
+      HOME_MEDIATOR_REWARD_ACCOUNTS: addressesValidator()
+    }
   }
 }
 

@@ -5,20 +5,12 @@ import "../Upgradeable.sol";
 import "../Claimable.sol";
 import "../VersionableBridge.sol";
 import "../TokenBridgeMediator.sol";
-import "../RewardableMediator.sol";
 
 /**
-* @title BasicAMBNativeToErc20
-* @dev Common mediator functionality for native-to-erc20 bridge intended to work on top of AMB bridge.
+* @title BasicAMBErc20ToNative
+* @dev Common mediator functionality for erc20-to-native bridge intended to work on top of AMB bridge.
 */
-contract BasicAMBNativeToErc20 is
-    Initializable,
-    Upgradeable,
-    Claimable,
-    VersionableBridge,
-    TokenBridgeMediator,
-    RewardableMediator
-{
+contract BasicAMBErc20ToNative is Initializable, Upgradeable, Claimable, VersionableBridge, TokenBridgeMediator {
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -30,7 +22,6 @@ contract BasicAMBNativeToErc20 is
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _decimalShift number of decimals shift required to adjust the amount of tokens bridged.
     * @param _owner address of the owner of the mediator contract
-    * @param _feeManager address of the fee manager contract
     */
     function _initialize(
         address _bridgeContract,
@@ -39,8 +30,7 @@ contract BasicAMBNativeToErc20 is
         uint256[] _executionDailyLimitExecutionMaxPerTxArray,
         uint256 _requestGasLimit,
         uint256 _decimalShift,
-        address _owner,
-        address _feeManager
+        address _owner
     ) internal {
         require(!isInitialized());
         require(
@@ -60,7 +50,6 @@ contract BasicAMBNativeToErc20 is
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
         uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        _setFeeManagerContract(_feeManager);
         setOwner(_owner);
 
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
@@ -74,7 +63,7 @@ contract BasicAMBNativeToErc20 is
     * @return patch value of the version
     */
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 0, 1);
+        return (1, 0, 0);
     }
 
     /**
@@ -82,7 +71,7 @@ contract BasicAMBNativeToErc20 is
     * @return _data 4 bytes representing the bridge mode
     */
     function getBridgeMode() external pure returns (bytes4 _data) {
-        return 0x582ed8fd; // bytes4(keccak256(abi.encodePacked("native-to-erc-amb")))
+        return 0xe177c00f; // bytes4(keccak256(abi.encodePacked("erc-to-native-amb")))
     }
 
     /**
@@ -93,14 +82,5 @@ contract BasicAMBNativeToErc20 is
         uint256 /* _value */
     ) internal {
         revert();
-    }
-
-    /**
-    * @dev Allows to transfer any locked token on this contract that is not part of the bridge operations.
-    * @param _token address of the token, if it is not provided, native tokens will be transferred.
-    * @param _to address that will receive the locked tokens on this contract.
-    */
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
-        claimValues(_token, _to);
     }
 }

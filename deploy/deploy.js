@@ -6,6 +6,11 @@ const { BRIDGE_MODE, ERC20_TOKEN_ADDRESS } = env
 
 const deployResultsPath = path.join(__dirname, './bridgeDeploymentResults.json')
 
+function writeDeploymentResults(data) {
+  fs.writeFileSync(deployResultsPath, JSON.stringify(data, null, 4))
+  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+}
+
 async function deployNativeToErc() {
   const preDeploy = require('./src/native_to_erc/preDeploy')
   const deployHome = require('./src/native_to_erc/home')
@@ -17,23 +22,15 @@ async function deployNativeToErc() {
   console.log(`[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ERC677 Bridgeable Token: ${erc677.address}`)
-  fs.writeFileSync(
-    deployResultsPath,
-    JSON.stringify(
-      {
-        homeBridge: {
-          ...homeBridge
-        },
-        foreignBridge: {
-          ...foreignBridge,
-          erc677
-        }
-      },
-      null,
-      4
-    )
-  )
-  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+  writeDeploymentResults({
+    homeBridge: {
+      ...homeBridge
+    },
+    foreignBridge: {
+      ...foreignBridge,
+      erc677
+    }
+  })
 }
 
 async function deployErcToErc() {
@@ -48,23 +45,15 @@ async function deployErcToErc() {
   console.log(`[   Home  ] ERC677 Bridgeable Token: ${erc677.address}`)
   console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ERC20 Token: ${ERC20_TOKEN_ADDRESS}`)
-  fs.writeFileSync(
-    deployResultsPath,
-    JSON.stringify(
-      {
-        homeBridge: {
-          ...homeBridge,
-          erc677
-        },
-        foreignBridge: {
-          ...foreignBridge
-        }
-      },
-      null,
-      4
-    )
-  )
-  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+  writeDeploymentResults({
+    homeBridge: {
+      ...homeBridge,
+      erc677
+    },
+    foreignBridge: {
+      ...foreignBridge
+    }
+  })
 }
 
 async function deployErcToNative() {
@@ -77,22 +66,14 @@ async function deployErcToNative() {
   console.log('\nDeployment has been completed.\n\n')
   console.log(`[ Home ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
-  fs.writeFileSync(
-    deployResultsPath,
-    JSON.stringify(
-      {
-        homeBridge: {
-          ...homeBridge
-        },
-        foreignBridge: {
-          ...foreignBridge
-        }
-      },
-      null,
-      4
-    )
-  )
-  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+  writeDeploymentResults({
+    homeBridge: {
+      ...homeBridge
+    },
+    foreignBridge: {
+      ...foreignBridge
+    }
+  })
 }
 
 async function deployArbitraryMessage() {
@@ -104,22 +85,14 @@ async function deployArbitraryMessage() {
   console.log('\nDeployment has been completed.\n\n')
   console.log(`[   Home  ] HomeBridge: ${homeBridge.address} at block ${homeBridge.deployedBlockNumber}`)
   console.log(`[ Foreign ] ForeignBridge: ${foreignBridge.address} at block ${foreignBridge.deployedBlockNumber}`)
-  fs.writeFileSync(
-    deployResultsPath,
-    JSON.stringify(
-      {
-        homeBridge: {
-          ...homeBridge
-        },
-        foreignBridge: {
-          ...foreignBridge
-        }
-      },
-      null,
-      4
-    )
-  )
-  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+  writeDeploymentResults({
+    homeBridge: {
+      ...homeBridge
+    },
+    foreignBridge: {
+      ...foreignBridge
+    }
+  })
 }
 
 async function deployAMBErcToErc() {
@@ -140,23 +113,15 @@ async function deployAMBErcToErc() {
   console.log(`[   Home  ] ERC677 Bridgeable Token: ${bridgeableErc677.address}`)
   console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
   console.log(`[ Foreign ] ERC677 Token: ${ERC20_TOKEN_ADDRESS}`)
-  fs.writeFileSync(
-    deployResultsPath,
-    JSON.stringify(
-      {
-        homeBridge: {
-          homeBridgeMediator,
-          bridgeableErc677
-        },
-        foreignBridge: {
-          foreignBridgeMediator
-        }
-      },
-      null,
-      4
-    )
-  )
-  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+  writeDeploymentResults({
+    homeBridge: {
+      homeBridgeMediator,
+      bridgeableErc677
+    },
+    foreignBridge: {
+      foreignBridgeMediator
+    }
+  })
 }
 
 async function deployStakeAMBErcToErc() {
@@ -171,22 +136,14 @@ async function deployStakeAMBErcToErc() {
   console.log('\nDeployment has been completed.\n\n')
   console.log(`[   Home  ] Bridge Mediator: ${homeBridgeMediator.address}`)
   console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
-  fs.writeFileSync(
-    deployResultsPath,
-    JSON.stringify(
-      {
-        homeBridge: {
-          homeBridgeMediator
-        },
-        foreignBridge: {
-          foreignBridgeMediator
-        }
-      },
-      null,
-      4
-    )
-  )
-  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+  writeDeploymentResults({
+    homeBridge: {
+      homeBridgeMediator
+    },
+    foreignBridge: {
+      foreignBridgeMediator
+    }
+  })
 }
 
 async function deployAMBNativeToErc() {
@@ -214,7 +171,7 @@ async function deployAMBNativeToErc() {
 
   console.log('\nDeployment has been completed.\n\n')
   console.log(`[   Home  ] Bridge Mediator: ${homeBridgeMediator.address}`)
-  if (foreignFeeManager.address) {
+  if (homeFeeManager.address) {
     console.log(`[   Home  ] Fee Manager: ${homeFeeManager.address}`)
   }
   console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
@@ -222,25 +179,50 @@ async function deployAMBNativeToErc() {
     console.log(`[ Foreign ] Fee Manager: ${foreignFeeManager.address}`)
   }
   console.log(`[ Foreign ] ERC677 Token: ${bridgeableErc677.address}`)
-  fs.writeFileSync(
-    deployResultsPath,
-    JSON.stringify(
-      {
-        homeBridge: {
-          homeBridgeMediator,
-          homeFeeManager
-        },
-        foreignBridge: {
-          foreignBridgeMediator,
-          foreignFeeManager,
-          bridgeableErc677
-        }
-      },
-      null,
-      4
-    )
-  )
-  console.log('Contracts Deployment have been saved to `bridgeDeploymentResults.json`')
+  writeDeploymentResults({
+    homeBridge: {
+      homeBridgeMediator,
+      homeFeeManager
+    },
+    foreignBridge: {
+      foreignBridgeMediator,
+      foreignFeeManager,
+      bridgeableErc677
+    }
+  })
+}
+
+async function deployAMBErcToNative() {
+  const preDeploy = require('./src/amb_erc20_to_native/preDeploy')
+  const deployHome = require('./src/amb_erc20_to_native/home')
+  const deployForeign = require('./src/amb_erc20_to_native/foreign')
+  const initializeHome = require('./src/amb_erc20_to_native/initializeHome')
+  const initializeForeign = require('./src/amb_erc20_to_native/initializeForeign')
+  await preDeploy()
+  const { homeBridgeMediator } = await deployHome()
+  const { foreignBridgeMediator } = await deployForeign()
+
+  await initializeHome({
+    homeBridge: homeBridgeMediator.address,
+    foreignBridge: foreignBridgeMediator.address
+  })
+
+  await initializeForeign({
+    foreignBridge: foreignBridgeMediator.address,
+    homeBridge: homeBridgeMediator.address
+  })
+
+  console.log('\nDeployment has been completed.\n\n')
+  console.log(`[   Home  ] Bridge Mediator: ${homeBridgeMediator.address}`)
+  console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
+  writeDeploymentResults({
+    homeBridge: {
+      homeBridgeMediator
+    },
+    foreignBridge: {
+      foreignBridgeMediator
+    }
+  })
 }
 
 async function main() {
@@ -266,6 +248,9 @@ async function main() {
       break
     case 'AMB_NATIVE_TO_ERC':
       await deployAMBNativeToErc()
+      break
+    case 'AMB_ERC_TO_NATIVE':
+      await deployAMBErcToNative()
       break
     default:
       console.log(BRIDGE_MODE)

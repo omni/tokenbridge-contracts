@@ -62,6 +62,14 @@ contract BasicAMBErc677ToErc677 is
         return isInitialized();
     }
 
+    /**
+    * @dev Public getter for token contract.
+    * @return address of the used token contract
+    */
+    function erc677token() public view returns (ERC677) {
+        return _erc677token();
+    }
+
     function bridgeContractOnOtherSide() internal view returns (address) {
         return mediatorContractOnOtherSide();
     }

@@ -62,8 +62,8 @@ async function initializeBridge({ validatorsBridge, bridge, nonce, homeBridgeAdd
       ERC20_TOKEN_ADDRESS,
       FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
       FOREIGN_GAS_PRICE,
-      [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
-      [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
+      [FOREIGN_DAILY_LIMIT.toString(), FOREIGN_MAX_AMOUNT_PER_TX.toString(), FOREIGN_MIN_AMOUNT_PER_TX.toString()],
+      [HOME_DAILY_LIMIT.toString(), HOME_MAX_AMOUNT_PER_TX.toString()],
       FOREIGN_BRIDGE_OWNER,
       foreignToHomeDecimalShift,
       homeBridgeAddress

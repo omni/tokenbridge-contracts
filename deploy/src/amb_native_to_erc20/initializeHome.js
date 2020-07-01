@@ -61,8 +61,8 @@ async function initializeMediator({
     .initialize(
       bridgeContract,
       mediatorContract,
-      [dailyLimit, maxPerTx, minPerTx],
-      [executionDailyLimit, executionMaxPerTx],
+      [dailyLimit.toString(), maxPerTx.toString(), minPerTx.toString()],
+      [executionDailyLimit.toString(), executionMaxPerTx.toString()],
       requestGasLimit,
       foreignToHomeDecimalShift,
       owner,

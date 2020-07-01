@@ -62,8 +62,8 @@ async function initializeMediator({
     .initialize(
       bridgeContract,
       mediatorContract,
-      [FOREIGN_DAILY_LIMIT.toString(10), FOREIGN_MAX_AMOUNT_PER_TX.toString(10), FOREIGN_MIN_AMOUNT_PER_TX.toString(10)],
-      [HOME_DAILY_LIMIT.toString(10), HOME_MAX_AMOUNT_PER_TX.toString(10)],
+      [FOREIGN_DAILY_LIMIT.toString(), FOREIGN_MAX_AMOUNT_PER_TX.toString(), FOREIGN_MIN_AMOUNT_PER_TX.toString()],
+      [HOME_DAILY_LIMIT.toString(), HOME_MAX_AMOUNT_PER_TX.toString()],
       requestGasLimit,
       foreignToHomeDecimalShift,
       owner,

@@ -68,8 +68,8 @@ async function initializeMediator({
     .initialize(
       bridgeContract,
       mediatorContract,
-      [HOME_DAILY_LIMIT.toString(10), HOME_MAX_AMOUNT_PER_TX.toString(10), HOME_MIN_AMOUNT_PER_TX.toString(10)],
-      [FOREIGN_DAILY_LIMIT.toString(10), FOREIGN_MAX_AMOUNT_PER_TX.toString(10)],
+      [HOME_DAILY_LIMIT.toString(), HOME_MAX_AMOUNT_PER_TX.toString(), HOME_MIN_AMOUNT_PER_TX.toString()],
+      [FOREIGN_DAILY_LIMIT.toString(), FOREIGN_MAX_AMOUNT_PER_TX.toString()],
       requestGasLimit,
       foreignToHomeDecimalShift,
       owner,
@@ -118,14 +118,14 @@ async function rewardableInitializeMediator({
     .rewardableInitialize(
       bridgeContract,
       mediatorContract,
-      [HOME_DAILY_LIMIT.toString(10), HOME_MAX_AMOUNT_PER_TX.toString(10), HOME_MIN_AMOUNT_PER_TX.toString(10)],
-      [FOREIGN_DAILY_LIMIT.toString(10), FOREIGN_MAX_AMOUNT_PER_TX.toString(10)],
+      [HOME_DAILY_LIMIT.toString(), HOME_MAX_AMOUNT_PER_TX.toString(), HOME_MIN_AMOUNT_PER_TX.toString()],
+      [FOREIGN_DAILY_LIMIT.toString(), FOREIGN_MAX_AMOUNT_PER_TX.toString()],
       requestGasLimit,
       foreignToHomeDecimalShift,
       owner,
       blockRewardContract,
       rewardAddressList,
-      [homeToForeignFee.toString(10), foreignToHomeFee.toString()]
+      [homeToForeignFee.toString(), foreignToHomeFee.toString()]
     )
     .encodeABI()
 }

@@ -2,6 +2,9 @@ const assert = require('assert')
 const Web3Utils = require('web3-utils')
 
 const env = require('../loadEnv')
+
+const { ZERO_ADDRESS } = require('../constants')
+
 const {
   deployContract,
   privateKeyToAddress,
@@ -27,7 +30,9 @@ const {
   HOME_VALIDATORS_OWNER,
   HOME_UPGRADEABLE_ADMIN,
   HOME_MAX_AMOUNT_PER_TX,
-  HOME_REQUIRED_BLOCK_CONFIRMATIONS
+  HOME_REQUIRED_BLOCK_CONFIRMATIONS,
+  HOME_VALIDATORS_IMPL,
+  HOME_BRIDGE_IMPL
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -86,13 +91,19 @@ async function deployHome() {
   console.log('[Home] BridgeValidators Storage: ', storageValidatorsHome.options.address)
   nonce++
 
-  console.log('\ndeploying implementation for home validators')
-  const bridgeValidatorsHome = await deployContract(BridgeValidators, [], {
-    from: DEPLOYMENT_ACCOUNT_ADDRESS,
-    nonce
-  })
+  let bridgeValidatorsHome
+  if (HOME_VALIDATORS_IMPL === ZERO_ADDRESS) {
+    console.log('\ndeploying implementation for home validators\n')
+    bridgeValidatorsHome = await deployContract(BridgeValidators, [], {
+      from: DEPLOYMENT_ACCOUNT_ADDRESS,
+      nonce
+    })
+    nonce++
+  } else {
+    console.log('\nusing existing implementation for home validators\n')
+    bridgeValidatorsHome = new web3Home.eth.Contract(BridgeValidators.abi, HOME_VALIDATORS_IMPL)
+  }
   console.log('[Home] BridgeValidators Implementation: ', bridgeValidatorsHome.options.address)
-  nonce++
 
   console.log('\nhooking up eternal storage to BridgeValidators')
   await upgradeProxy({
@@ -135,12 +146,18 @@ async function deployHome() {
   nonce++
   console.log('[Home] HomeAMBridge Storage: ', homeBridgeStorage.options.address)
 
-  console.log('\ndeploying HomeAMBridge implementation\n')
-  const homeBridgeImplementation = await deployContract(HomeBridge, [], {
-    from: DEPLOYMENT_ACCOUNT_ADDRESS,
-    nonce
-  })
-  nonce++
+  let homeBridgeImplementation
+  if (HOME_BRIDGE_IMPL === ZERO_ADDRESS) {
+    console.log('\ndeploying HomeAMBridge implementation\n')
+    homeBridgeImplementation = await deployContract(HomeBridge, [], {
+      from: DEPLOYMENT_ACCOUNT_ADDRESS,
+      nonce
+    })
+    nonce++
+  } else {
+    console.log('\nusing HomeAMBridge implementation\n')
+    homeBridgeImplementation = new web3Home.eth.Contract(HomeBridge.abi, HOME_BRIDGE_IMPL)
+  }
   console.log('[Home] HomeAMBridge Implementation: ', homeBridgeImplementation.options.address)
 
   console.log('\nhooking up HomeAMBridge storage to HomeAMBridge implementation')

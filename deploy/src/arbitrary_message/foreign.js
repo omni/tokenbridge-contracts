@@ -2,6 +2,8 @@ const assert = require('assert')
 const Web3Utils = require('web3-utils')
 const env = require('../loadEnv')
 
+const { ZERO_ADDRESS } = require('../constants')
+
 const {
   deployContract,
   privateKeyToAddress,
@@ -27,7 +29,9 @@ const {
   FOREIGN_VALIDATORS_OWNER,
   FOREIGN_UPGRADEABLE_ADMIN,
   FOREIGN_MAX_AMOUNT_PER_TX,
-  FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
+  FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
+  FOREIGN_VALIDATORS_IMPL,
+  FOREIGN_BRIDGE_IMPL
 } = env
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -87,13 +91,19 @@ async function deployForeign() {
   nonce++
   console.log('[Foreign] BridgeValidators Storage: ', storageValidatorsForeign.options.address)
 
-  console.log('\ndeploying implementation for foreign validators')
-  const bridgeValidatorsForeign = await deployContract(BridgeValidators, [], {
-    from: DEPLOYMENT_ACCOUNT_ADDRESS,
-    network: 'foreign',
-    nonce
-  })
-  nonce++
+  let bridgeValidatorsForeign
+  if (FOREIGN_VALIDATORS_IMPL === ZERO_ADDRESS) {
+  console.log('\ndeploying implementation for foreign validators\n')
+    const bridgeValidatorsForeign = await deployContract(BridgeValidators, [], {
+      from: DEPLOYMENT_ACCOUNT_ADDRESS,
+      network: 'foreign',
+      nonce
+    })
+    nonce++
+  } else {
+    console.log('\nusing existing implementation for foreign validators\n')
+    bridgeValidatorsForeign = new web3Home.eth.Contract(BridgeValidators.abi, FOREIGN_VALIDATORS_IMPL)
+  }
   console.log('[Foreign] BridgeValidators Implementation: ', bridgeValidatorsForeign.options.address)
 
   console.log('\nhooking up eternal storage to BridgeValidators')
@@ -138,13 +148,20 @@ async function deployForeign() {
   nonce++
   console.log('[Foreign] ForeignAMBridge Storage: ', foreignBridgeStorage.options.address)
 
-  console.log('\ndeploying ForeignAMBridge implementation\n')
-  const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
-    from: DEPLOYMENT_ACCOUNT_ADDRESS,
-    network: 'foreign',
-    nonce
-  })
-  nonce++
+
+  let foreignBridgeImplementation
+  if (FOREIGN_BRIDGE_IMPL === ZERO_ADDRESS) {
+    console.log('\ndeploying ForeignAMBridge implementation\n')
+    const foreignBridgeImplementation = await deployContract(ForeignBridge, [], {
+      from: DEPLOYMENT_ACCOUNT_ADDRESS,
+      network: 'foreign',
+      nonce
+    })
+    nonce++
+  } else {
+    console.log('\nusing existing ForeignAMBridge implementation\n')
+    foreignBridgeImplementation = new web3Home.eth.Contract(ForeignBridge.abi, FOREIGN_BRIDGE_IMPL)
+  }
   console.log('[Foreign] ForeignAMBridge Implementation: ', foreignBridgeImplementation.options.address)
 
   console.log('\nhooking up ForeignAMBridge storage to ForeignAMBridge implementation')

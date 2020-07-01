@@ -120,7 +120,11 @@ let validations = {
   FOREIGN_RPC_URL: envalid.str(),
   FOREIGN_BRIDGE_OWNER: addressValidator(),
   FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
-  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator()
+  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
+  HOME_VALIDATORS_IMPL: addressValidator({ default: ZERO_ADDRESS}),
+  HOME_BRIDGE_IMPL: addressValidator({ default: ZERO_ADDRESS}),
+  FOREIGN_VALIDATORS_IMPL: addressValidator({ default: ZERO_ADDRESS}),
+  FOREIGN_BRIDGE_IMPL: addressValidator({ default: ZERO_ADDRESS})
 }
 
 if (BRIDGE_MODE.includes('AMB_')) {

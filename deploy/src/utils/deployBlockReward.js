@@ -2,7 +2,7 @@ const Web3Utils = require('web3-utils')
 const { web3Home, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 const { deployContract, privateKeyToAddress, sendRawTxHome } = require('../deploymentUtils')
 const {
-  homeContracts: { BlockReward }
+  homeContracts: { BlockRewardMock }
 } = require('../loadContracts')
 const env = require('../loadEnv')
 
@@ -12,7 +12,7 @@ const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVAT
 
 async function deployBlockReward() {
   let homeNonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
-  const blockReward = await deployContract(BlockReward, [], {
+  const blockReward = await deployContract(BlockRewardMock, [], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     network: 'home',
     nonce: homeNonce

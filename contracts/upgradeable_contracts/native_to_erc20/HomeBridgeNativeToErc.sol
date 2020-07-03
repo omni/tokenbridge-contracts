@@ -94,7 +94,6 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_homeGasPrice > 0);
         require(_requiredBlockConfirmations > 0);
         require(
             _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
@@ -109,7 +108,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
         uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[GAS_PRICE] = _homeGasPrice;
+        _setGasPrice(_homeGasPrice);
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignDailyLimitForeignMaxPerTxArray[1];
@@ -117,7 +116,6 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         setOwner(_owner);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit GasPriceChanged(_homeGasPrice);
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
         emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxArray[0]);
     }
@@ -158,5 +156,14 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         bytes32 /*_txHash*/
     ) internal {
         revert();
+    }
+
+    /**
+    * @dev Internal function for updating fallback gas price value.
+    * @param _gasPrice new value for the gas price, zero gas price is not allowed.
+    */
+    function _setGasPrice(uint256 _gasPrice) internal {
+        require(_gasPrice > 0);
+        super._setGasPrice(_gasPrice);
     }
 }

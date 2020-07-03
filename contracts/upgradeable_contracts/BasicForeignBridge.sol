@@ -39,6 +39,15 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
         }
     }
 
+    /**
+    * @dev Internal function for updating fallback gas price value.
+    * @param _gasPrice new value for the gas price, zero gas price is not allowed.
+    */
+    function _setGasPrice(uint256 _gasPrice) internal {
+        require(_gasPrice > 0);
+        super._setGasPrice(_gasPrice);
+    }
+
     /* solcov ignore next */
     function onExecuteMessage(address, uint256, bytes32) internal returns (bool);
 

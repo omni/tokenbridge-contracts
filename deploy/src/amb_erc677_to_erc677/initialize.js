@@ -79,8 +79,8 @@ async function initialize({
       bridgeContract,
       mediatorContract,
       erc677token,
-      [dailyLimit, maxPerTx, minPerTx],
-      [executionDailyLimit, executionMaxPerTx],
+      [dailyLimit.toString(), maxPerTx.toString(), minPerTx.toString()],
+      [executionDailyLimit.toString(), executionMaxPerTx.toString()],
       requestGasLimit,
       foreignToHomeDecimalShift,
       owner

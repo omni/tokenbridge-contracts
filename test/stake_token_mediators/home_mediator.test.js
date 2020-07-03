@@ -2,7 +2,7 @@ const ForeignStakeTokenMediator = artifacts.require('ForeignStakeTokenMediator.s
 const HomeStakeTokenMediator = artifacts.require('HomeStakeTokenMediator.sol')
 const ERC677BridgeTokenRewardable = artifacts.require('ERC677BridgeTokenRewardable.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
-const BlockReward = artifacts.require('BlockReward.sol')
+const BlockReward = artifacts.require('BlockRewardMock.sol')
 const MintHandlerMock = artifacts.require('MintHandlerMock.sol')
 
 const { expect } = require('chai')

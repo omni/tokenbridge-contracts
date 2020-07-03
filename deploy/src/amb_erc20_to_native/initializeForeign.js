@@ -2,7 +2,7 @@ const Web3Utils = require('web3-utils')
 const assert = require('assert')
 const { web3Home, web3Foreign, FOREIGN_RPC_URL, deploymentPrivateKey } = require('../web3')
 const {
-  foreignContracts: { EternalStorageProxy, ForeignAMBNativeToErc20 }
+  foreignContracts: { EternalStorageProxy, ForeignAMBErc20ToNative }
 } = require('../loadContracts')
 const {
   privateKeyToAddress,
@@ -22,7 +22,8 @@ const {
   FOREIGN_AMB_BRIDGE,
   FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
   DEPLOYMENT_ACCOUNT_PRIVATE_KEY,
-  FOREIGN_TO_HOME_DECIMAL_SHIFT
+  FOREIGN_TO_HOME_DECIMAL_SHIFT,
+  ERC20_TOKEN_ADDRESS
 } = require('../loadEnv')
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
@@ -40,8 +41,7 @@ async function initializeMediator({
     executionMaxPerTx,
     requestGasLimit,
     foreignToHomeDecimalShift,
-    owner,
-    feeManager
+    owner
   }
 }) {
   console.log(`
@@ -55,29 +55,27 @@ async function initializeMediator({
     EXECUTION_MAX_AMOUNT_PER_TX: ${executionMaxPerTx} which is ${Web3Utils.fromWei(executionMaxPerTx)} in eth,
     FOREIGN_TO_HOME_DECIMAL_SHIFT: ${foreignToHomeDecimalShift},
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
-    OWNER: ${owner},
-    Fee Manager: ${feeManager},
+    OWNER: ${owner}
   `)
 
   return contract.methods
     .initialize(
       bridgeContract,
       mediatorContract,
-      [dailyLimit.toString(), maxPerTx.toString(), minPerTx.toString()],
-      [executionDailyLimit.toString(), executionMaxPerTx.toString()],
+      [FOREIGN_DAILY_LIMIT.toString(), FOREIGN_MAX_AMOUNT_PER_TX.toString(), FOREIGN_MIN_AMOUNT_PER_TX.toString()],
+      [HOME_DAILY_LIMIT.toString(), HOME_MAX_AMOUNT_PER_TX.toString()],
       requestGasLimit,
       foreignToHomeDecimalShift,
       owner,
-      erc677token,
-      feeManager
+      erc677token
     )
     .encodeABI()
 }
 
-async function initialize({ homeBridge, foreignBridge, foreignFeeManager, foreignErc677 }) {
+async function initialize({ homeBridge, foreignBridge }) {
   const foreignToHomeDecimalShift = FOREIGN_TO_HOME_DECIMAL_SHIFT || 0
   let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
-  const contract = new web3Home.eth.Contract(ForeignAMBNativeToErc20.abi, foreignBridge)
+  const contract = new web3Home.eth.Contract(ForeignAMBErc20ToNative.abi, foreignBridge)
 
   console.log('\n[Foreign] Initializing Bridge Mediator with following parameters:')
 
@@ -86,7 +84,7 @@ async function initialize({ homeBridge, foreignBridge, foreignFeeManager, foreig
     params: {
       bridgeContract: FOREIGN_AMB_BRIDGE,
       mediatorContract: homeBridge,
-      erc677token: foreignErc677,
+      erc677token: ERC20_TOKEN_ADDRESS,
       dailyLimit: FOREIGN_DAILY_LIMIT,
       maxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
       minPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
@@ -94,8 +92,7 @@ async function initialize({ homeBridge, foreignBridge, foreignFeeManager, foreig
       executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX,
       requestGasLimit: FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
       foreignToHomeDecimalShift,
-      owner: FOREIGN_BRIDGE_OWNER,
-      feeManager: foreignFeeManager
+      owner: FOREIGN_BRIDGE_OWNER
     }
   })
 

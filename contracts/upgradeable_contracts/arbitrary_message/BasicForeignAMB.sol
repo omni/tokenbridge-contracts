@@ -33,4 +33,13 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
         setRelayedMessages(messageId, true);
         processMessage(sender, executor, messageId, gasLimit, dataType, gasPrice, chainIds[0], data);
     }
+
+    /**
+    * @dev Internal function for updating fallback gas price value.
+    * @param _gasPrice new value for the gas price, zero gas price is not allowed.
+    */
+    function _setGasPrice(uint256 _gasPrice) internal {
+        require(_gasPrice > 0);
+        super._setGasPrice(_gasPrice);
+    }
 }

@@ -53,6 +53,14 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     }
 
     /**
+    * @dev Public getter for token contract.
+    * @return address of the used token contract
+    */
+    function erc677token() public view returns (ERC677) {
+        return _erc677token();
+    }
+
+    /**
     * @dev Mint the amount of tokens that were bridged from the other network.
     * If configured, it calculates, subtract and distribute the fees among the reward accounts.
     * @param _receiver address that will receive the tokens

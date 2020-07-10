@@ -35,8 +35,8 @@ contract BasicAMBNativeToErc20 is
     function _initialize(
         address _bridgeContract,
         address _mediatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray,
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray,
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray,
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray,
         uint256 _requestGasLimit,
         uint256 _decimalShift,
         address _owner,

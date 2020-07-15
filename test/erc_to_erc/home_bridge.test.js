@@ -1981,86 +1981,87 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
     })
   })
   describe('#decimals Shift', async () => {
-    const decimalShiftTwo = 2
-    it('Foreign to Home: works with 5 validators and 3 required signatures with decimal shift 2', async () => {
-      const recipient = accounts[8]
-      const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
-      const ownerOfValidators = accounts[0]
-      const validatorContractWith3Signatures = await BridgeValidators.new()
-      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
-      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
+    for (const decimalShift of [2, -1]) {
+      it(`Foreign to Home: works with 5 validators and 3 required signatures with decimal shift ${decimalShift}`, async () => {
+        const recipient = accounts[8]
+        const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
+        const ownerOfValidators = accounts[0]
+        const validatorContractWith3Signatures = await BridgeValidators.new()
+        await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
+        const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
 
-      const homeBridgeWithThreeSigs = await HomeBridge.new()
-      await homeBridgeWithThreeSigs.initialize(
-        validatorContractWith3Signatures.address,
-        [oneEther, halfEther, minPerTx],
-        gasPrice,
-        requireBlockConfirmations,
-        token.address,
-        [foreignDailyLimit, foreignMaxPerTx],
-        owner,
-        decimalShiftTwo
-      )
-      await token.transferOwnership(homeBridgeWithThreeSigs.address)
+        const homeBridgeWithThreeSigs = await HomeBridge.new()
+        await homeBridgeWithThreeSigs.initialize(
+          validatorContractWith3Signatures.address,
+          [oneEther, halfEther, minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          token.address,
+          [foreignDailyLimit, foreignMaxPerTx],
+          owner,
+          decimalShift
+        )
+        await token.transferOwnership(homeBridgeWithThreeSigs.address)
 
-      const valueOnForeign = toBN('1000')
-      // Value is decimals shifted from foreign to home: Native on home = 16+2 shift = 18 decimals
-      const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
-      const balanceBeforeRecipient = await token.balanceOf(recipient)
-      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+        const valueOnForeign = toBN('1000')
+        // Value is decimals shifted from foreign to home: Native on home = 16+2 shift = 18 decimals
+        const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
+        const balanceBeforeRecipient = await token.balanceOf(recipient)
+        const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
 
-      const { logs } = await homeBridgeWithThreeSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
-        from: authoritiesFiveAccs[0]
-      }).should.be.fulfilled
-      expectEventInLogs(logs, 'SignedForAffirmation', {
-        signer: authorities[0],
-        transactionHash
+        const { logs } = await homeBridgeWithThreeSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
+          from: authoritiesFiveAccs[0]
+        }).should.be.fulfilled
+        expectEventInLogs(logs, 'SignedForAffirmation', {
+          signer: authorities[0],
+          transactionHash
+        })
+
+        await homeBridgeWithThreeSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
+          from: authoritiesFiveAccs[1]
+        }).should.be.fulfilled
+        const thirdSignature = await homeBridgeWithThreeSigs.executeAffirmation(
+          recipient,
+          valueOnForeign,
+          transactionHash,
+          { from: authoritiesFiveAccs[2] }
+        ).should.be.fulfilled
+
+        expectEventInLogs(thirdSignature.logs, 'AffirmationCompleted', {
+          recipient,
+          value: valueOnForeign,
+          transactionHash
+        })
+        const balanceAfterRecipient = await token.balanceOf(recipient)
+        balanceAfterRecipient.should.be.bignumber.equal(balanceBeforeRecipient.add(valueOnHome))
       })
+      it(`Foreign to Home: test decimal shift ${decimalShift}, no impact on UserRequestForSignature value`, async () => {
+        // Given
+        const homeBridge = await HomeBridge.new()
+        token = await ERC677BridgeToken.new('Some ERC20', 'TEST', 16)
+        const owner = accounts[0]
+        const user = accounts[4]
+        await homeBridge.initialize(
+          validatorContract.address,
+          [oneEther, halfEther, minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          token.address,
+          [foreignDailyLimit, foreignMaxPerTx],
+          owner,
+          decimalShift
+        ).should.be.fulfilled
+        const value = halfEther
+        await token.mint(user, value, { from: owner }).should.be.fulfilled
 
-      await homeBridgeWithThreeSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
-        from: authoritiesFiveAccs[1]
-      }).should.be.fulfilled
-      const thirdSignature = await homeBridgeWithThreeSigs.executeAffirmation(
-        recipient,
-        valueOnForeign,
-        transactionHash,
-        { from: authoritiesFiveAccs[2] }
-      ).should.be.fulfilled
+        // When
+        await token.transferAndCall(homeBridge.address, value, '0x', { from: user }).should.be.fulfilled
 
-      expectEventInLogs(thirdSignature.logs, 'AffirmationCompleted', {
-        recipient,
-        value: valueOnForeign,
-        transactionHash
+        // Then
+        const events = await getEvents(homeBridge, { event: 'UserRequestForSignature' })
+        expect(events[0].returnValues.recipient).to.be.equal(user)
+        expect(toBN(events[0].returnValues.value)).to.be.bignumber.equal(value)
       })
-      const balanceAfterRecipient = await token.balanceOf(recipient)
-      balanceAfterRecipient.should.be.bignumber.equal(balanceBeforeRecipient.add(valueOnHome))
-    })
-    it('Foreign to Home: test decimal shift 2, no impact on UserRequestForSignature value', async () => {
-      // Given
-      const homeBridge = await HomeBridge.new()
-      token = await ERC677BridgeToken.new('Some ERC20', 'TEST', 16)
-      const owner = accounts[0]
-      const user = accounts[4]
-      await homeBridge.initialize(
-        validatorContract.address,
-        [oneEther, halfEther, minPerTx],
-        gasPrice,
-        requireBlockConfirmations,
-        token.address,
-        [foreignDailyLimit, foreignMaxPerTx],
-        owner,
-        decimalShiftTwo
-      ).should.be.fulfilled
-      const value = halfEther
-      await token.mint(user, value, { from: owner }).should.be.fulfilled
-
-      // When
-      await token.transferAndCall(homeBridge.address, value, '0x', { from: user }).should.be.fulfilled
-
-      // Then
-      const events = await getEvents(homeBridge, { event: 'UserRequestForSignature' })
-      expect(events[0].returnValues.recipient).to.be.equal(user)
-      expect(toBN(events[0].returnValues.value)).to.be.bignumber.equal(value)
-    })
+    }
   })
 })

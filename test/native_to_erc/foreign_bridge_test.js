@@ -1458,83 +1458,85 @@ contract('ForeignBridge', async accounts => {
     })
   })
   describe('#decimalShift', async () => {
-    const decimalShiftTwo = 2
-    it('Home to Foreign: withdraw works with decimalShift of 2', async () => {
-      const recipient = accounts[8]
-      const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
-      const ownerOfValidators = accounts[0]
-      const validatorContractWith3Signatures = await BridgeValidators.new()
-      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
-      const erc20Token = await POA20.new('Some ERC20', 'RSZT', 16)
-      const valueOnForeign = toBN('1000')
-      const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
-      const foreignBridgeWithThreeSigs = await ForeignBridge.new()
+    for (const decimalShift of [2, -1]) {
+      it(`Home to Foreign: withdraw works with decimalShift of ${decimalShift}`, async () => {
+        const recipient = accounts[8]
+        const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
+        const ownerOfValidators = accounts[0]
+        const validatorContractWith3Signatures = await BridgeValidators.new()
+        await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
+        const erc20Token = await POA20.new('Some ERC20', 'RSZT', 16)
+        const valueOnForeign = toBN('1000')
+        const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
+        const foreignBridgeWithThreeSigs = await ForeignBridge.new()
 
-      await foreignBridgeWithThreeSigs.initialize(
-        validatorContractWith3Signatures.address,
-        erc20Token.address,
-        [oneEther, halfEther, minPerTx],
-        gasPrice,
-        requireBlockConfirmations,
-        [homeDailyLimit, homeMaxPerTx],
-        owner,
-        decimalShiftTwo,
-        otherSideBridgeAddress
-      )
-      await erc20Token.transferOwnership(foreignBridgeWithThreeSigs.address)
+        await foreignBridgeWithThreeSigs.initialize(
+          validatorContractWith3Signatures.address,
+          erc20Token.address,
+          [oneEther, halfEther, minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShift,
+          otherSideBridgeAddress
+        )
+        await erc20Token.transferOwnership(foreignBridgeWithThreeSigs.address)
 
-      const balanceBeforeRecipient = await erc20Token.balanceOf(recipient)
-      const txHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
-      const message = createMessage(recipient, valueOnHome, txHash, foreignBridgeWithThreeSigs.address)
+        const balanceBeforeRecipient = await erc20Token.balanceOf(recipient)
+        const txHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+        const message = createMessage(recipient, valueOnHome, txHash, foreignBridgeWithThreeSigs.address)
 
-      // signature 1
-      const signature = await sign(authoritiesFiveAccs[0], message)
-      const vrs = signatureToVRS(signature)
+        // signature 1
+        const signature = await sign(authoritiesFiveAccs[0], message)
+        const vrs = signatureToVRS(signature)
 
-      // signature 2
-      const signature2 = await sign(authoritiesFiveAccs[1], message)
-      const vrs2 = signatureToVRS(signature2)
+        // signature 2
+        const signature2 = await sign(authoritiesFiveAccs[1], message)
+        const vrs2 = signatureToVRS(signature2)
 
-      // signature 3
-      const signature3 = await sign(authoritiesFiveAccs[2], message)
-      const vrs3 = signatureToVRS(signature3)
+        // signature 3
+        const signature3 = await sign(authoritiesFiveAccs[2], message)
+        const vrs3 = signatureToVRS(signature3)
 
-      const threeSignatures = packSignatures([vrs, vrs2, vrs3])
+        const threeSignatures = packSignatures([vrs, vrs2, vrs3])
 
-      const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(message, threeSignatures).should.be.fulfilled
-      logs[0].event.should.be.equal('RelayedMessage')
-      logs[0].args.recipient.should.be.equal(recipient)
-      logs[0].args.value.should.be.bignumber.equal(valueOnHome)
-      true.should.be.equal(await foreignBridgeWithThreeSigs.relayedMessages(txHash))
-      const balanceAfterRecipient = await erc20Token.balanceOf(recipient)
-      balanceAfterRecipient.should.be.bignumber.equal(balanceBeforeRecipient.add(valueOnForeign))
-      const balanceAfterBridge = await erc20Token.balanceOf(foreignBridgeWithThreeSigs.address)
-      balanceAfterBridge.should.be.bignumber.equal(ZERO)
-    })
-    it('Foreign to Home: no impact in transferAndCall event signal for bridges oracles with a decimalShift of 2.', async () => {
-      const owner = accounts[3]
-      const user = accounts[4]
-      const value = halfEther
-      token = await POA20.new('POA ERC20 Foundation', 'POA20', 16, { from: owner })
-      const foreignBridge = await ForeignBridge.new()
-      await foreignBridge.initialize(
-        validatorContract.address,
-        token.address,
-        [oneEther, halfEther, minPerTx],
-        gasPrice,
-        requireBlockConfirmations,
-        [homeDailyLimit, homeMaxPerTx],
-        owner,
-        decimalShiftTwo,
-        otherSideBridgeAddress
-      )
-      await token.mint(user, value, { from: owner }).should.be.fulfilled
-      expect(await token.balanceOf(user)).to.be.bignumber.equal(value)
-      await token.transferOwnership(foreignBridge.address, { from: owner })
-      const { logs } = await token.transferAndCall(foreignBridge.address, value, '0x', { from: user })
-      logs[0].event.should.be.equal('Transfer')
-      logs[0].args.value.should.be.bignumber.equal(value)
-      expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
-    })
+        const { logs } = await foreignBridgeWithThreeSigs.executeSignatures(message, threeSignatures).should.be
+          .fulfilled
+        logs[0].event.should.be.equal('RelayedMessage')
+        logs[0].args.recipient.should.be.equal(recipient)
+        logs[0].args.value.should.be.bignumber.equal(valueOnHome)
+        true.should.be.equal(await foreignBridgeWithThreeSigs.relayedMessages(txHash))
+        const balanceAfterRecipient = await erc20Token.balanceOf(recipient)
+        balanceAfterRecipient.should.be.bignumber.equal(balanceBeforeRecipient.add(valueOnForeign))
+        const balanceAfterBridge = await erc20Token.balanceOf(foreignBridgeWithThreeSigs.address)
+        balanceAfterBridge.should.be.bignumber.equal(ZERO)
+      })
+      it(`Foreign to Home: no impact in transferAndCall event signal for bridges oracles with a decimalShift of ${decimalShift}`, async () => {
+        const owner = accounts[3]
+        const user = accounts[4]
+        const value = halfEther
+        token = await POA20.new('POA ERC20 Foundation', 'POA20', 16, { from: owner })
+        const foreignBridge = await ForeignBridge.new()
+        await foreignBridge.initialize(
+          validatorContract.address,
+          token.address,
+          [oneEther, halfEther, minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShift,
+          otherSideBridgeAddress
+        )
+        await token.mint(user, value, { from: owner }).should.be.fulfilled
+        expect(await token.balanceOf(user)).to.be.bignumber.equal(value)
+        await token.transferOwnership(foreignBridge.address, { from: owner })
+        const { logs } = await token.transferAndCall(foreignBridge.address, value, '0x', { from: user })
+        logs[0].event.should.be.equal('Transfer')
+        logs[0].args.value.should.be.bignumber.equal(value)
+        expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
+      })
+    }
   })
 })

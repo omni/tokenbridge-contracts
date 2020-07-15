@@ -84,7 +84,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     * @param _value amount of native tokens to be received
     */
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
-        uint256 valueToTransfer = _value.mul(10**decimalShift());
+        uint256 valueToTransfer = _shiftValue(_value);
         setMediatorBalance(mediatorBalance().sub(valueToTransfer));
 
         bytes32 _messageId = messageId();

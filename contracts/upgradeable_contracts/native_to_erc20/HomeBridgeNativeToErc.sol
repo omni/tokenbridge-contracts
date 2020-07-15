@@ -137,7 +137,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-        uint256 valueToTransfer = _value.mul(10**decimalShift());
+        uint256 valueToTransfer = _shiftValue(_value);
 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {

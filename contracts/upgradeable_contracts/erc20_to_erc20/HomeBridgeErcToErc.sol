@@ -145,7 +145,7 @@ contract HomeBridgeErcToErc is
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-        uint256 valueToMint = _value.mul(10**decimalShift());
+        uint256 valueToMint = _shiftValue(_value);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);

@@ -67,7 +67,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     * @param _value amount of tokens to be received
     */
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
-        uint256 valueToMint = _value.div(10**decimalShift());
+        uint256 valueToMint = _unshiftValue(_value);
 
         bytes32 _messageId = messageId();
         IMediatorFeeManager feeManager = feeManagerContract();

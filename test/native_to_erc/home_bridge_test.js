@@ -220,6 +220,18 @@ contract('HomeBridge', async accounts => {
           decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
+
+      // not valid decimal shift
+      await homeContract.initialize(
+        validatorContract.address,
+        ['3', '2', '1'],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        '100'
+      ).should.be.rejected
+
       await homeContract.initialize(
         validatorContract.address,
         ['3', '2', '1'],

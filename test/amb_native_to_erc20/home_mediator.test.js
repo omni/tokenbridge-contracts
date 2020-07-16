@@ -165,6 +165,18 @@ contract('HomeAMBNativeToErc20', async accounts => {
         )
         .should.be.rejectedWith(ERROR_MSG)
 
+      // not valid decimal shift
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        100,
+        owner,
+        feeManager.address
+      ).should.be.rejected
+
       const { logs } = await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,

@@ -199,6 +199,19 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         ZERO_ADDRESS
       ).should.be.rejected
 
+      // not valid decimal shift
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        '100',
+        otherSideBridge.address
+      ).should.be.rejected
+
       const { logs } = await foreignBridge.initialize(
         validatorContract.address,
         token.address,

@@ -17,7 +17,7 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         address _feeManager,
         uint256[2] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         address _blockReward,
-        uint256 _decimalShift
+        int256 _decimalShift
     ) external onlyRelevantSender returns (bool) {
         _rewardableInitialize(
             _validatorContract,

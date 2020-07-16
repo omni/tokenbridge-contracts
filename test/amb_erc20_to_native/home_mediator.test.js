@@ -153,6 +153,18 @@ contract('HomeAMBErc20ToNative', async accounts => {
         blockReward.address
       ).should.be.rejected
 
+      // not valid decimal shift
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        100,
+        owner,
+        blockReward.address
+      ).should.be.rejected
+
       const { logs } = await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,

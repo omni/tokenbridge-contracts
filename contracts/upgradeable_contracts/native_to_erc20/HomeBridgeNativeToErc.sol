@@ -36,7 +36,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uint256 _requiredBlockConfirmations,
         uint256[2] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
-        uint256 _decimalShift
+        int256 _decimalShift
     ) external onlyRelevantSender returns (bool) {
         _initialize(
             _validatorContract,
@@ -60,7 +60,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         address _owner,
         address _feeManager,
         uint256[2] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        uint256 _decimalShift
+        int256 _decimalShift
     ) external onlyRelevantSender returns (bool) {
         _initialize(
             _validatorContract,
@@ -90,7 +90,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uint256 _requiredBlockConfirmations,
         uint256[2] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
-        uint256 _decimalShift
+        int256 _decimalShift
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
@@ -112,7 +112,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _foreignDailyLimitForeignMaxPerTxArray[1];
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
+        _setDecimalShift(_decimalShift);
         setOwner(_owner);
 
         emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);

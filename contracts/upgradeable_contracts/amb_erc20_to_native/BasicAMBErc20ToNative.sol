@@ -29,7 +29,7 @@ contract BasicAMBErc20ToNative is Initializable, Upgradeable, Claimable, Version
         uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
         uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner
     ) internal {
         require(!isInitialized());
@@ -49,7 +49,7 @@ contract BasicAMBErc20ToNative is Initializable, Upgradeable, Claimable, Version
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
+        _setDecimalShift(_decimalShift);
         setOwner(_owner);
 
         emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);

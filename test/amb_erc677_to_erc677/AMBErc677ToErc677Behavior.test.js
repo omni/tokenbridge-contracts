@@ -132,6 +132,18 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         )
         .should.be.rejectedWith(ERROR_MSG)
 
+      // not valid decimal shift
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        100,
+        owner
+      ).should.be.rejected
+
       const { logs } = await contract.initialize(
         bridgeContract.address,
         mediatorContract.address,

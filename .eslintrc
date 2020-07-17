@@ -23,6 +23,7 @@
     "no-use-before-define": ["error", { "functions": false }],
     "no-restricted-syntax": "off",
     "node/no-unpublished-require": "off",
-    "func-names": "off"
+    "func-names": "off",
+    "no-loop-func": "off"
   }
 }

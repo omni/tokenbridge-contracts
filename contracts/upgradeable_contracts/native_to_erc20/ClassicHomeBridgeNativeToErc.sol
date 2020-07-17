@@ -10,7 +10,7 @@ contract ClassicHomeBridgeNativeToErc is HomeBridgeNativeToErc {
         uint256 _requiredBlockConfirmations,
         uint256[2] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
-        uint256 _decimalShift
+        int256 _decimalShift
     ) internal {
         super._initialize(
             _validatorContract,

@@ -38,7 +38,7 @@ contract BasicAMBNativeToErc20 is
         uint256[3] _dailyLimitMaxPerTxMinPerTxArray,
         uint256[2] _executionDailyLimitExecutionMaxPerTxArray,
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner,
         address _feeManager
     ) internal {
@@ -59,7 +59,7 @@ contract BasicAMBNativeToErc20 is
         uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
+        _setDecimalShift(_decimalShift);
         _setFeeManagerContract(_feeManager);
         setOwner(_owner);
 

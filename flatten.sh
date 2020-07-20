@@ -23,6 +23,7 @@ ${FLATTENER} contracts/upgradeability/EternalStorageProxy.sol > flats/upgradeabi
 ${FLATTENER} contracts/upgradeability/ClassicEternalStorageProxy.sol > flats/upgradeability/ClassicEternalStorageProxy_flat.sol
 ${FLATTENER} contracts/ERC677BridgeToken.sol > flats/ERC677BridgeToken_flat.sol
 ${FLATTENER} contracts/ERC677BridgeTokenRewardable.sol > flats/ERC677BridgeTokenRewardable_flat.sol
+${FLATTENER} contracts/PermittableToken.sol > flats/PermittableToken_flat.sol
 
 echo "Flattening bridge validators contracts"
 ${FLATTENER} ${VALIDATOR_CONTRACTS_DIR}/BridgeValidators.sol > flats/validators/BridgeValidators_flat.sol

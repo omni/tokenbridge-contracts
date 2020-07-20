@@ -60,12 +60,12 @@ contract BasicTokenBridge is EternalStorage, Ownable, DecimalShiftBridge {
         return now / 1 days;
     }
 
-    function setTotalSpentPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))] = _value;
+    function addTotalSpentPerDay(uint256 _day, uint256 _value) internal {
+        uintStorage[keccak256(abi.encodePacked("totalSpentPerDay", _day))] = totalSpentPerDay(_day).add(_value);
     }
 
-    function setTotalExecutedPerDay(uint256 _day, uint256 _value) internal {
-        uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = _value;
+    function addTotalExecutedPerDay(uint256 _day, uint256 _value) internal {
+        uintStorage[keccak256(abi.encodePacked("totalExecutedPerDay", _day))] = totalExecutedPerDay(_day).add(_value);
     }
 
     function setDailyLimit(uint256 _dailyLimit) external onlyOwner {
@@ -93,5 +93,28 @@ contract BasicTokenBridge is EternalStorage, Ownable, DecimalShiftBridge {
     function setMinPerTx(uint256 _minPerTx) external onlyOwner {
         require(_minPerTx > 0 && _minPerTx < dailyLimit() && _minPerTx < maxPerTx());
         uintStorage[MIN_PER_TX] = _minPerTx;
+    }
+
+    function _setLimits(uint256[3] _limits) internal {
+        require(
+            _limits[2] > 0 && // minPerTx > 0
+                _limits[1] > _limits[2] && // maxPerTx > minPerTx
+                _limits[0] > _limits[1] // dailyLimit > maxPerTx
+        );
+
+        uintStorage[DAILY_LIMIT] = _limits[0];
+        uintStorage[MAX_PER_TX] = _limits[1];
+        uintStorage[MIN_PER_TX] = _limits[2];
+
+        emit DailyLimitChanged(_limits[0]);
+    }
+
+    function _setExecutionLimits(uint256[2] _limits) internal {
+        require(_limits[1] < _limits[0]); // foreignMaxPerTx < foreignDailyLimit
+
+        uintStorage[EXECUTION_DAILY_LIMIT] = _limits[0];
+        uintStorage[EXECUTION_MAX_PER_TX] = _limits[1];
+
+        emit ExecutionDailyLimitChanged(_limits[0]);
     }
 }

@@ -13,6 +13,7 @@ mkdir -p flats/amb_erc677_to_erc677
 mkdir -p flats/upgradeability
 mkdir -p flats/amb_native_to_erc20
 mkdir -p flats/amb_erc20_to_native
+mkdir -p flats/multi_amb_erc20_to_erc677
 
 FLATTENER=./node_modules/.bin/truffle-flattener
 BRIDGE_CONTRACTS_DIR=contracts/upgradeable_contracts
@@ -71,3 +72,7 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/ForeignFeeManagerAMBNat
 echo "Flattening contracts related to erc-to-native on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc20_to_native/HomeAMBErc20ToNative.sol > flats/amb_erc20_to_native/HomeAMBErc20ToNative_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc20_to_native/ForeignAMBErc20ToNative.sol > flats/amb_erc20_to_native/ForeignAMBErc20ToNative_flat.sol
+
+echo "Flattening contracts related to multi-erc-to-erc on top of AMB bridge"
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677_flat.sol

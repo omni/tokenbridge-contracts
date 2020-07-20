@@ -7,7 +7,6 @@ import "./Validatable.sol";
 import "../libraries/Message.sol";
 import "./BasicBridge.sol";
 import "./BasicTokenBridge.sol";
-import "./BasicTokenBridge.sol";
 
 contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge {
     using SafeMath for uint256;

@@ -72,7 +72,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     function nativeTransfer(address _receiver) internal {
         require(msg.value > 0);
         require(withinLimit(msg.value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        addTotalSpentPerDay(getCurrentDay(), msg.value);
         setMediatorBalance(mediatorBalance().add(msg.value));
         passMessage(msg.sender, _receiver, msg.value);
     }
@@ -156,7 +156,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         uint256 balance = address(this).balance;
         require(balance > mediatorBalance());
         uint256 diff = balance.sub(mediatorBalance());
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(diff));
+        addTotalSpentPerDay(getCurrentDay(), diff);
         setMediatorBalance(balance);
         passMessage(_receiver, _receiver, diff);
     }

@@ -12,6 +12,18 @@ import "../../interfaces/IBurnableMintableERC677Token.sol";
 contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     bytes32 internal constant TOKEN_IMAGE_CONTRACT = 0x20b8ca26cc94f39fab299954184cf3a9bd04f69543e4f454fab299f015b8130f; // keccak256(abi.encodePacked("tokenImageContract"))
 
+    /**
+    * @dev Stores the initial parameters of the mediator.
+    * @param _bridgeContract the address of the AMB bridge contract.
+    * @param _mediatorContract the address of the mediator contract on the other network.
+    * @param _dailyLimitMaxPerTxMinPerTxArray array with limit values for the assets to be bridged to the other network.
+    *   [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
+    * @param _executionDailyLimitExecutionMaxPerTxArray array with limit values for the assets bridged from the other network.
+    *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
+    * @param _requestGasLimit the gas limit for the message execution.
+    * @param _owner address of the owner of the mediator contract.
+    * @param _tokenImage address of the PermittableTokenContract that will be used for deploying of new tokens.
+    */
     function initialize(
         address _bridgeContract,
         address _mediatorContract,
@@ -36,33 +48,32 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     }
 
     /**
-     * @dev Executes action on the request to deposit tokens relayed from the other network
-     * @param _recipient address of tokens receiver
-     * @param _value amount of bridged tokens
-     */
-    function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal {
-        bytes32 _messageId = messageId();
-        IBurnableMintableERC677Token(_token).mint(_recipient, _value);
-        emit TokensBridged(_token, _recipient, _value, _messageId);
-    }
-
-    function executeActionOnFixedTokens(address _token, address _recipient, uint256 _value) internal {
-        IBurnableMintableERC677Token(_token).mint(_recipient, _value);
-    }
-
+    * @dev Updates an address of the token image contract used for proxifying newly created tokens.
+    * @param _tokenImage address of PermittableToken contract.
+    */
     function setTokenImageContract(address _tokenImage) external onlyOwner {
         _setTokenImageContract(_tokenImage);
     }
 
-    function _setTokenImageContract(address _tokenImage) internal {
-        require(AddressUtils.isContract(_tokenImage));
-        addressStorage[TOKEN_IMAGE_CONTRACT] = _tokenImage;
-    }
-
+    /**
+    * @dev Retrieves address of the token image contract.
+    * @return address of block reward contract.
+    */
     function tokenImageContract() public view returns (address) {
         return addressStorage[TOKEN_IMAGE_CONTRACT];
     }
 
+    /**
+    * @dev Handles the bridged tokens for the first time, includes deployment of new TokenProxy contract.
+    * Checks that the value is inside the execution limits and invokes the method
+    * to execute the Mint or Unlock accordingly.
+    * @param _token address of the bridged ERC20/ERC677 token on the foreign side.
+    * @param _name name of the bridged token, "x" will be appended, if empty, symbol will be used instead.
+    * @param _symbol symbol of the bridged token, "x" will be appended, if empty, name will be used instead.
+    * @param _decimals decimals of the bridge foreign token.
+    * @param _recipient address that will receive the tokens.
+    * @param _value amount of tokens to be received.
+    */
     function deployAndHandleBridgedTokens(
         address _token,
         string _name,
@@ -80,13 +91,135 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         }
         name = string(abi.encodePacked("x", name));
         symbol = string(abi.encodePacked("x", symbol));
-        ERC677 homeToken = ERC677(
-            new TokenProxy(tokenImageContract(), name, symbol, _decimals, bridgeContract().sourceChainId())
-        );
-        _setHomeTokenAddress(_token, homeToken);
-        _setForeignTokenAddress(homeToken, _token);
+        address homeToken = new TokenProxy(tokenImageContract(), name, symbol, _decimals, bridgeContract().sourceChainId());
+        _setTokenAddressPair(_token, homeToken);
         _initializeTokenBridgeLimits(homeToken, _decimals);
+        super.handleBridgedTokens(ERC677(homeToken), _recipient, _value);
+    }
+
+    /**
+    * @dev Handles the bridged tokens. Checks that the value is inside the execution limits and invokes the method
+    * to execute the Mint or Unlock accordingly.
+    * @param _token bridged ERC20 token.
+    * @param _recipient address that will receive the tokens.
+    * @param _value amount of tokens to be received.
+    */
+    function handleBridgedTokens(ERC677 _token, address _recipient, uint256 _value) public {
+        ERC677 homeToken = ERC677(homeTokenAddress(_token));
         super.handleBridgedTokens(homeToken, _recipient, _value);
+    }
+
+    /**
+    * @dev ERC677 transfer callback function.
+    * @param _from address of tokens sender.
+    * @param _value amount of transferred tokens.
+    * @param _data additional transfer data, can be used for passing alternative receiver address.
+    */
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
+        // if onTokenTransfer is called as a part of call to _relayTokens, this callback does nothing
+        if (!lock()) {
+            ERC677 token = ERC677(msg.sender);
+            require(withinLimit(token, _value));
+            addTotalSpentPerDay(token, getCurrentDay(), _value);
+            bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
+        }
+        return true;
+    }
+
+    /**
+    * @dev Validates that the token amount is inside the limits, calls transferFrom to transfer the tokens to the contract
+    * and invokes the method to burn/lock the tokens and unlock/mint the tokens on the other network.
+    * The user should first call Approve method of the ERC677 token.
+    * @param token bridge token contract address.
+    * @param _from address that will transfer the tokens to be locked.
+    * @param _receiver address that will receive the native tokens on the other network.
+    * @param _value amount of tokens to be transferred to the other network.
+    */
+    function _relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) internal {
+        // This lock is to prevent calling passMessage twice if a ERC677 token is used.
+        // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
+        // which will call passMessage.
+        require(!lock());
+        address to = address(this);
+        require(withinLimit(token, _value));
+        addTotalSpentPerDay(token, getCurrentDay(), _value);
+
+        setLock(true);
+        token.transferFrom(_from, to, _value);
+        setLock(false);
+        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
+    }
+
+    /**
+     * @dev Executes action on the request to deposit tokens relayed from the other network
+     * @param _recipient address of tokens receiver
+     * @param _value amount of bridged tokens
+     */
+    function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal {
+        bytes32 _messageId = messageId();
+        IBurnableMintableERC677Token(_token).mint(_recipient, _value);
+        emit TokensBridged(_token, _recipient, _value, _messageId);
+    }
+
+    /**
+    * @dev Mints back the amount of tokens that were bridged to the other network but failed.
+    * @param _token address that bridged token contract.
+    * @param _recipient address that will receive the tokens.
+    * @param _value amount of tokens to be received.
+    */
+    function executeActionOnFixedTokens(address _token, address _recipient, uint256 _value) internal {
+        IBurnableMintableERC677Token(_token).mint(_recipient, _value);
+    }
+
+    /**
+    * @dev Retrieves address of the home bridged token contract associated with a specific foreign token contract.
+    * @param _foreignToken address of the created home token contract.
+    * @return address of the home token contract.
+    */
+    function homeTokenAddress(address _foreignToken) internal view returns (address) {
+        return addressStorage[keccak256(abi.encodePacked("homeTokenAddress", _foreignToken))];
+    }
+
+    /**
+    * @dev Retrieves address of the foreign bridged token contract associated with a specific home token contract.
+    * @param _homeToken address of the created home token contract.
+    * @return address of the foreign token contract.
+    */
+    function foreignTokenAddress(address _homeToken) internal view returns (address) {
+        return addressStorage[keccak256(abi.encodePacked("foreignTokenAddress", _homeToken))];
+    }
+
+    /**
+    * @dev Internal function for updating an address of the token image contract.
+    * @param _foreignToken address of bridged foreign token contract.
+    * @param _foreignToken address of created home token contract.
+    */
+    function _setTokenAddressPair(address _foreignToken, address _homeToken) internal {
+        addressStorage[keccak256(abi.encodePacked("homeTokenAddress", _foreignToken))] = _homeToken;
+        addressStorage[keccak256(abi.encodePacked("foreignTokenAddress", _homeToken))] = _foreignToken;
+    }
+
+    /**
+    * @dev Internal function for updating an address of the token image contract.
+    * @param _tokenImage address of deployed PermittableToken contract.
+    */
+    function _setTokenImageContract(address _tokenImage) internal {
+        require(AddressUtils.isContract(_tokenImage));
+        addressStorage[TOKEN_IMAGE_CONTRACT] = _tokenImage;
+    }
+
+    /**
+     * @dev Executes action on withdrawal of bridged tokens
+     * @param _token address of token contract
+     * @param _from address of tokens sender
+     * @param _value requsted amount of bridged tokens
+     * @param _data alternative receiver, if specified
+     */
+    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
+        if (!lock()) {
+            IBurnableMintableERC677Token(_token).burn(_value);
+            passMessage(_token, _from, chooseReceiver(_from, _data), _value);
+        }
     }
 
     /**
@@ -112,47 +245,5 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         setMessageToken(_messageId, _token);
         setMessageValue(_messageId, _value);
         setMessageRecipient(_messageId, _from);
-    }
-
-    /**
-    * @dev Handles the bridged tokens. Checks that the value is inside the execution limits and invokes the method
-    * to execute the Mint or Unlock accordingly.
-    * @param _token bridged ERC20 token
-    * @param _recipient address that will receive the tokens
-    * @param _value amount of tokens to be received
-    */
-    function handleBridgedTokens(ERC677 _token, address _recipient, uint256 _value) public {
-        ERC677 homeToken = ERC677(homeTokenAddress(_token));
-        super.handleBridgedTokens(homeToken, _recipient, _value);
-    }
-
-    function homeTokenAddress(address _foreignToken) internal view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("homeTokenAddress", _foreignToken))];
-    }
-
-    function foreignTokenAddress(address _homeToken) internal view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked("foreignTokenAddress", _homeToken))];
-    }
-
-    function _setHomeTokenAddress(address _foreignToken, address _homeToken) internal {
-        addressStorage[keccak256(abi.encodePacked("homeTokenAddress", _foreignToken))] = _homeToken;
-    }
-
-    function _setForeignTokenAddress(address _homeToken, address _foreignToken) internal {
-        addressStorage[keccak256(abi.encodePacked("foreignTokenAddress", _homeToken))] = _foreignToken;
-    }
-
-    /**
-     * @dev Executes action on withdrawal of bridged tokens
-     * @param _token address of token contract
-     * @param _from address of tokens sender
-     * @param _value requsted amount of bridged tokens
-     * @param _data alternative receiver, if specified
-     */
-    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
-        if (!lock()) {
-            IBurnableMintableERC677Token(_token).burn(_value);
-            passMessage(_token, _from, chooseReceiver(_from, _data), _value);
-        }
     }
 }

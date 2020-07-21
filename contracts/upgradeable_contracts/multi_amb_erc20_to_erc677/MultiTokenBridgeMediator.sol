@@ -87,6 +87,9 @@ contract MultiTokenBridgeMediator is
         emit FailedMessageFixed(_messageId, token, recipient, value);
     }
 
+    /**
+    * @dev Execute the action to be performed when the bridge tokens are out of execution limits.
+    */
     function executeActionOnBridgedTokensOutOfLimit(address, address, uint256) internal {
         revert();
     }

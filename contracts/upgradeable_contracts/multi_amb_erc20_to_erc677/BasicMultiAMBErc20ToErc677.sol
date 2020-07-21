@@ -21,56 +21,83 @@ contract BasicMultiAMBErc20ToErc677 is
     VersionableBridge,
     MultiTokenBridgeMediator
 {
+    /**
+    * @dev Tells the address of the mediator contract on the other side, used by chooseReceiver method
+    * to avoid sending the native tokens to that address.
+    * @return address of the mediator contract con the other side
+    */
     function bridgeContractOnOtherSide() internal view returns (address) {
         return mediatorContractOnOtherSide();
     }
 
+    /**
+    * @dev Initiate the bridge operation for some amount of tokens.
+    * The user should first call Approve method of the ERC677 token.
+    * @param token bridged token contract address.
+    * @param _from address that will transfer the tokens to be locked.
+    * @param _receiver address that will receive the native tokens on the other network.
+    * @param _value amount of tokens to be transferred to the other network.
+    */
     function relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) external {
         require(_from == msg.sender || _from == _receiver);
         _relayTokens(token, _from, _receiver, _value);
     }
 
+    /**
+    * @dev Initiate the bridge operation for some amount of tokens from msg.sender.
+    * The user should first call Approve method of the ERC677 token.
+    * @param token bridged token contract address.
+    * @param _receiver address that will receive the native tokens on the other network.
+    * @param _value amount of tokens to be transferred to the other network.
+    */
     function relayTokens(ERC677 token, address _receiver, uint256 _value) external {
         _relayTokens(token, msg.sender, _receiver, _value);
     }
 
+    /**
+    * @dev Initiate the bridge operation for some amount of tokens from msg.sender to msg.sender on the other side.
+    * The user should first call Approve method of the ERC677 token.
+    * @param token bridged token contract address.
+    * @param _value amount of tokens to be transferred to the other network.
+    */
+    function relayTokens(ERC677 token, uint256 _value) external {
+        _relayTokens(token, msg.sender, msg.sender, _value);
+    }
+
+    /**
+    * @dev Tells the bridge interface version that this contract supports.
+    * @return major value of the version
+    * @return minor value of the version
+    * @return patch value of the version
+    */
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
         return (1, 0, 0);
     }
 
+    /**
+    * @dev Tells the bridge mode that this contract supports.
+    * @return _data 4 bytes representing the bridge mode
+    */
     function getBridgeMode() external pure returns (bytes4 _data) {
         return 0xb1516c26; // bytes4(keccak256(abi.encodePacked("multi-erc-to-erc-amb")))
     }
 
+    /**
+    * @dev Claims stucked tokens. Only unsupported tokens can be claimed.
+    * When dealing with already supported tokens, fixMediatorBalance can be used instead.
+    * @param _token address of claimed token, address(0) for native
+    * @param _to address of tokens receiver
+    */
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
-        require(minPerTx(_token) == 0); // token not registered
+        require(_token == address(0) || minPerTx(_token) == 0); // native coins or token not registered
         claimValues(_token, _to);
     }
 
-    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
-        ERC677 token = ERC677(msg.sender);
-        if (!lock()) {
-            require(withinLimit(token, _value));
-            addTotalSpentPerDay(token, getCurrentDay(), _value);
-        }
-        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
-        return true;
-    }
+    /* solcov ignore next */
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool);
 
-    function _relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) internal {
-        // This lock is to prevent calling passMessage twice if a ERC677 token is used.
-        // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
-        // which will call passMessage.
-        require(!lock());
-        address to = address(this);
-        require(withinLimit(token, _value));
-        addTotalSpentPerDay(token, getCurrentDay(), _value);
-
-        setLock(true);
-        token.transferFrom(_from, to, _value);
-        setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
-    }
+    /* solcov ignore next */
+    function _relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) internal;
 
     /* solcov ignore next */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal;

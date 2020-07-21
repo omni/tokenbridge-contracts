@@ -58,6 +58,27 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
         emit TokensBridged(_token, _recipient, valueToTransfer, _messageId);
     }
 
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
+        if (!lock()) {
+            ERC677 token = ERC677(msg.sender);
+            bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
+        }
+        return true;
+    }
+
+    function _relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) internal {
+        // This lock is to prevent calling passMessage twice if a ERC677 token is used.
+        // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
+        // which will call passMessage.
+        require(!lock());
+        address to = address(this);
+
+        setLock(true);
+        token.transferFrom(_from, to, _value);
+        setLock(false);
+        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
+    }
+
     /**
      * @dev Executes action on deposit of bridged tokens
      * @param _token address of the token contract
@@ -80,17 +101,11 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
         if (minPerTx(_token) > 0) {
             data = abi.encodeWithSelector(this.handleBridgedTokens.selector, _token, receiver, valueToBridge);
         } else {
-            bytes memory name = bytes(TokenReader.readName(_token));
-            bytes memory symbol = bytes(TokenReader.readSymbol(_token));
-            if (name.length == 0 && symbol.length == 0) {
-                revert();
-            }
-            if (name.length == 0) {
-                name = symbol;
-            } else if (symbol.length == 0) {
-                symbol = name;
-            }
-            uint256 decimals = TokenReader.readDecimals(_token);
+            string memory name = TokenReader.readName(_token);
+            string memory symbol = TokenReader.readSymbol(_token);
+            uint8 decimals = uint8(TokenReader.readDecimals(_token));
+
+            require(bytes(name).length > 0 || bytes(symbol).length > 0);
 
             data = abi.encodeWithSelector(
                 DEPLOY_AND_HANDLE_BRIDGE_TOKENS,
@@ -134,6 +149,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
     * @param _receiver the address that will receive the tokens on the other network
     */
     function fixMediatorBalance(address _token, address _receiver) public onlyIfUpgradeabilityOwner {
+        require(minPerTx(_token) > 0); // token is already registered
         uint256 balance = ERC677(_token).balanceOf(address(this));
         uint256 expectedBalance = mediatorBalance(_token);
         require(balance > expectedBalance);

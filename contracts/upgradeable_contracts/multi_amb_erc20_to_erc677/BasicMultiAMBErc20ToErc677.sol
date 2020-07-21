@@ -43,10 +43,11 @@ contract BasicMultiAMBErc20ToErc677 is
     }
 
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
+        require(minPerTx(_token) == 0); // token not registered
         claimValues(_token, _to);
     }
 
-    function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
         ERC677 token = ERC677(msg.sender);
         if (!lock()) {
             require(withinLimit(token, _value));

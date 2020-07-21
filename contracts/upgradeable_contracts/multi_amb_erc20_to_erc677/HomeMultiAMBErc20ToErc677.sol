@@ -71,13 +71,22 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         address _recipient,
         uint256 _value
     ) external {
-        ERC677 token = ERC677(
-            new TokenProxy(tokenImageContract(), _name, _symbol, _decimals, bridgeContract().sourceChainId())
+        string memory name = _name;
+        string memory symbol = _symbol;
+        if (bytes(name).length == 0) {
+            name = symbol;
+        } else if (bytes(symbol).length == 0) {
+            symbol = name;
+        }
+        name = string(abi.encodePacked("x", name));
+        symbol = string(abi.encodePacked("x", symbol));
+        ERC677 homeToken = ERC677(
+            new TokenProxy(tokenImageContract(), name, symbol, _decimals, bridgeContract().sourceChainId())
         );
-        _setHomeTokenAddress(_token, token);
-        _setForeignTokenAddress(token, _token);
-        _initializeTokenBridgeLimits(token, _decimals);
-        super.handleBridgedTokens(token, _recipient, _value);
+        _setHomeTokenAddress(_token, homeToken);
+        _setForeignTokenAddress(homeToken, _token);
+        _initializeTokenBridgeLimits(homeToken, _decimals);
+        super.handleBridgedTokens(homeToken, _recipient, _value);
     }
 
     /**

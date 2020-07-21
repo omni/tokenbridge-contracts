@@ -60,8 +60,8 @@ async function initializeMediator({
     REWARD_ADDRESS_LIST: [${rewardAddressList.join(', ')}]`)
   if (FOREIGN_REWARDABLE) {
     console.log(`
-    HOME_TO_FOREIGN_FEE: ${homeToForeignFee} which is ${homeToForeignFee * 100}%
-    FOREIGN_TO_HOME_FEE: ${foreignToHomeFee} which is ${foreignToHomeFee * 100}% 
+    HOME_TO_FOREIGN_FEE: ${homeToForeignFee} which is ${HOME_TRANSACTIONS_FEE * 100}%
+    FOREIGN_TO_HOME_FEE: ${foreignToHomeFee} which is ${FOREIGN_TRANSACTIONS_FEE * 100}% 
     `)
   }
 

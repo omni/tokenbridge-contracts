@@ -22,6 +22,7 @@ const executionDailyLimit = dailyLimit
 const executionMaxPerTx = maxPerTx
 const exampleMessageId = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
 const otherMessageId = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+const deployMessageId = '0x87b0c56ed7052872cd6ac5ad2e4d23b3e9bc7637837d099f083dae24aae5b2f2'
 const failedMessageId = '0x2ebc2ccc755acc8eaf9252e19573af708d644ab63a39619adb080a3500a4ff2e'
 
 contract('HomeMultiAMBErc20ToErc677', async accounts => {
@@ -110,7 +111,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     }
   ]
 
-  async function bridgeToken(token, value = oneEther) {
+  async function bridgeToken(token, value = oneEther, forceFail = false) {
     await token.mint(user, value).should.be.fulfilled
     const { receipt } = await token.transfer(otherSideMediator.address, value, { from: user }).should.be.fulfilled
     const encodedData = strip0x(
@@ -124,11 +125,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       contract.address,
       otherSideMediator.address,
       data,
-      receipt.transactionHash,
-      2000000
+      deployMessageId,
+      forceFail ? 100 : 2000000
     ).should.be.fulfilled
 
-    expect(await ambBridgeContract.messageCallStatus(receipt.transactionHash)).to.be.equal(true)
+    expect(await ambBridgeContract.messageCallStatus(deployMessageId)).to.be.equal(!forceFail)
+
+    if (forceFail) return null
 
     const events = await getEvents(contract, { event: 'NewTokenRegistered' })
     expect(events.length).to.be.equal(1)
@@ -745,6 +748,14 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(event[1].returnValues.recipient).to.be.equal(user)
         expect(event[1].returnValues.value).to.be.equal(value.toString())
         expect(event[1].returnValues.messageId).to.be.equal(exampleMessageId)
+      })
+    })
+
+    describe('requestFailedMessageFix for token registration', () => {
+      it('should allow to request fix of first bridge operation for some token', async () => {
+        await bridgeToken(token, value, true)
+
+        await contract.requestFailedMessageFix(deployMessageId).should.be.fulfilled
       })
     })
 

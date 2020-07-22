@@ -153,6 +153,18 @@ contract('HomeAMBErc20ToNative', async accounts => {
         blockReward.address
       ).should.be.rejected
 
+      // not valid decimal shift
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        100,
+        owner,
+        blockReward.address
+      ).should.be.rejected
+
       const { logs } = await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
@@ -748,47 +760,47 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(event[0].returnValues.messageId).to.be.equal(exampleMessageId)
       })
 
-      it('should unlock tokens on message from amb with decimal shift of two', async () => {
-        // Given
-        const decimalShiftTwo = 2
+      for (const decimalShift of [2, -1]) {
+        it(`should unlock tokens on message from amb with decimal shift of ${decimalShift}`, async () => {
+          // Given
+          contract = await HomeAMBErc20ToNative.new()
+          await contract.initialize(
+            ambBridgeContract.address,
+            otherSideMediator.address,
+            [dailyLimit, maxPerTx, minPerTx],
+            [executionDailyLimit, executionMaxPerTx],
+            maxGasPerTx,
+            decimalShift,
+            owner,
+            blockReward.address
+          ).should.be.fulfilled
+          await blockReward.setBridgeContractAddress(contract.address)
 
-        contract = await HomeAMBErc20ToNative.new()
-        await contract.initialize(
-          ambBridgeContract.address,
-          otherSideMediator.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftTwo,
-          owner,
-          blockReward.address
-        ).should.be.fulfilled
-        await blockReward.setBridgeContractAddress(contract.address)
+          const valueOnForeign = toBN('1000')
+          const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
 
-        const valueOnForeign = toBN('1000')
-        const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
+          const data = await contract.contract.methods.handleBridgedTokens(user, valueOnForeign.toString()).encodeABI()
 
-        const data = await contract.contract.methods.handleBridgedTokens(user, valueOnForeign.toString()).encodeABI()
+          await ambBridgeContract.executeMessageCall(
+            contract.address,
+            otherSideMediator.address,
+            data,
+            exampleMessageId,
+            1000000
+          ).should.be.fulfilled
 
-        await ambBridgeContract.executeMessageCall(
-          contract.address,
-          otherSideMediator.address,
-          data,
-          exampleMessageId,
-          1000000
-        ).should.be.fulfilled
+          expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
 
-        expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
+          // Then
+          expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(valueOnForeign)
 
-        // Then
-        expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(valueOnForeign)
-
-        const event = await getEvents(contract, { event: 'TokensBridged' })
-        expect(event.length).to.be.equal(1)
-        expect(event[0].returnValues.recipient).to.be.equal(user)
-        expect(event[0].returnValues.value).to.be.equal(valueOnHome.toString())
-        expect(event[0].returnValues.messageId).to.be.equal(exampleMessageId)
-      })
+          const event = await getEvents(contract, { event: 'TokensBridged' })
+          expect(event.length).to.be.equal(1)
+          expect(event[0].returnValues.recipient).to.be.equal(user)
+          expect(event[0].returnValues.value).to.be.equal(valueOnHome.toString())
+          expect(event[0].returnValues.messageId).to.be.equal(exampleMessageId)
+        })
+      }
 
       it('should revert when out of execution limits on message from amb', async () => {
         // Given

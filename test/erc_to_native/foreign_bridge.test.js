@@ -199,6 +199,19 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         ZERO_ADDRESS
       ).should.be.rejected
 
+      // not valid decimal shift
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        '100',
+        otherSideBridge.address
+      ).should.be.rejected
+
       const { logs } = await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -776,108 +789,108 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
   })
   describe('#decimalShift', async () => {
-    const decimalShiftTwo = 2
-    it('Home to Foreign: withdraw with 1 signature with a decimalShift of 2', async () => {
-      // From a foreign a token erc token 16 decimals.
-      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
-      const valueOnForeign = toBN('1000')
-      // Value is decimals shifted from foreign to home: Native on home = 16+2 shift = 18 decimals
-      const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
+    for (const decimalShift of [2, -1]) {
+      it(`Home to Foreign: withdraw with 1 signature with a decimalShift of ${decimalShift}`, async () => {
+        // From a foreign a token erc token 16 decimals.
+        const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
+        const valueOnForeign = toBN('1000')
+        // Value is decimals shifted from foreign to home: Native on home = 16+2 shift = 18 decimals
+        const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
 
-      const owner = accounts[0]
-      const foreignBridgeImpl = await ForeignBridgeErcToNativeMock.new()
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
-      const foreignBridge = await ForeignBridge.at(storageProxy.address)
+        const owner = accounts[0]
+        const foreignBridgeImpl = await ForeignBridgeErcToNativeMock.new()
+        const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
+        await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
+        const foreignBridge = await ForeignBridge.at(storageProxy.address)
 
-      await foreignBridge.initialize(
-        validatorContract.address,
-        token.address,
-        requireBlockConfirmations,
-        gasPrice,
-        [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
-        owner,
-        decimalShiftTwo,
-        otherSideBridge.address
-      )
-      await token.mint(foreignBridge.address, valueOnForeign)
+        await foreignBridge.initialize(
+          validatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShift,
+          otherSideBridge.address
+        )
+        await token.mint(foreignBridge.address, valueOnForeign)
 
-      const recipientAccount = accounts[3]
-      const balanceBefore = await token.balanceOf(recipientAccount)
+        const recipientAccount = accounts[3]
+        const balanceBefore = await token.balanceOf(recipientAccount)
 
-      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
-      const message = createMessage(recipientAccount, valueOnHome, transactionHash, foreignBridge.address)
-      const signature = await sign(authorities[0], message)
-      const vrs = signatureToVRS(signature)
-      const oneSignature = packSignatures([vrs])
-      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+        const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+        const message = createMessage(recipientAccount, valueOnHome, transactionHash, foreignBridge.address)
+        const signature = await sign(authorities[0], message)
+        const vrs = signatureToVRS(signature)
+        const oneSignature = packSignatures([vrs])
+        false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
+        const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
 
-      logs[0].event.should.be.equal('RelayedMessage')
-      logs[0].args.recipient.should.be.equal(recipientAccount)
-      logs[0].args.value.should.be.bignumber.equal(valueOnHome)
-      const balanceAfter = await token.balanceOf(recipientAccount)
-      balanceAfter.should.be.bignumber.equal(balanceBefore.add(valueOnForeign))
-      const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
-      balanceAfterBridge.should.be.bignumber.equal(ZERO)
-      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
-    })
-
-    it('Home to Foreign: withdraw with 2 minimum signatures with a decimalShift of 2', async () => {
-      const multisigValidatorContract = await BridgeValidators.new()
-      const valueOnForeign = toBN('1000')
-      const decimalShiftTwo = 2
-      const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
-      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
-      const twoAuthorities = [accounts[0], accounts[1]]
-      const ownerOfValidatorContract = accounts[3]
-      const recipient = accounts[8]
-      await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
-        from: ownerOfValidatorContract
+        logs[0].event.should.be.equal('RelayedMessage')
+        logs[0].args.recipient.should.be.equal(recipientAccount)
+        logs[0].args.value.should.be.bignumber.equal(valueOnHome)
+        const balanceAfter = await token.balanceOf(recipientAccount)
+        balanceAfter.should.be.bignumber.equal(balanceBefore.add(valueOnForeign))
+        const balanceAfterBridge = await token.balanceOf(foreignBridge.address)
+        balanceAfterBridge.should.be.bignumber.equal(ZERO)
+        true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
       })
-      const foreignBridgeWithMultiSignatures = await ForeignBridgeErcToNativeMock.new()
-      await foreignBridgeWithMultiSignatures.initialize(
-        multisigValidatorContract.address,
-        token.address,
-        requireBlockConfirmations,
-        gasPrice,
-        [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
-        owner,
-        decimalShiftTwo,
-        otherSideBridge.address,
-        { from: ownerOfValidatorContract }
-      )
-      await token.mint(foreignBridgeWithMultiSignatures.address, valueOnForeign)
 
-      const balanceBefore = await token.balanceOf(recipient)
+      it(`Home to Foreign: withdraw with 2 minimum signatures with a decimalShift of ${decimalShift}`, async () => {
+        const multisigValidatorContract = await BridgeValidators.new()
+        const valueOnForeign = toBN('1000')
+        const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
+        const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
+        const twoAuthorities = [accounts[0], accounts[1]]
+        const ownerOfValidatorContract = accounts[3]
+        const recipient = accounts[8]
+        await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
+          from: ownerOfValidatorContract
+        })
+        const foreignBridgeWithMultiSignatures = await ForeignBridgeErcToNativeMock.new()
+        await foreignBridgeWithMultiSignatures.initialize(
+          multisigValidatorContract.address,
+          token.address,
+          requireBlockConfirmations,
+          gasPrice,
+          [dailyLimit, maxPerTx, minPerTx],
+          [homeDailyLimit, homeMaxPerTx],
+          owner,
+          decimalShift,
+          otherSideBridge.address,
+          { from: ownerOfValidatorContract }
+        )
+        await token.mint(foreignBridgeWithMultiSignatures.address, valueOnForeign)
 
-      const txHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
-      const message = createMessage(recipient, valueOnHome, txHash, foreignBridgeWithMultiSignatures.address)
+        const balanceBefore = await token.balanceOf(recipient)
 
-      // signature 1
-      const signature = await sign(twoAuthorities[0], message)
-      const vrs = signatureToVRS(signature)
+        const txHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+        const message = createMessage(recipient, valueOnHome, txHash, foreignBridgeWithMultiSignatures.address)
 
-      // signature 2
-      const signature2 = await sign(twoAuthorities[1], message)
-      const vrs2 = signatureToVRS(signature2)
+        // signature 1
+        const signature = await sign(twoAuthorities[0], message)
+        const vrs = signatureToVRS(signature)
 
-      const twoSignatures = packSignatures([vrs, vrs2])
+        // signature 2
+        const signature2 = await sign(twoAuthorities[1], message)
+        const vrs2 = signatureToVRS(signature2)
 
-      const { logs } = await foreignBridgeWithMultiSignatures.executeSignatures(message, twoSignatures).should.be
-        .fulfilled
-      logs[0].event.should.be.equal('RelayedMessage')
-      logs[0].args.recipient.should.be.equal(recipient)
-      logs[0].args.value.should.be.bignumber.equal(valueOnHome)
-      const balanceAfter = await token.balanceOf(recipient)
-      balanceAfter.should.be.bignumber.equal(balanceBefore.add(valueOnForeign))
-      const balanceAfterBridge = await token.balanceOf(foreignBridgeWithMultiSignatures.address)
-      balanceAfterBridge.should.be.bignumber.equal(ZERO)
-      true.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(txHash))
-    })
+        const twoSignatures = packSignatures([vrs, vrs2])
+
+        const { logs } = await foreignBridgeWithMultiSignatures.executeSignatures(message, twoSignatures).should.be
+          .fulfilled
+        logs[0].event.should.be.equal('RelayedMessage')
+        logs[0].args.recipient.should.be.equal(recipient)
+        logs[0].args.value.should.be.bignumber.equal(valueOnHome)
+        const balanceAfter = await token.balanceOf(recipient)
+        balanceAfter.should.be.bignumber.equal(balanceBefore.add(valueOnForeign))
+        const balanceAfterBridge = await token.balanceOf(foreignBridgeWithMultiSignatures.address)
+        balanceAfterBridge.should.be.bignumber.equal(ZERO)
+        true.should.be.equal(await foreignBridgeWithMultiSignatures.relayedMessages(txHash))
+      })
+    }
   })
   describe('#relayTokens', () => {
     const value = ether('0.25')

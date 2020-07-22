@@ -28,10 +28,10 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     function initialize(
         address _bridgeContract,
         address _mediatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner,
         address _erc677token
     ) external onlyRelevantSender returns (bool) {
@@ -139,7 +139,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     * @param _value amount of tokens to be received
     */
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
-        uint256 valueToTransfer = _value.div(10**decimalShift());
+        uint256 valueToTransfer = _unshiftValue(_value);
         bytes32 _messageId = messageId();
 
         _setMediatorBalance(mediatorBalance().sub(valueToTransfer));

@@ -29,10 +29,10 @@ contract BasicAMBErc677ToErc677 is
         address _bridgeContract,
         address _mediatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner
     ) public onlyRelevantSender returns (bool) {
         require(!isInitialized());
@@ -52,7 +52,7 @@ contract BasicAMBErc677ToErc677 is
         uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
         _setRequestGasLimit(_requestGasLimit);
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
+        _setDecimalShift(_decimalShift);
         setOwner(_owner);
         setInitialize();
 

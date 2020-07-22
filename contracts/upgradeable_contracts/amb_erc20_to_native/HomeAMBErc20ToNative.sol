@@ -28,10 +28,10 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
     function initialize(
         address _bridgeContract,
         address _mediatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner,
         address _blockReward
     ) public onlyRelevantSender returns (bool) {
@@ -68,14 +68,14 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
     function rewardableInitialize(
         address _bridgeContract,
         address _mediatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner,
         address _blockReward,
         address[] _rewardAddreses,
-        uint256[] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
+        uint256[2] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     ) external returns (bool) {
         _setRewardAddressList(_rewardAddreses);
         _setFee(HOME_TO_FOREIGN_FEE, _fees[0]);
@@ -177,7 +177,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
     * @param _value amount of native tokens to be received
     */
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
-        uint256 valueToMint = _value.mul(10**decimalShift());
+        uint256 valueToMint = _shiftValue(_value);
         bytes32 _messageId = messageId();
 
         uint256 fee = _distributeFee(FOREIGN_TO_HOME_FEE, valueToMint);

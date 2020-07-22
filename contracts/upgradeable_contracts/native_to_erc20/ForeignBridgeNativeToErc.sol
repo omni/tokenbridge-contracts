@@ -14,12 +14,12 @@ contract ForeignBridgeNativeToErc is
     function initialize(
         address _validatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[2] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _bridgeOnOtherSide
     ) external onlyRelevantSender returns (bool) {
         _initialize(
@@ -40,14 +40,14 @@ contract ForeignBridgeNativeToErc is
     function rewardableInitialize(
         address _validatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[2] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
         address _feeManager,
         uint256 _homeFee,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _bridgeOnOtherSide
     ) external onlyRelevantSender returns (bool) {
         _initialize(
@@ -79,12 +79,12 @@ contract ForeignBridgeNativeToErc is
     function _initialize(
         address _validatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[2] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _bridgeOnOtherSide
     ) internal {
         require(!isInitialized());
@@ -108,7 +108,7 @@ contract ForeignBridgeNativeToErc is
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
         uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
         uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
+        _setDecimalShift(_decimalShift);
         setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
 
@@ -119,7 +119,7 @@ contract ForeignBridgeNativeToErc is
 
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {
         setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
-        uint256 valueToMint = _amount.div(10**decimalShift());
+        uint256 valueToMint = _unshiftValue(_amount);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, HOME_FEE);

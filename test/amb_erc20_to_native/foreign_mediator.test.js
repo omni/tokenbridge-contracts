@@ -142,6 +142,18 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         token.address
       ).should.be.rejected
 
+      // not valid decimal shift
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        100,
+        owner,
+        token.address
+      ).should.be.rejected
+
       const { logs } = await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
@@ -453,79 +465,80 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         expect(event[0].returnValues.messageId).to.be.equal(exampleMessageId)
       })
 
-      it('should unlock tokens on message from amb with decimal shift of two', async () => {
-        // Given
-        const decimalShiftTwo = 2
+      for (const decimalShift of [2, -1]) {
+        it(`should unlock tokens on message from amb with decimal shift of ${decimalShift}`, async () => {
+          // Given
 
-        contract = await ForeignAMBErc20ToNative.new()
-        await contract.initialize(
-          ambBridgeContract.address,
-          otherSideMediator.address,
-          [dailyLimit, maxPerTx, minPerTx],
-          [executionDailyLimit, executionMaxPerTx],
-          maxGasPerTx,
-          decimalShiftTwo,
-          owner,
-          token.address
-        ).should.be.fulfilled
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
-        expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
+          contract = await ForeignAMBErc20ToNative.new()
+          await contract.initialize(
+            ambBridgeContract.address,
+            otherSideMediator.address,
+            [dailyLimit, maxPerTx, minPerTx],
+            [executionDailyLimit, executionMaxPerTx],
+            maxGasPerTx,
+            decimalShift,
+            owner,
+            token.address
+          ).should.be.fulfilled
+          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+          expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
+          expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
 
-        const valueOnForeign = toBN('1000')
-        const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
+          const valueOnForeign = toBN('1000')
+          const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
 
-        const data = await contract.contract.methods.handleBridgedTokens(user, valueOnHome.toString()).encodeABI()
+          const data = await contract.contract.methods.handleBridgedTokens(user, valueOnHome.toString()).encodeABI()
 
-        await ambBridgeContract.executeMessageCall(
-          contract.address,
-          otherSideMediator.address,
-          data,
-          exampleMessageId,
-          1000000
-        ).should.be.fulfilled
+          await ambBridgeContract.executeMessageCall(
+            contract.address,
+            otherSideMediator.address,
+            data,
+            exampleMessageId,
+            1000000
+          ).should.be.fulfilled
 
-        expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
+          expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
 
-        // Then
-        expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(valueOnHome)
-        expect(await token.balanceOf(user)).to.be.bignumber.equal(valueOnForeign)
-        expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers.sub(valueOnForeign))
+          // Then
+          expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(valueOnHome)
+          expect(await token.balanceOf(user)).to.be.bignumber.equal(valueOnForeign)
+          expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers.sub(valueOnForeign))
 
-        const event = await getEvents(contract, { event: 'TokensBridged' })
-        expect(event.length).to.be.equal(1)
-        expect(event[0].returnValues.recipient).to.be.equal(user)
-        expect(event[0].returnValues.value).to.be.equal(valueOnForeign.toString())
-        expect(event[0].returnValues.messageId).to.be.equal(exampleMessageId)
-      })
+          const event = await getEvents(contract, { event: 'TokensBridged' })
+          expect(event.length).to.be.equal(1)
+          expect(event[0].returnValues.recipient).to.be.equal(user)
+          expect(event[0].returnValues.value).to.be.equal(valueOnForeign.toString())
+          expect(event[0].returnValues.messageId).to.be.equal(exampleMessageId)
+        })
 
-      it('should revert when out of execution limits on message from amb', async () => {
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
-        expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
+        it('should revert when out of execution limits on message from amb', async () => {
+          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+          expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
+          expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
 
-        // Given
-        const outOfLimitValueData = await contract.contract.methods
-          .handleBridgedTokens(user, twoEthers.toString())
-          .encodeABI()
+          // Given
+          const outOfLimitValueData = await contract.contract.methods
+            .handleBridgedTokens(user, twoEthers.toString())
+            .encodeABI()
 
-        // when
-        await ambBridgeContract.executeMessageCall(
-          contract.address,
-          otherSideMediator.address,
-          outOfLimitValueData,
-          failedMessageId,
-          1000000
-        ).should.be.fulfilled
+          // when
+          await ambBridgeContract.executeMessageCall(
+            contract.address,
+            otherSideMediator.address,
+            outOfLimitValueData,
+            failedMessageId,
+            1000000
+          ).should.be.fulfilled
 
-        expect(await ambBridgeContract.messageCallStatus(failedMessageId)).to.be.equal(false)
+          expect(await ambBridgeContract.messageCallStatus(failedMessageId)).to.be.equal(false)
 
-        // Then
-        expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-        expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
-      })
+          // Then
+          expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+          expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
+        })
+      }
     })
 
     describe('requestFailedMessageFix', () => {

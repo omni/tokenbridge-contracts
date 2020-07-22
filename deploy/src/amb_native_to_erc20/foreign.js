@@ -17,7 +17,7 @@ const {
     ForeignAMBNativeToErc20: ForeignBridge,
     ForeignFeeManagerAMBNativeToErc20,
     ERC677BridgeTokenRewardable,
-    ERC677BridgeToken
+    ERC677BridgeTokenPermittable
   }
 } = require('../loadContracts')
 const {
@@ -71,10 +71,13 @@ async function deployForeign() {
   nonce++
 
   console.log('\n[Foreign] Deploying Bridgeable token')
-  const erc677Contract = DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken
+  const erc677Contract = DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeTokenPermittable
+  const chainId = await web3Foreign.eth.getChainId()
+  assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
+  const args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS, chainId]
   const erc677token = await deployContract(
     erc677Contract,
-    [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
+    args,
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce }
   )
   nonce++

@@ -75,6 +75,16 @@ contract Token6 {
     }
 }
 
+contract Token7 {
+    function symbol() external view returns (string) {
+        return "";
+    }
+
+    function decimals() external view returns (uint8) {
+        return 0;
+    }
+}
+
 contract TokenReaderTest {
     function test1() external {
         address token = new Token1();
@@ -121,6 +131,14 @@ contract TokenReaderTest {
 
         require(keccak256(TokenReader.readName(token)) == keccak256("0123456789abcdef0123456789abcdefX"));
         require(keccak256(TokenReader.readSymbol(token)) == keccak256("0123456789abcdef0123456789abcdefY"));
+        require(TokenReader.readDecimals(token) == 0);
+    }
+
+    function test7() external {
+        address token = new Token7();
+
+        require(keccak256(TokenReader.readName(token)) == keccak256(""));
+        require(keccak256(TokenReader.readSymbol(token)) == keccak256(""));
         require(TokenReader.readDecimals(token) == 0);
     }
 }

@@ -257,12 +257,12 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
                 _minPerTx = 1;
                 if (_maxPerTx <= _minPerTx) {
                     _maxPerTx = 2;
-                    if (_dailyLimit <= _maxPerTx) {
+                    _executionMaxPerTx = 2;
+                    if (_dailyLimit <= _maxPerTx || _executionDailyLimit <= _executionMaxPerTx) {
                         _dailyLimit = 3;
+                        _executionDailyLimit = 3;
                     }
                 }
-                _executionMaxPerTx = _maxPerTx;
-                _executionDailyLimit = _dailyLimit;
             }
             _setLimits(_token, [_dailyLimit, _maxPerTx, _minPerTx]);
             _setExecutionLimits(_token, [_executionDailyLimit, _executionMaxPerTx]);

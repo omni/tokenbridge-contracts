@@ -38,6 +38,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
         uint256[2] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
+        require(_owner != address(0));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
@@ -45,7 +46,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
         _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
         setOwner(_owner);
-        _setRewardAddressList(_rewardAddreses);
+        if (_rewardAddreses.length > 0) {
+            _setRewardAddressList(_rewardAddreses);
+        }
         _setFee(HOME_TO_FOREIGN_FEE, address(0), _fees[0]);
         _setFee(FOREIGN_TO_HOME_FEE, address(0), _fees[1]);
         setInitialize();
@@ -118,6 +121,22 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
         if (lock()) return;
 
+        bool isKnownToken = isTokenRegistered(_token);
+        if (!isKnownToken) {
+            string memory name = TokenReader.readName(_token);
+            string memory symbol = TokenReader.readSymbol(_token);
+            uint8 decimals = uint8(TokenReader.readDecimals(_token));
+
+            require(bytes(name).length > 0 || bytes(symbol).length > 0);
+
+            _initializeTokenBridgeLimits(_token, decimals);
+            _setFee(HOME_TO_FOREIGN_FEE, _token, getFee(HOME_TO_FOREIGN_FEE, address(0)));
+            _setFee(FOREIGN_TO_HOME_FEE, _token, getFee(FOREIGN_TO_HOME_FEE, address(0)));
+        }
+
+        require(withinLimit(_token, _value));
+        addTotalSpentPerDay(_token, getCurrentDay(), _value);
+
         bytes memory data;
         address receiver = chooseReceiver(_from, _data);
         uint256 valueToBridge = _value;
@@ -127,15 +146,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
             valueToBridge = valueToBridge.sub(fee);
         }
 
-        if (minPerTx(_token) > 0) {
+        if (isKnownToken) {
             data = abi.encodeWithSelector(this.handleBridgedTokens.selector, _token, receiver, valueToBridge);
         } else {
-            string memory name = TokenReader.readName(_token);
-            string memory symbol = TokenReader.readSymbol(_token);
-            uint8 decimals = uint8(TokenReader.readDecimals(_token));
-
-            require(bytes(name).length > 0 || bytes(symbol).length > 0);
-
             data = abi.encodeWithSelector(
                 DEPLOY_AND_HANDLE_BRIDGE_TOKENS,
                 _token,
@@ -145,14 +158,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
                 receiver,
                 valueToBridge
             );
-
-            _initializeTokenBridgeLimits(_token, decimals);
-            _setFee(HOME_TO_FOREIGN_FEE, _token, getFee(HOME_TO_FOREIGN_FEE, address(0)));
-            _setFee(FOREIGN_TO_HOME_FEE, _token, getFee(FOREIGN_TO_HOME_FEE, address(0)));
         }
-
-        require(withinLimit(_token, _value));
-        addTotalSpentPerDay(_token, getCurrentDay(), _value);
 
         // avoid stack too deep error by using existing variable
         fee = mediatorBalance(_token).add(valueToBridge);
@@ -187,7 +193,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
     * @param _receiver the address that will receive the tokens on the other network.
     */
     function fixMediatorBalance(address _token, address _receiver) public onlyIfUpgradeabilityOwner {
-        require(minPerTx(_token) > 0); // token is already registered
+        require(isTokenRegistered(_token));
         uint256 balance = ERC677(_token).balanceOf(address(this));
         uint256 expectedBalance = mediatorBalance(_token);
         require(balance > expectedBalance);

@@ -12,6 +12,15 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     event ExecutionDailyLimitChanged(address indexed token, uint256 newLimit);
 
     /**
+    * @dev Checks if specified token was already bridged at least once.
+    * @param _token address of the token contract.
+    * @return true, if token address is address(0) or token was already bridged.
+    */
+    function isTokenRegistered(address _token) public view returns (bool) {
+        return minPerTx(_token) > 0;
+    }
+
+    /**
     * @dev Retrieves the total spent amount for particular token during specific day.
     * @param _token address of the token contract.
     * @param _day day number for which spent amount if requested.
@@ -114,7 +123,8 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     * 0 value is also allowed, will stop the bridge operations in outgoing direction.
     */
     function setDailyLimit(address _token, uint256 _dailyLimit) external onlyOwner {
-        require(_dailyLimit > maxPerTx(_token) || _dailyLimit == 0);
+        require(isTokenRegistered(_token));
+        require(_dailyLimit > maxPerTx(_token) || (_dailyLimit == 0 && _token != address(0)));
         uintStorage[keccak256(abi.encodePacked("dailyLimit", _token))] = _dailyLimit;
         emit DailyLimitChanged(_token, _dailyLimit);
     }
@@ -126,7 +136,8 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     * 0 value is also allowed, will stop the bridge operations in incoming direction.
     */
     function setExecutionDailyLimit(address _token, uint256 _dailyLimit) external onlyOwner {
-        require(_dailyLimit > executionMaxPerTx(_token) || _dailyLimit == 0);
+        require(isTokenRegistered(_token));
+        require(_dailyLimit > executionMaxPerTx(_token) || (_dailyLimit == 0 && _token != address(0)));
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit", _token))] = _dailyLimit;
         emit ExecutionDailyLimitChanged(_token, _dailyLimit);
     }
@@ -138,7 +149,8 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     * 0 value is also allowed, will stop the bridge operations in incoming direction.
     */
     function setExecutionMaxPerTx(address _token, uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx < executionDailyLimit(_token));
+        require(isTokenRegistered(_token));
+        require((_token != address(0) && _maxPerTx == 0) || (_maxPerTx > 0 && _maxPerTx < executionDailyLimit(_token)));
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx", _token))] = _maxPerTx;
     }
 
@@ -149,7 +161,10 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     * 0 value is also allowed, will stop the bridge operations in outgoing direction.
     */
     function setMaxPerTx(address _token, uint256 _maxPerTx) external onlyOwner {
-        require(_maxPerTx == 0 || (_maxPerTx > minPerTx(_token) && _maxPerTx < dailyLimit(_token)));
+        require(isTokenRegistered(_token));
+        require(
+            (_token != address(0) && _maxPerTx == 0) || (_maxPerTx > minPerTx(_token) && _maxPerTx < dailyLimit(_token))
+        );
         uintStorage[keccak256(abi.encodePacked("maxPerTx", _token))] = _maxPerTx;
     }
 
@@ -159,6 +174,7 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     * @param _minPerTx minumum amount of tokens per one transaction, should be less than maxPerTx and dailyLimit.
     */
     function setMinPerTx(address _token, uint256 _minPerTx) external onlyOwner {
+        require(isTokenRegistered(_token));
         require(_minPerTx > 0 && _minPerTx < dailyLimit(_token) && _minPerTx < maxPerTx(_token));
         uintStorage[keccak256(abi.encodePacked("minPerTx", _token))] = _minPerTx;
     }
@@ -229,16 +245,27 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function _initializeTokenBridgeLimits(address _token, uint256 _decimals) internal {
         uint256 factor;
-        if (_decimals <= 18) {
+        if (_decimals < 18) {
             factor = 10**(18 - _decimals);
-            _setLimits(
-                _token,
-                [dailyLimit(address(0)).div(factor), maxPerTx(address(0)).div(factor), minPerTx(address(0)).div(factor)]
-            );
-            _setExecutionLimits(
-                _token,
-                [executionDailyLimit(address(0)).div(factor), executionMaxPerTx(address(0)).div(factor)]
-            );
+
+            uint256 _minPerTx = minPerTx(address(0)).div(factor);
+            uint256 _maxPerTx = maxPerTx(address(0)).div(factor);
+            uint256 _dailyLimit = dailyLimit(address(0)).div(factor);
+            uint256 _executionMaxPerTx = executionMaxPerTx(address(0)).div(factor);
+            uint256 _executionDailyLimit = executionDailyLimit(address(0)).div(factor);
+            if (_minPerTx == 0) {
+                _minPerTx = 1;
+                if (_maxPerTx <= _minPerTx) {
+                    _maxPerTx = 2;
+                    if (_dailyLimit <= _maxPerTx) {
+                        _dailyLimit = 3;
+                    }
+                }
+                _executionMaxPerTx = _maxPerTx;
+                _executionDailyLimit = _dailyLimit;
+            }
+            _setLimits(_token, [_dailyLimit, _maxPerTx, _minPerTx]);
+            _setExecutionLimits(_token, [_executionDailyLimit, _executionMaxPerTx]);
         } else {
             factor = 10**(_decimals - 18);
             _setLimits(

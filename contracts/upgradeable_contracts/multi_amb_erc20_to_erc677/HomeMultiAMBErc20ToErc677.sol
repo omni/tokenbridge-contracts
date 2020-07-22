@@ -12,6 +12,8 @@ import "../../interfaces/IBurnableMintableERC677Token.sol";
 contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     bytes32 internal constant TOKEN_IMAGE_CONTRACT = 0x20b8ca26cc94f39fab299954184cf3a9bd04f69543e4f454fab299f015b8130f; // keccak256(abi.encodePacked("tokenImageContract"))
 
+    event NewTokenRegistered(address indexed foreignToken, address indexed homeToken);
+
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -22,7 +24,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
-    * @param _tokenImage address of the PermittableTokenContract that will be used for deploying of new tokens.
+    * @param _tokenImage address of the PermittableToken contract that will be used for deploying of new tokens.
     */
     function initialize(
         address _bridgeContract,
@@ -34,6 +36,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         address _tokenImage
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
+        require(_owner != address(0));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
@@ -41,7 +44,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
         setOwner(_owner);
-        _setTokenImageContract(_tokenImage);
+        _setTokenImage(_tokenImage);
         setInitialize();
 
         return isInitialized();
@@ -51,15 +54,15 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @dev Updates an address of the token image contract used for proxifying newly created tokens.
     * @param _tokenImage address of PermittableToken contract.
     */
-    function setTokenImageContract(address _tokenImage) external onlyOwner {
-        _setTokenImageContract(_tokenImage);
+    function setTokenImage(address _tokenImage) external onlyOwner {
+        _setTokenImage(_tokenImage);
     }
 
     /**
     * @dev Retrieves address of the token image contract.
     * @return address of block reward contract.
     */
-    function tokenImageContract() public view returns (address) {
+    function tokenImage() public view returns (address) {
         return addressStorage[TOKEN_IMAGE_CONTRACT];
     }
 
@@ -91,10 +94,12 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         }
         name = string(abi.encodePacked("x", name));
         symbol = string(abi.encodePacked("x", symbol));
-        address homeToken = new TokenProxy(tokenImageContract(), name, symbol, _decimals, bridgeContract().sourceChainId());
+        address homeToken = new TokenProxy(tokenImage(), name, symbol, _decimals, bridgeContract().sourceChainId());
         _setTokenAddressPair(_token, homeToken);
         _initializeTokenBridgeLimits(homeToken, _decimals);
         super.handleBridgedTokens(ERC677(homeToken), _recipient, _value);
+
+        emit NewTokenRegistered(_token, homeToken);
     }
 
     /**
@@ -176,7 +181,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @param _foreignToken address of the created home token contract.
     * @return address of the home token contract.
     */
-    function homeTokenAddress(address _foreignToken) internal view returns (address) {
+    function homeTokenAddress(address _foreignToken) public view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("homeTokenAddress", _foreignToken))];
     }
 
@@ -185,7 +190,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @param _homeToken address of the created home token contract.
     * @return address of the foreign token contract.
     */
-    function foreignTokenAddress(address _homeToken) internal view returns (address) {
+    function foreignTokenAddress(address _homeToken) public view returns (address) {
         return addressStorage[keccak256(abi.encodePacked("foreignTokenAddress", _homeToken))];
     }
 
@@ -203,7 +208,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @dev Internal function for updating an address of the token image contract.
     * @param _tokenImage address of deployed PermittableToken contract.
     */
-    function _setTokenImageContract(address _tokenImage) internal {
+    function _setTokenImage(address _tokenImage) internal {
         require(AddressUtils.isContract(_tokenImage));
         addressStorage[TOKEN_IMAGE_CONTRACT] = _tokenImage;
     }

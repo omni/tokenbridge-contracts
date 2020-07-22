@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+import "./BasicMultiTokenBridge.sol";
 import "../BaseRewardAddressList.sol";
 import "../Ownable.sol";
 import "../../interfaces/ERC677.sol";
@@ -9,7 +10,7 @@ import "../../interfaces/ERC677.sol";
 * @dev Implements the logic to distribute fees from the multi erc20 to erc677 mediator contract operations.
 * The fees are distributed in the form of native tokens to the list of reward accounts.
 */
-contract ForeignFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable {
+contract ForeignFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, BasicMultiTokenBridge {
     using SafeMath for uint256;
 
     event FeeUpdated(bytes32 feeType, address indexed token, uint256 fee);
@@ -96,6 +97,7 @@ contract ForeignFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownabl
     * @param _fee new fee value, in percentage (1 ether == 10**18 == 100%).
     */
     function _setFee(bytes32 _feeType, address _token, uint256 _fee) internal validFeeType(_feeType) validFee(_fee) {
+        require(isTokenRegistered(_token));
         uintStorage[keccak256(abi.encodePacked(_feeType, _token))] = _fee;
         emit FeeUpdated(_feeType, _token, _fee);
     }

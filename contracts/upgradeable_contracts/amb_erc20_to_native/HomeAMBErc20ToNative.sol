@@ -219,6 +219,10 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
     */
     function fixMediatorBalance(address _receiver) external onlyIfUpgradeabilityOwner {
         uint256 balance = address(this).balance;
+        uint256 available = maxAvailablePerTx();
+        if (balance > available) {
+            balance = available;
+        }
         require(balance > 0);
         addTotalSpentPerDay(getCurrentDay(), balance);
         passMessage(_receiver, _receiver, balance);

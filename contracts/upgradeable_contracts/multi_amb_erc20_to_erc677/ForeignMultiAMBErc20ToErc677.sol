@@ -198,8 +198,13 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
         uint256 expectedBalance = mediatorBalance(_token);
         require(balance > expectedBalance);
         uint256 diff = balance - expectedBalance;
+        uint256 available = maxAvailablePerTx(_token);
+        require(available > 0);
+        if (diff > available) {
+            diff = available;
+        }
         addTotalSpentPerDay(_token, getCurrentDay(), diff);
-        _setMediatorBalance(_token, balance);
+        _setMediatorBalance(_token, expectedBalance.add(diff));
 
         bytes memory data = abi.encodeWithSelector(this.handleBridgedTokens.selector, _token, _receiver, diff);
 

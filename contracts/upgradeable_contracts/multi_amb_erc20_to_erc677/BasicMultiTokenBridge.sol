@@ -180,6 +180,19 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     }
 
     /**
+    * @dev Retrieves maximum available bridge amount per one transaction taking into account maxPerTx() and dailyLimit() parameters.
+    * @param _token address of the token contract, or address(0) for the default limit.
+    * @return minimum of maxPerTx parameter and remaining daily quota.
+    */
+    function maxAvailablePerTx(address _token) public view returns (uint256) {
+        uint256 _maxPerTx = maxPerTx(_token);
+        uint256 _dailyLimit = dailyLimit(_token);
+        uint256 _spent = totalSpentPerDay(_token, getCurrentDay());
+        uint256 _remainingOutOfDaily = _dailyLimit > _spent ? _dailyLimit - _spent : 0;
+        return _maxPerTx < _remainingOutOfDaily ? _maxPerTx : _remainingOutOfDaily;
+    }
+
+    /**
     * @dev Internal function for adding spent amount for some token.
     * @param _token address of the token contract.
     * @param _day day number, when tokens are processed.

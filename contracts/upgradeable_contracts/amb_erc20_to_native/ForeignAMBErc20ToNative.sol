@@ -126,10 +126,16 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     */
     function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
         uint256 balance = _erc677token().balanceOf(address(this));
-        require(balance > mediatorBalance());
-        uint256 diff = balance.sub(mediatorBalance());
+        uint256 expectedBalance = mediatorBalance();
+        require(balance > expectedBalance);
+        uint256 diff = balance - expectedBalance;
+        uint256 available = maxAvailablePerTx();
+        require(available > 0);
+        if (diff > available) {
+            diff = available;
+        }
         addTotalSpentPerDay(getCurrentDay(), diff);
-        _setMediatorBalance(balance);
+        _setMediatorBalance(expectedBalance.add(diff));
         passMessage(_receiver, _receiver, diff);
     }
 

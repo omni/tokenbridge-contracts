@@ -793,6 +793,8 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
 
       await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
+      await contract.setDailyLimit(ether('3')).should.be.fulfilled
+      await contract.setMaxPerTx(twoEthers).should.be.fulfilled
 
       expect(await contract.mediatorBalance()).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
@@ -810,6 +812,46 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(twoEthers.add(halfEther))
       events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(2)
+    })
+
+    it('should allow to fix extra mediator balance with respect to limits', async () => {
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(ZERO)
+      expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
+
+      await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
+      await contract.setMinPerTx('1').should.be.fulfilled
+      await contract.setMaxPerTx(halfEther).should.be.fulfilled
+      await contract.setDailyLimit(ether('1.25')).should.be.fulfilled
+
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(halfEther)
+      expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+      let events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+
+      await contract.fixMediatorBalance(owner, { from: user }).should.be.rejected
+      // should fix 0.5 ether
+      await contract.fixMediatorBalance(owner, { from: owner }).should.be.fulfilled
+
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(oneEther)
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
+
+      // should fix 0.25 ether
+      await contract.fixMediatorBalance(owner, { from: owner }).should.be.fulfilled
+      // no remaining daily quota
+      await contract.fixMediatorBalance(owner, { from: owner }).should.be.rejected
+
+      await contract.setDailyLimit(oneEther).should.be.fulfilled
+
+      // no remaining daily quota
+      await contract.fixMediatorBalance(owner, { from: owner }).should.be.rejected
+
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(ether('1.25'))
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ether('1.25'))
+
+      expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(3)
     })
   })
 })

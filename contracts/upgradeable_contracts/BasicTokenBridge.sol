@@ -95,6 +95,18 @@ contract BasicTokenBridge is EternalStorage, Ownable, DecimalShiftBridge {
         uintStorage[MIN_PER_TX] = _minPerTx;
     }
 
+    /**
+    * @dev Retrieves maximum available bridge amount per one transaction taking into account maxPerTx() and dailyLimit() parameters.
+    * @return minimum of maxPerTx parameter and remaining daily quota.
+    */
+    function maxAvailablePerTx() public view returns (uint256) {
+        uint256 _maxPerTx = maxPerTx();
+        uint256 _dailyLimit = dailyLimit();
+        uint256 _spent = totalSpentPerDay(getCurrentDay());
+        uint256 _remainingOutOfDaily = _dailyLimit > _spent ? _dailyLimit - _spent : 0;
+        return _maxPerTx < _remainingOutOfDaily ? _maxPerTx : _remainingOutOfDaily;
+    }
+
     function _setLimits(uint256[3] _limits) internal {
         require(
             _limits[2] > 0 && // minPerTx > 0

@@ -1391,7 +1391,7 @@ contract('HomeAMBNativeToErc20', async accounts => {
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediatorContract.address,
-        [ether('5'), maxPerTx, minPerTx],
+        [ether('5'), threeEthers, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         decimalShiftZero,
@@ -1455,6 +1455,88 @@ contract('HomeAMBNativeToErc20', async accounts => {
 
       const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(4)
+      // Inlcude user address
+      expect(events[3].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+      // Include mediator address
+      expect(
+        events[3].returnValues.encodedData.includes(strip0x(otherSideMediatorContract.address).toLowerCase())
+      ).to.be.equal(true)
+      // Include handleBridgedTokens method selector
+      expect(events[3].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
+    })
+    it('should fix mediator imbalance with respect to limits', async () => {
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediatorContract.address,
+        [ether('4.5'), maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner,
+        ZERO_ADDRESS
+      ).should.be.fulfilled
+
+      // Given
+
+      // send some native tokens to the contract
+      await contract.sendTransaction({
+        from: user,
+        value: oneEther
+      }).should.be.fulfilled
+
+      await contract.sendTransaction({
+        from: user,
+        value: oneEther
+      }).should.be.fulfilled
+
+      await contract.sendTransaction({
+        from: user,
+        value: oneEther
+      }).should.be.fulfilled
+
+      const currentDay = await contract.getCurrentDay()
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(threeEthers)
+
+      // remove some native tokens from the contract
+      const data = await contract.contract.methods.handleBridgedTokens(user, oneEther.toString()).encodeABI()
+      await ambBridgeContract.executeMessageCall(
+        contract.address,
+        otherSideMediatorContract.address,
+        data,
+        exampleMessageId,
+        '1000000'
+      ).should.be.fulfilled
+      expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(oneEther)
+      expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(twoEthers)
+
+      // force some native tokens to the contract without calling the fallback method
+      await Sacrifice.new(contract.address, { value: ether('2.5') }).catch(() => {})
+      expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ether('4.5'))
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(threeEthers)
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
+
+      // When
+      // only owner can call the method
+      await contract.fixMediatorBalance(user, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+      await contract.fixMediatorBalance(user, { from: owner }).should.be.fulfilled
+
+      // Then
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ether('4'))
+      expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ether('4.5'))
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(threeEthers)
+
+      await contract.fixMediatorBalance(user, { from: owner }).should.be.fulfilled
+
+      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ether('4.5'))
+      expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ether('4.5'))
+      expect(await contract.mediatorBalance()).to.be.bignumber.equal(ether('3.5'))
+
+      // reached daily quota limit
+      await contract.fixMediatorBalance(user, { from: owner }).should.be.rejectedWith(ERROR_MSG)
+
+      const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(5)
       // Inlcude user address
       expect(events[3].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
       // Include mediator address

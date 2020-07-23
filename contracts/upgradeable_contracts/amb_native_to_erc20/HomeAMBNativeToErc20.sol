@@ -154,10 +154,16 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     */
     function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
         uint256 balance = address(this).balance;
-        require(balance > mediatorBalance());
-        uint256 diff = balance.sub(mediatorBalance());
+        uint256 expectedBalance = mediatorBalance();
+        require(balance > expectedBalance);
+        uint256 diff = balance - expectedBalance;
+        uint256 available = maxAvailablePerTx();
+        require(available > 0);
+        if (diff > available) {
+            diff = available;
+        }
         addTotalSpentPerDay(getCurrentDay(), diff);
-        setMediatorBalance(balance);
+        setMediatorBalance(expectedBalance.add(diff));
         passMessage(_receiver, _receiver, diff);
     }
 }

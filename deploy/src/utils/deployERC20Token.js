@@ -6,7 +6,7 @@ const { deployContract, privateKeyToAddress, sendRawTxForeign } = require('../de
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
 
 const {
-  foreignContracts: { ERC677MultiBridgeToken }
+  foreignContracts: { ERC677BridgeToken }
 } = require('../loadContracts')
 
 const {
@@ -22,16 +22,16 @@ async function deployToken() {
   let foreignNonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
   console.log('\n[Foreign] deploying ERC20 token')
   const erc677token = await deployContract(
-    ERC677MultiBridgeToken,
-    [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS, '42'],
+    ERC677BridgeToken,
+    [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS],
     { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce: foreignNonce }
   )
   foreignNonce++
   console.log('[Foreign] ERC20 Token: ', erc677token.options.address)
 
-  console.log('[Foreign] minting 900 tokens and transfer them to ', DEPLOYMENT_ACCOUNT_ADDRESS)
+  console.log('[Foreign] minting 100 tokens and transfer them to ', DEPLOYMENT_ACCOUNT_ADDRESS)
   const mintData = await erc677token.methods
-    .mint(DEPLOYMENT_ACCOUNT_ADDRESS, '900000000000000000000')
+    .mint(DEPLOYMENT_ACCOUNT_ADDRESS, '100000000000000000000')
     .encodeABI({ from: DEPLOYMENT_ACCOUNT_ADDRESS })
   const txMint = await sendRawTxForeign({
     data: mintData,

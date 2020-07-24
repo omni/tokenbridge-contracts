@@ -4,13 +4,12 @@ require('dotenv').config({
 })
 const { isAddress, toBN } = require('web3').utils
 const envalid = require('envalid')
-const { ZERO_ADDRESS, EVM_TYPES } = require('./constants')
+const { ZERO_ADDRESS } = require('./constants')
 
 const homePrefix = 'HOME'
 const foreignPrefix = 'FOREIGN'
 
 // Validations and constants
-const evmVersions = [EVM_TYPES.BYZANTIUM, EVM_TYPES.SPURIOUSDRAGON]
 const validBridgeModes = [
   'NATIVE_TO_ERC',
   'ERC_TO_ERC',
@@ -84,24 +83,10 @@ const {
   VALIDATORS_REWARD_ACCOUNTS,
   DEPLOY_REWARDABLE_TOKEN,
   DEPLOY_INTEREST_RECEIVER,
-  HOME_FEE_MANAGER_TYPE,
-  HOME_EVM_VERSION,
-  FOREIGN_EVM_VERSION
+  HOME_FEE_MANAGER_TYPE
 } = process.env
 
 // Types validations
-
-if (HOME_EVM_VERSION) {
-  if (!evmVersions.includes(HOME_EVM_VERSION)) {
-    throw new Error(`Invalid Home EVM Version: ${HOME_EVM_VERSION}. Supported values are ${evmVersions}`)
-  }
-}
-
-if (FOREIGN_EVM_VERSION) {
-  if (!evmVersions.includes(FOREIGN_EVM_VERSION)) {
-    throw new Error(`Invalid Foreign EVM Version: ${FOREIGN_EVM_VERSION}. Supported values are ${evmVersions}`)
-  }
-}
 
 if (!validBridgeModes.includes(BRIDGE_MODE)) {
   throw new Error(`Invalid bridge mode: ${BRIDGE_MODE}`)

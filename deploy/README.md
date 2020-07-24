@@ -32,14 +32,6 @@ This example of an `.env` file for the `native-to-erc` bridge mode includes comm
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=NATIVE_TO_ERC
 
-# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#HOME_EVM_VERSION=spuriousDragon
-
-# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#FOREIGN_EVM_VERSION=spuriousDragon
-
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
@@ -186,14 +178,6 @@ This example of an `.env` file for the `erc-to-erc` bridge mode includes comment
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=ERC_TO_ERC
 
-# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#HOME_EVM_VERSION=spuriousDragon
-
-# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#FOREIGN_EVM_VERSION=spuriousDragon
-
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
@@ -320,14 +304,6 @@ This example of an `.env` file for the `erc-to-native` bridge mode includes comm
 ```bash
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=ERC_TO_NATIVE
-
-# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#HOME_EVM_VERSION=spuriousDragon
-
-# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#FOREIGN_EVM_VERSION=spuriousDragon
 
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
@@ -555,14 +531,6 @@ This example of an `.env` file for the `AMB-ERC-TO-ERC` bridge mode includes com
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=AMB_ERC_TO_ERC
 
-# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#HOME_EVM_VERSION=spuriousDragon
-
-# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#FOREIGN_EVM_VERSION=spuriousDragon
-
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
@@ -672,14 +640,6 @@ This example of an `.env` file for the `STAKE-AMB-ERC-TO-ERC` bridge mode includ
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=STAKE_AMB_ERC_TO_ERC
 
-# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#HOME_EVM_VERSION=spuriousDragon
-
-# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#FOREIGN_EVM_VERSION=spuriousDragon
-
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.
@@ -781,14 +741,6 @@ This example of an `.env` file for the `AMB-NATIVE-TO-ERC` bridge mode includes 
 ```bash
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=AMB_NATIVE_TO_ERC
-
-# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#HOME_EVM_VERSION=spuriousDragon
-
-# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#FOREIGN_EVM_VERSION=spuriousDragon
 
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
@@ -914,14 +866,6 @@ This example of an `.env` file for the `AMB-ERC-TO-NATIVE` bridge mode includes 
 ```bash
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=AMB_ERC_TO_NATIVE
-
-# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#HOME_EVM_VERSION=spuriousDragon
-
-# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#FOREIGN_EVM_VERSION=spuriousDragon
 
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain

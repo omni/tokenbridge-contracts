@@ -1,17 +1,11 @@
 /* eslint import/no-dynamic-require: 0 */
-const { HOME_EVM_VERSION, FOREIGN_EVM_VERSION } = require('./loadEnv')
-const { EVM_TYPES } = require('./constants')
+const homeContracts = getContracts()
+const foreignContracts = getContracts()
 
-const homeContracts = getContracts(HOME_EVM_VERSION)
-const foreignContracts = getContracts(FOREIGN_EVM_VERSION)
-
-function getContracts(evmVersion) {
-  const buildPath = evmVersion === EVM_TYPES.SPURIOUSDRAGON ? 'spuriousDragon' : 'contracts'
-  const useClassicProxy = evmVersion === EVM_TYPES.SPURIOUSDRAGON
+function getContracts() {
+  const buildPath = 'contracts'
   return {
-    EternalStorageProxy: useClassicProxy
-      ? require(`../../build/${buildPath}/ClassicEternalStorageProxy.json`)
-      : require(`../../build/${buildPath}/EternalStorageProxy.json`),
+    EternalStorageProxy: require(`../../build/${buildPath}/EternalStorageProxy.json`),
     BridgeValidators: require(`../../build/${buildPath}/BridgeValidators.json`),
     RewardableValidators: require(`../../build/${buildPath}/RewardableValidators.json`),
     FeeManagerErcToErcPOSDAO: require(`../../build/${buildPath}/FeeManagerErcToErcPOSDAO.json`),
@@ -29,9 +23,7 @@ function getContracts(evmVersion) {
     FeeManagerNativeToErc: require(`../../build/${buildPath}/FeeManagerNativeToErc.json`),
     ForeignBridgeNativeToErc: require(`../../build/${buildPath}/ForeignBridgeNativeToErc.json`),
     FeeManagerNativeToErcBothDirections: require(`../../build/${buildPath}/FeeManagerNativeToErcBothDirections.json`),
-    HomeBridgeNativeToErc: useClassicProxy
-      ? require(`../../build/${buildPath}/ClassicHomeBridgeNativeToErc.json`)
-      : require(`../../build/${buildPath}/HomeBridgeNativeToErc.json`),
+    HomeBridgeNativeToErc: require(`../../build/${buildPath}/HomeBridgeNativeToErc.json`),
     BlockReward: require(`../../build/${buildPath}/BlockReward.json`),
     BlockRewardMock: require(`../../build/${buildPath}/BlockRewardMock.json`),
     HomeAMB: require(`../../build/${buildPath}/HomeAMB.json`),

@@ -1,6 +1,17 @@
 pragma solidity 0.4.24;
 
+/**
+ * @title TokenReader
+ * @dev Helper methods for reading name/symbol/decimals parameters from ERC20 token contracts.
+ */
 library TokenReader {
+    /**
+    * @dev Reads the name property of the provided token.
+    * Either name() or NAME() method is used.
+    * Both, string and bytes32 types are supported.
+    * @param _token address of the token contract.
+    * @return token name as a string or an empty string if none of the methods succeeded.
+    */
     function readName(address _token) internal view returns (string) {
         uint256 ptr;
         uint256 size;
@@ -48,6 +59,13 @@ library TokenReader {
         return res;
     }
 
+    /**
+    * @dev Reads the symbol property of the provided token.
+    * Either symbol() or SYMBOL() method is used.
+    * Both, string and bytes32 types are supported.
+    * @param _token address of the token contract.
+    * @return token symbol as a string or an empty string if none of the methods succeeded.
+    */
     function readSymbol(address _token) internal view returns (string) {
         uint256 ptr;
         uint256 size;
@@ -95,6 +113,12 @@ library TokenReader {
         return res;
     }
 
+    /**
+    * @dev Reads the decimals property of the provided token.
+    * Either decimals() or DECIMALS() method is used.
+    * @param _token address of the token contract.
+    * @return token decimals or 0 if none of the methods succeeded.
+    */
     function readDecimals(address _token) internal view returns (uint256) {
         uint256 decimals;
         assembly {

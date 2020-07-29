@@ -92,8 +92,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         } else if (bytes(symbol).length == 0) {
             symbol = name;
         }
-        name = string(abi.encodePacked("x", name));
-        symbol = string(abi.encodePacked("x", symbol));
+        name = string(abi.encodePacked(name, " on xDai"));
         address homeToken = new TokenProxy(tokenImage(), name, symbol, _decimals, bridgeContract().sourceChainId());
         _setTokenAddressPair(_token, homeToken);
         _initializeTokenBridgeLimits(homeToken, _decimals);

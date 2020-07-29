@@ -981,14 +981,6 @@ This example of an `.env` file for the `MULTI-AMB-ERC-TO-ERC` bridge mode includ
 # The type of bridge. Defines set of contracts to be deployed.
 BRIDGE_MODE=MULTI_AMB_ERC_TO_ERC
 
-# If Home network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#HOME_EVM_VERSION=spuriousDragon
-
-# If Foreign network does not support byzantium fork, should use contracts compiled for spuriousDragon
-# Default value is byzantium
-#FOREIGN_EVM_VERSION=spuriousDragon
-
 # The private key hex value of the account responsible for contracts
 # deployments and initial configuration. The account's balance must contain
 # funds from both networks.

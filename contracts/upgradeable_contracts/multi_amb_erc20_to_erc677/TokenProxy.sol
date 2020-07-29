@@ -38,20 +38,9 @@ contract TokenProxy is Proxy {
     constructor(address _tokenImage, string memory _name, string memory _symbol, uint8 _decimals, uint256 _chainId)
         public
     {
-        // same as
-        // string memory version = IPermittableTokenVersion(_tokenImage).version();
-        // but compiles without errors for spuriosDragon
-        uint256 versionLen;
-        IPermittableTokenVersion(_tokenImage).version(); // makes a call to version()
-        assembly {
-            let tmp := mload(0x40) // get free temporary memory
-            returndatacopy(tmp, 32, 32) // save length of returned string to memory slot pointed by tmp
-            versionLen := mload(tmp) // save length of returned string to versionLen variable
-        }
-        string memory version = new string(versionLen);
-        assembly {
-            returndatacopy(add(version, 32), 64, versionLen) // copy string itself to version variable
+        string memory version = IPermittableTokenVersion(_tokenImage).version();
 
+        assembly {
             // EIP 1967
             // bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)
             sstore(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc, _tokenImage)

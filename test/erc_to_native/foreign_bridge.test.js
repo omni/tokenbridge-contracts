@@ -4,9 +4,6 @@ const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const ERC20Mock = artifacts.require('ERC20Mock.sol')
-const ScdMcdMigrationMock = artifacts.require('ScdMcdMigrationMock.sol')
-const DaiAdapterMock = artifacts.require('DaiAdapterMock.sol')
-const SaiTopMock = artifacts.require('SaiTopMock.sol')
 const ForeignBridgeErcToNativeMock = artifacts.require('ForeignBridgeErcToNativeMock.sol')
 const VatMock = artifacts.require('VatMock')
 const DaiJoinMock = artifacts.require('DaiJoinMock')
@@ -73,8 +70,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   let otherSideBridge
   let sai
   let dai
-  let migrationContract
-  let saiTop
   const user = accounts[7]
   before(async () => {
     validatorContract = await BridgeValidators.new()
@@ -86,16 +81,10 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     // Used account 11 to deploy contracts. The contract addresses will be hardcoded in ForeignBridgeErcToNativeMock
     const deployAccount = accounts[10]
     sai = await ERC20Mock.new('sai', 'SAI', 18, { from: deployAccount })
-    saiTop = await SaiTopMock.new({ from: deployAccount })
     dai = await ERC20Mock.new('dai', 'DAI', 18)
-    const daiAdapterMock = await DaiAdapterMock.new(dai.address)
-    migrationContract = await ScdMcdMigrationMock.new(sai.address, daiAdapterMock.address, { from: deployAccount })
     await sai.transferOwnership(accounts[0], { from: deployAccount })
 
     await dai.mint(user, ether('100000'))
-
-    // migration contract can mint dai
-    await dai.transferOwnership(migrationContract.address)
   })
   describe('#initialize', async () => {
     it('should initialize', async () => {
@@ -1182,65 +1171,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       // Mint sai tokens to a user
       await sai.mint(user, twoEthers)
     })
-    describe('isTokenSwapAllowed', () => {
-      it('isTokenSwapAllowed should return always false', async () => {
-        // Given
-        expect(await foreignBridge.isTokenSwapAllowed(100)).to.be.equal(false)
-
-        // When
-        await saiTop.setCaged(150)
-
-        // Then
-        expect(await foreignBridge.isTokenSwapAllowed(100)).to.be.equal(false)
-        expect(await foreignBridge.isTokenSwapAllowed(150)).to.be.equal(false)
-        expect(await foreignBridge.isTokenSwapAllowed(200)).to.be.equal(false)
-
-        // reset the caged value
-        await saiTop.setCaged(0)
-      })
-    })
-    describe('isHDTokenBalanceAboveMinBalance', () => {
-      it('isHDTokenBalanceAboveMinBalance should return true if balance above the threshold ', async () => {
-        const threshold = halfEther
-        // Given
-        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-
-        await foreignBridge.setMinHDTokenBalance(threshold)
-
-        expect(await foreignBridge.minHDTokenBalance()).to.be.bignumber.equal(threshold)
-
-        expect(await foreignBridge.isHDTokenBalanceAboveMinBalance()).to.be.equal(false)
-
-        // When
-        await sai.mint(foreignBridge.address, oneEther)
-
-        // Then
-        expect(await foreignBridge.isHDTokenBalanceAboveMinBalance()).to.be.equal(true)
-      })
-    })
-    describe('halfDuplexErc20token', () => {
-      it('should be able to get half duplex erc20 token', async () => {
-        expect(await foreignBridge.halfDuplexErc20token()).to.be.equal(sai.address)
-      })
-    })
-    describe('swapTokens', () => {
-      it('should not be able to swap tokens calling swapTokens', async () => {
-        expect(await saiTop.caged()).to.be.bignumber.equal(ZERO)
-        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-
-        // should have sai balance
-        await foreignBridge.swapTokens().should.be.rejectedWith(ERROR_MSG)
-
-        // mint sai tokens to bridge
-        await sai.mint(foreignBridge.address, oneEther)
-
-        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
-        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-
-        await foreignBridge.swapTokens().should.be.rejectedWith(ERROR_MSG)
-      })
-    })
     describe('relayTokens', () => {
       const value = ether('0.25')
       it('should allow to bridge tokens specifying the token address', async () => {
@@ -1290,20 +1220,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           value
         })
         expect(await dai.balanceOf(user)).to.be.bignumber.equal(balance.sub(value))
-      })
-      it('should not swap token if half duplex token is used', async () => {
-        // Given
-        const relayTokens = foreignBridge.methods['relayTokens(address,uint256,address)']
-
-        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        const currentDay = await foreignBridge.getCurrentDay()
-        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-
-        await sai.approve(foreignBridge.address, value, { from: user }).should.be.fulfilled
-
-        // When
-        await relayTokens(recipient, value, sai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
       })
       it('should fail if token address is unknown', async () => {
         const otherToken = await ERC20Mock.new('token', 'TOK', 18)
@@ -1435,37 +1351,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         expect(await chaiToken.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
       })
     })
-    describe('onExecuteMessage', () => {
-      it('should not swap Tokens in executeSignatures', async () => {
-        const value = ether('0.25')
-        const recipientAccount = accounts[3]
-        const balanceBefore = await dai.balanceOf(recipientAccount)
-
-        // fund dai tokens
-        await dai.transfer(foreignBridge.address, value, { from: user })
-
-        // mint sai tokens to bridge
-        await sai.mint(foreignBridge.address, halfEther)
-
-        const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
-        const message = createMessage(recipientAccount, value, transactionHash, foreignBridge.address)
-        const signature = await sign(authorities[0], message)
-        const vrs = signatureToVRS(signature)
-        const oneSignature = packSignatures([vrs])
-        expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(false)
-
-        const { logs } = await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
-
-        expectEventInLogs(logs, 'RelayedMessage', {
-          recipient: recipientAccount,
-          value
-        })
-        expect(await dai.balanceOf(recipientAccount)).to.be.bignumber.equal(balanceBefore.add(value))
-        expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
-        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
-        expect(await foreignBridge.relayedMessages(transactionHash)).to.be.equal(true)
-      })
-    })
     describe('claimTokens', async () => {
       it('can send erc20', async () => {
         const foreignBridgeImpl = await ForeignBridgeErcToNativeMock.new()
@@ -1485,8 +1370,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           otherSideBridge.address
         )
 
-        expect(await saiTop.caged()).to.be.bignumber.equal(ZERO)
-
         // Mint sai tokens to the bridge
         await sai.mint(foreignBridge.address, halfEther)
 
@@ -1499,9 +1382,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await foreignBridge.claimTokens(sai.address, accounts[3], { from: owner })
         expect(await sai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(ZERO)
         expect(await sai.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
-
-        // reset the caged value
-        await saiTop.setCaged(0)
       })
     })
   })
@@ -2212,41 +2092,6 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
 
           await foreignBridge.executeSignatures(message, oneSignature).should.be.fulfilled
         }
-      })
-    })
-
-    describe('fixLockedSai', async () => {
-      it('should fix 49.938645266079271041 locked sai tokens', async () => {
-        const foreignBridgeProxy = await EternalStorageProxy.new().should.be.fulfilled
-        await foreignBridgeProxy.upgradeTo('1', foreignBridge.address).should.be.fulfilled
-        foreignBridge = await ForeignBridge.at(foreignBridgeProxy.address)
-        await foreignBridge.initialize(
-          validatorContract.address,
-          token.address,
-          requireBlockConfirmations,
-          gasPrice,
-          [dailyLimit, maxPerTx, minPerTx],
-          [homeDailyLimit, homeMaxPerTx],
-          owner,
-          decimalShiftZero,
-          otherSideBridge.address
-        ).should.be.fulfilled
-
-        await sai.mint(foreignBridge.address, 100)
-
-        const foreignBridge2 = await ForeignBridgeErcToNativeMock.new()
-        const foreignBridge3 = await ForeignBridgeErcToNativeMock.new()
-
-        const data = foreignBridge.contract.methods.fixLockedSai(accounts[9]).encodeABI()
-
-        await foreignBridgeProxy.upgradeToAndCall('2', foreignBridge2.address, data).should.be.fulfilled
-
-        await sai.mint(foreignBridge.address, 100)
-
-        await foreignBridgeProxy.upgradeToAndCall('3', foreignBridge3.address, data).should.be.rejected
-
-        expect(await sai.balanceOf(accounts[9])).to.be.bignumber.equal('100')
-        expect(await foreignBridge.investedAmountInDai()).to.be.bignumber.equal('49938645266079271041')
       })
     })
   })

@@ -2,9 +2,8 @@ const { CoverageSubprovider, Web3ProviderEngine } = require('@0x/sol-coverage')
 const { TruffleArtifactAdapter } = require('@0x/sol-trace')
 const { GanacheSubprovider } = require('@0x/subproviders')
 
-const spuriousDragonVersion = process.argv[3] === 'spuriousDragon'
-const contractsBuildDirectory = spuriousDragonVersion ? './build/spuriousDragon' : './build/contracts'
-const evmVersion = spuriousDragonVersion ? 'spuriousDragon' : 'byzantium'
+const contractsBuildDirectory = './build/contracts'
+const evmVersion = 'byzantium'
 const mochaOptions =
   process.env.GASREPORT === 'true'
     ? {

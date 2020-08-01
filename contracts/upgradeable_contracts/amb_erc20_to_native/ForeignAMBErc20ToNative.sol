@@ -94,7 +94,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
         require(msg.sender == address(token));
         if (!lock()) {
             require(withinLimit(_value));
-            setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+            addTotalSpentPerDay(getCurrentDay(), _value);
             _setMediatorBalance(mediatorBalance().add(_value));
         }
         bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
@@ -126,10 +126,16 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     */
     function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
         uint256 balance = _erc677token().balanceOf(address(this));
-        require(balance > mediatorBalance());
-        uint256 diff = balance.sub(mediatorBalance());
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(diff));
-        _setMediatorBalance(balance);
+        uint256 expectedBalance = mediatorBalance();
+        require(balance > expectedBalance);
+        uint256 diff = balance - expectedBalance;
+        uint256 available = maxAvailablePerTx();
+        require(available > 0);
+        if (diff > available) {
+            diff = available;
+        }
+        addTotalSpentPerDay(getCurrentDay(), diff);
+        _setMediatorBalance(expectedBalance.add(diff));
         passMessage(_receiver, _receiver, diff);
     }
 
@@ -191,7 +197,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
         ERC677 token = _erc677token();
         address to = address(this);
         require(withinLimit(_value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        addTotalSpentPerDay(getCurrentDay(), _value);
         _setMediatorBalance(mediatorBalance().add(_value));
 
         setLock(true);

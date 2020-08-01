@@ -33,27 +33,15 @@ contract BasicAMBErc20ToNative is Initializable, Upgradeable, Claimable, Version
         address _owner
     ) internal {
         require(!isInitialized());
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // maxPerTx > minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // dailyLimit > maxPerTx
-        );
-        require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // foreignMaxPerTx < foreignDailyLimit
         require(_owner != address(0));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
         _setRequestGasLimit(_requestGasLimit);
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
+        _setExecutionLimits(_executionDailyLimitExecutionMaxPerTxArray);
         _setDecimalShift(_decimalShift);
         setOwner(_owner);
-
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxArray[0]);
     }
 
     /**

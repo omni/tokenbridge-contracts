@@ -29,7 +29,7 @@ contract HomeBridgeErcToNative is
         uint256 totalMinted = blockReward.mintedTotallyByBridge(address(this));
         uint256 totalBurnt = totalBurntCoins();
         require(msg.value <= totalMinted.sub(totalBurnt));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        addTotalSpentPerDay(getCurrentDay(), msg.value);
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
         uint256 valueToBurn = msg.value;
@@ -131,36 +131,22 @@ contract HomeBridgeErcToNative is
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_requiredBlockConfirmations > 0);
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
         require(_blockReward == address(0) || AddressUtils.isContract(_blockReward));
-        require(_foreignDailyLimitForeignMaxPerTxArray[1] < _foreignDailyLimitForeignMaxPerTxArray[0]); // _foreignMaxPerTx < _foreignDailyLimit
         require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
         _setGasPrice(_homeGasPrice);
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        _setRequiredBlockConfirmations(_requiredBlockConfirmations);
         addressStorage[BLOCK_REWARD_CONTRACT] = _blockReward;
-        uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _foreignDailyLimitForeignMaxPerTxArray[1];
+        _setExecutionLimits(_foreignDailyLimitForeignMaxPerTxArray);
         _setDecimalShift(_decimalShift);
         setOwner(_owner);
-
-        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxArray[0]);
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+        addTotalExecutedPerDay(getCurrentDay(), _value);
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
         uint256 valueToMint = _shiftValue(_value);

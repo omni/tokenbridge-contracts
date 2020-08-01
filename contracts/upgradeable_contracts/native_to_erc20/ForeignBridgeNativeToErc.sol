@@ -89,36 +89,22 @@ contract ForeignBridgeNativeToErc is
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(_requiredBlockConfirmations > 0);
-        require(_homeDailyLimitHomeMaxPerTxArray[1] < _homeDailyLimitHomeMaxPerTxArray[0]); // _homeMaxPerTx < _homeDailyLimit
         require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc677token(_erc677token);
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
         _setGasPrice(_foreignGasPrice);
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
+        _setRequiredBlockConfirmations(_requiredBlockConfirmations);
+        _setExecutionLimits(_homeDailyLimitHomeMaxPerTxArray);
         _setDecimalShift(_decimalShift);
         setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
-
-        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
+        addTotalExecutedPerDay(getCurrentDay(), _amount);
         uint256 valueToMint = _unshiftValue(_amount);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {

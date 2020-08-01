@@ -1,8 +1,5 @@
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-const EVM_TYPES = {
-  BYZANTIUM: 'byzantium',
-  SPURIOUSDRAGON: 'spuriousDragon'
-}
+
 const EXPLORER_TYPES = {
   ETHERSCAN: 'etherscan',
   BLOCKSCOUT: 'blockscout'
@@ -13,7 +10,6 @@ const REQUEST_STATUS = {
 
 module.exports = {
   ZERO_ADDRESS,
-  EVM_TYPES,
   EXPLORER_TYPES,
   REQUEST_STATUS
 }

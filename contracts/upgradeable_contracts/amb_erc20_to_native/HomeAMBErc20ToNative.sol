@@ -148,7 +148,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
         uint256 totalBurnt = totalBurntCoins();
         require(msg.value <= totalMinted.sub(totalBurnt));
 
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        addTotalSpentPerDay(getCurrentDay(), msg.value);
 
         uint256 valueToTransfer = msg.value;
         bytes32 _messageId = messageId();
@@ -219,8 +219,12 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
     */
     function fixMediatorBalance(address _receiver) external onlyIfUpgradeabilityOwner {
         uint256 balance = address(this).balance;
+        uint256 available = maxAvailablePerTx();
+        if (balance > available) {
+            balance = available;
+        }
         require(balance > 0);
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(balance));
+        addTotalSpentPerDay(getCurrentDay(), balance);
         passMessage(_receiver, _receiver, balance);
         _burnCoins(balance);
     }

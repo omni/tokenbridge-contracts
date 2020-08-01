@@ -32,18 +32,15 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_requiredBlockConfirmations > 0);
 
         _setChainIds(_sourceChainId, _destinationChainId);
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
         _setGasPrice(_gasPrice);
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        _setRequiredBlockConfirmations(_requiredBlockConfirmations);
         setOwner(_owner);
         setInitialize();
-
-        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
 
         return isInitialized();
     }

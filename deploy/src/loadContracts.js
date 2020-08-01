@@ -39,6 +39,8 @@ function getContracts() {
     ForeignFeeManagerAMBNativeToErc20: require(`../../build/${buildPath}/ForeignFeeManagerAMBNativeToErc20.json`),
     ForeignAMBErc20ToNative: require(`../../build/${buildPath}/ForeignAMBErc20ToNative.json`),
     HomeAMBErc20ToNative: require(`../../build/${buildPath}/HomeAMBErc20ToNative.json`),
+    ForeignMultiAMBErc20ToErc677: require(`../../build/${buildPath}/ForeignMultiAMBErc20ToErc677.json`),
+    HomeMultiAMBErc20ToErc677: require(`../../build/${buildPath}/HomeMultiAMBErc20ToErc677.json`),
   }
 }
 

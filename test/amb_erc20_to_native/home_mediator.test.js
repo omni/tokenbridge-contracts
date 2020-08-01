@@ -991,6 +991,53 @@ contract('HomeAMBErc20ToNative', async accounts => {
         // Include handleBridgedTokens method selector
         expect(events[0].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
       })
+
+      it('should fix mediator imbalance with respect to limits', async () => {
+        // force some native tokens to the contract without calling the fallback method
+        await Sacrifice.new(contract.address, { value: oneEther }).catch(() => {})
+        expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(oneEther)
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+        await contract.setMinPerTx('1').should.be.fulfilled
+        await contract.setMaxPerTx(ether('0.5')).should.be.fulfilled
+
+        // When
+        // only owner can call the method
+        await contract.fixMediatorBalance(user, { from: user }).should.be.rejected
+
+        await contract.fixMediatorBalance(user, { from: owner }).should.be.fulfilled
+
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('0.5'))
+
+        await contract.setDailyLimit(ether('0.75')).should.be.fulfilled
+
+        await contract.fixMediatorBalance(user, { from: owner }).should.be.fulfilled
+
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('0.75'))
+
+        // daily limit quota reached
+        await contract.fixMediatorBalance(user, { from: owner }).should.be.rejected
+
+        await contract.setDailyLimit(ether('0.6')).should.be.fulfilled
+
+        // daily limit quota reached
+        await contract.fixMediatorBalance(user, { from: owner }).should.be.rejected
+
+        // Then
+        expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ether('0.25'))
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ether('0.75'))
+
+        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+        expect(events.length).to.be.equal(2)
+        // Include user address
+        expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
+        // Include mediator address
+        expect(
+          events[0].returnValues.encodedData.includes(strip0x(otherSideMediator.address).toLowerCase())
+        ).to.be.equal(true)
+        // Include handleBridgedTokens method selector
+        expect(events[0].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
+      })
     })
   })
 

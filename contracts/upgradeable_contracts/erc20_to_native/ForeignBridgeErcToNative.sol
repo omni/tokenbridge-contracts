@@ -19,34 +19,20 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_requiredBlockConfirmations != 0);
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(_homeDailyLimitHomeMaxPerTxArray[1] < _homeDailyLimitHomeMaxPerTxArray[0]); // _homeMaxPerTx < _homeDailyLimit
         require(_owner != address(0));
         require(_bridgeOnOtherSide != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
+        _setRequiredBlockConfirmations(_requiredBlockConfirmations);
         _setGasPrice(_gasPrice);
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
+        _setExecutionLimits(_homeDailyLimitHomeMaxPerTxArray);
         _setDecimalShift(_decimalShift);
         setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
         setInitialize();
-
-        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
 
         return isInitialized();
     }
@@ -67,7 +53,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uint256 _amount,
         bytes32 /*_txHash*/
     ) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
+        addTotalExecutedPerDay(getCurrentDay(), _amount);
         uint256 amount = _unshiftValue(_amount);
 
         uint256 currentBalance = tokenBalance(erc20token());
@@ -126,7 +112,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         require(tokenToOperate == fdToken);
 
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_amount));
+        addTotalSpentPerDay(getCurrentDay(), _amount);
 
         tokenToOperate.transferFrom(_sender, address(this), _amount);
         emit UserRequestForAffirmation(_receiver, _amount);

@@ -120,7 +120,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
         ERC677 token = erc677token();
         address to = address(this);
         require(withinLimit(_value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        addTotalSpentPerDay(getCurrentDay(), _value);
 
         setLock(true);
         token.transferFrom(_from, to, _value);
@@ -152,7 +152,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
         require(msg.sender == address(token));
         if (!lock()) {
             require(withinLimit(_value));
-            setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+            addTotalSpentPerDay(getCurrentDay(), _value);
         }
         bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
         return true;

@@ -15,7 +15,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     function nativeTransfer(address _receiver) internal {
         require(msg.value > 0);
         require(withinLimit(msg.value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(msg.value));
+        addTotalSpentPerDay(getCurrentDay(), msg.value);
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
@@ -94,30 +94,16 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_requiredBlockConfirmations > 0);
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(_foreignDailyLimitForeignMaxPerTxArray[1] < _foreignDailyLimitForeignMaxPerTxArray[0]); // _foreignMaxPerTx < _foreignDailyLimit
         require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
         _setGasPrice(_homeGasPrice);
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _foreignDailyLimitForeignMaxPerTxArray[1];
+        _setRequiredBlockConfirmations(_requiredBlockConfirmations);
+        _setExecutionLimits(_foreignDailyLimitForeignMaxPerTxArray);
         _setDecimalShift(_decimalShift);
         setOwner(_owner);
-
-        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxArray[0]);
     }
 
     function onSignaturesCollected(bytes _message) internal {
@@ -136,7 +122,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
+        addTotalExecutedPerDay(getCurrentDay(), _value);
         uint256 valueToTransfer = _shiftValue(_value);
 
         address feeManager = feeManagerContract();

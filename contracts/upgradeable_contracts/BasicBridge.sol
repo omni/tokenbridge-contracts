@@ -7,8 +7,17 @@ import "./Validatable.sol";
 import "./Ownable.sol";
 import "./Claimable.sol";
 import "./VersionableBridge.sol";
+import "./DecimalShiftBridge.sol";
 
-contract BasicBridge is InitializableBridge, Validatable, Ownable, Upgradeable, Claimable, VersionableBridge {
+contract BasicBridge is
+    InitializableBridge,
+    Validatable,
+    Ownable,
+    Upgradeable,
+    Claimable,
+    VersionableBridge,
+    DecimalShiftBridge
+{
     event GasPriceChanged(uint256 gasPrice);
     event RequiredBlockConfirmationChanged(uint256 requiredBlockConfirmations);
 
@@ -28,6 +37,10 @@ contract BasicBridge is InitializableBridge, Validatable, Ownable, Upgradeable, 
     }
 
     function setRequiredBlockConfirmations(uint256 _blockConfirmations) external onlyOwner {
+        _setRequiredBlockConfirmations(_blockConfirmations);
+    }
+
+    function _setRequiredBlockConfirmations(uint256 _blockConfirmations) internal {
         require(_blockConfirmations > 0);
         uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _blockConfirmations;
         emit RequiredBlockConfirmationChanged(_blockConfirmations);

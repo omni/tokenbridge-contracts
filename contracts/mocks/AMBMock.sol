@@ -64,4 +64,8 @@ contract AMBMock {
         emit MockedEvent(_messageId, eventData);
         return _messageId;
     }
+
+    function sourceChainId() external pure returns (uint256) {
+        return 1337;
+    }
 }

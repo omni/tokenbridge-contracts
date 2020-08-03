@@ -1053,24 +1053,24 @@ HOME_MEDIATOR_REQUEST_GAS_LIMIT=2000000
 FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT=2000000
 
 # Variable to define whether to collect fee on bridge transfers
-# On this this bridge mode, fees collection on home side is not supported, should be false.
-HOME_REWARDABLE=false
 # On this bridge mode only BOTH_DIRECTIONS is supported, leave false to disable fees collection
+HOME_REWARDABLE=false
+# On this this bridge mode, fees collection on home side is not supported, should be false.
 FOREIGN_REWARDABLE=false
 
 # Fee to be taken for every transaction directed from the Home network to the Foreign network
-# Makes sense only when FOREIGN_REWARDABLE=BOTH_DIRECTIONS
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
 # e.g. 0.1% fee
 HOME_TRANSACTIONS_FEE=0.001
 # Fee to be taken for every transaction directed from the Foreign network to the Home network
-# Makes sense only when FOREIGN_REWARDABLE=BOTH_DIRECTIONS
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
 # e.g. 0.1% fee
 FOREIGN_TRANSACTIONS_FEE=0.001
 
 # List of accounts where rewards should be transferred in Home network separated by space without quotes
-# Makes sense only when FOREIGN_REWARDABLE=BOTH_DIRECTIONS
-#E.g. FOREIGN_MEDIATOR_REWARD_ACCOUNTS=0x 0x 0x
-FOREIGN_MEDIATOR_REWARD_ACCOUNTS=0x
+# Makes sense only when HOME_REWARDABLE=BOTH_DIRECTIONS
+#E.g. HOME_MEDIATOR_REWARD_ACCOUNTS=0x 0x 0x
+HOME_MEDIATOR_REWARD_ACCOUNTS=0x
 
 # address of an already deployed PermittableToken contract that will be used as an implementation for all new created tokens
 # leave 0x, if you want to deploy a new PermittableToken for further usage

@@ -115,6 +115,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
      */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
         if (lock()) return;
+        require(dailyLimit(address(0)) > 0);
 
         bool isKnownToken = isTokenRegistered(_token);
         if (!isKnownToken) {

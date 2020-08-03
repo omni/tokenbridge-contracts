@@ -32,6 +32,7 @@ ForeignMultiAMBErc20ToErc677::onTokenTransfer/relayTokens
 ....MultiTokenBridgeMediator::setMessageToken
 ....TransferInfoStorage::setMessageValue
 ....TransferInfoStorage::setMessageRecipient
+....ForeignMultiAMBErc20ToErc677::_setTokenRegistrationMessageId
 >>Bridge
 ....MessageDelivery::requireToPassMessage
 ......ForeignAMB::emitEventOnMessageRequest
@@ -72,7 +73,7 @@ BasicHomeAMB::executeAffirmation
 ..........HomeMultiAMBErc20ToErc677::_setTokenAddressPair
 ..........BasicMultiTokenBridge::_initializeTokenBridgeLimits
 ............emit NewTokenRegistered
-..........MultiTokenBridgeMediator::handleBridgedTokens
+..........MultiTokenBridgeMediator::_handleBridgedTokens
 ............HomeMultiAMBErc20ToErc677::executeActionOnBridgedTokens
 ..............ERC677BridgeToken::mint
 ................<######>
@@ -96,7 +97,7 @@ BasicHomeAMB::executeAffirmation
 >>Mediator
 ........HomeMultiAMBErc20ToErc677::handleBridgedTokens
 ..........HomeMultiAMBErc20ToErc677::homeTokenAddress
-..........MultiTokenBridgeMediator::handleBridgedTokens
+..........MultiTokenBridgeMediator::_handleBridgedTokens
 ............HomeMultiAMBErc20ToErc677::executeActionOnBridgedTokens
 ..............ERC677BridgeToken::mint
 ................<######>
@@ -156,14 +157,15 @@ BasicForeignAMB::executeSignatures
 ........MessageProcessor::setMessageSender
 ........MessageProcessor::setMessageId
 >>Mediator
-........MultiTokenBridgeMediator::handleBridgedTokens
-..........ForeignMultiAMBErc20ToErc677::executeActionOnBridgedTokens
-............ForeignFeeManagerMultiAMBErc20ToErc677::_distributeFee
-............ForeignMultiAMBErc20ToErc677::_setMediatorBalance
+........ForeignMultiAMBErc20ToErc677::handleBridgedTokens
+..........MultiTokenBridgeMediator::_handleBridgedTokens
+............ForeignMultiAMBErc20ToErc677::executeActionOnBridgedTokens
+..............ForeignFeeManagerMultiAMBErc20ToErc677::_distributeFee
+..............ForeignMultiAMBErc20ToErc677::_setMediatorBalance
 >>Token
-..............ERC20::transfer
+................ERC20::transfer
 >>Mediator
-............emit TokensBridged
+..............emit TokensBridged
 >>Bridge
 ......MessageProcessor::setMessageCallStatus
 ......ForeignAMB::emitEventOnMessageProcessed
@@ -199,7 +201,7 @@ BasicForeignAMB::executeSignatures
 ........MessageProcessor::setMessageSender
 ........MessageProcessor::setMessageId
 >>Mediator
-........[failed MultiTokenBridgeMediator::handleBridgedTokens]
+........[failed ForeignMultiAMBErc20ToErc677::handleBridgedTokens]
 >>Bridge
 ......MessageProcessor::setMessageCallStatus
 ......MessageProcessor::setFailedMessageReceiver
@@ -269,7 +271,7 @@ BasicHomeAMB::executeAffirmation
 ........MessageProcessor::setMessageSender
 ........MessageProcessor::setMessageId
 >>Mediator
-........[failed MultiTokenBridgeMediator::handleBridgedTokens/deployAndHandleBridgedTokens]
+........[failed HomeMultiAMBErc20ToErc677::handleBridgedTokens/deployAndHandleBridgedTokens]
 >>Bridge
 ......MessageProcessor::setMessageCallStatus
 ......MessageProcessor::setFailedMessageReceiver
@@ -307,15 +309,18 @@ BasicForeignAMB::executeSignatures
 ........MessageProcessor::setMessageSender
 ........MessageProcessor::setMessageId
 >>Mediator
-........MultiTokenBridgeMediator::fixFailedMessage
-..........MultiTokenBridgeMediator::messageToken
-..........MultiTokenBridgeMediator::messageRecipient
-..........MultiTokenBridgeMediator::messageValue
-..........ForeignMultiAMBErc20ToErc677::executeActionOnFixedTokens
+........HomeMultiAMBErc20ToErc677::fixFailedMessage
+..........MultiTokenBridgeMediator::fixFailedMessage
+............MultiTokenBridgeMediator::messageToken
+............MultiTokenBridgeMediator::messageRecipient
+............MultiTokenBridgeMediator::messageValue
+............ForeignMultiAMBErc20ToErc677::executeActionOnFixedTokens
+............ForeignMultiAMBErc20ToErc677::tokenRegistrationMessageId
+............[ForeignMultiAMBErc20ToErc677::_setTokenRegistrationMessageId]
 >>Token
-............ERC20::transfer
+..............ERC20::transfer
 >>Mediator
-..........emit FailedMessageFixed
+............emit FailedMessageFixed
 >>Bridge
 ......MessageProcessor::setMessageCallStatus
 ......ForeignAMB::emitEventOnMessageProcessed

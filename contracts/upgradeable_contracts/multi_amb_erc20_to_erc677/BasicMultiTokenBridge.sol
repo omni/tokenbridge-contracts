@@ -266,14 +266,18 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
             uint256 _dailyLimit = dailyLimit(address(0)).div(factor);
             uint256 _executionMaxPerTx = executionMaxPerTx(address(0)).div(factor);
             uint256 _executionDailyLimit = executionDailyLimit(address(0)).div(factor);
+
+            // such situation can happen when calculated limits relative to the token decimals are too low
+            // e.g. minPerTx(address(0)) == 10 ** 14, _decimals == 3. _minPerTx happens to be 0, which is not allowed.
+            // in this case, limits are raised to the default values
             if (_minPerTx == 0) {
                 _minPerTx = 1;
                 if (_maxPerTx <= _minPerTx) {
-                    _maxPerTx = 2;
-                    _executionMaxPerTx = 2;
+                    _maxPerTx = 100;
+                    _executionMaxPerTx = 100;
                     if (_dailyLimit <= _maxPerTx || _executionDailyLimit <= _executionMaxPerTx) {
-                        _dailyLimit = 3;
-                        _executionDailyLimit = 3;
+                        _dailyLimit = 10000;
+                        _executionDailyLimit = 10000;
                     }
                 }
             }

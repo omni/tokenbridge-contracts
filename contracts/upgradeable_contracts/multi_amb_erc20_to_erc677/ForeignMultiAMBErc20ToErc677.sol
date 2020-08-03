@@ -2,7 +2,7 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./BasicMultiAMBErc20ToErc677.sol";
-import "./ForeignFeeManagerMultiAMBErc20ToErc677.sol";
+import "./HomeMultiAMBErc20ToErc677.sol";
 import "../../libraries/TokenReader.sol";
 
 /**
@@ -10,9 +10,7 @@ import "../../libraries/TokenReader.sol";
  * @dev Foreign side implementation for multi-erc20-to-erc677 mediator intended to work on top of AMB bridge.
  * It is designed to be used as an implementation contract of EternalStorageProxy contract.
  */
-contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeManagerMultiAMBErc20ToErc677 {
-    bytes4 internal constant DEPLOY_AND_HANDLE_BRIDGE_TOKENS = 0x2ae87cdd; // deployAndHandleBridgedTokens(address,string,string,uint8,address,uint256)
-
+contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -23,9 +21,6 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
     *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
-    * @param _rewardAddreses list of reward addresses, between whom fees will be distributed.
-    * @param _fees array with initial fees for both bridge firections.
-    *   [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     */
     function initialize(
         address _bridgeContract,
@@ -33,9 +28,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
         uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
-        address _owner,
-        address[] _rewardAddreses,
-        uint256[2] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
+        address _owner
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(_owner != address(0));
@@ -46,11 +39,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
         _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
         setOwner(_owner);
-        if (_rewardAddreses.length > 0) {
-            _setRewardAddressList(_rewardAddreses);
-        }
-        _setFee(HOME_TO_FOREIGN_FEE, address(0), _fees[0]);
-        _setFee(FOREIGN_TO_HOME_FEE, address(0), _fees[1]);
+
         setInitialize();
 
         return isInitialized();
@@ -64,15 +53,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
      */
     function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal {
         bytes32 _messageId = messageId();
-        uint256 valueToTransfer = _value;
-        uint256 fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToTransfer);
-        if (fee > 0) {
-            emit FeeDistributed(fee, _token, _messageId);
-            valueToTransfer = valueToTransfer.sub(fee);
-        }
-        ERC677(_token).transfer(_recipient, valueToTransfer);
+        ERC677(_token).transfer(_recipient, _value);
         _setMediatorBalance(_token, mediatorBalance(_token).sub(_value));
-        emit TokensBridged(_token, _recipient, valueToTransfer, _messageId);
+        emit TokensBridged(_token, _recipient, _value, _messageId);
     }
 
     /**
@@ -87,6 +70,18 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
             bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
         }
         return true;
+    }
+
+    /**
+    * @dev Handles the bridged tokens. Checks that the value is inside the execution limits and invokes the method
+    * to execute the Mint or Unlock accordingly.
+    * @param _token bridged ERC20 token.
+    * @param _recipient address that will receive the tokens.
+    * @param _value amount of tokens to be received.
+    */
+    function handleBridgedTokens(ERC677 _token, address _recipient, uint256 _value) external onlyMediator {
+        require(isTokenRegistered(_token));
+        _handleBridgedTokens(_token, _recipient, _value);
     }
 
     /**
@@ -130,8 +125,6 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
             require(bytes(name).length > 0 || bytes(symbol).length > 0);
 
             _initializeTokenBridgeLimits(_token, decimals);
-            _setFee(HOME_TO_FOREIGN_FEE, _token, getFee(HOME_TO_FOREIGN_FEE, address(0)));
-            _setFee(FOREIGN_TO_HOME_FEE, _token, getFee(FOREIGN_TO_HOME_FEE, address(0)));
         }
 
         require(withinLimit(_token, _value));
@@ -139,30 +132,22 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
 
         bytes memory data;
         address receiver = chooseReceiver(_from, _data);
-        uint256 valueToBridge = _value;
-        uint256 fee = _distributeFee(FOREIGN_TO_HOME_FEE, _token, valueToBridge);
-        if (fee > 0) {
-            emit FeeDistributed(fee, _token, _messageId);
-            valueToBridge = valueToBridge.sub(fee);
-        }
 
         if (isKnownToken) {
-            data = abi.encodeWithSelector(this.handleBridgedTokens.selector, _token, receiver, valueToBridge);
+            data = abi.encodeWithSelector(this.handleBridgedTokens.selector, _token, receiver, _value);
         } else {
             data = abi.encodeWithSelector(
-                DEPLOY_AND_HANDLE_BRIDGE_TOKENS,
+                HomeMultiAMBErc20ToErc677(this).deployAndHandleBridgedTokens.selector,
                 _token,
                 name,
                 symbol,
                 decimals,
                 receiver,
-                valueToBridge
+                _value
             );
         }
 
-        // avoid stack too deep error by using existing variable
-        fee = mediatorBalance(_token).add(valueToBridge);
-        _setMediatorBalance(_token, fee);
+        _setMediatorBalance(_token, mediatorBalance(_token).add(_value));
 
         bytes32 _messageId = bridgeContract().requireToPassMessage(
             mediatorContractOnOtherSide(),
@@ -171,8 +156,30 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
         );
 
         setMessageToken(_messageId, _token);
-        setMessageValue(_messageId, valueToBridge);
+        setMessageValue(_messageId, _value);
         setMessageRecipient(_messageId, _from);
+
+        if (!isKnownToken) {
+            _setTokenRegistrationMessageId(_token, _messageId);
+        }
+    }
+
+    /**
+    * @dev Handles the request to fix transferred assets which bridged message execution failed on the other network.
+    * It uses the information stored by passMessage method when the assets were initially transferred
+    * @param _messageId id of the message which execution failed on the other network.
+    */
+    function fixFailedMessage(bytes32 _messageId) public {
+        super.fixFailedMessage(_messageId);
+        address token = messageToken(_messageId);
+        if (_messageId == tokenRegistrationMessageId(token)) {
+            delete uintStorage[keccak256(abi.encodePacked("dailyLimit", token))];
+            delete uintStorage[keccak256(abi.encodePacked("maxPerTx", token))];
+            delete uintStorage[keccak256(abi.encodePacked("minPerTx", token))];
+            delete uintStorage[keccak256(abi.encodePacked("executionDailyLimit", token))];
+            delete uintStorage[keccak256(abi.encodePacked("executionMaxPerTx", token))];
+            _setTokenRegistrationMessageId(token, bytes32(0));
+        }
     }
 
     /**
@@ -229,11 +236,29 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, ForeignFeeM
     }
 
     /**
+    * @dev Returns message id where specified token was first seen and deploy on the other side was requested.
+    * @param _token address of token contract.
+    * @return message id of the send message.
+    */
+    function tokenRegistrationMessageId(address _token) public view returns (bytes32) {
+        return bytes32(uintStorage[keccak256(abi.encodePacked("tokenRegistrationMessageId", _token))]);
+    }
+
+    /**
     * @dev Updates expected token balance of the contract.
     * @param _token address of token contract.
     * @param _balance the new token balance of the contract.
     */
     function _setMediatorBalance(address _token, uint256 _balance) internal {
         uintStorage[keccak256(abi.encodePacked("mediatorBalance", _token))] = _balance;
+    }
+
+    /**
+    * @dev Updates message id where specified token was first seen and deploy on the other side was requested.
+    * @param _token address of token contract.
+    * @param _messageId message id of the send message.
+    */
+    function _setTokenRegistrationMessageId(address _token, bytes32 _messageId) internal {
+        uintStorage[keccak256(abi.encodePacked("tokenRegistrationMessageId", _token))] = uint256(_messageId);
     }
 }

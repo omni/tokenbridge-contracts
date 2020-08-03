@@ -40,9 +40,7 @@ contract TokenBridgeMediator is BasicAMBMediator, BasicTokenBridge, TransferInfo
     * @param _recipient address that will receive the tokens
     * @param _value amount of tokens to be received
     */
-    function handleBridgedTokens(address _recipient, uint256 _value) external {
-        require(msg.sender == address(bridgeContract()));
-        require(messageSender() == mediatorContractOnOtherSide());
+    function handleBridgedTokens(address _recipient, uint256 _value) external onlyMediator {
         if (withinExecutionLimit(_value)) {
             addTotalExecutedPerDay(getCurrentDay(), _value);
             executeActionOnBridgedTokens(_recipient, _value);
@@ -71,9 +69,7 @@ contract TokenBridgeMediator is BasicAMBMediator, BasicTokenBridge, TransferInfo
     * It uses the information stored by passMessage method when the assets were initially transferred
     * @param _messageId id of the message which execution failed on the other network.
     */
-    function fixFailedMessage(bytes32 _messageId) external {
-        require(msg.sender == address(bridgeContract()));
-        require(messageSender() == mediatorContractOnOtherSide());
+    function fixFailedMessage(bytes32 _messageId) external onlyMediator {
         require(!messageFixed(_messageId));
 
         address recipient = messageRecipient(_messageId);

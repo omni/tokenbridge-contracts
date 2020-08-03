@@ -458,11 +458,11 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         token = await bridgeToken(token, '1')
 
         expect(await token.decimals()).to.be.bignumber.equal('0')
-        expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('3')
-        expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('2')
+        expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('10000')
+        expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('100')
         expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('1')
-        expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal('3')
-        expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal('2')
+        expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal('10000')
+        expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal('100')
       })
 
       it('should initialize fees', async () => {

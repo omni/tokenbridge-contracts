@@ -547,6 +547,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           let events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
           expect(events.length).to.be.equal(1)
           let encodedData = strip0x(events[0].returnValues.encodedData)
+          const { messageId } = events[0].returnValues
           let calldata = encodedData.slice(2 * (4 + 20 + 8 + 20 + 20 + 4 + 1 + 1 + 1 + 2 + 2)) // remove AMB header
           expect(calldata.slice(0, 8)).to.be.equal('2ae87cdd')
           let args = web3.eth.abi.decodeParameters(
@@ -559,6 +560,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           expect(args[3]).to.be.equal((await token.decimals()).toString())
           expect(args[4]).to.be.equal(receiver)
           expect(args[5]).to.be.equal(value.toString())
+          expect(await contract.tokenRegistrationMessageId(token.address)).to.be.equal(messageId)
 
           await send()
 
@@ -835,6 +837,14 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
           expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(ZERO)
           expect(await contract.messageFixed(transferMessageId)).to.be.equal(true)
+          expect(await contract.tokenRegistrationMessageId(token.address)).to.be.equal(
+            '0x0000000000000000000000000000000000000000000000000000000000000000'
+          )
+          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('0')
+          expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('0')
+          expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('0')
+          expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal('0')
+          expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal('0')
 
           const event = await getEvents(contract, { event: 'FailedMessageFixed' })
           expect(event.length).to.be.equal(1)

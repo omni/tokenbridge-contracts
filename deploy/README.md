@@ -1073,8 +1073,8 @@ FOREIGN_TRANSACTIONS_FEE=0.001
 HOME_MEDIATOR_REWARD_ACCOUNTS=0x
 
 # address of an already deployed PermittableToken contract that will be used as an implementation for all new created tokens
-# leave 0x, if you want to deploy a new PermittableToken for further usage
-HOME_ERC677_TOKEN_IMAGE=0x
+# leave empty, if you want to deploy a new PermittableToken for further usage
+HOME_ERC677_TOKEN_IMAGE=
 
 # The api url of an explorer to verify all the deployed contracts in Home network. Supported explorers: Blockscout, etherscan
 #HOME_EXPLORER_URL=https://blockscout.com/poa/core/api

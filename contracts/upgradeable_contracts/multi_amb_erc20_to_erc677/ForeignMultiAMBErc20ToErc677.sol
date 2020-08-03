@@ -158,6 +158,28 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         setMessageToken(_messageId, _token);
         setMessageValue(_messageId, _value);
         setMessageRecipient(_messageId, _from);
+
+        if (!isKnownToken) {
+            _setTokenRegistrationMessageId(_token, _messageId);
+        }
+    }
+
+    /**
+    * @dev Handles the request to fix transferred assets which bridged message execution failed on the other network.
+    * It uses the information stored by passMessage method when the assets were initially transferred
+    * @param _messageId id of the message which execution failed on the other network.
+    */
+    function fixFailedMessage(bytes32 _messageId) public {
+        super.fixFailedMessage(_messageId);
+        address token = messageToken(_messageId);
+        if (_messageId == tokenRegistrationMessageId(token)) {
+            delete uintStorage[keccak256(abi.encodePacked("dailyLimit", token))];
+            delete uintStorage[keccak256(abi.encodePacked("maxPerTx", token))];
+            delete uintStorage[keccak256(abi.encodePacked("minPerTx", token))];
+            delete uintStorage[keccak256(abi.encodePacked("executionDailyLimit", token))];
+            delete uintStorage[keccak256(abi.encodePacked("executionMaxPerTx", token))];
+            _setTokenRegistrationMessageId(token, bytes32(0));
+        }
     }
 
     /**
@@ -214,11 +236,29 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     }
 
     /**
+    * @dev Returns message id where specified token was first seen and deploy on the other side was requested.
+    * @param _token address of token contract.
+    * @return message id of the send message.
+    */
+    function tokenRegistrationMessageId(address _token) public view returns (bytes32) {
+        return bytes32(uintStorage[keccak256(abi.encodePacked("tokenRegistrationMessageId", _token))]);
+    }
+
+    /**
     * @dev Updates expected token balance of the contract.
     * @param _token address of token contract.
     * @param _balance the new token balance of the contract.
     */
     function _setMediatorBalance(address _token, uint256 _balance) internal {
         uintStorage[keccak256(abi.encodePacked("mediatorBalance", _token))] = _balance;
+    }
+
+    /**
+    * @dev Updates message id where specified token was first seen and deploy on the other side was requested.
+    * @param _token address of token contract.
+    * @param _messageId message id of the send message.
+    */
+    function _setTokenRegistrationMessageId(address _token, bytes32 _messageId) internal {
+        uintStorage[keccak256(abi.encodePacked("tokenRegistrationMessageId", _token))] = uint256(_messageId);
     }
 }

@@ -72,7 +72,7 @@ contract MultiTokenBridgeMediator is
     * It uses the information stored by passMessage method when the assets were initially transferred
     * @param _messageId id of the message which execution failed on the other network.
     */
-    function fixFailedMessage(bytes32 _messageId) external onlyMediator {
+    function fixFailedMessage(bytes32 _messageId) public onlyMediator {
         require(!messageFixed(_messageId));
 
         address token = messageToken(_messageId);

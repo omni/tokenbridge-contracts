@@ -600,11 +600,11 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         await token.mint(user, '1').should.be.fulfilled
         await token.transfer(contract.address, '1', { from: user }).should.be.fulfilled
 
-        expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('3')
-        expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('2')
+        expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('10000')
+        expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('100')
         expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('1')
-        expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal('3')
-        expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal('2')
+        expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal('10000')
+        expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal('100')
       })
     })
 

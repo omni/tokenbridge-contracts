@@ -32,6 +32,7 @@ ForeignMultiAMBErc20ToErc677::onTokenTransfer/relayTokens
 ....MultiTokenBridgeMediator::setMessageToken
 ....TransferInfoStorage::setMessageValue
 ....TransferInfoStorage::setMessageRecipient
+....ForeignMultiAMBErc20ToErc677::_setTokenRegistrationMessageId
 >>Bridge
 ....MessageDelivery::requireToPassMessage
 ......ForeignAMB::emitEventOnMessageRequest
@@ -308,15 +309,18 @@ BasicForeignAMB::executeSignatures
 ........MessageProcessor::setMessageSender
 ........MessageProcessor::setMessageId
 >>Mediator
-........MultiTokenBridgeMediator::fixFailedMessage
-..........MultiTokenBridgeMediator::messageToken
-..........MultiTokenBridgeMediator::messageRecipient
-..........MultiTokenBridgeMediator::messageValue
-..........ForeignMultiAMBErc20ToErc677::executeActionOnFixedTokens
+........HomeMultiAMBErc20ToErc677::fixFailedMessage
+..........MultiTokenBridgeMediator::fixFailedMessage
+............MultiTokenBridgeMediator::messageToken
+............MultiTokenBridgeMediator::messageRecipient
+............MultiTokenBridgeMediator::messageValue
+............ForeignMultiAMBErc20ToErc677::executeActionOnFixedTokens
+............ForeignMultiAMBErc20ToErc677::tokenRegistrationMessageId
+............[ForeignMultiAMBErc20ToErc677::_setTokenRegistrationMessageId]
 >>Token
-............ERC20::transfer
+..............ERC20::transfer
 >>Mediator
-..........emit FailedMessageFixed
+............emit FailedMessageFixed
 >>Bridge
 ......MessageProcessor::setMessageCallStatus
 ......ForeignAMB::emitEventOnMessageProcessed

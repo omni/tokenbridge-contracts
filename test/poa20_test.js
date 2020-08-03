@@ -7,6 +7,8 @@ const StakingTest = artifacts.require('Staking.sol')
 const HomeErcToErcBridge = artifacts.require('HomeBridgeErcToErc.sol')
 const ForeignNativeToErcBridge = artifacts.require('ForeignBridgeNativeToErc.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
+const TokenProxy = artifacts.require('TokenProxy.sol')
+const PermittableTokenMock = artifacts.require('PermittableTokenMock.sol')
 
 const { expect } = require('chai')
 const ethUtil = require('ethereumjs-util')
@@ -25,11 +27,10 @@ const executionMaxPerTx = halfEther
 const ZERO = new BN(0)
 const decimalShiftZero = 0
 
-async function testERC677BridgeToken(accounts, rewardable) {
+async function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
   let token
   const owner = accounts[0]
   const user = accounts[1]
-  const tokenContract = rewardable ? POA20RewardableMock : POA20
 
   async function addBridge(token, bridge, options = { from: owner }) {
     if (rewardable) {
@@ -47,10 +48,10 @@ async function testERC677BridgeToken(accounts, rewardable) {
 
   beforeEach(async () => {
     const args = ['POA ERC20 Foundation', 'POA20', 18]
-    if (rewardable) {
+    if (permittable) {
       args.push(100)
     }
-    token = await tokenContract.new(...args)
+    token = await createToken(args)
   })
   it('default values', async () => {
     expect(await token.symbol()).to.be.equal('POA20')
@@ -554,10 +555,10 @@ async function testERC677BridgeToken(accounts, rewardable) {
       const halfEther = ether('0.5')
 
       const args = ['Roman Token', 'RST', 18]
-      if (rewardable) {
+      if (permittable) {
         args.push(100)
       }
-      const tokenSecond = await tokenContract.new(...args)
+      const tokenSecond = await createToken(args)
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
@@ -606,10 +607,10 @@ async function testERC677BridgeToken(accounts, rewardable) {
     })
     it('if transfer called on contract, still works even if onTokenTransfer doesnot exist', async () => {
       const args = ['Some', 'Token', 18]
-      if (rewardable) {
+      if (permittable) {
         args.push(100)
       }
-      const someContract = await tokenContract.new(...args)
+      const someContract = await createToken(args)
       await token.mint(user, '2', { from: owner }).should.be.fulfilled
       const tokenTransfer = await token.transfer(someContract.address, '1', { from: user }).should.be.fulfilled
       const tokenTransfer2 = await token.transfer(accounts[0], '1', { from: user }).should.be.fulfilled
@@ -625,7 +626,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
       await token.renounceOwnership().should.be.rejectedWith(ERROR_MSG)
     })
   })
-  if (rewardable) {
+  if (permittable) {
     describe('permit', () => {
       const privateKey = '0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501210'
       const infinite = new BN('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)
@@ -690,7 +691,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(infinite)
 
         // The caller of `permit` can't spend holder's funds
-        await token.transferFrom(holder, accounts[9], '10000').should.be.rejectedWith(ERROR_MSG_OPCODE)
+        await token.transferFrom(holder, accounts[9], '10000').should.be.rejected
         ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
 
         // Spender can transfer all holder's funds
@@ -823,9 +824,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN('0'))
 
         // Spender can't transfer the remaining holder's funds because of zero allowance
-        await token
-          .transferFrom(holder, accounts[9], '4000', { from: spender })
-          .should.be.rejectedWith(ERROR_MSG_OPCODE)
+        await token.transferFrom(holder, accounts[9], '4000', { from: spender }).should.be.rejected
       })
       it('should fail when invalid signature or parameters', async () => {
         let signature = permitSign(
@@ -912,9 +911,36 @@ async function testERC677BridgeToken(accounts, rewardable) {
 }
 
 contract('ERC677BridgeToken', async accounts => {
-  await testERC677BridgeToken(accounts, false)
+  await testERC677BridgeToken(accounts, false, false, args => POA20.new(...args))
 })
 
 contract('ERC677BridgeTokenRewardable', async accounts => {
-  await testERC677BridgeToken(accounts, true)
+  await testERC677BridgeToken(accounts, true, true, args => POA20RewardableMock.new(...args))
+})
+
+contract('TokenProxy', async accounts => {
+  const createToken = async args => {
+    const impl = await PermittableTokenMock.new(...args)
+    const proxy = await TokenProxy.new(impl.address, ...args)
+    return PermittableTokenMock.at(proxy.address)
+  }
+
+  await testERC677BridgeToken(accounts, false, true, createToken)
+
+  describe('constants', () => {
+    let token
+    beforeEach(async () => {
+      token = await createToken(['POA ERC20 Foundation', 'POA20', 18, 100])
+    })
+
+    it('should return version', async () => {
+      expect(await token.version()).to.be.equal('1')
+    })
+
+    it('should return PERMIT_TYPEHASH', async () => {
+      expect(await token.PERMIT_TYPEHASH()).to.be.equal(
+        '0xea2aa0a1be11a07ed86d755c93467f4f82362b452371d1ba94d1715123511acb'
+      )
+    })
+  })
 })

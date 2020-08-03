@@ -4,13 +4,14 @@ import "./BasicMultiTokenBridge.sol";
 import "../BaseRewardAddressList.sol";
 import "../Ownable.sol";
 import "../../interfaces/ERC677.sol";
+import "../../interfaces/IBurnableMintableERC677Token.sol";
 
 /**
-* @title ForeignFeeManagerMultiAMBErc20ToErc677
+* @title HomeFeeManagerMultiAMBErc20ToErc677
 * @dev Implements the logic to distribute fees from the multi erc20 to erc677 mediator contract operations.
 * The fees are distributed in the form of native tokens to the list of reward accounts.
 */
-contract ForeignFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, BasicMultiTokenBridge {
+contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, BasicMultiTokenBridge {
     using SafeMath for uint256;
 
     event FeeUpdated(bytes32 feeType, address indexed token, uint256 fee);
@@ -141,7 +142,11 @@ contract ForeignFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownabl
                 feeToDistribute = feeToDistribute.add(diff);
             }
 
-            ERC677(_token).transfer(nextAddr, feeToDistribute);
+            if (_feeType == HOME_TO_FOREIGN_FEE) {
+                ERC677(_token).transfer(nextAddr, feeToDistribute);
+            } else {
+                IBurnableMintableERC677Token(_token).mint(nextAddr, feeToDistribute);
+            }
 
             nextAddr = getNextRewardAddress(nextAddr);
             require(nextAddr != address(0));

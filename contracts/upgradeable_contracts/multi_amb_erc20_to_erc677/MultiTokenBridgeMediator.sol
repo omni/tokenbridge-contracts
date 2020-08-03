@@ -43,9 +43,7 @@ contract MultiTokenBridgeMediator is
     * @param _recipient address that will receive the tokens
     * @param _value amount of tokens to be received
     */
-    function handleBridgedTokens(ERC677 _token, address _recipient, uint256 _value) public {
-        require(msg.sender == address(bridgeContract()));
-        require(messageSender() == mediatorContractOnOtherSide());
+    function _handleBridgedTokens(ERC677 _token, address _recipient, uint256 _value) internal {
         if (withinExecutionLimit(_token, _value)) {
             addTotalExecutedPerDay(_token, getCurrentDay(), _value);
             executeActionOnBridgedTokens(_token, _recipient, _value);
@@ -74,9 +72,7 @@ contract MultiTokenBridgeMediator is
     * It uses the information stored by passMessage method when the assets were initially transferred
     * @param _messageId id of the message which execution failed on the other network.
     */
-    function fixFailedMessage(bytes32 _messageId) external {
-        require(msg.sender == address(bridgeContract()));
-        require(messageSender() == mediatorContractOnOtherSide());
+    function fixFailedMessage(bytes32 _messageId) external onlyMediator {
         require(!messageFixed(_messageId));
 
         address token = messageToken(_messageId);

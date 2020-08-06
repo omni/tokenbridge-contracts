@@ -19,7 +19,8 @@ const validBridgeModes = [
   'STAKE_AMB_ERC_TO_ERC',
   'AMB_NATIVE_TO_ERC',
   'AMB_ERC_TO_NATIVE',
-  'MULTI_AMB_ERC_TO_ERC'
+  'MULTI_AMB_ERC_TO_ERC',
+  'AMB_ENS_MIRRORING'
 ]
 const validRewardModes = ['false', 'ONE_DIRECTION', 'BOTH_DIRECTIONS']
 const validFeeManagerTypes = ['BRIDGE_VALIDATORS_REWARD', 'POSDAO_REWARD']
@@ -111,9 +112,15 @@ let validations = {
   HOME_UPGRADEABLE_ADMIN: addressValidator(),
   FOREIGN_RPC_URL: envalid.str(),
   FOREIGN_BRIDGE_OWNER: addressValidator(),
-  FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
-  HOME_MAX_AMOUNT_PER_TX: bigNumValidator(),
-  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator()
+  FOREIGN_UPGRADEABLE_ADMIN: addressValidator()
+}
+
+if (BRIDGE_MODE !== 'AMB_ENS_MIRRORING') {
+  validations = {
+    ...validations,
+    HOME_MAX_AMOUNT_PER_TX: bigNumValidator(),
+    FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator()
+  }
 }
 
 if (BRIDGE_MODE.includes('AMB_')) {
@@ -122,12 +129,18 @@ if (BRIDGE_MODE.includes('AMB_')) {
     HOME_AMB_BRIDGE: addressValidator(),
     FOREIGN_AMB_BRIDGE: addressValidator(),
     HOME_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
-    FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
-    FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    FOREIGN_DAILY_LIMIT: bigNumValidator(),
+    FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator()
   }
 
-  if (BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE' && BRIDGE_MODE !== 'MULTI_AMB_ERC_TO_ERC') {
+  if (BRIDGE_MODE !== 'AMB_ENS_MIRRORING') {
+    validations = {
+      ...validations,
+      FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
+      FOREIGN_DAILY_LIMIT: bigNumValidator()
+    }
+  }
+
+  if (BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE' && BRIDGE_MODE !== 'MULTI_AMB_ERC_TO_ERC' && BRIDGE_MODE !== 'AMB_ENS_MIRRORING') {
     validations = {
       ...validations,
       BRIDGEABLE_TOKEN_NAME: envalid.str(),
@@ -172,7 +185,7 @@ if (BRIDGE_MODE.includes('AMB_')) {
   }
 }
 
-if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE') {
+if (BRIDGE_MODE !== 'ARBITRARY_MESSAGE' && BRIDGE_MODE !== 'AMB_ENS_MIRRORING') {
   validations = {
     ...validations,
     HOME_DAILY_LIMIT: bigNumValidator(),
@@ -317,7 +330,7 @@ if (env.BRIDGE_MODE === 'ARBITRARY_MESSAGE') {
   if (env.FOREIGN_MAX_AMOUNT_PER_TX.isZero()) {
     throw new Error(`FOREIGN_MAX_AMOUNT_PER_TX should be greater than 0`)
   }
-} else {
+} else if (env.BRIDGE_MODE !== 'AMB_ENS_MIRRORING') {
   checkLimits(env.HOME_MIN_AMOUNT_PER_TX, env.HOME_MAX_AMOUNT_PER_TX, env.HOME_DAILY_LIMIT, homePrefix)
 }
 

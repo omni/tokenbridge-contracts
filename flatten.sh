@@ -14,6 +14,7 @@ mkdir -p flats/upgradeability
 mkdir -p flats/amb_native_to_erc20
 mkdir -p flats/amb_erc20_to_native
 mkdir -p flats/multi_amb_erc20_to_erc677
+mkdir -p flats/amb_ens_mirroring
 
 FLATTENER=./node_modules/.bin/truffle-flattener
 BRIDGE_CONTRACTS_DIR=contracts/upgradeable_contracts
@@ -75,3 +76,7 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc20_to_native/ForeignAMBErc20ToNative
 echo "Flattening contracts related to multi-erc-to-erc on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677_flat.sol
+
+echo "Flattening contracts related to ENS mirroring on top of AMB bridge"
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_ens_mirroring/HomeAMBENSMirror.sol > flats/amb_ens_mirroring/HomeAMBENSMirror_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_ens_mirroring/ForeignAMBENSMirror.sol > flats/amb_ens_mirroring/ForeignAMBENSMirror_flat.sol

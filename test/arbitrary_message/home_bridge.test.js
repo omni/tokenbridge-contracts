@@ -270,7 +270,9 @@ contract('HomeAMB', async accounts => {
       bridgeId = web3.utils.soliditySha3(paddedChainId + homeBridge.address.slice(2)).slice(10, 50)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
-      const tx = await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      const tx = await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         1535604485,
@@ -282,7 +284,9 @@ contract('HomeAMB', async accounts => {
     })
     it('call requireToPassMessage(address, bytes, uint256) should fail', async () => {
       // Should fail because gas < minimumGasUsage
-      await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         10,
@@ -290,7 +294,9 @@ contract('HomeAMB', async accounts => {
       ).should.be.rejectedWith(ERROR_MSG)
 
       // Should fail because gas > maxGasPerTx
-      await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         twoEther,
@@ -301,7 +307,9 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.maxGasPerTx()).to.be.bignumber.equal(ZERO)
 
       // Should fail because maxGasPerTx = 0 so gas > maxGasPerTx
-      await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         oneEther,
@@ -311,7 +319,9 @@ contract('HomeAMB', async accounts => {
       await homeBridge.setMaxGasPerTx(oneEther).should.be.fulfilled
       expect(await homeBridge.maxGasPerTx()).to.be.bignumber.equal(oneEther)
 
-      await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         oneEther,

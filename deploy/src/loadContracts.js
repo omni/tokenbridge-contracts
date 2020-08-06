@@ -43,7 +43,7 @@ function getContracts() {
     HomeMultiAMBErc20ToErc677: require(`../../build/${buildPath}/HomeMultiAMBErc20ToErc677.json`),
     ForeignAMBENSMirror: require(`../../build/${buildPath}/ForeignAMBENSMirror.json`),
     HomeAMBENSMirror: require(`../../build/${buildPath}/HomeAMBENSMirror.json`),
-    PublicResolver: require(`../../node_modules/@ensdomains/resolver/build/contracts/PublicResolver.json`)
+    PublicResolver: require('@ensdomains/resolver/build/contracts/PublicResolver.json')
   }
 }
 

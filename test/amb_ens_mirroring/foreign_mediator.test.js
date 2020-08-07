@@ -3,11 +3,14 @@ const HomeAMBENSMirror = artifacts.require('HomeAMBENSMirror.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 const ENSMock = artifacts.require('ENSMock.sol')
 const truffleContract = require('@truffle/contract')
-const PublicResolver = truffleContract(require('@ensdomains/resolver/build/contracts/PublicResolver.json'))
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
 const { ZERO_ADDRESS, toBN } = require('../setup')
+
+const PublicResolver = truffleContract(
+  require('../../contracts/upgradeable_contracts/amb_ens_mirroring/PublicResolver.json')
+)
 
 const ZERO = toBN(0)
 const maxGasPerTx = ether('1')

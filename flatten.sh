@@ -80,3 +80,4 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/ForeignMultiAMBEr
 echo "Flattening contracts related to ENS mirroring on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_ens_mirroring/HomeAMBENSMirror.sol > flats/amb_ens_mirroring/HomeAMBENSMirror_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_ens_mirroring/ForeignAMBENSMirror.sol > flats/amb_ens_mirroring/ForeignAMBENSMirror_flat.sol
+cp ${BRIDGE_CONTRACTS_DIR}/amb_ens_mirroring/PublicResolver.sol.flat flats/amb_ens_mirroring/PublicResolver_flat.sol

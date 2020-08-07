@@ -30,7 +30,7 @@ async function deployHome() {
   console.log('[Home] Bridge Mediator Implementation: ', homeBridgeImplementation.options.address)
 
   console.log('\n[Home] Deploying PublicResolver\n')
-  const resolver = await deployContract(PublicResolver, [homeBridgeImplementation.options.address], {
+  const resolver = await deployContract(PublicResolver, [homeBridgeStorage.options.address], {
     from: DEPLOYMENT_ACCOUNT_ADDRESS,
     nonce
   })

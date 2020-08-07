@@ -19,7 +19,7 @@ contract ENSMock {
         uint64 ttl;
     }
 
-    mapping (bytes32 => Record) records;
+    mapping(bytes32 => Record) public records;
 
     /**
      * @dev Constructs a new ENS registrar.
@@ -116,12 +116,12 @@ contract ENSMock {
     }
 
     function _setResolverAndTTL(bytes32 node, address resolver, uint64 ttl) internal {
-        if(resolver != records[node].resolver) {
+        if (resolver != records[node].resolver) {
             records[node].resolver = resolver;
             emit NewResolver(node, resolver);
         }
 
-        if(ttl != records[node].ttl) {
+        if (ttl != records[node].ttl) {
             records[node].ttl = ttl;
             emit NewTTL(node, ttl);
         }

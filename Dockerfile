@@ -8,6 +8,7 @@ WORKDIR /contracts
 
 COPY package.json .
 COPY package-lock.json .
+RUN npm update @0x/subproviders @0x/sol-trace @0x/sol-coverage
 RUN npm install
 
 COPY ./deploy/package.json ./deploy/

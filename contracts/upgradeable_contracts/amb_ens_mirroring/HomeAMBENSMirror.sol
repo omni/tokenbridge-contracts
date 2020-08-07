@@ -16,12 +16,11 @@ contract HomeAMBENSMirror is BasicAMBENSMirror, ENSBridgeRegistry {
     * @param _owner address of the owner of the mediator contract.
     * @param _resolverContract address of public resolver contract.
     */
-    function initialize(
-        address _bridgeContract,
-        address _mediatorContract,
-        address _owner,
-        address _resolverContract
-    ) external onlyRelevantSender returns (bool) {
+    function initialize(address _bridgeContract, address _mediatorContract, address _owner, address _resolverContract)
+        external
+        onlyRelevantSender
+        returns (bool)
+    {
         require(!isInitialized());
         require(_owner != address(0));
         require(AddressUtils.isContract(_resolverContract));

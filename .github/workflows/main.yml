@@ -35,6 +35,7 @@ jobs:
       - run: npm run test
   gasreport:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
     steps:
       - uses: actions/setup-node@v1
         with:
@@ -52,6 +53,7 @@ jobs:
           CC_SECRET: ${{ secrets.CC_SECRET }}
   coverage:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' 
     steps:
       - uses: actions/setup-node@v1
         with:

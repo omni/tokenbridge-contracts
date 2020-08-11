@@ -128,13 +128,13 @@ if (BRIDGE_MODE.includes('AMB_')) {
     ...validations,
     HOME_AMB_BRIDGE: addressValidator(),
     FOREIGN_AMB_BRIDGE: addressValidator(),
-    HOME_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
     FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator()
   }
 
   if (BRIDGE_MODE !== 'AMB_ENS_MIRRORING') {
     validations = {
       ...validations,
+      HOME_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
       FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
       FOREIGN_DAILY_LIMIT: bigNumValidator()
     }

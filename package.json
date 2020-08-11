@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@codechecks/client": "^0.1.9",
-    "@truffle/contract": "^4.2.15",
+    "@truffle/contract": "^4.2.17",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "^0.1.1",

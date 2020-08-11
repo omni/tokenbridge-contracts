@@ -4,3 +4,9 @@ services:
     build: .
     command: "true"
     env_file: ./deploy/.env
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: "true"
+    env_file: ./deploy/.env

@@ -93,7 +93,11 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function withinLimit(address _token, uint256 _amount) public view returns (bool) {
         uint256 nextLimit = totalSpentPerDay(_token, getCurrentDay()).add(_amount);
-        return dailyLimit(_token) >= nextLimit && _amount <= maxPerTx(_token) && _amount >= minPerTx(_token);
+        return
+            dailyLimit(address(0)) > 0 &&
+                dailyLimit(_token) >= nextLimit &&
+                _amount <= maxPerTx(_token) &&
+                _amount >= minPerTx(_token);
     }
 
     /**
@@ -104,7 +108,10 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function withinExecutionLimit(address _token, uint256 _amount) public view returns (bool) {
         uint256 nextLimit = totalExecutedPerDay(_token, getCurrentDay()).add(_amount);
-        return executionDailyLimit(_token) >= nextLimit && _amount <= executionMaxPerTx(_token);
+        return
+            executionDailyLimit(address(0)) > 0 &&
+                executionDailyLimit(_token) >= nextLimit &&
+                _amount <= executionMaxPerTx(_token);
     }
 
     /**
@@ -124,7 +131,7 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function setDailyLimit(address _token, uint256 _dailyLimit) external onlyOwner {
         require(isTokenRegistered(_token));
-        require(_dailyLimit > maxPerTx(_token) || (_dailyLimit == 0 && _token != address(0)));
+        require(_dailyLimit > maxPerTx(_token) || _dailyLimit == 0);
         uintStorage[keccak256(abi.encodePacked("dailyLimit", _token))] = _dailyLimit;
         emit DailyLimitChanged(_token, _dailyLimit);
     }
@@ -137,7 +144,7 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function setExecutionDailyLimit(address _token, uint256 _dailyLimit) external onlyOwner {
         require(isTokenRegistered(_token));
-        require(_dailyLimit > executionMaxPerTx(_token) || (_dailyLimit == 0 && _token != address(0)));
+        require(_dailyLimit > executionMaxPerTx(_token) || _dailyLimit == 0);
         uintStorage[keccak256(abi.encodePacked("executionDailyLimit", _token))] = _dailyLimit;
         emit ExecutionDailyLimitChanged(_token, _dailyLimit);
     }
@@ -150,7 +157,7 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function setExecutionMaxPerTx(address _token, uint256 _maxPerTx) external onlyOwner {
         require(isTokenRegistered(_token));
-        require((_token != address(0) && _maxPerTx == 0) || (_maxPerTx > 0 && _maxPerTx < executionDailyLimit(_token)));
+        require(_maxPerTx == 0 || (_maxPerTx > 0 && _maxPerTx < executionDailyLimit(_token)));
         uintStorage[keccak256(abi.encodePacked("executionMaxPerTx", _token))] = _maxPerTx;
     }
 
@@ -162,9 +169,7 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function setMaxPerTx(address _token, uint256 _maxPerTx) external onlyOwner {
         require(isTokenRegistered(_token));
-        require(
-            (_token != address(0) && _maxPerTx == 0) || (_maxPerTx > minPerTx(_token) && _maxPerTx < dailyLimit(_token))
-        );
+        require(_maxPerTx == 0 || (_maxPerTx > minPerTx(_token) && _maxPerTx < dailyLimit(_token)));
         uintStorage[keccak256(abi.encodePacked("maxPerTx", _token))] = _maxPerTx;
     }
 

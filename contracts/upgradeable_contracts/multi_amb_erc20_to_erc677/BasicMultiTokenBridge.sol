@@ -93,7 +93,11 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function withinLimit(address _token, uint256 _amount) public view returns (bool) {
         uint256 nextLimit = totalSpentPerDay(_token, getCurrentDay()).add(_amount);
-        return dailyLimit(_token) >= nextLimit && _amount <= maxPerTx(_token) && _amount >= minPerTx(_token);
+        return
+            dailyLimit(address(0)) > 0 &&
+                dailyLimit(_token) >= nextLimit &&
+                _amount <= maxPerTx(_token) &&
+                _amount >= minPerTx(_token);
     }
 
     /**
@@ -104,7 +108,10 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     */
     function withinExecutionLimit(address _token, uint256 _amount) public view returns (bool) {
         uint256 nextLimit = totalExecutedPerDay(_token, getCurrentDay()).add(_amount);
-        return executionDailyLimit(_token) >= nextLimit && _amount <= executionMaxPerTx(_token);
+        return
+            executionDailyLimit(address(0)) > 0 &&
+                executionDailyLimit(_token) >= nextLimit &&
+                _amount <= executionMaxPerTx(_token);
     }
 
     /**

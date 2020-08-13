@@ -44,7 +44,6 @@ contract MultiTokenBridgeMediator is
     * @param _value amount of tokens to be received
     */
     function _handleBridgedTokens(ERC677 _token, address _recipient, uint256 _value) internal {
-        require(executionDailyLimit(address(0)) > 0);
         if (withinExecutionLimit(_token, _value)) {
             addTotalExecutedPerDay(_token, getCurrentDay(), _value);
             executeActionOnBridgedTokens(_token, _recipient, _value);

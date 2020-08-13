@@ -248,7 +248,6 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
      */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
         if (!lock()) {
-            require(dailyLimit(address(0)) > 0);
             bytes32 _messageId = messageId();
             uint256 valueToBridge = _value;
             uint256 fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);

@@ -1,5 +1,5 @@
 {
-  "name": "token-bridge-contracts",
+  "name": "tokenbridge-contracts",
   "version": "5.3.1",
   "description": "Bridge",
   "main": "index.js",

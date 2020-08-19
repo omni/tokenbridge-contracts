@@ -4,14 +4,13 @@ import "./BasicAMBNativeToErc20.sol";
 import "../BaseERC677Bridge.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../ReentrancyGuard.sol";
-import "../MediatorMessagesGuard.sol";
 
 /**
 * @title ForeignAMBNativeToErc20
 * @dev Foreign mediator implementation for native-to-erc20 bridge intended to work on top of AMB bridge.
 * It is design to be used as implementation contract of EternalStorageProxy contract.
 */
-contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, BaseERC677Bridge, MediatorMessagesGuard {
+contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, BaseERC677Bridge {
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -147,7 +146,7 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     * @param _data this parameter could contain the address of an alternative receiver of the tokens on the other network,
     * otherwise it will be empty.
     */
-    function onTokenTransfer(address _from, uint256 _value, bytes _data) external bridgeMessageAllowed returns (bool) {
+    function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
         ERC677 token = erc677token();
         require(msg.sender == address(token));
         if (!lock()) {
@@ -198,22 +197,5 @@ contract ForeignAMBNativeToErc20 is BasicAMBNativeToErc20, ReentrancyGuard, Base
     */
     function bridgeContractOnOtherSide() internal view returns (address) {
         return mediatorContractOnOtherSide();
-    }
-
-    /**
-    * @dev Distributes the provided amount of fees.
-    * @param _feeManager address of the fee manager contract
-    * @param _fee total amount to be distributed to the list of reward accounts.
-    * @param _messageId id of the message that generated fee distribution
-    */
-    function distributeFee(IMediatorFeeManager _feeManager, uint256 _fee, bytes32 _messageId) internal {
-        // Right now, AMB bridge supports only one message per transaction.
-        // The receivers of the fee could try to send back the fees through the mediator,
-        // so here we add a lock to limit the number of messages that the mediator can send to the bridge,
-        // allowing a maximum of 1 message
-        enableMessagesRestriction();
-        super.distributeFee(_feeManager, _fee, _messageId);
-        // remove the lock
-        disableMessagesRestriction();
     }
 }

@@ -101,7 +101,12 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         address to = address(this);
 
         setLock(true);
-        token.transferFrom(_from, to, _value);
+        bytes memory calldata = abi.encodeWithSelector(token.transferFrom.selector, _from, to, _value);
+        bool res;
+        assembly {
+            res := call(gas, token, 0, add(calldata, 32), mload(calldata), 0, 0)
+        }
+        require(res);
         setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
     }

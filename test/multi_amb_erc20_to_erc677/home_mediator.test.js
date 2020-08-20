@@ -498,14 +498,11 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ether('5'))
           expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ether('5'))
 
-          await contract.setDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          token = await bridgeToken(token)
-          await contract.setDailyLimit(token.address, ZERO, { from: owner }).should.be.fulfilled
-          await contract.setExecutionDailyLimit(token.address, ZERO, { from: owner }).should.be.fulfilled
+          await contract.setDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
+          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
 
-          expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(ZERO)
-          expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(ZERO)
+          expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
+          expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
         })
 
         it('should allow to update default max per tx limits', async () => {
@@ -520,14 +517,11 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('1.5'))
           expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('1.5'))
 
-          await contract.setMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          token = await bridgeToken(token)
-          await contract.setMaxPerTx(token.address, ZERO, { from: owner }).should.be.fulfilled
-          await contract.setExecutionMaxPerTx(token.address, ZERO, { from: owner }).should.be.fulfilled
+          await contract.setMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
+          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
 
-          expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(ZERO)
-          expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal(ZERO)
+          expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
+          expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
         })
 
         it('should allow to update default min per tx limit', async () => {
@@ -598,6 +592,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+      })
+
+      it('should respect global shutdown', async () => {
+        await contract.setDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await homeToken.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.rejected
+        await contract.setDailyLimit(ZERO_ADDRESS, dailyLimit).should.be.fulfilled
+        await homeToken.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
       })
 
       it('should be able to specify a different receiver', async () => {
@@ -795,6 +796,33 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(event[1].returnValues.recipient).to.be.equal(user)
         expect(event[1].returnValues.value).to.be.equal(value.toString())
         expect(event[1].returnValues.messageId).to.be.equal(exampleMessageId)
+      })
+
+      it('should not allow to operate when global shutdown is enabled', async () => {
+        const data = await contract.contract.methods
+          .handleBridgedTokens(token.address, user, value.toString())
+          .encodeABI()
+
+        await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data,
+          exampleMessageId,
+          1000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(false)
+        await contract.setExecutionDailyLimit(ZERO_ADDRESS, executionDailyLimit).should.be.fulfilled
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data,
+          otherMessageId,
+          1000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(otherMessageId)).to.be.equal(true)
       })
 
       it('should not allow to use unregistered tokens', async () => {

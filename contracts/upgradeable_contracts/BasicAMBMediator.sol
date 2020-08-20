@@ -15,7 +15,7 @@ contract BasicAMBMediator is Ownable {
     bytes32 internal constant REQUEST_GAS_LIMIT = 0x2dfd6c9f781bb6bbb5369c114e949b69ebb440ef3d4dd6b2836225eb1dc3a2be; // keccak256(abi.encodePacked("requestGasLimit"))
 
     /**
-    * @dev Throws if caller on the other side if not an associated mediator.
+    * @dev Throws if caller on the other side is not an associated mediator.
     */
     modifier onlyMediator {
         require(msg.sender == address(bridgeContract()));

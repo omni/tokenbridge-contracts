@@ -6,7 +6,8 @@ flats
 coverage
 *.sublime-*
 .0x-artifacts
-upgrade/.env*
-deploy/.env
 deploy/*.config
-deploy/*.env
+deploy/*.env*
+!deploy/.env.example
+upgrade/*.env*
+!upgrade/.env.example

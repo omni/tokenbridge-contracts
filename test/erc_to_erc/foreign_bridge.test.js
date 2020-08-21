@@ -1049,20 +1049,13 @@ contract('ForeignBridge_ERC20_to_ERC20', async accounts => {
       const { logs } = await foreignBridge.methods['relayTokens(address,address,uint256)'](user, recipient, value, {
         from: user
       }).should.be.fulfilled
-      const { logs: logsSecondTx } = await foreignBridge.methods['relayTokens(address,address,uint256)'](
-        user,
-        user,
-        value,
-        { from: recipient }
-      ).should.be.fulfilled
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, user, value, {
+        from: recipient
+      }).should.be.rejectedWith(ERROR_MSG)
 
       // Then
       expectEventInLogs(logs, 'UserRequestForAffirmation', {
         recipient,
-        value
-      })
-      expectEventInLogs(logsSecondTx, 'UserRequestForAffirmation', {
-        recipient: user,
         value
       })
     })

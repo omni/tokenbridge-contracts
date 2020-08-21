@@ -99,13 +99,6 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         from: user
       }).should.be.fulfilled
       return user2
-    },
-    async function relayTokensForOtherUser() {
-      await homeToken.approve(contract.address, value, { from: user }).should.be.fulfilled
-      await contract.methods['relayTokens(address,address,address,uint256)'](homeToken.address, user, user, value, {
-        from: user2
-      }).should.be.fulfilled
-      return user
     }
   ]
 
@@ -707,28 +700,6 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         // When
         await contract.methods['relayTokens(address,uint256)'](homeToken.address, value, { from: user }).should.be
           .fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(token.address).toLowerCase())).to.be.equal(true)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
-        expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
-      })
-
-      it('should allow to complete a transfer approved by other user', async () => {
-        // Given
-        await homeToken.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await homeToken.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,address,uint256)'](homeToken.address, user, user2, value, {
-          from: user2
-        }).should.be.rejected
-        await contract.methods['relayTokens(address,address,address,uint256)'](homeToken.address, user, user, value, {
-          from: user2
-        }).should.be.fulfilled
 
         // Then
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })

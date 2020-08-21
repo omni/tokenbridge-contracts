@@ -637,39 +637,6 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
       expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
     })
-    it('should allow to complete a transfer approved by other user', async () => {
-      // Given
-      await contract.initialize(
-        bridgeContract.address,
-        mediatorContract.address,
-        erc20Token.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        decimalShiftZero,
-        owner
-      ).should.be.fulfilled
-
-      const currentDay = await contract.getCurrentDay()
-      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-
-      const value = oneEther
-      await erc20Token.approve(contract.address, value, { from: user }).should.be.fulfilled
-      expect(await erc20Token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-      // When
-      await contract.methods['relayTokens(address,address,uint256)'](user, user2, value, {
-        from: user2
-      }).should.be.rejectedWith(ERROR_MSG)
-      await contract.methods['relayTokens(address,address,uint256)'](user, user, value, { from: user2 }).should.be
-        .fulfilled
-
-      // Then
-      const events = await getEvents(bridgeContract, { event: 'MockedEvent' })
-      expect(events.length).to.be.equal(1)
-      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
-    })
     it('should fail if user did not approve the transfer', async () => {
       await contract.initialize(
         bridgeContract.address,

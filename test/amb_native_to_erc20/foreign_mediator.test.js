@@ -920,31 +920,6 @@ contract('ForeignAMBNativeToErc20', async accounts => {
       // Tokens were burnt
       expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
     })
-    it('should allow to complete a transfer approved by other user', async () => {
-      // Given
-      const currentDay = await contract.getCurrentDay()
-      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-      expect(await token.totalSupply()).to.be.bignumber.equal(twoEthers)
-
-      const value = oneEther
-      await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-      expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-      // When
-      await contract.methods['relayTokens(address,address,uint256)'](user, user2, value, {
-        from: user2
-      }).should.be.rejectedWith(ERROR_MSG)
-      await contract.methods['relayTokens(address,address,uint256)'](user, user, value, { from: user2 }).should.be
-        .fulfilled
-
-      // Then
-      const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-      expect(events.length).to.be.equal(1)
-      expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-      expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
-      // Tokens were burnt
-      expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
-    })
     it('should fail if user did not approve the transfer', async () => {
       await contract.relayTokens(user, oneEther, { from: user }).should.be.rejectedWith(ERROR_MSG)
     })

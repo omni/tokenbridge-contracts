@@ -993,20 +993,13 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const { logs } = await foreignBridge.methods['relayTokens(address,address,uint256)'](user, recipient, value, {
         from: user
       }).should.be.fulfilled
-      const { logs: logsSecondTx } = await foreignBridge.methods['relayTokens(address,address,uint256)'](
-        user,
-        user,
-        value,
-        { from: recipient }
-      ).should.be.fulfilled
+      await foreignBridge.methods['relayTokens(address,address,uint256)'](user, user, value, {
+        from: recipient
+      }).should.be.rejectedWith(ERROR_MSG)
 
       // Then
       expectEventInLogs(logs, 'UserRequestForAffirmation', {
         recipient,
-        value
-      })
-      expectEventInLogs(logsSecondTx, 'UserRequestForAffirmation', {
-        recipient: user,
         value
       })
     })
@@ -1251,21 +1244,16 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         await relayTokens(user, recipient, 0, dai.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
         await relayTokens(user, recipient, value, dai.address, { from: recipient }).should.be.rejectedWith(ERROR_MSG)
         const { logs } = await relayTokens(user, recipient, value, dai.address, { from: user }).should.be.fulfilled
-        const { logs: logsSecondTx } = await relayTokens(user, user, value, dai.address, { from: recipient }).should.be
-          .fulfilled
+        await relayTokens(user, user, value, dai.address, { from: recipient }).should.be.rejectedWith(ERROR_MSG)
 
         // Then
         expectEventInLogs(logs, 'UserRequestForAffirmation', {
           recipient,
           value
         })
-        expectEventInLogs(logsSecondTx, 'UserRequestForAffirmation', {
-          recipient: user,
-          value
-        })
-        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
-        expect(await dai.balanceOf(user)).to.be.bignumber.equal(userBalance.sub(halfEther))
-        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(halfEther)
+        expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+        expect(await dai.balanceOf(user)).to.be.bignumber.equal(userBalance.sub(value))
+        expect(await dai.balanceOf(foreignBridge.address)).to.be.bignumber.equal(value)
       })
       it('should not be able to transfer more than limit', async () => {
         // Given

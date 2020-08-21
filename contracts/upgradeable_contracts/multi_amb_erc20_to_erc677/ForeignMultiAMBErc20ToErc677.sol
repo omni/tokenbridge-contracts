@@ -89,11 +89,10 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * and invokes the method to burn/lock the tokens and unlock/mint the tokens on the other network.
     * The user should first call Approve method of the ERC677 token.
     * @param token bridge token contract address.
-    * @param _from address that will transfer the tokens to be locked.
     * @param _receiver address that will receive the native tokens on the other network.
     * @param _value amount of tokens to be transferred to the other network.
     */
-    function _relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) internal {
+    function _relayTokens(ERC677 token, address _receiver, uint256 _value) internal {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
@@ -101,9 +100,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         address to = address(this);
 
         setLock(true);
-        token.transferFrom(_from, to, _value);
+        token.transferFrom(msg.sender, to, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
+        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
 
     /**

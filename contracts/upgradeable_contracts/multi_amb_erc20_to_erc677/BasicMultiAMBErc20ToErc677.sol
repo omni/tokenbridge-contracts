@@ -39,8 +39,8 @@ contract BasicMultiAMBErc20ToErc677 is
     * @param _value amount of tokens to be transferred to the other network.
     */
     function relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) external {
-        require(_from == msg.sender || _from == _receiver);
-        _relayTokens(token, _from, _receiver, _value);
+        require(_from == msg.sender);
+        _relayTokens(token, _receiver, _value);
     }
 
     /**
@@ -51,7 +51,7 @@ contract BasicMultiAMBErc20ToErc677 is
     * @param _value amount of tokens to be transferred to the other network.
     */
     function relayTokens(ERC677 token, address _receiver, uint256 _value) external {
-        _relayTokens(token, msg.sender, _receiver, _value);
+        _relayTokens(token, _receiver, _value);
     }
 
     /**
@@ -61,7 +61,7 @@ contract BasicMultiAMBErc20ToErc677 is
     * @param _value amount of tokens to be transferred to the other network.
     */
     function relayTokens(ERC677 token, uint256 _value) external {
-        _relayTokens(token, msg.sender, msg.sender, _value);
+        _relayTokens(token, msg.sender, _value);
     }
 
     /**
@@ -97,7 +97,7 @@ contract BasicMultiAMBErc20ToErc677 is
     function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool);
 
     /* solcov ignore next */
-    function _relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) internal;
+    function _relayTokens(ERC677 token, address _receiver, uint256 _value) internal;
 
     /* solcov ignore next */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal;

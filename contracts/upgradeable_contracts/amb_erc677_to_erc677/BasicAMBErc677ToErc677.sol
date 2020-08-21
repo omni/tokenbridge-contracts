@@ -63,11 +63,11 @@ contract BasicAMBErc677ToErc677 is
     }
 
     function relayTokens(address _from, address _receiver, uint256 _value) external {
-        require(_from == msg.sender || _from == _receiver);
-        _relayTokens(_from, _receiver, _value);
+        require(_from == msg.sender);
+        _relayTokens(_receiver, _value);
     }
 
-    function _relayTokens(address _from, address _receiver, uint256 _value) internal {
+    function _relayTokens(address _receiver, uint256 _value) internal {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
@@ -78,13 +78,13 @@ contract BasicAMBErc677ToErc677 is
         addTotalSpentPerDay(getCurrentDay(), _value);
 
         setLock(true);
-        token.transferFrom(_from, to, _value);
+        token.transferFrom(msg.sender, to, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
+        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
 
     function relayTokens(address _receiver, uint256 _value) external {
-        _relayTokens(msg.sender, _receiver, _value);
+        _relayTokens(_receiver, _value);
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {

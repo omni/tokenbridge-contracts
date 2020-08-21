@@ -9,3 +9,8 @@ contract ERC677 is ERC20 {
     function increaseAllowance(address spender, uint256 addedValue) public returns (bool);
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool);
 }
+
+contract LegacyERC20 {
+    function transfer(address _spender, uint256 _value) public; // returns (bool);
+    function transferFrom(address _owner, address _spender, uint256 _value) public; // returns (bool);
+}

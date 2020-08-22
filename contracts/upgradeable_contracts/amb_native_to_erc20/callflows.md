@@ -334,27 +334,26 @@ This will allow to the mediator contract to call the `transferFrom` method from 
 ```=
 >>Mediator
 ForeignAMBNativeToErc20::relayTokens
-..ForeignAMBNativeToErc20::_relayTokens
 >>Token
-....ERC677BridgeToken::transferFrom
-......StandardToken::transferFrom
-........emit Transfer
-......ERC677BridgeToken::callAfterTransfer
-........ERC677BridgeToken::contractFallback
+..ERC677BridgeToken::transferFrom
+....StandardToken::transferFrom
+......emit Transfer
+....ERC677BridgeToken::callAfterTransfer
+......ERC677BridgeToken::contractFallback
 >>Mediator
-..........ForeignAMBNativeToErc20::onTokenTransfer
-............ForeignAMBNativeToErc20::bridgeSpecificActionsOnTokenTransfer
+........ForeignAMBNativeToErc20::onTokenTransfer
+..........ForeignAMBNativeToErc20::bridgeSpecificActionsOnTokenTransfer
 >>Token
-..............BurnableToken::burn
-................BurnableToken::_burn
+............BurnableToken::burn
+..............BurnableToken::_burn
 >>Mediator
-..............TokenBridgeMediator::passMessage
-................TokenBridgeMediator::setMessageHashValue
-................TokenBridgeMediator::setMessageHashRecipient
+............TokenBridgeMediator::passMessage
+..............TokenBridgeMediator::setMessageHashValue
+..............TokenBridgeMediator::setMessageHashRecipient
 >>Bridge
-................MessageDelivery::requireToPassMessage
-..................ForeignAMB::emitEventOnMessageRequest
-....................emit UserRequestForAffirmation
+..............MessageDelivery::requireToPassMessage
+................ForeignAMB::emitEventOnMessageRequest
+..................emit UserRequestForAffirmation
 ```
 
 #### Execution

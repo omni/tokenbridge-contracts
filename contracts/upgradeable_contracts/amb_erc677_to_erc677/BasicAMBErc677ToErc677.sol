@@ -62,12 +62,7 @@ contract BasicAMBErc677ToErc677 is
         return mediatorContractOnOtherSide();
     }
 
-    function relayTokens(address _from, address _receiver, uint256 _value) external {
-        require(_from == msg.sender || _from == _receiver);
-        _relayTokens(_from, _receiver, _value);
-    }
-
-    function _relayTokens(address _from, address _receiver, uint256 _value) internal {
+    function relayTokens(address _receiver, uint256 _value) external {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
@@ -78,13 +73,9 @@ contract BasicAMBErc677ToErc677 is
         addTotalSpentPerDay(getCurrentDay(), _value);
 
         setLock(true);
-        token.transferFrom(_from, to, _value);
+        token.transferFrom(msg.sender, to, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
-    }
-
-    function relayTokens(address _receiver, uint256 _value) external {
-        _relayTokens(msg.sender, _receiver, _value);
+        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
@@ -99,7 +90,7 @@ contract BasicAMBErc677ToErc677 is
     }
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 1, 0);
+        return (1, 2, 0);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {

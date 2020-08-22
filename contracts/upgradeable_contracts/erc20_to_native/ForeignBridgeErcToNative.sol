@@ -80,41 +80,15 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     }
 
     function relayTokens(address _receiver, uint256 _amount) external {
-        _relayTokens(msg.sender, _receiver, _amount, erc20token());
-    }
-
-    function relayTokens(address _sender, address _receiver, uint256 _amount) external {
-        relayTokens(_sender, _receiver, _amount, erc20token());
-    }
-
-    function relayTokens(address _from, address _receiver, uint256 _amount, address _token) public {
-        require(_from == msg.sender || _from == _receiver);
-        _relayTokens(_from, _receiver, _amount, _token);
-    }
-
-    function relayTokens(address _receiver, uint256 _amount, address _token) external {
-        _relayTokens(msg.sender, _receiver, _amount, _token);
-    }
-
-    function _relayTokens(address _sender, address _receiver, uint256 _amount, address _token) internal {
         require(_receiver != bridgeContractOnOtherSide());
         require(_receiver != address(0));
         require(_receiver != address(this));
         require(_amount > 0);
         require(withinLimit(_amount));
 
-        ERC20 tokenToOperate = ERC20(_token);
-        ERC20 fdToken = erc20token();
-
-        if (tokenToOperate == ERC20(0x0)) {
-            tokenToOperate = fdToken;
-        }
-
-        require(tokenToOperate == fdToken);
-
         addTotalSpentPerDay(getCurrentDay(), _amount);
 
-        tokenToOperate.transferFrom(_sender, address(this), _amount);
+        erc20token().transferFrom(msg.sender, address(this), _amount);
         emit UserRequestForAffirmation(_receiver, _amount);
 
         if (isDaiNeedsToBeInvested()) {

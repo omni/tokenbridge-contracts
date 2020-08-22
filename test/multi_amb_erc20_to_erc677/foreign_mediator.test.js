@@ -76,20 +76,6 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       await contract.methods['relayTokens(address,address,uint256)'](token.address, user2, value, { from: user }).should
         .be.fulfilled
       return user2
-    },
-    async function relayTokensWithAlternativeReceiver2() {
-      await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-      await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user2, value, {
-        from: user
-      }).should.be.fulfilled
-      return user2
-    },
-    async function relayTokensForOtherUser() {
-      await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-      await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user, value, {
-        from: user2
-      }).should.be.fulfilled
-      return user
     }
   ]
 
@@ -436,42 +422,6 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
       })
 
-      it('should allow user to specify a itself as receiver', async () => {
-        // Given
-        await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user, value, {
-          from: user
-        }).should.be.fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
-        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
-      })
-
-      it('should allow to specify a different receiver', async () => {
-        // Given
-        await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user2, value, {
-          from: user
-        }).should.be.fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
-        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
-      })
-
       it('should allow to specify a different receiver without specifying sender', async () => {
         // Given
         await token.approve(contract.address, value, { from: user }).should.be.fulfilled
@@ -496,27 +446,6 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
         // When
         await contract.methods['relayTokens(address,uint256)'](token.address, value, { from: user }).should.be.fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
-        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
-      })
-
-      it('should allow to complete a transfer approved by other user', async () => {
-        // Given
-        await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user2, value, {
-          from: user2
-        }).should.be.rejected
-        await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user, value, {
-          from: user2
-        }).should.be.fulfilled
 
         // Then
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })

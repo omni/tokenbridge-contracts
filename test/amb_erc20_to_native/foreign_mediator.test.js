@@ -336,43 +336,11 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
         // When
-        await contract.methods['relayTokens(address,uint256)'](user, value, { from: user }).should.be.fulfilled
+        await contract.relayTokens(user, value, { from: user }).should.be.fulfilled
 
         // Then
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
-        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
-      })
-
-      it('should allow user to specify a itself as receiver', async () => {
-        // Given
-        await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,uint256)'](user, user, value, { from: user }).should.be
-          .fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
-      })
-
-      it('should allow to specify a different receiver', async () => {
-        // Given
-        await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,uint256)'](user, user2, value, { from: user }).should.be
-          .fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
       })
 
@@ -382,7 +350,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
 
         // When
-        await contract.methods['relayTokens(address,uint256)'](user2, value, { from: user }).should.be.fulfilled
+        await contract.relayTokens(user2, value, { from: user }).should.be.fulfilled
 
         // Then
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
@@ -392,14 +360,14 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       })
 
       it('should fail if user did not approve the transfer', async () => {
-        await contract.methods['relayTokens(address,uint256)'](user, value, { from: user }).should.be.rejected
+        await contract.relayTokens(user, value, { from: user }).should.be.rejected
       })
 
       it('should fail if value is not within limits', async () => {
         await token.approve(contract.address, twoEthers, { from: user }).should.be.fulfilled
         expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(twoEthers)
 
-        await contract.methods['relayTokens(address,uint256)'](user, twoEthers, { from: user }).should.be.rejected
+        await contract.relayTokens(user, twoEthers, { from: user }).should.be.rejected
       })
     })
 

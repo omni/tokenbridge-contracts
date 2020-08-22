@@ -62,12 +62,7 @@ contract BasicAMBErc677ToErc677 is
         return mediatorContractOnOtherSide();
     }
 
-    function relayTokens(address _from, address _receiver, uint256 _value) external {
-        require(_from == msg.sender);
-        _relayTokens(_receiver, _value);
-    }
-
-    function _relayTokens(address _receiver, uint256 _value) internal {
+    function relayTokens(address _receiver, uint256 _value) external {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
@@ -81,10 +76,6 @@ contract BasicAMBErc677ToErc677 is
         token.transferFrom(msg.sender, to, _value);
         setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
-    }
-
-    function relayTokens(address _receiver, uint256 _value) external {
-        _relayTokens(_receiver, _value);
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {

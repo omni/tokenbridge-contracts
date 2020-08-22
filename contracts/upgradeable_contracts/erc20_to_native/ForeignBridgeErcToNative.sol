@@ -80,26 +80,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     }
 
     function relayTokens(address _receiver, uint256 _amount) external {
-        _relayTokens(_receiver, _amount);
-    }
-
-    function relayTokens(address _from, address _receiver, uint256 _amount) external {
-        require(_from == msg.sender);
-        _relayTokens(_receiver, _amount);
-    }
-
-    function relayTokens(address _from, address _receiver, uint256 _amount, address _token) external {
-        require(_token == address(erc20token()) || _token == address(0));
-        require(_from == msg.sender);
-        _relayTokens(_receiver, _amount);
-    }
-
-    function relayTokens(address _receiver, uint256 _amount, address _token) external {
-        require(_token == address(erc20token()) || _token == address(0));
-        _relayTokens(_receiver, _amount);
-    }
-
-    function _relayTokens(address _receiver, uint256 _amount) internal {
         require(_receiver != bridgeContractOnOtherSide());
         require(_receiver != address(0));
         require(_receiver != address(this));

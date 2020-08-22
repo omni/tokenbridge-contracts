@@ -61,23 +61,24 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     /**
     * @dev It will initiate the bridge operation that will lock the amount of tokens transferred and mint the native tokens on
     * the other network. The user should first call Approve method of the ERC677 token.
-    * @param _from address that will transfer the tokens to be locked.
-    * @param _receiver address that will receive the native tokens on the other network.
-    * @param _value amount of tokens to be transferred to the other network.
-    */
-    function relayTokens(address _from, address _receiver, uint256 _value) external {
-        require(_from == msg.sender);
-        _relayTokens(_receiver, _value);
-    }
-
-    /**
-    * @dev It will initiate the bridge operation that will lock the amount of tokens transferred and mint the native tokens on
-    * the other network. The user should first call Approve method of the ERC677 token.
     * @param _receiver address that will receive the native tokens on the other network.
     * @param _value amount of tokens to be transferred to the other network.
     */
     function relayTokens(address _receiver, uint256 _value) external {
-        _relayTokens(_receiver, _value);
+        // This lock is to prevent calling passMessage twice.
+        // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
+        // which will call passMessage.
+        require(!lock());
+        ERC677 token = _erc677token();
+        address to = address(this);
+        require(withinLimit(_value));
+        addTotalSpentPerDay(getCurrentDay(), _value);
+        _setMediatorBalance(mediatorBalance().add(_value));
+
+        setLock(true);
+        token.transferFrom(msg.sender, to, _value);
+        setLock(false);
+        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
 
     /**
@@ -179,30 +180,6 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
         if (!lock()) {
             passMessage(_from, chooseReceiver(_from, _data), _value);
         }
-    }
-
-    /**
-    * @dev Validates that the token amount is inside the limits, calls transferFrom to transfer the tokens to the contract
-    * and invokes the method to lock the tokens and mint the native tokens on the other network.
-    * The user should first call Approve method of the ERC677 token.
-    * @param _receiver address that will receive the native tokens on the other network.
-    * @param _value amount of tokens to be transferred to the other network.
-    */
-    function _relayTokens(address _receiver, uint256 _value) internal {
-        // This lock is to prevent calling passMessage twice.
-        // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
-        // which will call passMessage.
-        require(!lock());
-        ERC677 token = _erc677token();
-        address to = address(this);
-        require(withinLimit(_value));
-        addTotalSpentPerDay(getCurrentDay(), _value);
-        _setMediatorBalance(mediatorBalance().add(_value));
-
-        setLock(true);
-        token.transferFrom(msg.sender, to, _value);
-        setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
 
     /**

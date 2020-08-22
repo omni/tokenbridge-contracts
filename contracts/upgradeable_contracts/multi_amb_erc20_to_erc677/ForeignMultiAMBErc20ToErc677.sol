@@ -53,7 +53,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
      */
     function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal {
         bytes32 _messageId = messageId();
-        ERC677(_token).transfer(_recipient, _value);
+        LegacyERC20(_token).transfer(_recipient, _value);
         _setMediatorBalance(_token, mediatorBalance(_token).sub(_value));
         emit TokensBridged(_token, _recipient, _value, _messageId);
     }
@@ -100,7 +100,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         address to = address(this);
 
         setLock(true);
-        token.transferFrom(msg.sender, to, _value);
+        LegacyERC20(token).transferFrom(msg.sender, to, _value);
         setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
@@ -189,7 +189,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     */
     function executeActionOnFixedTokens(address _token, address _recipient, uint256 _value) internal {
         _setMediatorBalance(_token, mediatorBalance(_token).sub(_value));
-        ERC677(_token).transfer(_recipient, _value);
+        LegacyERC20(_token).transfer(_recipient, _value);
     }
 
     /**

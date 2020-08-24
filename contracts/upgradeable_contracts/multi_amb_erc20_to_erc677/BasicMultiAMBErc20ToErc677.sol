@@ -31,19 +31,6 @@ contract BasicMultiAMBErc20ToErc677 is
     }
 
     /**
-    * @dev Initiate the bridge operation for some amount of tokens.
-    * The user should first call Approve method of the ERC677 token.
-    * @param token bridged token contract address.
-    * @param _from address that will transfer the tokens to be locked.
-    * @param _receiver address that will receive the native tokens on the other network.
-    * @param _value amount of tokens to be transferred to the other network.
-    */
-    function relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) external {
-        require(_from == msg.sender || _from == _receiver);
-        _relayTokens(token, _from, _receiver, _value);
-    }
-
-    /**
     * @dev Initiate the bridge operation for some amount of tokens from msg.sender.
     * The user should first call Approve method of the ERC677 token.
     * @param token bridged token contract address.
@@ -51,7 +38,7 @@ contract BasicMultiAMBErc20ToErc677 is
     * @param _value amount of tokens to be transferred to the other network.
     */
     function relayTokens(ERC677 token, address _receiver, uint256 _value) external {
-        _relayTokens(token, msg.sender, _receiver, _value);
+        _relayTokens(token, _receiver, _value);
     }
 
     /**
@@ -61,7 +48,7 @@ contract BasicMultiAMBErc20ToErc677 is
     * @param _value amount of tokens to be transferred to the other network.
     */
     function relayTokens(ERC677 token, uint256 _value) external {
-        _relayTokens(token, msg.sender, msg.sender, _value);
+        _relayTokens(token, msg.sender, _value);
     }
 
     /**
@@ -71,7 +58,7 @@ contract BasicMultiAMBErc20ToErc677 is
     * @return patch value of the version
     */
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 0, 1);
+        return (1, 1, 0);
     }
 
     /**
@@ -97,7 +84,7 @@ contract BasicMultiAMBErc20ToErc677 is
     function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool);
 
     /* solcov ignore next */
-    function _relayTokens(ERC677 token, address _from, address _receiver, uint256 _value) internal;
+    function _relayTokens(ERC677 token, address _receiver, uint256 _value) internal;
 
     /* solcov ignore next */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal;

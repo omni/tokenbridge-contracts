@@ -27,7 +27,7 @@ const executionMaxPerTx = halfEther
 const ZERO = new BN(0)
 const decimalShiftZero = 0
 
-async function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
+function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
   let token
   const owner = accounts[0]
   const user = accounts[1]
@@ -910,22 +910,22 @@ async function testERC677BridgeToken(accounts, rewardable, permittable, createTo
   }
 }
 
-contract('ERC677BridgeToken', async accounts => {
-  await testERC677BridgeToken(accounts, false, false, args => POA20.new(...args))
+contract('ERC677BridgeToken', accounts => {
+  testERC677BridgeToken(accounts, false, false, args => POA20.new(...args))
 })
 
-contract('ERC677BridgeTokenRewardable', async accounts => {
-  await testERC677BridgeToken(accounts, true, true, args => POA20RewardableMock.new(...args))
+contract('ERC677BridgeTokenRewardable', accounts => {
+  testERC677BridgeToken(accounts, true, true, args => POA20RewardableMock.new(...args))
 })
 
-contract('TokenProxy', async accounts => {
+contract('TokenProxy', accounts => {
   const createToken = async args => {
     const impl = await PermittableTokenMock.new(...args)
     const proxy = await TokenProxy.new(impl.address, ...args)
     return PermittableTokenMock.at(proxy.address)
   }
 
-  await testERC677BridgeToken(accounts, false, true, createToken)
+  testERC677BridgeToken(accounts, false, true, createToken)
 
   describe('constants', () => {
     let token

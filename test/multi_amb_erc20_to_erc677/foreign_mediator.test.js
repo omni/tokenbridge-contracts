@@ -76,20 +76,6 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       await contract.methods['relayTokens(address,address,uint256)'](token.address, user2, value, { from: user }).should
         .be.fulfilled
       return user2
-    },
-    async function relayTokensWithAlternativeReceiver2() {
-      await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-      await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user2, value, {
-        from: user
-      }).should.be.fulfilled
-      return user2
-    },
-    async function relayTokensForOtherUser() {
-      await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-      await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user, value, {
-        from: user2
-      }).should.be.fulfilled
-      return user
     }
   ]
 
@@ -300,14 +286,11 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ether('5'))
           expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ether('5'))
 
-          await contract.setDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-          await contract.setDailyLimit(token.address, ZERO, { from: owner }).should.be.fulfilled
-          await contract.setExecutionDailyLimit(token.address, ZERO, { from: owner }).should.be.fulfilled
+          await contract.setDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
+          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
 
-          expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(ZERO)
-          expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(ZERO)
+          expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
+          expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
         })
 
         it('should allow to update default max per tx limits', async () => {
@@ -322,14 +305,11 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('1.5'))
           expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('1.5'))
 
-          await contract.setMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-          await contract.setMaxPerTx(token.address, ZERO, { from: owner }).should.be.fulfilled
-          await contract.setExecutionMaxPerTx(token.address, ZERO, { from: owner }).should.be.fulfilled
+          await contract.setMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
+          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
 
-          expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(ZERO)
-          expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal(ZERO)
+          expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
+          expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
         })
 
         it('should allow to update default min per tx limit', async () => {
@@ -393,6 +373,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
       })
 
+      it('should respect global shutdown', async () => {
+        await contract.setDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.rejected
+        await contract.setDailyLimit(ZERO_ADDRESS, dailyLimit).should.be.fulfilled
+        await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
+      })
+
       it('should be able to specify a different receiver', async () => {
         expect(await contract.isTokenRegistered(token.address)).to.be.equal(false)
         // must be a valid address param
@@ -435,42 +422,6 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
       })
 
-      it('should allow user to specify a itself as receiver', async () => {
-        // Given
-        await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user, value, {
-          from: user
-        }).should.be.fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
-        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
-      })
-
-      it('should allow to specify a different receiver', async () => {
-        // Given
-        await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user2, value, {
-          from: user
-        }).should.be.fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
-        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
-      })
-
       it('should allow to specify a different receiver without specifying sender', async () => {
         // Given
         await token.approve(contract.address, value, { from: user }).should.be.fulfilled
@@ -495,27 +446,6 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
         // When
         await contract.methods['relayTokens(address,uint256)'](token.address, value, { from: user }).should.be.fulfilled
-
-        // Then
-        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(1)
-        expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
-        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
-      })
-
-      it('should allow to complete a transfer approved by other user', async () => {
-        // Given
-        await token.approve(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await token.allowance(user, contract.address)).to.be.bignumber.equal(value)
-
-        // When
-        await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user2, value, {
-          from: user2
-        }).should.be.rejected
-        await contract.methods['relayTokens(address,address,address,uint256)'](token.address, user, user, value, {
-          from: user2
-        }).should.be.fulfilled
 
         // Then
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
@@ -672,6 +602,36 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         ).should.be.fulfilled
 
         expect(await ambBridgeContract.messageCallStatus(failedMessageId)).to.be.equal(false)
+      })
+
+      it('should not allow to operate when global shutdown is enabled', async () => {
+        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+
+        const data = await contract.contract.methods
+          .handleBridgedTokens(token.address, user, value.toString())
+          .encodeABI()
+
+        await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data,
+          exampleMessageId,
+          1000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(false)
+        await contract.setExecutionDailyLimit(ZERO_ADDRESS, executionDailyLimit).should.be.fulfilled
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data,
+          otherMessageId,
+          1000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(otherMessageId)).to.be.equal(true)
       })
     })
 

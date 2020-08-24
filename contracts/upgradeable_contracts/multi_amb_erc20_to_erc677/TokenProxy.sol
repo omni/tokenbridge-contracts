@@ -29,7 +29,7 @@ contract TokenProxy is Proxy {
 
     /**
     * @dev Creates a non-upgradeable token proxy for PermitableToken.sol, initializes its eternalStorage.
-    * @param _tokenImage address of the token image used for mirrowing all functions.
+    * @param _tokenImage address of the token image used for mirroring all functions.
     * @param _name token name.
     * @param _symbol token symbol.
     * @param _decimals token decimals.
@@ -62,7 +62,7 @@ contract TokenProxy is Proxy {
     }
 
     /**
-    * @dev Retrieves the implementation contract address, mirrowed token image.
+    * @dev Retrieves the implementation contract address, mirrored token image.
     * @return token image address.
     */
     function implementation() public view returns (address impl) {

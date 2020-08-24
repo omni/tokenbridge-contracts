@@ -321,25 +321,24 @@ This will allow to the mediator contract to call the `transferFrom` method from 
 ```=
 >>Mediator
 BasicAMBErc677ToErc677::relayTokens
-..BasicAMBErc677ToErc677::_relayTokens
 >>Token
-....ERC677BridgeToken::transferFrom
-......ERC677BridgeToken::_superTransferFrom
-........ERC20Permittable::transferFrom
-..........ERC20::_transfer
-............emit Transfer
-......ERC677BridgeToken::_callAfterTransfer
-........ERC677BridgeToken::_contractFallback
+..ERC677BridgeToken::transferFrom
+....ERC677BridgeToken::_superTransferFrom
+......ERC20Permittable::transferFrom
+........ERC20::_transfer
+..........emit Transfer
+....ERC677BridgeToken::_callAfterTransfer
+......ERC677BridgeToken::_contractFallback
 >>Mediator
-..........BasicAMBErc677ToErc677::onTokenTransfer
-............ForeignStakeTokenMediator::bridgeSpecificActionsOnTokenTransfer
-..............TokenBridgeMediator::passMessage
-................TokenBridgeMediator::setMessageHashValue
-................TokenBridgeMediator::setMessageHashRecipient
+........BasicAMBErc677ToErc677::onTokenTransfer
+..........ForeignStakeTokenMediator::bridgeSpecificActionsOnTokenTransfer
+............TokenBridgeMediator::passMessage
+..............TokenBridgeMediator::setMessageHashValue
+..............TokenBridgeMediator::setMessageHashRecipient
 >>Bridge
-................MessageDelivery::requireToPassMessage
-..................ForeignAMB::emitEventOnMessageRequest
-....................emit UserRequestForAffirmation
+..............MessageDelivery::requireToPassMessage
+................ForeignAMB::emitEventOnMessageRequest
+..................emit UserRequestForAffirmation
 ```
 
 #### Execution
@@ -355,30 +354,29 @@ The mediator on the Home side also provides the `relayTokens` method. Prior to i
 ```=
 >>Mediator
 BasicAMBErc677ToErc677::relayTokens
-..BasicAMBErc677ToErc677::_relayTokens
 >>Token
-....ERC677BridgeTokenRewardable::transferFrom
-......PermittableToken::transferFrom
-........emit Transfer
-........ERC677BridgeToken::callAfterTransfer
-..........ERC677BridgeToken::contractFallback
+..ERC677BridgeTokenRewardable::transferFrom
+....PermittableToken::transferFrom
+......emit Transfer
+......ERC677BridgeToken::callAfterTransfer
+........ERC677BridgeToken::contractFallback
 >>Mediator
-............BasicAMBErc677ToErc677::onTokenTransfer
-..............HomeStakeTokenMediator::bridgeSpecificActionsOnTokenTransfer
+..........BasicAMBErc677ToErc677::onTokenTransfer
+............HomeStakeTokenMediator::bridgeSpecificActionsOnTokenTransfer
 >>Token
-................BurnableToken::burn
-..................BurnableToken::_burn
+..............BurnableToken::burn
+................BurnableToken::_burn
 >>Mediator
-................TokenBridgeMediator::passMessage
-..................TokenBridgeMediator::setMessageHashValue
-..................TokenBridgeMediator::setMessageHashRecipient
+..............TokenBridgeMediator::passMessage
+................TokenBridgeMediator::setMessageHashValue
+................TokenBridgeMediator::setMessageHashRecipient
 >>Bridge
-..................MessageDelivery::requireToPassMessage
-....................ForeignAMB::emitEventOnMessageRequest
-......................emit UserRequestForSignature
+................MessageDelivery::requireToPassMessage
+..................ForeignAMB::emitEventOnMessageRequest
+....................emit UserRequestForSignature
 >>BlockReward
-................HomeStakeTokenFeeManager::_distributeFee
-..................BlockRewardAuRaTokens::addBridgeTokenRewardReceivers
+..............HomeStakeTokenFeeManager::_distributeFee
+................BlockRewardAuRaTokens::addBridgeTokenRewardReceivers
 ```
 
 #### Execution

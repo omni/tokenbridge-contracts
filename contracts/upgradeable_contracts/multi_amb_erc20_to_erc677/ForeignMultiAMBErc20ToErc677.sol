@@ -100,7 +100,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         address to = address(this);
 
         setLock(true);
+        uint256 balance = token.balanceOf(to);
         LegacyERC20(token).transferFrom(msg.sender, to, _value);
+        require(token.balanceOf(to) == balance.add(_value));
         setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }

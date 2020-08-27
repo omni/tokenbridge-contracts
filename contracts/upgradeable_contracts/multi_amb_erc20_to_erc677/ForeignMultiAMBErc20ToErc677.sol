@@ -53,7 +53,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
      */
     function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal {
         bytes32 _messageId = messageId();
+        uint256 balance = ERC677(_token).balanceOf(address(this));
         LegacyERC20(_token).transfer(_recipient, _value);
+        require(ERC677(_token).balanceOf(address(this)) == balance.sub(_value));
         _setMediatorBalance(_token, mediatorBalance(_token).sub(_value));
         emit TokensBridged(_token, _recipient, _value, _messageId);
     }
@@ -191,7 +193,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     */
     function executeActionOnFixedTokens(address _token, address _recipient, uint256 _value) internal {
         _setMediatorBalance(_token, mediatorBalance(_token).sub(_value));
+        uint256 balance = ERC677(_token).balanceOf(address(this));
         LegacyERC20(_token).transfer(_recipient, _value);
+        require(ERC677(_token).balanceOf(address(this)) == balance.sub(_value));
     }
 
     /**

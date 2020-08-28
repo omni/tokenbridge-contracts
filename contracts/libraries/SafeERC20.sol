@@ -20,6 +20,14 @@ library SafeERC20 {
     function safeTransfer(address _token, address _to, uint256 _value) internal {
         uint256 balance = ERC677(_token).balanceOf(address(this));
         LegacyERC20(_token).transfer(_to, _value);
+        assembly {
+            if returndatasize {
+                returndatacopy(0, 0, 32)
+                if iszero(mload(0)) {
+                    revert(0, 0)
+                }
+            }
+        }
         require(balance.sub(_value) == ERC677(_token).balanceOf(address(this)));
     }
 
@@ -32,6 +40,14 @@ library SafeERC20 {
     function safeTransferFrom(address _token, address _from, uint256 _value) internal {
         uint256 balance = ERC677(_token).balanceOf(address(this));
         LegacyERC20(_token).transferFrom(_from, address(this), _value);
+        assembly {
+            if returndatasize {
+                returndatacopy(0, 0, 32)
+                if iszero(mload(0)) {
+                    revert(0, 0)
+                }
+            }
+        }
         require(balance.add(_value) == ERC677(_token).balanceOf(address(this)));
     }
 }

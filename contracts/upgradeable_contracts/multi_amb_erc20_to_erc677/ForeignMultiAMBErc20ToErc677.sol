@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "./BasicMultiAMBErc20ToErc677.sol";
 import "./HomeMultiAMBErc20ToErc677.sol";
 import "../../libraries/TokenReader.sol";
+import "../../libraries/SafeERC20.sol";
 
 /**
  * @title ForeignMultiAMBErc20ToErc677
@@ -11,6 +12,9 @@ import "../../libraries/TokenReader.sol";
  * It is designed to be used as an implementation contract of EternalStorageProxy contract.
  */
 contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
+    using SafeERC20 for address;
+    using SafeERC20 for ERC677;
+
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -53,9 +57,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
      */
     function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal {
         bytes32 _messageId = messageId();
-        uint256 balance = ERC677(_token).balanceOf(address(this));
-        LegacyERC20(_token).transfer(_recipient, _value);
-        require(ERC677(_token).balanceOf(address(this)) == balance.sub(_value));
+        _token.safeTransfer(_recipient, _value);
         _setMediatorBalance(_token, mediatorBalance(_token).sub(_value));
         emit TokensBridged(_token, _recipient, _value, _messageId);
     }
@@ -99,12 +101,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
         require(!lock());
-        address to = address(this);
 
         setLock(true);
-        uint256 balance = token.balanceOf(to);
-        LegacyERC20(token).transferFrom(msg.sender, to, _value);
-        require(token.balanceOf(to) == balance.add(_value));
+        token.safeTransferFrom(msg.sender, _value);
         setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
@@ -193,9 +192,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     */
     function executeActionOnFixedTokens(address _token, address _recipient, uint256 _value) internal {
         _setMediatorBalance(_token, mediatorBalance(_token).sub(_value));
-        uint256 balance = ERC677(_token).balanceOf(address(this));
-        LegacyERC20(_token).transfer(_recipient, _value);
-        require(ERC677(_token).balanceOf(address(this)) == balance.sub(_value));
+        _token.safeTransfer(_recipient, _value);
     }
 
     /**

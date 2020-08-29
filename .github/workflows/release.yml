@@ -1,0 +1,35 @@
+name: release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  flats:
+    runs-on: ubuntu-latest
+    steps:
+      - id: get_release
+        uses: bruceadams/get-release@v1.2.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 10
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        id: npm-cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('**/package-lock.json') }}
+      - run: npm install
+        if: ${{ !steps.npm-cache.outputs.cache-hit }}
+      - run: npm run flatten
+      - run: zip flats $(find flats -name '*.sol')
+      - uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: flats.zip
+          asset_name: tokenbridge-contracts-flattened-${{ steps.get_release.outputs.tag_name }}.zip
+          asset_content_type: application/zip

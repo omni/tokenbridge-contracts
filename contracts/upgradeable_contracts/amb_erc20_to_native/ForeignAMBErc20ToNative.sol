@@ -3,6 +3,7 @@ pragma solidity 0.4.24;
 import "./BasicAMBErc20ToNative.sol";
 import "../BaseERC677Bridge.sol";
 import "../ReentrancyGuard.sol";
+import "../../libraries/SafeERC20.sol";
 
 /**
 * @title ForeignAMBErc20ToNative
@@ -10,6 +11,8 @@ import "../ReentrancyGuard.sol";
 * It is design to be used as implementation contract of EternalStorageProxy contract.
 */
 contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, BaseERC677Bridge {
+    using SafeERC20 for ERC677;
+
     bytes32 internal constant MEDIATOR_BALANCE = 0x3db340e280667ee926fa8c51e8f9fcf88a0ff221a66d84d63b4778127d97d139; // keccak256(abi.encodePacked("mediatorBalance"))
 
     /**
@@ -70,13 +73,12 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
         // which will call passMessage.
         require(!lock());
         ERC677 token = _erc677token();
-        address to = address(this);
         require(withinLimit(_value));
         addTotalSpentPerDay(getCurrentDay(), _value);
         _setMediatorBalance(mediatorBalance().add(_value));
 
         setLock(true);
-        token.transferFrom(msg.sender, to, _value);
+        token.safeTransferFrom(msg.sender, _value);
         setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
@@ -150,7 +152,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
         bytes32 _messageId = messageId();
 
         _setMediatorBalance(mediatorBalance().sub(valueToTransfer));
-        _erc677token().transfer(_receiver, valueToTransfer);
+        _erc677token().safeTransfer(_receiver, valueToTransfer);
         emit TokensBridged(_receiver, valueToTransfer, _messageId);
     }
 
@@ -161,7 +163,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     */
     function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
         _setMediatorBalance(mediatorBalance().sub(_value));
-        _erc677token().transfer(_receiver, _value);
+        _erc677token().safeTransfer(_receiver, _value);
     }
 
     /**

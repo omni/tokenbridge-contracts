@@ -1,0 +1,32 @@
+{
+  "name": "contracts",
+  "version": "5.4.1",
+  "description": "Bridge",
+  "main": "index.js",
+  "scripts": {
+    "test": "scripts/test.sh",
+    "test:gasreport": "GASREPORT=true yarn test",
+    "compile": "truffle compile",
+    "flatten": "bash flatten.sh",
+    "coverage": "SOLIDITY_COVERAGE=true yarn test"
+  },
+  "author": "POA network",
+  "license": "GPLv3",
+  "dependencies": {
+    "@0x/sol-coverage": "^4.0.10",
+    "@0x/sol-trace": "^3.0.10",
+    "@0x/subproviders": "^6.1.1",
+    "openzeppelin-solidity": "1.12.0",
+    "truffle": "^5.0.35",
+    "truffle-flattener": "^1.4.2"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "chai-bn": "^0.1.1",
+    "ethereumjs-abi": "0.6.8",
+    "ethereumjs-util": "5.2.0",
+    "ganache-cli": "^6.6.0",
+    "istanbul": "^0.4.5"
+  }
+}

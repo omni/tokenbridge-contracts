@@ -1,3 +1,6 @@
-node_modules
-deploy
-upgrade
+**/node_modules/
+contracts/.coverage_artifacts/
+contracts/.coverage_contracts/
+contracts/build/
+contracts/flats/
+contracts/coverage/

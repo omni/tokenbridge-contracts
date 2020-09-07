@@ -1,15 +1,9 @@
 const { web3Foreign, FOREIGN_RPC_URL } = require('../web3')
-const {
-  deployContract,
-  privateKeyToAddress,
-  upgradeProxy
-} = require('../deploymentUtils')
+const { deployContract, privateKeyToAddress, upgradeProxy } = require('../deploymentUtils')
 const {
   foreignContracts: { EternalStorageProxy, ForeignMultiAMBErc20ToErc677: ForeignBridge }
 } = require('../loadContracts')
-const {
-  DEPLOYMENT_ACCOUNT_PRIVATE_KEY
-} = require('../loadEnv')
+const { DEPLOYMENT_ACCOUNT_PRIVATE_KEY } = require('../loadEnv')
 
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 

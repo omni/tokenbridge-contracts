@@ -12,7 +12,7 @@ if [ -f /.dockerenv ]; then
     node testenv-deploy.js interestReceiver
   else
     echo "Bridge contract deployment started"
-    npm run deploy
+    yarn run deploy
     if [ -f bridgeDeploymentResults.json ]; then
       cat bridgeDeploymentResults.json
       echo

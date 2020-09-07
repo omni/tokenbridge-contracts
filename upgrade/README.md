@@ -3,14 +3,8 @@
 Install dependencies in root project and compile the contracts
 ```bash
 cd ..
-npm i
-npm run compile
-```
-
-Install dependencies from `upgrade` folder
-```bash
-cd upgrade
-npm i
+yarn install --frozen-lockfile
+yarn build
 ```
 
 Create `.env` file
@@ -21,4 +15,4 @@ cp .env.example .env
 Complete the variables in `.env` file. The `ROLE` variable indicates if the validator will send the creation transaction on the multisig wallet or if it will send the confirmation.
 
 Run the script. The following are available:
-* `npm run upgradeBridgeOnForeign`
+* `yarn run upgradeBridgeOnForeign`

@@ -1,28 +1,13 @@
 {
   "extends": [
-    "plugin:node/recommended",
-    "airbnb-base",
-    "plugin:prettier/recommended"
+    "../.eslintrc"
   ],
-  "plugins": ["node"],
   "rules": {
-    "no-var": "error",
-    /* "arrow-body-style": "off", */
-    /* "func-names": "off", */
-    /* "no-await-in-loop": "off", */
     "consistent-return": "off",
     "global-require": "off",
     "no-console": "off",
-    /* "no-param-reassign": "off", */
-    "no-plusplus": "off",
-    /* "no-restricted-syntax": "off", */
-    /* "no-shadow": "off", */
-    "no-use-before-define": ["error", { "functions": false }],
-    /* "import/no-dynamic-require": "off" */
-    "import/no-extraneous-dependencies": "off",
     "node/no-extraneous-require": ["error", {
       "allowModules": ["web3-utils"]
-    }],
-    "node/no-unpublished-require": "off",
+    }]
   }
 }

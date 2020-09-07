@@ -6,26 +6,18 @@ RUN apt-get clean
 
 WORKDIR /contracts
 
-COPY package.json .
-COPY package-lock.json .
-RUN npm install
-
+COPY ./package.json .
+COPY ./contracts/package.json ./contracts/
 COPY ./deploy/package.json ./deploy/
-COPY ./deploy/package-lock.json ./deploy/
-RUN cd ./deploy; npm install; cd ..
-
 COPY ./upgrade/package.json ./upgrade/
-COPY ./upgrade/package-lock.json ./upgrade/
-RUN cd ./upgrade; npm install; cd ..
+COPY ./yarn.lock .
 
-COPY ./scripts ./scripts
+RUN yarn install --frozen-lockfile
 
-COPY truffle-config.js truffle-config.js
+COPY ./contracts/truffle-config.js ./contracts/truffle-config.js
 COPY ./contracts ./contracts
-RUN npm run compile
 
-COPY flatten.sh flatten.sh
-RUN bash flatten.sh
+RUN yarn build
 
 COPY .eslintignore .eslintignore
 COPY .eslintrc .eslintrc
@@ -36,7 +28,6 @@ COPY deploy.sh deploy.sh
 COPY ./deploy ./deploy
 COPY .solhint.json .solhint.json
 COPY codechecks.yml codechecks.yml
-COPY ./test ./test
 
 ENV PATH="/contracts/:${PATH}"
 ENV NOFLAT=true

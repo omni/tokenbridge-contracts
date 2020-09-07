@@ -1,6 +1,6 @@
 const { web3Home, web3Foreign } = require('../web3')
 const { deployContract, privateKeyToAddress } = require('../deploymentUtils')
-const Box = require('../../../build/contracts/Box')
+const Box = require('../../../contracts/build/contracts/Box')
 const env = require('../loadEnv')
 
 const { DEPLOYMENT_ACCOUNT_PRIVATE_KEY } = env

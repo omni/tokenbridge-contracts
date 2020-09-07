@@ -80,7 +80,7 @@ async function initialize({ homeBridge, foreignBridge }) {
       maxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
       minPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
       executionDailyLimit: HOME_DAILY_LIMIT,
-      executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX,
+      executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX
     }
   })
 

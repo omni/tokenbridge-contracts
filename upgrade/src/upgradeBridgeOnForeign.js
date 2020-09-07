@@ -1,8 +1,8 @@
 require('dotenv').config()
 const Web3 = require('web3')
 const multiSigWalletAbi = require('../abi/multiSigwallet')
-const proxyAbi = require('../../build/contracts/EternalStorageProxy').abi
-const bridgeAbi = require('../../build/contracts/ForeignBridgeErcToNative').abi
+const proxyAbi = require('../../contracts/build/contracts/EternalStorageProxy').abi
+const bridgeAbi = require('../../contracts/build/contracts/ForeignBridgeErcToNative').abi
 const callMultiSigWallet = require('./utils/callMultiSigWallet')
 const validatorState = require('./utils/validatorState')
 

@@ -231,17 +231,17 @@ async function deployHome() {
   console.log('\n[Home] deploying Bridgeable token')
   const rewardable = (isRewardableBridge && BLOCK_REWARD_ADDRESS !== ZERO_ADDRESS) || DEPLOY_REWARDABLE_TOKEN
   const erc677Contract = rewardable ? ERC677BridgeTokenRewardable : ERC677BridgeToken
-  let args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS]
+  const args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS]
   if (rewardable) {
     const chainId = await web3Home.eth.getChainId()
     assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
     args.push(chainId)
   }
-  const erc677token = await deployContract(
-    erc677Contract,
-    args,
-    { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce }
-  )
+  const erc677token = await deployContract(erc677Contract, args, {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    network: 'home',
+    nonce
+  })
   nonce++
   console.log('[Home] Bridgeable Token: ', erc677token.options.address)
 

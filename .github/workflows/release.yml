@@ -16,15 +16,9 @@ jobs:
         with:
           node-version: 10
       - uses: actions/checkout@v2
-      - uses: actions/cache@v2
-        id: npm-cache
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node_modules-${{ hashFiles('**/package-lock.json') }}
-      - run: npm install
-        if: ${{ !steps.npm-cache.outputs.cache-hit }}
-      - run: npm run flatten
-      - run: zip flats $(find flats -name '*.sol')
+      - run: yarn install --frozen-lockfile
+      - run: yarn workspace contracts flatten
+      - run: zip flats $(find contracts/flats -name '*.sol')
       - uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -4,9 +4,7 @@
   "description": "",
   "main": "deploy.js",
   "scripts": {
-    "compile": "pkg deploy.js --out-path build/tmp_build",
-    "lint": "eslint .",
-    "deploy": "if test \"$NOFLAT\" != \"true\" ; then cd ..; npm run flatten; cd deploy; fi && node deploy.js"
+    "deploy": "if test \"$NOFLAT\" != \"true\" ; then cd ../contracts; yarn run flatten; cd ../deploy; fi && node deploy.js"
   },
   "author": "",
   "license": "ISC",
@@ -20,16 +18,6 @@
     "promise-retry": "^1.1.1",
     "querystring": "^0.2.0",
     "web3": "^1.2.9"
-  },
-  "devDependencies": {
-    "eslint": "^5.6.0",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-config-prettier": "^3.0.1",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-node": "^7.0.1",
-    "eslint-plugin-prettier": "^2.6.2",
-    "pkg": "^4.3.1",
-    "prettier": "^1.14.3"
   },
   "engines": {
     "node": ">= 8.9"

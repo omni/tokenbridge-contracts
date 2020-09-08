@@ -1,8 +1,6 @@
 const { web3Home, HOME_RPC_URL } = require('../web3')
 const { deployContract, privateKeyToAddress, upgradeProxy } = require('../deploymentUtils')
-const {
-  DEPLOYMENT_ACCOUNT_PRIVATE_KEY
-} = require('../loadEnv')
+const { DEPLOYMENT_ACCOUNT_PRIVATE_KEY } = require('../loadEnv')
 
 const {
   homeContracts: { EternalStorageProxy, HomeAMBErc20ToNative: HomeBridge }

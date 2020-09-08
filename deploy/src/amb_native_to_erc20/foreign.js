@@ -75,11 +75,11 @@ async function deployForeign() {
   const chainId = await web3Foreign.eth.getChainId()
   assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
   const args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS, chainId]
-  const erc677token = await deployContract(
-    erc677Contract,
-    args,
-    { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'foreign', nonce }
-  )
+  const erc677token = await deployContract(erc677Contract, args, {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    network: 'foreign',
+    nonce
+  })
   nonce++
   console.log('[Foreign] Bridgeable Token: ', erc677token.options.address)
 

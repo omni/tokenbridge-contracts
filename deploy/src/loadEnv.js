@@ -32,7 +32,7 @@ const validateAddress = address => {
   throw new Error(`Invalid address: ${address}`)
 }
 const validateOptionalAddress = address => {
-  if (address !== "") {
+  if (address !== '') {
     return validateAddress(address)
   }
   return address
@@ -124,7 +124,7 @@ if (BRIDGE_MODE.includes('AMB_')) {
     HOME_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
     FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
     FOREIGN_MIN_AMOUNT_PER_TX: bigNumValidator(),
-    FOREIGN_DAILY_LIMIT: bigNumValidator(),
+    FOREIGN_DAILY_LIMIT: bigNumValidator()
   }
 
   if (BRIDGE_MODE !== 'AMB_ERC_TO_NATIVE' && BRIDGE_MODE !== 'MULTI_AMB_ERC_TO_ERC') {
@@ -330,9 +330,7 @@ if (env.BRIDGE_MODE === 'NATIVE_TO_ERC') {
 
   if (env.HOME_REWARDABLE === 'BOTH_DIRECTIONS' && env.FOREIGN_REWARDABLE === 'ONE_DIRECTION') {
     throw new Error(
-      `Combination of HOME_REWARDABLE: ${env.HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${
-        env.FOREIGN_REWARDABLE
-      } should be avoided on ${env.BRIDGE_MODE} bridge mode.`
+      `Combination of HOME_REWARDABLE: ${env.HOME_REWARDABLE} and FOREIGN_REWARDABLE: ${env.FOREIGN_REWARDABLE} should be avoided on ${env.BRIDGE_MODE} bridge mode.`
     )
   }
 }
@@ -373,7 +371,12 @@ if (env.BRIDGE_MODE === 'ERC_TO_NATIVE') {
   }
 }
 
-if (env.BRIDGE_MODE === 'AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC' || env.BRIDGE_MODE === 'AMB_ERC_TO_NATIVE' || env.BRIDGE_MODE === 'MULTI_AMB_ERC_TO_ERC') {
+if (
+  env.BRIDGE_MODE === 'AMB_ERC_TO_ERC' ||
+  env.BRIDGE_MODE === 'STAKE_AMB_ERC_TO_ERC' ||
+  env.BRIDGE_MODE === 'AMB_ERC_TO_NATIVE' ||
+  env.BRIDGE_MODE === 'MULTI_AMB_ERC_TO_ERC'
+) {
   checkLimits(env.FOREIGN_MIN_AMOUNT_PER_TX, env.FOREIGN_MAX_AMOUNT_PER_TX, env.FOREIGN_DAILY_LIMIT, foreignPrefix)
 }
 

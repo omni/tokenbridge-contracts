@@ -1,11 +1,11 @@
 # How to Deploy POA Bridge Contracts
 
-In order to deploy bridge contracts you must run `npm install` to install all dependencies. For more information, see the [project README](../README.md).
+In order to deploy bridge contracts you must run `yarn install --frozen-lockfile` to install all dependencies. For more information, see the [project README](../README.md).
 
 1. Compile the source contracts.
 ```
 cd ..
-npm run compile
+yarn run build
 ```
 
 2. Create a `.env` file.
@@ -20,7 +20,7 @@ cp .env.example .env
 
 5. Add funds to the deployment accounts in both the Home and Foreign networks.
 
-6. Run `npm run deploy`.
+6. Run `yarn run deploy`.
 
 ## `NATIVE-TO-ERC` Bridge Mode Configuration Example.
 

@@ -162,7 +162,6 @@ async function initialize({ homeBridge, foreignBridge }) {
         foreignToHomeFee: foreignFeeInWei
       }
     })
-
   } else {
     initializeMediatorData = await initializeMediator({
       contract: mediatorContract,

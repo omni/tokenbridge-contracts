@@ -65,11 +65,11 @@ async function deployHome() {
   const chainId = await web3Home.eth.getChainId()
   assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
   const args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS, chainId]
-  const erc677token = await deployContract(
-    erc677Contract,
-    args,
-    { from: DEPLOYMENT_ACCOUNT_ADDRESS, network: 'home', nonce }
-  )
+  const erc677token = await deployContract(erc677Contract, args, {
+    from: DEPLOYMENT_ACCOUNT_ADDRESS,
+    network: 'home',
+    nonce
+  })
   nonce++
   console.log('[Home] Bridgeable Token: ', erc677token.options.address)
 

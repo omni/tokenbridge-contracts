@@ -1,9 +1,5 @@
 const { web3Home, web3Foreign } = require('../web3')
-const {
-  HOME_AMB_BRIDGE,
-  FOREIGN_AMB_BRIDGE,
-  HOME_ERC677_TOKEN_IMAGE
-} = require('../loadEnv')
+const { HOME_AMB_BRIDGE, FOREIGN_AMB_BRIDGE, HOME_ERC677_TOKEN_IMAGE } = require('../loadEnv')
 const { isContract } = require('../deploymentUtils')
 
 async function preDeploy() {
@@ -17,8 +13,8 @@ async function preDeploy() {
     throw new Error(`FOREIGN_AMB_BRIDGE should be a contract address`)
   }
 
-  if (HOME_ERC677_TOKEN_IMAGE !== "") {
-    if(!(await isContract(web3Home, HOME_ERC677_TOKEN_IMAGE))) {
+  if (HOME_ERC677_TOKEN_IMAGE !== '') {
+    if (!(await isContract(web3Home, HOME_ERC677_TOKEN_IMAGE))) {
       throw new Error(`HOME_ERC677_TOKEN_IMAGE should be a contract address`)
     }
   }

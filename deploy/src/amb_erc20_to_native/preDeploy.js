@@ -1,10 +1,5 @@
 const { web3Home, web3Foreign } = require('../web3')
-const {
-  HOME_AMB_BRIDGE,
-  BLOCK_REWARD_ADDRESS,
-  FOREIGN_AMB_BRIDGE,
-  ERC20_TOKEN_ADDRESS
-} = require('../loadEnv')
+const { HOME_AMB_BRIDGE, BLOCK_REWARD_ADDRESS, FOREIGN_AMB_BRIDGE, ERC20_TOKEN_ADDRESS } = require('../loadEnv')
 const { isContract } = require('../deploymentUtils')
 
 async function preDeploy() {
@@ -14,9 +9,9 @@ async function preDeploy() {
   }
 
   const isBlockRewardAContract = await isContract(web3Home, BLOCK_REWARD_ADDRESS)
-    if (!isBlockRewardAContract) {
-      throw new Error(`BLOCK_REWARD_ADDRESS should be a contract address`)
-    }
+  if (!isBlockRewardAContract) {
+    throw new Error(`BLOCK_REWARD_ADDRESS should be a contract address`)
+  }
 
   const isForeignAMBAContract = await isContract(web3Foreign, FOREIGN_AMB_BRIDGE)
   if (!isForeignAMBAContract) {

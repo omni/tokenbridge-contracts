@@ -14,6 +14,7 @@ mkdir -p flats/upgradeability
 mkdir -p flats/amb_native_to_erc20
 mkdir -p flats/amb_erc20_to_native
 mkdir -p flats/multi_amb_erc20_to_erc677
+mkdir -p flats/utopia_bridge
 
 FLATTENER=./node_modules/.bin/truffle-flattener
 BRIDGE_CONTRACTS_DIR=contracts/upgradeable_contracts
@@ -75,3 +76,6 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc20_to_native/ForeignAMBErc20ToNative
 echo "Flattening contracts related to multi-erc-to-erc on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677_flat.sol
+
+echo "Flattening contracts related to Utopia bridge"
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/utopia_bridge/ForeignUtopiaBridge.sol > flats/utopia_bridge/ForeignUtopiaBridge_flat.sol

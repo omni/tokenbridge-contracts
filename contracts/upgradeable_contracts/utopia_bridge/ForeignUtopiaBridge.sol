@@ -15,7 +15,7 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
 
     bytes32 internal constant COMMITS_DAILY_LIMIT = 0x69388e2c2e6daee4eabfbc84444561133977b9215f19fc6a6719f60f330029fb; // keccak256(abi.encodePacked("commitsDailyLimiy"))
     bytes32 internal constant COMMITS_PER_DAY = 0xb7915c3fee8df0689c3fb999c82b426049cb546c49c1d551a34fab840df2369d; // keccak256(abi.encodePacked("commitsPerDay"))
-    bytes32 internal constant COMMIT_MINIMAL_BOND = 0xfd90e54293bb1c2fc18e58c663fb50cd45f75cefded747f2e42384659f918ab5 ; // keccak256(abi.encodePacked("commitsPerDay"))
+    bytes32 internal constant COMMIT_MINIMAL_BOND = 0xfd90e54293bb1c2fc18e58c663fb50cd45f75cefded747f2e42384659f918ab5; // keccak256(abi.encodePacked("commitsPerDay"))
     bytes32 internal constant COMMIT_TIME_AND_BOND = 0x1d53b8d5f4752dc94386abf27e4fa63e3fb5ad0d0ae123bfc3c17ae41fac2ce2; // keccak256(abi.encodePacked("commitTimeAndBond"))
     bytes32 internal constant COMMIT_EXECUTOR = 0xe7d5e82ac97b50d6c4713c35396235f792273b197cb0d972f5dee27b953eb7a9; // keccak256(abi.encodePacked("commitExecutor"))
     bytes32 internal constant COMMIT_CALLDATA = 0x80cacfae8438100f1380eb301b38a51925c7ae3de79c938425d38d480fc35380; // keccak256(abi.encodePacked("commitCalldata"))
@@ -56,8 +56,8 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
     function submitValidatorsRoot(bytes32 _newValidatorsRoot, bytes _signatures) external {
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _newValidatorsRoot));
         bytes32[MAX_VALIDATORS] memory validators; // merkle tree
-        uint256 count = 0;
-        uint256 i = 0;
+        uint256 signaturesCount = 0;
+        uint256 validatorsCount = 0;
         uint256 offset = 0;
         while (offset < _signatures.length) {
             uint8 v = uint8(_signatures[offset]);
@@ -68,21 +68,21 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
                     r := calldataload(add(offset, 101))
                     s := calldataload(add(offset, 133))
                 }
-                validators[i++] = bytes32(ecrecover(messageHash, v, r, s));
-                count++;
+                validators[validatorsCount++] = bytes32(ecrecover(messageHash, v, r, s));
+                signaturesCount++;
                 offset += 65;
             } else {
                 bytes32 validator;
                 assembly {
                     validator := and(0xffffffffffffffffffffffffffffffffffffffff, calldataload(add(offset, 89)))
                 }
-                validators[i++] = validator;
+                validators[validatorsCount++] = validator;
                 offset += 21;
             }
         }
-        require(2 * count > i);
-        for (i = 1; i < MAX_VALIDATORS; i *= 2) {
-            for (uint256 j = 0; j + i < MAX_VALIDATORS; j += i + i) {
+        require(2 * signaturesCount > validatorsCount);
+        for (uint256 i = 1; i < validatorsCount; i *= 2) {
+            for (uint256 j = 0; j + i < validatorsCount; j += i + i) {
                 if (uint256(validators[j]) < uint256(validators[j + i])) {
                     validators[j] = keccak256(abi.encodePacked(validators[j], validators[j + i]));
                 } else {

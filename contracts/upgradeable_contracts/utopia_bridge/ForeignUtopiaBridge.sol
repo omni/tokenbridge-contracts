@@ -33,6 +33,14 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
     event Reject(bytes32 indexed messageId, address sender);
     event Slash(bytes32 indexed messageId);
 
+    /**
+     * @dev Initializes this contract.
+     * @param _validatorsRoot initial merkle root of the validator set.
+     * @param _commitMinimalBond minimum required bond for each commit, in WEI.
+     * @param _commitRejectsThreshold specifies the amount of rejects, after which the commit will be slashed.
+     * @param _commitsDailyLimit daily limit on the number of commits.
+     * @param _owner future owner of this contract.
+     */
     function initialize(
         bytes32 _validatorsRoot,
         uint256 _commitMinimalBond,
@@ -54,6 +62,12 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         return true;
     }
 
+    /**
+     * @dev Updates validator root. Should be called after a new POSDAO validar set is established.
+     * At least 50% + 1 signatures should be provided.
+     * @param _newValidatorsRoot validators merkle root for the new set.
+     * @param _signatures blob containing some of the validators signatures and the remaining addresses.
+     */
     function submitValidatorsRoot(bytes32 _newValidatorsRoot, bytes _signatures) external {
         bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _newValidatorsRoot));
         bytes32[MAX_VALIDATORS] memory validators; // merkle tree
@@ -95,6 +109,13 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         _setValidatorsRoot(_newValidatorsRoot);
     }
 
+    /**
+     * @dev Commits a new message for further execution.
+     * It is important that commited _executor and _data parameters are equal to the ones used to obtain the _messageId on the home side.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @param _executor address of the receiver contract.
+     * @param _data calldata of the message that will be passed to the receiver contract.
+     */
     function commit(bytes32 _messageId, address _executor, bytes _data) external payable {
         require(msg.value >= getCommitMinimalBond());
         require(getTodayCommits() < getCommitsDailyLimit());
@@ -105,6 +126,13 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         emit Commit(_messageId);
     }
 
+    /**
+     * @dev Executes a previously committed message.
+     * Message can be executed only after a specific time period after commit.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @param _gas amount of gas to pass to the executor contract. Can be chosen arbitrarly.
+     * @return execution status of the called message.
+     */
     function execute(bytes32 _messageId, uint256 _gas) external returns (bool) {
         require(now >= getExecuteTime(_messageId));
         require(getCommitRejectsCount(_messageId) < getCommitRejectsThreshold());
@@ -125,6 +153,12 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         return status;
     }
 
+    /**
+     * @dev Submits reject for the committed, but not yet executed message.
+     * Message can be rejected only by the current validators.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @param _merkleProof merkle tree proof that confirmes that transaction sender is indeed a validator.
+     */
     function reject(bytes32 _messageId, bytes32[] _merkleProof) external {
         require(now < getExecuteTime(_messageId));
         bytes32 hash = bytes32(msg.sender);
@@ -142,6 +176,12 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         emit Reject(_messageId, msg.sender);
     }
 
+    /**
+     * @dev Distributes the locked bond for some commit, after sufficient amount of rejects was accumulated.
+     * Can be called by anyone.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @param _parties list of parties that participated in the reject process. In any order.
+     */
     function slash(bytes32 _messageId, address[] _parties) external {
         require(_parties.length == getCommitRejectsCount(_messageId));
         (, uint256 bond) = getCommitSenderAndBond(_messageId);
@@ -167,10 +207,19 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         emit Slash(_messageId);
     }
 
+    /**
+     * @dev Counts amount of commits made today.
+     * @return number of commits.
+     */
     function getTodayCommits() public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked(COMMITS_PER_DAY, now / 1 days))];
     }
 
+    /**
+     * @dev Checks when a committed message can be executed.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @return approximate execution time.
+     */
     function getExecuteTime(bytes32 _messageId) public view returns (uint256) {
         uint256 commitTime = getCommitTime(_messageId);
         uint256 rejects = getCommitRejectsCount(_messageId);
@@ -182,64 +231,133 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         return commitTime + (delay > 10 days ? 10 days : delay);
     }
 
+    /**
+     * @dev Retrieves current validators merkle root.
+     * @return merkle tree root for the validators set.
+     */
     function getValidatorsRoot() public view returns (bytes32) {
         return bytes32(uintStorage[VALIDATORS_MERKLE_ROOT]);
     }
 
+    /**
+     * @dev Retrieves the maximum amount of commits that can be made daily.
+     * @return current daily limit on the amount of commits.
+     */
     function getCommitsDailyLimit() public view returns (uint256) {
         return uintStorage[COMMITS_DAILY_LIMIT];
     }
 
+    /**
+     * @dev Retrieves the approximate time when validator set should be updated.
+     * @return approximate validators set update time.
+     */
     function getValidatorsUpdateTime() public view returns (uint256) {
         return uintStorage[VALIDATORS_UPDATE_TIME];
     }
 
+    /**
+     * @dev Retrieves the amount of received rejects for the particular commit.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @return number of collected rejects from the validators.
+     */
     function getCommitRejectsCount(bytes32 _messageId) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked(COMMIT_REJECTS_COUNT, _messageId))];
     }
 
+    /**
+     * @dev Retrieves the time when the specified message was commited.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @return message commit time.
+     */
     function getCommitTime(bytes32 _messageId) public view returns (uint256) {
         return
             uintStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR_AND_TIME, _messageId))] & 0xffffffffffffffffffffffff;
     }
 
+    /**
+     * @dev Retrieves the commit sender and sent bond amount.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @return pair of commit sender address and locked amount of coins.
+     */
     function getCommitSenderAndBond(bytes32 _messageId) public view returns (address, uint256) {
         uint256 blob = uintStorage[keccak256(abi.encodePacked(COMMIT_SENDER_AND_BOND, _messageId))];
         return (address(blob >> 96), blob & 0xffffffffffffffffffffffff);
     }
 
+    /**
+     * @dev Retrieves executor contract for the specific commit.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @return executor contract address.
+     */
     function getCommitExecutor(bytes32 _messageId) public view returns (address) {
         return address(uintStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR_AND_TIME, _messageId))] >> 96);
     }
 
+    /**
+     * @dev Retrieves a calldata associated with the specific commit.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @return calldata bytes blob.
+     */
     function getCommitCalldata(bytes32 _messageId) public view returns (bytes memory) {
         return bytesStorage[keccak256(abi.encodePacked(COMMIT_CALLDATA, _messageId))];
     }
 
+    /**
+     * @dev Retrieves required amount of rejects before slash.
+     * @return amount of required rejects.
+     */
     function getCommitRejectsThreshold() public view returns (uint256) {
         return uintStorage[COMMIT_REJECTS_THRESHOLD];
     }
 
+    /**
+     * @dev Retrieves the minimum required commit bond.
+     * @return minumum amount of bond.
+     */
     function getCommitMinimalBond() public view returns (uint256) {
         return uintStorage[COMMIT_MINIMAL_BOND];
     }
 
+    /**
+     * @dev Updates the daily limit for the commits.
+     * Can be called only by the contract owner.
+     * @param _commitsDailyLimit new daily limit.
+     */
     function setCommitsDailyLimit(uint256 _commitsDailyLimit) external onlyOwner {
         _setCommitsDailyLimit(_commitsDailyLimit);
     }
 
+    /**
+     * @dev Updates the amount of required rejects.
+     * Can be called only by the contract owner.
+     * @param _threshold new threshold value.
+     */
     function setCommitRejectsThreshold(uint256 _threshold) external onlyOwner {
         _setCommitRejectsThreshold(_threshold);
     }
 
+    /**
+     * @dev Updates the minimum amount of locked coins per commit.
+     * Can be called only by the contract owner.
+     * @param _bond new minimum bond value.
+     */
     function setCommitMinimalBond(uint256 _bond) external onlyOwner {
         _setCommitMinimalBond(_bond);
     }
 
+    /**
+     * @dev Internal function for incrementing amount of today commits.
+     */
     function _incrementTodayCommits() internal {
         uintStorage[keccak256(abi.encodePacked(COMMITS_PER_DAY, now / 1 days))]++;
     }
 
+    /**
+     * @dev Internal function for setting new commit data.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @param _executor executor of the commit message.
+     * @param _data committed message payload.
+     */
     function _setCommitData(bytes32 _messageId, address _executor, bytes _data) internal {
         require(msg.value < 2**96);
         uintStorage[keccak256(abi.encodePacked(COMMIT_SENDER_AND_BOND, _messageId))] =
@@ -251,12 +369,20 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         bytesStorage[keccak256(abi.encodePacked(COMMIT_CALLDATA, _messageId))] = _data;
     }
 
+    /**
+     * @dev Internal function for clearing the storage after commit processing.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     */
     function _deleteCommitData(bytes32 _messageId) internal {
         delete uintStorage[keccak256(abi.encodePacked(COMMIT_SENDER_AND_BOND, _messageId))];
         delete uintStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR_AND_TIME, _messageId))];
         delete bytesStorage[keccak256(abi.encodePacked(COMMIT_CALLDATA, _messageId))];
     }
 
+    /**
+     * @dev Internal function for updating validator set merkle tree root.
+     * @param _validatorsRoot value of the new validator set root.
+     */
     function _setValidatorsRoot(bytes32 _validatorsRoot) internal {
         uintStorage[VALIDATORS_MERKLE_ROOT] = uint256(_validatorsRoot);
         uintStorage[VALIDATORS_UPDATE_TIME] = now;
@@ -264,20 +390,37 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         emit UpdateValidatorsRoot(_validatorsRoot);
     }
 
+    /**
+     * @dev Internal function for updating daily commits limit.
+     * @param _commitsDailyLimit new value for the limit.
+     */
     function _setCommitsDailyLimit(uint256 _commitsDailyLimit) internal {
         uintStorage[COMMITS_DAILY_LIMIT] = _commitsDailyLimit;
     }
 
+    /**
+     * @dev Internal function for updating required rejects threshold.
+     * @param _threshold new value for the threshold.
+     */
     function _setCommitRejectsThreshold(uint256 _threshold) internal {
         require(_threshold > 0 && _threshold <= MAX_VALIDATORS);
         uintStorage[COMMIT_REJECTS_THRESHOLD] = _threshold;
     }
 
+    /**
+     * @dev Internal function for updating minimum required bond value.
+     * @param _bond new value for the required bond.
+     */
     function _setCommitMinimalBond(uint256 _bond) internal {
         require(_bond > 0);
         uintStorage[COMMIT_MINIMAL_BOND] = _bond;
     }
 
+    /**
+     * @dev Internal function for recording a new reject for the particular commit.
+     * @param _messageId id of the message obtained on the home side of the bridge.
+     * @return total amount of received rejects for this particular commit.
+     */
     function _addReject(bytes32 _messageId) internal returns (uint256) {
         uint256 count = uintStorage[keccak256(abi.encodePacked(COMMIT_REJECTS_COUNT, _messageId))]++;
         bytes32 hash = keccak256(abi.encodePacked(COMMIT_REJECTS_PARTY, _messageId, msg.sender));

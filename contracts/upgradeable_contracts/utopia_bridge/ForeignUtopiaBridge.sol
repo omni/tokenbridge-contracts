@@ -143,6 +143,7 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
     }
 
     function slash(bytes32 _messageId, address[] _parties) external {
+        require(_parties.length == getCommitRejectsCount(_messageId));
         (, uint256 bond) = getCommitSenderAndBond(_messageId);
         require(bond > 0);
 
@@ -175,8 +176,8 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         uint256 rejects = getCommitRejectsCount(_messageId);
         uint256 validatorsUpdateTime = getValidatorsUpdateTime();
         uint256 delay = 24 hours + rejects * rejects * 12 hours;
-        if (commitTime > validatorsUpdateTime) {
-            delay += commitTime - validatorsUpdateTime;
+        if (commitTime > validatorsUpdateTime + 1 weeks) {
+            delay += commitTime - validatorsUpdateTime - 1 weeks;
         }
         return commitTime + (delay > 10 days ? 10 days : delay);
     }

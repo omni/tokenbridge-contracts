@@ -50,6 +50,18 @@ contract('ForeignUtopiaBridge', async accounts => {
     return proof
   }
 
+  async function sendReject(messageId, validatorIndex, sender = validators[validatorIndex].address) {
+    const data = await foreignBridge.contract.methods
+      .reject(messageId, generateMerkleProof(validators, validatorIndex))
+      .encodeABI()
+    return web3.eth.sendTransaction({
+      from: sender,
+      to: foreignBridge.address,
+      data,
+      gas: 100000
+    })
+  }
+
   before(async () => {
     validators = createFullAccounts(web3, 19).sort((a, b) => a.address.toLowerCase() > b.address.toLowerCase())
     for (let i = 0; i < validators.length; i++) {
@@ -67,13 +79,69 @@ contract('ForeignUtopiaBridge', async accounts => {
     foreignBridge = await ForeignUtopiaBridge.new()
   })
 
+  describe('merkle helpers', () => {
+    it('should generate valid merkle tree for 4 validators', async () => {
+      const validators = [
+        { address: '0x0000000000000000000000000000000000000001' },
+        { address: '0x0000000000000000000000000000000000000002' },
+        { address: '0x0000000000000000000000000000000000000003' },
+        { address: '0x0000000000000000000000000000000000000004' }
+      ]
+      const validatorsRoot = merkleRoot(validators)
+      const hash1 = web3.utils.soliditySha3(
+        '0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002'
+      )
+      const hash2 = web3.utils.soliditySha3(
+        '0x00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000004'
+      )
+      expect(validatorsRoot).to.be.equal(web3.utils.soliditySha3(hash2 + hash1.substr(2)))
+
+      const proof1 = generateMerkleProof(validators, 0)
+      expect(proof1).to.be.eql(['0x0000000000000000000000000000000000000000000000000000000000000002', hash2])
+      const proof2 = generateMerkleProof(validators, 1)
+      expect(proof2).to.be.eql(['0x0000000000000000000000000000000000000000000000000000000000000001', hash2])
+      const proof3 = generateMerkleProof(validators, 2)
+      expect(proof3).to.be.eql(['0x0000000000000000000000000000000000000000000000000000000000000004', hash1])
+      const proof4 = generateMerkleProof(validators, 3)
+      expect(proof4).to.be.eql(['0x0000000000000000000000000000000000000000000000000000000000000003', hash1])
+    })
+
+    it('should generate valid merkle tree for 3 validators', async () => {
+      const validators = [
+        { address: '0x0000000000000000000000000000000000000001' },
+        { address: '0x0000000000000000000000000000000000000002' },
+        { address: '0x0000000000000000000000000000000000000003' }
+      ]
+      const validatorsRoot = merkleRoot(validators)
+      const hash1 = web3.utils.soliditySha3(
+        '0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002'
+      )
+      expect(validatorsRoot).to.be.equal(
+        web3.utils.soliditySha3(`0x0000000000000000000000000000000000000000000000000000000000000003${hash1.substr(2)}`)
+      )
+
+      const proof1 = generateMerkleProof(validators, 0)
+      expect(proof1).to.be.eql([
+        '0x0000000000000000000000000000000000000000000000000000000000000002',
+        '0x0000000000000000000000000000000000000000000000000000000000000003'
+      ])
+      const proof2 = generateMerkleProof(validators, 1)
+      expect(proof2).to.be.eql([
+        '0x0000000000000000000000000000000000000000000000000000000000000001',
+        '0x0000000000000000000000000000000000000000000000000000000000000003'
+      ])
+      const proof3 = generateMerkleProof(validators, 2)
+      expect(proof3).to.be.eql([hash1])
+    })
+  })
+
   describe('set params', () => {
     it('should initialize bridge with valid parameters', async () => {
       await foreignBridge.initialize(validatorsRoot, 200, 0, 10, owner).should.be.rejected
       await foreignBridge.initialize(validatorsRoot, 200, 50, 10, owner).should.be.rejected
       await foreignBridge.initialize(validatorsRoot, 200, 2, 10, ZERO_ADDRESS).should.be.rejected
       await foreignBridge.initialize(validatorsRoot, 0, 2, 10, owner).should.be.rejected
-      await foreignBridge.initialize(validatorsRoot, 200, 2, 10, owner).should.be.fulfilled
+      const { logs } = await foreignBridge.initialize(validatorsRoot, 200, 2, 10, owner).should.be.fulfilled
       await foreignBridge.initialize(validatorsRoot, 200, 2, 10, owner).should.be.rejected
 
       expect(await foreignBridge.isInitialized()).to.be.equal(true)
@@ -82,6 +150,7 @@ contract('ForeignUtopiaBridge', async accounts => {
       expect(await foreignBridge.getCommitRejectsThreshold()).to.be.bignumber.equal('2')
       expect(await foreignBridge.owner()).to.be.equal(owner)
       expect(await foreignBridge.getValidatorsUpdateTime()).to.be.bignumber.gt(ZERO)
+      expectEventInLogs(logs, 'UpdateValidatorsRoot', { root: validatorsRoot })
     })
 
     it('setCommitsDailyLimit', async () => {
@@ -294,18 +363,6 @@ contract('ForeignUtopiaBridge', async accounts => {
         .fulfilled
     })
 
-    async function sendReject(messageId, validatorIndex, sender = validators[validatorIndex].address) {
-      const data = await foreignBridge.contract.methods
-        .reject(messageId, generateMerkleProof(validators, validatorIndex))
-        .encodeABI()
-      return web3.eth.sendTransaction({
-        from: sender,
-        to: foreignBridge.address,
-        data,
-        gas: 100000
-      })
-    }
-
     it('should accept single reject', async () => {
       expect(await foreignBridge.getCommitRejectsCount(messageId1)).to.be.bignumber.equal(ZERO)
 
@@ -339,6 +396,71 @@ contract('ForeignUtopiaBridge', async accounts => {
     it('should not accept invalid merkle proof', async () => {
       await sendReject(messageId1, 0, owner).should.be.rejected
       await sendReject(messageId1, 0, validators[0].address).should.be.fulfilled
+    })
+  })
+
+  describe('slash', () => {
+    beforeEach(async () => {
+      await foreignBridge.initialize(validatorsRoot, 200, 2, 2, owner).should.be.fulfilled
+      await foreignBridge.commit(messageId1, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be
+        .fulfilled
+      await sendReject(messageId1, 0).should.be.fulfilled
+    })
+
+    it('should split rejected message bond between parties', async () => {
+      await sendReject(messageId1, 1).should.be.fulfilled
+
+      const initialBalances = await Promise.all([
+        web3.eth.getBalance(validators[0].address).then(toBN),
+        web3.eth.getBalance(validators[1].address).then(toBN),
+        web3.eth.getBalance(owner).then(toBN)
+      ])
+
+      const { logs } = await foreignBridge.slash(messageId1, [validators[0].address, validators[1].address]).should.be
+        .fulfilled
+
+      const balances = await Promise.all([
+        web3.eth.getBalance(validators[0].address).then(toBN),
+        web3.eth.getBalance(validators[1].address).then(toBN),
+        web3.eth.getBalance(owner).then(toBN)
+      ])
+
+      expect(balances[0]).to.be.bignumber.equal(initialBalances[0].add(ether('0.5')))
+      expect(balances[1]).to.be.bignumber.equal(initialBalances[1].add(ether('0.25')))
+      expect(balances[2]).to.be.bignumber.gt(initialBalances[2].add(ether('0.24')))
+      expectEventInLogs(logs, 'Slash', { messageId: messageId1 })
+    })
+
+    it('should not allow to claim bond for non-rejected message', async () => {
+      await foreignBridge.slash(messageId1, [validators[0].address]).should.be.rejected
+      await foreignBridge.slash(messageId2, [validators[0].address]).should.be.rejected
+    })
+
+    it('should not allow to claim bond with for invalid parties', async () => {
+      await sendReject(messageId1, 1).should.be.fulfilled
+
+      await foreignBridge.slash(messageId1, [validators[0].address, owner]).should.be.rejected
+      await foreignBridge.slash(messageId1, [owner, validators[1].address]).should.be.rejected
+      await foreignBridge.slash(messageId1, [validators[0].address, validators[1].address]).should.be.fulfilled
+    })
+
+    it('should not allow to claim bond with for the already processed message', async () => {
+      await foreignBridge.slash(messageId1, [validators[0].address]).should.be.rejected
+
+      await increaseTime(web3, 40 * 60 * 60)
+
+      await foreignBridge.slash(messageId1, [validators[0].address, validators[1].address]).should.be.rejected
+
+      await foreignBridge.execute(messageId1, 1000).should.be.fulfilled
+
+      await foreignBridge.slash(messageId1, [validators[0].address, validators[1].address]).should.be.rejected
+    })
+
+    it('should not allow to claim already slashed bond', async () => {
+      await sendReject(messageId1, 1).should.be.fulfilled
+
+      await foreignBridge.slash(messageId1, [validators[0].address, validators[1].address]).should.be.fulfilled
+      await foreignBridge.slash(messageId1, [validators[0].address, validators[1].address]).should.be.rejected
     })
   })
 })

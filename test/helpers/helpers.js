@@ -203,7 +203,7 @@ async function delay(ms) {
 
 module.exports.delay = delay
 
-async function increaseTime(web3, seconds=1) {
+async function increaseTime(web3, seconds = 1) {
   return new Promise(res =>
     web3.currentProvider.send({ jsonrpc: '2.0', method: 'evm_increaseTime', params: [seconds], id: 1 }, res)
   )

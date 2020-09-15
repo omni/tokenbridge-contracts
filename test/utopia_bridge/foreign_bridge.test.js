@@ -18,27 +18,48 @@ contract('ForeignUtopiaBridge', async accounts => {
   let validatorsRoot
   let validators
 
-  function merkleRoot(arr, start = 0, end = 32) {
-    if (start + 1 === end) {
-      if (start < arr.length) {
-        return `0x${'00'.repeat(12)}${arr[start].address.substr(2).toLowerCase()}`
+  function merkleRoot(arr) {
+    const tree = arr.map(acc => `0x${'00'.repeat(12)}${acc.address.substr(2).toLowerCase()}`)
+    for (let i = 1; i < arr.length; i *= 2) {
+      for (let j = 0; i + j < arr.length; j += i * 2) {
+        if (tree[j] < tree[j + i]) {
+          tree[j] = web3.utils.soliditySha3(tree[j] + tree[j + i].substr(2))
+        } else {
+          tree[j] = web3.utils.soliditySha3(tree[j + i] + tree[j].substr(2))
+        }
       }
-      return null
     }
-    const len = end - start
-    const left = merkleRoot(arr, start, end - len / 2)
-    const right = merkleRoot(arr, start + len / 2, end)
-    if (right === null) {
-      return left
+    return tree[0]
+  }
+
+  function generateMerkleProof(arr, validatorIndex) {
+    const tree = arr.map(acc => `0x${'00'.repeat(12)}${acc.address.substr(2).toLowerCase()}`)
+    const proof = []
+    for (let i = 1; i < arr.length; i *= 2) {
+      for (let j = 0; i + j < arr.length; j += i * 2) {
+        if (validatorIndex >= j && validatorIndex < j + i * 2) {
+          proof.push(tree[j + (validatorIndex < j + i ? i : 0)])
+        }
+        if (tree[j] < tree[j + i]) {
+          tree[j] = web3.utils.soliditySha3(tree[j] + tree[j + i].substr(2))
+        } else {
+          tree[j] = web3.utils.soliditySha3(tree[j + i] + tree[j].substr(2))
+        }
+      }
     }
-    if (left < right) {
-      return web3.utils.soliditySha3(left + right.substr(2))
-    }
-    return web3.utils.soliditySha3(right + left.substr(2))
+    return proof
   }
 
   before(async () => {
-    validators = createFullAccounts(web3, 16).sort((a, b) => a.address.toLowerCase() > b.address.toLowerCase())
+    validators = createFullAccounts(web3, 19).sort((a, b) => a.address.toLowerCase() > b.address.toLowerCase())
+    for (let i = 0; i < validators.length; i++) {
+      web3.eth.accounts.wallet.add(validators[i])
+      await web3.eth.sendTransaction({
+        from: owner,
+        to: validators[i].address,
+        value: ether('1')
+      })
+    }
     validatorsRoot = merkleRoot(validators)
   })
 
@@ -165,14 +186,16 @@ contract('ForeignUtopiaBridge', async accounts => {
   })
 
   describe('commit', () => {
+    const opts = { from: user, value: ether('1') }
+
     beforeEach(async () => {
-      await foreignBridge.initialize(validatorsRoot, 200, 2, 2, owner).should.be.fulfilled
+      await foreignBridge.initialize(validatorsRoot, ether('1'), 2, 2, owner).should.be.fulfilled
     })
 
     it('should process valid commit', async () => {
       expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal(ZERO)
 
-      const { logs } = await foreignBridge.commit(messageId1, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.fulfilled
+      const { logs } = await foreignBridge.commit(messageId1, accounts[2], '0x11223344', opts).should.be.fulfilled
 
       expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal('1')
       expect(await foreignBridge.getCommitTime(messageId1)).to.be.bignumber.gt(ZERO)
@@ -186,25 +209,31 @@ contract('ForeignUtopiaBridge', async accounts => {
     it('should respect daily commits limit', async () => {
       expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal(ZERO)
 
-      await foreignBridge.commit(messageId1, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.fulfilled
+      await foreignBridge.commit(messageId1, accounts[2], '0x11223344', opts).should.be.fulfilled
 
       expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal('1')
-      
-      await foreignBridge.commit(messageId2, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.fulfilled
+
+      await foreignBridge.commit(messageId2, accounts[2], '0x11223344', opts).should.be.fulfilled
 
       expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal('2')
-      
-      await foreignBridge.commit(messageId3, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.rejected
 
-      await increaseTime(web3, 24 * 60 * 60)
+      await foreignBridge.commit(messageId3, accounts[2], '0x11223344', opts).should.be.rejected
 
-      await foreignBridge.commit(messageId3, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.fulfilled
+      await increaseTime(web3, 25 * 60 * 60)
+
+      await foreignBridge.commit(messageId3, accounts[2], '0x11223344', opts).should.be.fulfilled
 
       expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal('1')
+    })
+
+    it('should reject commit with insufficient bond', async () => {
+      await foreignBridge.commit(messageId1, accounts[2], '0x11223344', { from: user, value: ether('0.5') }).should.be
+        .rejected
     })
   })
 
   describe('execute', () => {
+    const opts = { from: user, value: ether('1') }
     let box
 
     beforeEach(async () => {
@@ -215,12 +244,12 @@ contract('ForeignUtopiaBridge', async accounts => {
 
     it('should execute only after timeout', async () => {
       const data = await box.contract.methods.setValue(3).encodeABI()
-      await foreignBridge.commit(messageId1, box.address, data, { from: user, value: ether('1') }).should.be.fulfilled
+      await foreignBridge.commit(messageId1, box.address, data, opts).should.be.fulfilled
       const balance = toBN(await web3.eth.getBalance(user))
 
       await foreignBridge.execute(messageId1, 100000).should.be.rejected
 
-      await increaseTime(web3, 24 * 60 * 60)
+      await increaseTime(web3, 25 * 60 * 60)
 
       const { logs } = await foreignBridge.execute(messageId1, 100000).should.be.fulfilled
 
@@ -237,9 +266,9 @@ contract('ForeignUtopiaBridge', async accounts => {
 
     it('should handle failed call', async () => {
       const data = await box.contract.methods.methodWillFail().encodeABI()
-      await foreignBridge.commit(messageId1, box.address, data, { from: user, value: ether('1') }).should.be.fulfilled
+      await foreignBridge.commit(messageId1, box.address, data, opts).should.be.fulfilled
 
-      await increaseTime(web3, 24 * 60 * 60)
+      await increaseTime(web3, 25 * 60 * 60)
 
       const { logs } = await foreignBridge.execute(messageId1, 100000).should.be.fulfilled
 
@@ -248,13 +277,68 @@ contract('ForeignUtopiaBridge', async accounts => {
 
     it('should handle out of gas', async () => {
       const data = await box.contract.methods.methodOutOfGas().encodeABI()
-      await foreignBridge.commit(messageId1, box.address, data, { from: user, value: ether('1') }).should.be.fulfilled
+      await foreignBridge.commit(messageId1, box.address, data, opts).should.be.fulfilled
 
-      await increaseTime(web3, 24 * 60 * 60)
+      await increaseTime(web3, 25 * 60 * 60)
 
       const { logs } = await foreignBridge.execute(messageId1, 1000).should.be.fulfilled
 
       expectEventInLogs(logs, 'Execute', { messageId: messageId1, status: false })
+    })
+  })
+
+  describe('reject', () => {
+    beforeEach(async () => {
+      await foreignBridge.initialize(validatorsRoot, 200, 2, 2, owner).should.be.fulfilled
+      await foreignBridge.commit(messageId1, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be
+        .fulfilled
+    })
+
+    async function sendReject(messageId, validatorIndex, sender = validators[validatorIndex].address) {
+      const data = await foreignBridge.contract.methods
+        .reject(messageId, generateMerkleProof(validators, validatorIndex))
+        .encodeABI()
+      return web3.eth.sendTransaction({
+        from: sender,
+        to: foreignBridge.address,
+        data,
+        gas: 100000
+      })
+    }
+
+    it('should accept single reject', async () => {
+      expect(await foreignBridge.getCommitRejectsCount(messageId1)).to.be.bignumber.equal(ZERO)
+
+      await sendReject(messageId1, 0).should.be.fulfilled
+
+      expect(await foreignBridge.getCommitRejectsCount(messageId1)).to.be.bignumber.equal('1')
+      const events = await getEvents(foreignBridge, { event: 'Reject' })
+      expect(events.length).to.be.equal(1)
+    })
+
+    it('should accept several rejects', async () => {
+      await sendReject(messageId1, 18).should.be.fulfilled
+      await sendReject(messageId1, 17).should.be.fulfilled
+      await sendReject(messageId1, 16).should.be.rejected
+
+      expect(await foreignBridge.getCommitRejectsCount(messageId1)).to.be.bignumber.equal('2')
+      const events = await getEvents(foreignBridge, { event: 'Reject' })
+      expect(events.length).to.be.equal(2)
+    })
+
+    it('should not accept rejects from the same person', async () => {
+      await sendReject(messageId1, 18).should.be.fulfilled
+      await sendReject(messageId1, 18).should.be.rejected
+    })
+
+    it('should not accept rejects from the same person', async () => {
+      await sendReject(messageId1, 18).should.be.fulfilled
+      await sendReject(messageId1, 18).should.be.rejected
+    })
+
+    it('should not accept invalid merkle proof', async () => {
+      await sendReject(messageId1, 0, owner).should.be.rejected
+      await sendReject(messageId1, 0, validators[0].address).should.be.fulfilled
     })
   })
 })

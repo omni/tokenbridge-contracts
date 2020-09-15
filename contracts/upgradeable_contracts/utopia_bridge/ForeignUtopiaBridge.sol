@@ -30,7 +30,7 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
     event UpdateValidatorsRoot(bytes32 indexed root);
     event Commit(bytes32 indexed messageId);
     event Execute(bytes32 indexed messageId, bool status);
-    event Reject(bytes32 indexed messageId, address party);
+    event Reject(bytes32 indexed messageId, address sender);
     event Slash(bytes32 indexed messageId);
 
     function initialize(
@@ -125,14 +125,14 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         return status;
     }
 
-    function rejectCommit(bytes32[] _merklePath, bytes32 _messageId) external {
+    function reject(bytes32 _messageId, bytes32[] _merkleProof) external {
         require(now < getExecuteTime(_messageId));
         bytes32 hash = bytes32(msg.sender);
-        for (uint256 i = 0; i < _merklePath.length; i++) {
-            if (hash < _merklePath[i]) {
-                hash = keccak256(abi.encodePacked(hash, _merklePath[i]));
+        for (uint256 i = 0; i < _merkleProof.length; i++) {
+            if (hash < _merkleProof[i]) {
+                hash = keccak256(abi.encodePacked(hash, _merkleProof[i]));
             } else {
-                hash = keccak256(abi.encodePacked(_merklePath[i], hash));
+                hash = keccak256(abi.encodePacked(_merkleProof[i], hash));
             }
         }
         require(hash == getValidatorsRoot());

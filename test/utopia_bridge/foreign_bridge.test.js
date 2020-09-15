@@ -1,11 +1,15 @@
 const ForeignUtopiaBridge = artifacts.require('ForeignUtopiaBridge.sol')
+const Box = artifacts.require('UtopiaBox.sol')
 
 const { expect } = require('chai')
-const { ether, expectEventInLogs, getEvents, createFullAccounts } = require('../helpers/helpers')
+const { ether, expectEventInLogs, getEvents, createFullAccounts, increaseTime } = require('../helpers/helpers')
 const { toBN, ZERO_ADDRESS } = require('../setup')
 
 const ZERO = toBN(0)
 const newValidatorsRoot = '0x1122334455667788112233445566778811223344556677881122334455667788'
+const messageId1 = '0xf308b922ab9f8a7128d9d7bc9bce22cd88b2c05c8213f0e2d8104d78e0a9ecbb'
+const messageId2 = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+const messageId3 = '0x2ebc2ccc755acc8eaf9252e19573af708d644ab63a39619adb080a3500a4ff2e'
 
 contract('ForeignUtopiaBridge', async accounts => {
   const owner = accounts[0]
@@ -87,7 +91,7 @@ contract('ForeignUtopiaBridge', async accounts => {
     })
   })
 
-  describe('update validators root', () => {
+  describe('submitValidatorsRoot', () => {
     let signatures
 
     beforeEach(async () => {
@@ -111,9 +115,7 @@ contract('ForeignUtopiaBridge', async accounts => {
           }
         }
 
-        await new Promise(res =>
-          web3.currentProvider.send({ jsonrpc: '2.0', method: 'evm_increaseTime', params: [1], id: 1 }, res)
-        )
+        await increaseTime(web3, 1)
         const prevTimestamp = await foreignBridge.getValidatorsUpdateTime()
         await foreignBridge.submitValidatorsRoot(newValidatorsRoot, signatures).should.be.fulfilled
 
@@ -159,6 +161,100 @@ contract('ForeignUtopiaBridge', async accounts => {
       }
 
       await foreignBridge.submitValidatorsRoot(newValidatorsRoot, signatures).should.be.rejected
+    })
+  })
+
+  describe('commit', () => {
+    beforeEach(async () => {
+      await foreignBridge.initialize(validatorsRoot, 200, 2, 2, owner).should.be.fulfilled
+    })
+
+    it('should process valid commit', async () => {
+      expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal(ZERO)
+
+      const { logs } = await foreignBridge.commit(messageId1, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.fulfilled
+
+      expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal('1')
+      expect(await foreignBridge.getCommitTime(messageId1)).to.be.bignumber.gt(ZERO)
+      expect((await foreignBridge.getCommitSenderAndBond(messageId1))[0]).to.be.equal(user)
+      expect((await foreignBridge.getCommitSenderAndBond(messageId1))[1]).to.be.bignumber.equal(ether('1'))
+      expect(await foreignBridge.getCommitExecutor(messageId1)).to.be.equal(accounts[2])
+      expect(await foreignBridge.getCommitCalldata(messageId1)).to.be.equal('0x11223344')
+      expectEventInLogs(logs, 'Commit', { messageId: messageId1 })
+    })
+
+    it('should respect daily commits limit', async () => {
+      expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal(ZERO)
+
+      await foreignBridge.commit(messageId1, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.fulfilled
+
+      expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal('1')
+      
+      await foreignBridge.commit(messageId2, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.fulfilled
+
+      expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal('2')
+      
+      await foreignBridge.commit(messageId3, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.rejected
+
+      await increaseTime(web3, 24 * 60 * 60)
+
+      await foreignBridge.commit(messageId3, accounts[2], '0x11223344', { from: user, value: ether('1') }).should.be.fulfilled
+
+      expect(await foreignBridge.getTodayCommits()).to.be.bignumber.equal('1')
+    })
+  })
+
+  describe('execute', () => {
+    let box
+
+    beforeEach(async () => {
+      await foreignBridge.initialize(validatorsRoot, 200, 2, 2, owner).should.be.fulfilled
+
+      box = await Box.new()
+    })
+
+    it('should execute only after timeout', async () => {
+      const data = await box.contract.methods.setValue(3).encodeABI()
+      await foreignBridge.commit(messageId1, box.address, data, { from: user, value: ether('1') }).should.be.fulfilled
+      const balance = toBN(await web3.eth.getBalance(user))
+
+      await foreignBridge.execute(messageId1, 100000).should.be.rejected
+
+      await increaseTime(web3, 24 * 60 * 60)
+
+      const { logs } = await foreignBridge.execute(messageId1, 100000).should.be.fulfilled
+
+      expect(await foreignBridge.getCommitTime(messageId1)).to.be.bignumber.equal(ZERO)
+      expect((await foreignBridge.getCommitSenderAndBond(messageId1))[0]).to.be.equal(ZERO_ADDRESS)
+      expect((await foreignBridge.getCommitSenderAndBond(messageId1))[1]).to.be.bignumber.equal(ZERO)
+      expect(await foreignBridge.getCommitExecutor(messageId1)).to.be.equal(ZERO_ADDRESS)
+      expect(await foreignBridge.getCommitCalldata(messageId1)).to.be.equal(null)
+      expect(toBN(await web3.eth.getBalance(user))).to.be.bignumber.equal(balance.add(ether('1')))
+      expectEventInLogs(logs, 'Execute', { messageId: messageId1, status: true })
+
+      await foreignBridge.execute(messageId1, 100000).should.be.rejected
+    })
+
+    it('should handle failed call', async () => {
+      const data = await box.contract.methods.methodWillFail().encodeABI()
+      await foreignBridge.commit(messageId1, box.address, data, { from: user, value: ether('1') }).should.be.fulfilled
+
+      await increaseTime(web3, 24 * 60 * 60)
+
+      const { logs } = await foreignBridge.execute(messageId1, 100000).should.be.fulfilled
+
+      expectEventInLogs(logs, 'Execute', { messageId: messageId1, status: false })
+    })
+
+    it('should handle out of gas', async () => {
+      const data = await box.contract.methods.methodOutOfGas().encodeABI()
+      await foreignBridge.commit(messageId1, box.address, data, { from: user, value: ether('1') }).should.be.fulfilled
+
+      await increaseTime(web3, 24 * 60 * 60)
+
+      const { logs } = await foreignBridge.execute(messageId1, 1000).should.be.fulfilled
+
+      expectEventInLogs(logs, 'Execute', { messageId: messageId1, status: false })
     })
   })
 })

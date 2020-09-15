@@ -16,7 +16,8 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
     bytes32 internal constant COMMITS_DAILY_LIMIT = 0x69388e2c2e6daee4eabfbc84444561133977b9215f19fc6a6719f60f330029fb; // keccak256(abi.encodePacked("commitsDailyLimiy"))
     bytes32 internal constant COMMITS_PER_DAY = 0xb7915c3fee8df0689c3fb999c82b426049cb546c49c1d551a34fab840df2369d; // keccak256(abi.encodePacked("commitsPerDay"))
     bytes32 internal constant COMMIT_MINIMAL_BOND = 0xfd90e54293bb1c2fc18e58c663fb50cd45f75cefded747f2e42384659f918ab5; // keccak256(abi.encodePacked("commitsPerDay"))
-    bytes32 internal constant COMMIT_TIME_AND_BOND = 0x1d53b8d5f4752dc94386abf27e4fa63e3fb5ad0d0ae123bfc3c17ae41fac2ce2; // keccak256(abi.encodePacked("commitTimeAndBond"))
+    bytes32 internal constant COMMIT_SENDER_AND_BOND = 0xd7c19899e363650488919c769302d7e09b298b961733495fc2a486a72678813f; // keccak256(abi.encodePacked("commitSenderAndBond"))
+    bytes32 internal constant COMMIT_EXECUTOR_AND_TIME = 0xc77838aeeacb01d0d1a17abaf548660d25018f36a911300f60d440fde7e2f217; // keccak256(abi.encodePacked("commitExecutorAndTime"))
     bytes32 internal constant COMMIT_EXECUTOR = 0xe7d5e82ac97b50d6c4713c35396235f792273b197cb0d972f5dee27b953eb7a9; // keccak256(abi.encodePacked("commitExecutor"))
     bytes32 internal constant COMMIT_CALLDATA = 0x80cacfae8438100f1380eb301b38a51925c7ae3de79c938425d38d480fc35380; // keccak256(abi.encodePacked("commitCalldata"))
     bytes32 internal constant COMMIT_REJECTS_THRESHOLD = 0xa139fa29257b1b7273d947a76a2793fca7a3343c8585d9c26ab221068ce86e1f; // keccak256(abi.encodePacked("commitRejectsThreshold"))
@@ -99,33 +100,35 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         require(getTodayCommits() < getCommitsDailyLimit());
         _incrementTodayCommits();
 
-        _setCommitData(_messageId, now, msg.value, _executor, _data);
+        _setCommitData(_messageId, _executor, _data);
 
         emit Commit(_messageId);
     }
 
-    function execute(bytes32 _messageId, uint256 _gas) external {
+    function execute(bytes32 _messageId, uint256 _gas) external returns (bool) {
         require(now >= getExecuteTime(_messageId));
         require(getCommitRejectsCount(_messageId) < getCommitRejectsThreshold());
-        uint256 bond = getCommitBond(_messageId);
+        (address committer, uint256 bond) = getCommitSenderAndBond(_messageId);
         require(bond > 0);
         address executor = getCommitExecutor(_messageId);
         bytes memory data = getCommitCalldata(_messageId);
 
         _deleteCommitData(_messageId);
 
-        msg.sender.transfer(bond);
+        committer.transfer(bond);
 
         require(gasleft() >= _gas + 10000);
         bool status = executor.call.gas(_gas)(data);
 
         emit Execute(_messageId, status);
+
+        return status;
     }
 
-    function rejectCommit(bytes32[MAX_HEIGHT] _merklePath, bytes32 _messageId) external {
+    function rejectCommit(bytes32[] _merklePath, bytes32 _messageId) external {
         require(now < getExecuteTime(_messageId));
         bytes32 hash = bytes32(msg.sender);
-        for (uint256 i = 0; i < MAX_HEIGHT; i++) {
+        for (uint256 i = 0; i < _merklePath.length; i++) {
             if (hash < _merklePath[i]) {
                 hash = keccak256(abi.encodePacked(hash, _merklePath[i]));
             } else {
@@ -140,7 +143,7 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
     }
 
     function slash(bytes32 _messageId, address[] _parties) external {
-        uint256 bond = getCommitBond(_messageId);
+        (, uint256 bond) = getCommitSenderAndBond(_messageId);
         require(bond > 0);
 
         // 1 pie for each party + 1 pie for first party + 1 pie for msg.sender
@@ -195,17 +198,17 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
     }
 
     function getCommitTime(bytes32 _messageId) public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked(COMMIT_TIME_AND_BOND, _messageId))] >> 128;
+        return
+            uintStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR_AND_TIME, _messageId))] & 0xffffffffffffffffffffffff;
     }
 
-    function getCommitBond(bytes32 _messageId) public view returns (uint256) {
-        return
-            uintStorage[keccak256(abi.encodePacked(COMMIT_TIME_AND_BOND, _messageId))] &
-                0xffffffffffffffffffffffffffffffff;
+    function getCommitSenderAndBond(bytes32 _messageId) public view returns (address, uint256) {
+        uint256 blob = uintStorage[keccak256(abi.encodePacked(COMMIT_SENDER_AND_BOND, _messageId))];
+        return (address(blob >> 96), blob & 0xffffffffffffffffffffffff);
     }
 
     function getCommitExecutor(bytes32 _messageId) public view returns (address) {
-        return addressStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR, _messageId))];
+        return address(uintStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR_AND_TIME, _messageId))] >> 96);
     }
 
     function getCommitCalldata(bytes32 _messageId) public view returns (bytes memory) {
@@ -236,16 +239,20 @@ contract ForeignUtopiaBridge is EternalStorage, InitializableBridge, Ownable {
         uintStorage[keccak256(abi.encodePacked(COMMITS_PER_DAY, now / 1 days))]++;
     }
 
-    function _setCommitData(bytes32 _messageId, uint256 _time, uint256 _bond, address _executor, bytes _data) internal {
-        require(_time < 2**128 && _bond < 2**128);
-        uintStorage[keccak256(abi.encodePacked(COMMIT_TIME_AND_BOND, _messageId))] = (_time << 128) | _bond;
-        addressStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR, _messageId))] = _executor;
+    function _setCommitData(bytes32 _messageId, address _executor, bytes _data) internal {
+        require(msg.value < 2**96);
+        uintStorage[keccak256(abi.encodePacked(COMMIT_SENDER_AND_BOND, _messageId))] =
+            (uint256(msg.sender) << 96) |
+            msg.value;
+        uintStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR_AND_TIME, _messageId))] =
+            (uint256(_executor) << 96) |
+            now;
         bytesStorage[keccak256(abi.encodePacked(COMMIT_CALLDATA, _messageId))] = _data;
     }
 
     function _deleteCommitData(bytes32 _messageId) internal {
-        delete uintStorage[keccak256(abi.encodePacked(COMMIT_TIME_AND_BOND, _messageId))];
-        delete addressStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR, _messageId))];
+        delete uintStorage[keccak256(abi.encodePacked(COMMIT_SENDER_AND_BOND, _messageId))];
+        delete uintStorage[keccak256(abi.encodePacked(COMMIT_EXECUTOR_AND_TIME, _messageId))];
         delete bytesStorage[keccak256(abi.encodePacked(COMMIT_CALLDATA, _messageId))];
     }
 

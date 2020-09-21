@@ -29,7 +29,7 @@ contract BasicAMB is BasicBridge, VersionableAMB {
         uint256 _gasPrice,
         uint256 _requiredBlockConfirmations,
         address _owner
-    ) external onlyRelevantSender returns (bool) {
+    ) public onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
 
@@ -87,12 +87,18 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      * @return nonce value
      */
     function _nonce() internal view returns (uint64) {
-        return uint64(uintStorage[NONCE]);
+        uint256 nonce = uintStorage[NONCE];
+        // if previous nonce refers to the same block number, request count is updated
+        if (nonce >> 16 == block.number) {
+            return uint64(nonce + 1);
+        }
+        // for first request in the block, request count 0 is used
+        return uint64(block.number << 16);
     }
 
     /**
      * Internal function for updating nonce value
-     * @param _nonce new nonce value
+     * @param _nonce nonce value used for last message
      */
     function _setNonce(uint64 _nonce) internal {
         uintStorage[NONCE] = uint256(_nonce);

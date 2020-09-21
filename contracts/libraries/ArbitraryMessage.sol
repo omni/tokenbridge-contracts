@@ -98,15 +98,11 @@ library ArbitraryMessage {
 
             // datasize = message length - payload offset
             datasize := sub(mload(_data), srcdataptr)
-        }
 
-        data = new bytes(datasize);
-        assembly {
-            // 36 = 4 (selector) + 32 (bytes length header)
-            srcdataptr := add(srcdataptr, 36)
-
-            // calldataload(4) - offset of first bytes argument in the calldata
-            calldatacopy(add(data, 32), add(calldataload(4), srcdataptr), datasize)
+            // set a payload pointer
+            data := sub(add(_data, srcdataptr), 32)
+            // NOTE: this line modifies the message stored in memory, don't use the _data argument further
+            mstore(data, datasize)
         }
     }
 }

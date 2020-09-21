@@ -23,7 +23,7 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
 
         bytes32 _messageId;
         bytes memory header = _packHeader(_contract, _gas);
-        _setNonce(_nonce() + 1);
+        _setNonce(_nonce());
 
         assembly {
             _messageId := mload(add(header, 32))

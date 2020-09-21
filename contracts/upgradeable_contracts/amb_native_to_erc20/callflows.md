@@ -40,7 +40,7 @@ It is necessary to note that the mediator on the terminating side could be confi
 
 ```=
 >>Bridge
-BasicForeignAMB::executeSignatures
+ForeignAMB::executeSignatures
 ..ArbitraryMessage.unpackData
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
@@ -113,8 +113,8 @@ If it is configured, the fee manager is involved to calculate and distribute fee
 
 ```=
 >>Bridge
-BasicHomeAMB::executeAffirmation
-..BasicHomeAMB::handleMessage
+HomeAMB::executeAffirmation
+..HomeAMB::handleMessage
 ....ArbitraryMessage::unpackData
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
@@ -162,7 +162,7 @@ A failure happens within the message handler on the mediator contract's side whe
 
 ```=
 >>Bridge
-BasicForeignAMB::executeSignatures
+ForeignAMB::executeSignatures
 ..ArbitraryMessage.unpackData
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
@@ -202,8 +202,8 @@ The Home chain initially originated the request, that is why the extension is im
 
 ```=
 >>Bridge
-BasicHomeAMB::executeAffirmation
-..BasicHomeAMB::handleMessage
+HomeAMB::executeAffirmation
+..HomeAMB::handleMessage
 ....ArbitraryMessage::unpackData
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
@@ -230,8 +230,8 @@ A failure happens within the message handler on the mediator contract's side whe
 
 ```=
 >>Bridge
-BasicHomeAMB::executeAffirmation
-..BasicHomeAMB::handleMessage
+HomeAMB::executeAffirmation
+..HomeAMB::handleMessage
 ....ArbitraryMessage::unpackData
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
@@ -271,7 +271,7 @@ The Foreign chain initially originated the request. It has no ERC677 tokens anym
 
 ```=
 >>Bridge
-BasicForeignAMB::executeSignatures
+ForeignAMB::executeSignatures
 ..ArbitraryMessage.unpackData
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage

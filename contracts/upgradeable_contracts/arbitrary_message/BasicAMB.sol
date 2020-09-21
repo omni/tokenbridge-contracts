@@ -39,7 +39,7 @@ contract BasicAMB is BasicBridge, VersionableAMB {
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
         _setGasPrice(_gasPrice);
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);
-        setOwner(_owner);
+        _setOwner(_owner);
         setInitialize();
 
         return isInitialized();

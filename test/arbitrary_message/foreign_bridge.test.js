@@ -150,6 +150,17 @@ contract('ForeignAMB', async accounts => {
       await foreignBridge
         .initialize(FOREIGN_CHAIN_ID_HEX, HOME_CHAIN_ID_HEX, validatorContract.address, oneEther, gasPrice, 0, owner)
         .should.be.rejectedWith(ERROR_MSG)
+      await foreignBridge
+        .initialize(
+          FOREIGN_CHAIN_ID_HEX,
+          HOME_CHAIN_ID_HEX,
+          validatorContract.address,
+          oneEther,
+          gasPrice,
+          requiredBlockConfirmations,
+          ZERO_ADDRESS
+        )
+        .should.be.rejectedWith(ERROR_MSG)
       await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,

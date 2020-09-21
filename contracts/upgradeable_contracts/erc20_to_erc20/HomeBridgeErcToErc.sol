@@ -109,7 +109,7 @@ contract HomeBridgeErcToErc is
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_owner != address(0));
+
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
@@ -117,7 +117,7 @@ contract HomeBridgeErcToErc is
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);
         _setExecutionLimits(_foreignDailyLimitForeignMaxPerTxArray);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
         setErc677token(_erc677token);
     }
 

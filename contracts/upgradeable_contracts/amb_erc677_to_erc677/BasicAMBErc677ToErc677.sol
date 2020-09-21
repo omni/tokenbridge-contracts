@@ -44,7 +44,7 @@ contract BasicAMBErc677ToErc677 is
         _setExecutionLimits(_executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
         setInitialize();
 
         return isInitialized();

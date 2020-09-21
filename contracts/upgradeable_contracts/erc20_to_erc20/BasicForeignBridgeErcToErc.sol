@@ -16,7 +16,6 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
@@ -26,7 +25,7 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
         _setExecutionLimits(_homeDailyLimitHomeMaxPerTxArray);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
         setInitialize();
     }
 

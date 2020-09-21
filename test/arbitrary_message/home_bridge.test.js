@@ -130,6 +130,17 @@ contract('HomeAMB', async accounts => {
       await homeBridge
         .initialize(HOME_CHAIN_ID_HEX, FOREIGN_CHAIN_ID_HEX, validatorContract.address, oneEther, gasPrice, 0, owner)
         .should.be.rejectedWith(ERROR_MSG)
+      await homeBridge
+        .initialize(
+          HOME_CHAIN_ID_HEX,
+          FOREIGN_CHAIN_ID_HEX,
+          validatorContract.address,
+          oneEther,
+          0,
+          requiredBlockConfirmations,
+          ZERO_ADDRESS
+        )
+        .should.be.rejectedWith(ERROR_MSG)
       await homeBridge.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,

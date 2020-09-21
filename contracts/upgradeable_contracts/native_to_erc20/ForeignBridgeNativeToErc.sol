@@ -89,7 +89,6 @@ contract ForeignBridgeNativeToErc is
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc677token(_erc677token);
@@ -99,7 +98,7 @@ contract ForeignBridgeNativeToErc is
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);
         _setExecutionLimits(_homeDailyLimitHomeMaxPerTxArray);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
     }
 

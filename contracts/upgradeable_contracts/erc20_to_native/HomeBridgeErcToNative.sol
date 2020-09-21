@@ -132,7 +132,6 @@ contract HomeBridgeErcToNative is
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_blockReward == address(0) || AddressUtils.isContract(_blockReward));
-        require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
@@ -142,7 +141,7 @@ contract HomeBridgeErcToNative is
         addressStorage[BLOCK_REWARD_CONTRACT] = _blockReward;
         _setExecutionLimits(_foreignDailyLimitForeignMaxPerTxArray);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {

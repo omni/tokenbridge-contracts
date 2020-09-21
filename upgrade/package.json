@@ -12,11 +12,13 @@
         "web3": "^1.2.4"
     },
     "devDependencies": {
+        "decompress":"4.2.1",
         "eslint": "^6.7.2",
         "eslint-config-airbnb-base": "^14.0.0",
         "eslint-config-prettier": "^6.7.0",
         "eslint-plugin-node": "^10.0.0",
         "eslint-plugin-prettier": "^3.1.2",
+        "lodash":"^4.17.19",
         "prettier": "^1.19.1"
     }
 }

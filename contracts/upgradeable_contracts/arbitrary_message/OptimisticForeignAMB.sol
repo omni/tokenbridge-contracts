@@ -14,6 +14,7 @@ contract OptimisticForeignAMB is ForeignAMB {
     bytes32 internal constant OPTIMISTIC_MESSAGE_BOND = 0xd69a99fe9ee63cf1ff8db4bedebb88e0b846a691ccb4c1357136cef0f4b21eb1; // keccak256(abi.encodePacked("optimisticMessageBond")
     bytes32 internal constant OPTIMISTIC_MESSAGE_SUBMIT_TIME = 0x4982c9cb2078c338544ac9b17e5e87d3e4f00b0cf37676a818a996d83e30af3c; // keccak256(abi.encodePacked("optimisticMessageSubmitTime")
     bytes32 internal constant OPTIMISTIC_MESSAGE_DATA = 0x66449fec616b5ba4c7d509f99941198854ab27c2ae2f55745572d7641b066f65; // keccak256(abi.encodePacked("optimisticMessageData")
+    bytes32 internal constant OPTIMISTIC_BRIDGE_SHUTDOWNED = 0xd90666c2303f5261a389b5dc55b0f57b2855f0de1c899587897aa2db7ff22e53; // keccak256(abi.encodePacked("optimisticBridgeShutdowned")
 
     event OptimisticMessageSubmitted(bytes32 indexed messageId, bytes32 messageHash, uint256 executionTime);
     event OptimisticMessageRejectSubmitted(bytes32 indexed messageId, address validator);
@@ -22,6 +23,12 @@ contract OptimisticForeignAMB is ForeignAMB {
     event OptimisticMessageExecuted(bytes32 indexed messageId);
     event ValidatorSetContractUpdated(address indexed contractAddress);
     event MinimalBondForOptimisticExecutionUpdated(uint256 bond);
+    event OptimisticBridgeShutdowned(bool isShutdowned);
+
+    modifier optimisticBridgeEnabled() {
+        require(isOptimisticBridgeEnabled());
+        _;
+    }
 
     /**
      * Initializes Opitmistic AMB contract.
@@ -66,7 +73,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * It is important that submitter data is equal to the one used to obtain the _messageId on the other side of the bridge.
      * @param _data message data that will be used during the later execution.
      */
-    function requestToExecuteMessage(bytes _data) public payable {
+    function requestToExecuteMessage(bytes _data) public payable optimisticBridgeEnabled {
         (bytes32 messageId, , , , , uint256[2] memory chainIds, , ) = ArbitraryMessage.unpackData(_data);
 
         require(_isMessageVersionValid(messageId));
@@ -94,7 +101,7 @@ contract OptimisticForeignAMB is ForeignAMB {
         uint256 _requiredSignatures,
         uint256 _expireTime,
         bytes _signatures
-    ) external payable {
+    ) external payable optimisticBridgeEnabled {
         posValidatorSetContract().updateValidatorSet(_validatorsRoot, _requiredSignatures, _expireTime, _signatures);
         requestToExecuteMessage(_data);
     }
@@ -104,7 +111,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * Does nothing, if the message was already processed by the bridge validators.
      * @param _messageId id of the message to execute.
      */
-    function executeMessage(bytes32 _messageId) external {
+    function executeMessage(bytes32 _messageId) external optimisticBridgeEnabled {
         require(_isMessageVersionValid(_messageId));
 
         require(now >= optimisticMesssageExecutionTime(_messageId));
@@ -135,7 +142,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @param _messageId id of the message obtained on the other side of the bridge.
      * @param _merkleProof merkle tree proof that confirmes that transaction sender is indeed a validator.
      */
-    function rejectOptimisticMessage(bytes32 _messageId, bytes32[] _merkleProof) external {
+    function rejectOptimisticMessage(bytes32 _messageId, bytes32[] _merkleProof) external optimisticBridgeEnabled {
         require(now < optimisticMesssageExecutionTime(_messageId));
         POSValidatorSet validatorSetContract = posValidatorSetContract();
         require(validatorSetContract.isPOSValidator(msg.sender, _merkleProof));
@@ -163,7 +170,10 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @param _messageIds ids of the messages obtained on the other side of the bridge.
      * @param _merkleProof merkle tree proof that confirmes that transaction sender is indeed a validator.
      */
-    function rejectOptimisticMessageBatch(bytes32[] _messageIds, bytes32[] _merkleProof) external {
+    function rejectOptimisticMessageBatch(bytes32[] _messageIds, bytes32[] _merkleProof)
+        external
+        optimisticBridgeEnabled
+    {
         POSValidatorSet validatorSetContract = posValidatorSetContract();
         require(validatorSetContract.isPOSValidator(msg.sender, _merkleProof));
 
@@ -195,7 +205,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @dev Claims a part of the reward for one particular rejected optimitic message.
      * @param _messageId id of the message obtained on the other side of the bridge that was already rejected by POS validators.
      */
-    function claimReward(bytes32 _messageId) external {
+    function claimReward(bytes32 _messageId) external optimisticBridgeEnabled {
         bytes32[] memory messageIds = new bytes32[](1);
         messageIds[0] = _messageId;
         claimRewardBatch(messageIds);
@@ -205,7 +215,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @dev Claims a part of the reward for a batch of rejected optimitic messages.
      * @param _messageIds ids of the messages obtained on the other side of the bridge, that were already rejected by POS validators.
      */
-    function claimRewardBatch(bytes32[] _messageIds) public {
+    function claimRewardBatch(bytes32[] _messageIds) public optimisticBridgeEnabled {
         uint256 reward = 0;
         for (uint256 i = 0; i < _messageIds.length; i++) {
             bytes32 messageId = _messageIds[i];
@@ -223,6 +233,24 @@ contract OptimisticForeignAMB is ForeignAMB {
         msg.sender.transfer(reward);
 
         emit OptimisticMessageRewardClaimed(msg.sender, _messageIds, reward);
+    }
+
+    /**
+     * @dev Suspends or resumes all optimistic bridge operations in case of emergency.
+     * @param _isShutdowned boolean flag for stopping/resuming optimistic bridge.
+     */
+    function emergencyShutdownOptimisticBridge(bool _isShutdowned) external onlyOwner {
+        boolStorage[OPTIMISTIC_BRIDGE_SHUTDOWNED] = _isShutdowned;
+
+        emit OptimisticBridgeShutdowned(_isShutdowned);
+    }
+
+    /**
+     * @dev Checks if optimistic bridge is enabled and currently operating.
+     * @return true, if bridge is active.
+     */
+    function isOptimisticBridgeEnabled() public view returns (bool) {
+        return !boolStorage[OPTIMISTIC_BRIDGE_SHUTDOWNED];
     }
 
     /**
@@ -248,7 +276,7 @@ contract OptimisticForeignAMB is ForeignAMB {
         if (submitTime > validatorSetExpirationTime) {
             delay += submitTime - validatorSetExpirationTime;
         }
-        return submitTime + (delay > 10 days ? 10 days : delay);
+        return submitTime + (delay > 4 weeks ? 4 weeks : delay);
     }
 
     /**

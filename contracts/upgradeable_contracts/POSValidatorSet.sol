@@ -11,7 +11,8 @@ import "./Ownable.sol";
  */
 contract POSValidatorSet is EternalStorage, InitializableBridge, Ownable {
     bytes32 internal constant VALIDATORS_MERKLE_ROOT = 0x863437a66f76b8fbda63b4aa8b9f3c18ab374a52d0ad4ac1d1cbc703aca6f142; // keccak256(abi.encodePacked("validatorsMerkleRoot"))
-    bytes32 internal constant VALIDATORS_EXPIRATION_TIME_AND_REQUIRED_SIGNATURES = 0x3a7ad5d3bddd88ac6f6d1c78ef09bde5ae2fb842816b98a0125c72a7aba735d7; // keccak256(abi.encodePacked("validatorsExpirationTimeAndRequiredSignatures"))
+    bytes32 internal constant VALIDATORS_EXPIRATION_TIME = 0x9bfabb96ed0d9bec33eea4a0ac3b0450469954d4af8a67b0d8a1fd6e41adca19; // keccak256(abi.encodePacked("validatorsExpirationTime"))
+    bytes32 internal constant VALIDATORS_REQUIRED_SIGNATURES = 0xd62b222a52a5f37668bb29da5ae74297fc843b334f4f86901c0812adb43ccc9e; // keccak256(abi.encodePacked("validatorsRequiredSignatures"))
 
     uint256 internal constant MAX_HEIGHT = 5;
     uint256 internal constant MAX_VALIDATORS = 2**MAX_HEIGHT;
@@ -77,7 +78,7 @@ contract POSValidatorSet is EternalStorage, InitializableBridge, Ownable {
      * @param _requiredSignatures new minimum number of required signatures/rejects.
      * @param _expirationTime new timestamp when a given validators merkle root will expire.
      */
-    function updateValidatorSet(bytes32 _validatorsRoot, uint256 _requiredSignatures, uint256 _expirationTime)
+    function forceUpdateValidatorSet(bytes32 _validatorsRoot, uint256 _requiredSignatures, uint256 _expirationTime)
         external
         onlyOwner
     {
@@ -116,7 +117,7 @@ contract POSValidatorSet is EternalStorage, InitializableBridge, Ownable {
      * @return validator set expiration time.
      */
     function expirationTime() external view returns (uint256) {
-        return uintStorage[VALIDATORS_EXPIRATION_TIME_AND_REQUIRED_SIGNATURES] >> 128;
+        return uintStorage[VALIDATORS_EXPIRATION_TIME];
     }
 
     /**
@@ -124,7 +125,7 @@ contract POSValidatorSet is EternalStorage, InitializableBridge, Ownable {
      * @return number of signatures/rejects.
      */
     function requiredSignatures() public view returns (uint256) {
-        return uintStorage[VALIDATORS_EXPIRATION_TIME_AND_REQUIRED_SIGNATURES] >> 128;
+        return uintStorage[VALIDATORS_REQUIRED_SIGNATURES];
     }
 
     /**
@@ -139,9 +140,8 @@ contract POSValidatorSet is EternalStorage, InitializableBridge, Ownable {
         require(_requiredSignatures > 0);
 
         uintStorage[VALIDATORS_MERKLE_ROOT] = uint256(_validatorsRoot);
-        uintStorage[VALIDATORS_EXPIRATION_TIME_AND_REQUIRED_SIGNATURES] =
-            (_expirationTime << 128) |
-            _requiredSignatures;
+        uintStorage[VALIDATORS_EXPIRATION_TIME] = _expirationTime;
+        uintStorage[VALIDATORS_REQUIRED_SIGNATURES] = _requiredSignatures;
 
         emit NewValidatorSet(_validatorsRoot, _requiredSignatures, _expirationTime);
     }
@@ -167,8 +167,8 @@ contract POSValidatorSet is EternalStorage, InitializableBridge, Ownable {
                 bytes32 r;
                 bytes32 s;
                 assembly {
-                    r := calldataload(add(offset, 101))
-                    s := calldataload(add(offset, 133))
+                    r := mload(add(_signatures, add(offset, 33)))
+                    s := mload(add(_signatures, add(offset, 65)))
                 }
                 validators[validatorsCount++] = bytes32(ecrecover(_messageHash, v, r, s));
                 signaturesCount++;
@@ -176,7 +176,7 @@ contract POSValidatorSet is EternalStorage, InitializableBridge, Ownable {
             } else {
                 bytes32 validator;
                 assembly {
-                    validator := and(0xffffffffffffffffffffffffffffffffffffffff, calldataload(add(offset, 89)))
+                    validator := and(0xffffffffffffffffffffffffffffffffffffffff, mload(add(_signatures, add(offset, 21))))
                 }
                 validators[validatorsCount++] = validator;
                 offset += 21;

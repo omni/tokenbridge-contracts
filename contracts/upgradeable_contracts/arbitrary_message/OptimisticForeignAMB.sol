@@ -3,6 +3,10 @@ pragma solidity 0.4.24;
 import "./ForeignAMB.sol";
 import "../POSValidatorSet.sol";
 
+/**
+ * @title OptimisticForeignAMB
+ * @dev Extension of the ForeignAMB contract to support optimistic execution.
+ */
 contract OptimisticForeignAMB is ForeignAMB {
     uint256 internal constant REJECTED_FLAG = 0x8000000000000000000000000000000000000000000000000000000000000000;
     uint256 internal constant REJECTS_COUNT_MASK = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
@@ -25,8 +29,12 @@ contract OptimisticForeignAMB is ForeignAMB {
     event MinimalBondForOptimisticExecutionUpdated(uint256 bond);
     event OptimisticBridgeShutdowned(bool isShutdowned);
 
+    /**
+    * @dev Throws if an optimistic execution is temporarly disabled.
+    */
     modifier optimisticBridgeEnabled() {
         require(isOptimisticBridgeEnabled());
+        /* solcov ignore next */
         _;
     }
 

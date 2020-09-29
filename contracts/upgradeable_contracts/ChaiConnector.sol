@@ -156,7 +156,6 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
     */
     function payInterest() external chaiTokenEnabled {
         if (
-            // solhint-disable-next-line not-rely-on-time
             lastInterestPayment() + interestCollectionPeriod() < now ||
             IUpgradeabilityOwnerStorage(this).upgradeabilityOwner() == msg.sender
         ) {
@@ -175,7 +174,6 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
         // the value of chaiBalance() - investedAmountInChai() will be floored,
         // leading to excess remaining chai balance
 
-        // solhint-disable-next-line not-rely-on-time
         uintStorage[LAST_TIME_INTEREST_PAID] = now;
 
         uint256 interest = chaiBalance().sub(investedAmountInChai());
@@ -239,7 +237,6 @@ contract ChaiConnector is Ownable, ERC20Bridge, TokenSwapper {
     */
     function investedAmountInChai() internal returns (uint256) {
         IPot pot = chaiToken().pot();
-        // solhint-disable-next-line not-rely-on-time
         uint256 chi = (now > pot.rho()) ? pot.drip() : pot.chi();
         return rdivup(investedAmountInDai(), chi);
     }

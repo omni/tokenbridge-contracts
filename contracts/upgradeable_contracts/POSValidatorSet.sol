@@ -176,7 +176,10 @@ contract POSValidatorSet is EternalStorage, InitializableBridge, Ownable {
             } else {
                 bytes32 validator;
                 assembly {
-                    validator := and(0xffffffffffffffffffffffffffffffffffffffff, mload(add(_signatures, add(offset, 21))))
+                    validator := and(
+                        0xffffffffffffffffffffffffffffffffffffffff,
+                        mload(add(_signatures, add(offset, 21)))
+                    )
                 }
                 validators[validatorsCount++] = validator;
                 offset += 21;

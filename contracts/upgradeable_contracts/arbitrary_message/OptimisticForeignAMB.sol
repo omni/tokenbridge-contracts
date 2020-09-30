@@ -82,7 +82,11 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @param _data message data that will be used during the later execution.
      */
     function requestToExecuteMessage(bytes _data) public payable optimisticBridgeEnabled {
-        (bytes32 messageId, , , , , uint256[2] memory chainIds, , ) = ArbitraryMessage.unpackData(_data);
+        bytes memory copy = new bytes(_data.length);
+        assembly {
+            calldatacopy(add(copy, 32), add(calldataload(4), 36), mload(_data))
+        }
+        (bytes32 messageId, , , , , uint256[2] memory chainIds, , ) = ArbitraryMessage.unpackData(copy);
 
         require(_isMessageVersionValid(messageId));
         require(_isDestinationChainIdValid(chainIds[1]));
@@ -90,9 +94,10 @@ contract OptimisticForeignAMB is ForeignAMB {
 
         require(msg.value >= minimalBondForOptimisticExecution());
 
+        require(optimisticMessageBond(messageId) == 0);
         _setOptimisticMessageData(messageId, _data);
 
-        emit OptimisticMessageSubmitted(messageId, keccak256(_data), optimisticMesssageExecutionTime(messageId));
+        emit OptimisticMessageSubmitted(messageId, keccak256(_data), optimisticMessageExecutionTime(messageId));
     }
 
     /**
@@ -122,7 +127,7 @@ contract OptimisticForeignAMB is ForeignAMB {
     function executeMessage(bytes32 _messageId) external optimisticBridgeEnabled {
         require(_isMessageVersionValid(_messageId));
 
-        require(now >= optimisticMesssageExecutionTime(_messageId));
+        require(now >= optimisticMessageExecutionTime(_messageId));
         require(optimisticMessageRejectsCount(_messageId) < posValidatorSetContract().requiredSignatures());
         address optimisticSender = optimisticMessageSender(_messageId);
         uint256 bond = optimisticMessageBond(_messageId);
@@ -151,7 +156,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @param _merkleProof merkle tree proof that confirmes that transaction sender is indeed a validator.
      */
     function rejectOptimisticMessage(bytes32 _messageId, bytes32[] _merkleProof) external optimisticBridgeEnabled {
-        require(now < optimisticMesssageExecutionTime(_messageId));
+        require(now < optimisticMessageExecutionTime(_messageId));
         POSValidatorSet validatorSetContract = posValidatorSetContract();
         require(validatorSetContract.isPOSValidator(msg.sender, _merkleProof));
 
@@ -188,7 +193,7 @@ contract OptimisticForeignAMB is ForeignAMB {
         uint256 requiredSignatures = validatorSetContract.requiredSignatures();
         for (uint256 i = 0; i < _messageIds.length; i++) {
             bytes32 messageId = _messageIds[i];
-            require(now < optimisticMesssageExecutionTime(messageId));
+            require(now < optimisticMessageExecutionTime(messageId));
 
             bytes32 countKey = keccak256(abi.encodePacked(OPTIMISTIC_MESSAGE_REJECTS_COUNT, messageId));
             uint256 count = uintStorage[countKey];
@@ -276,7 +281,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @param _messageId id of the message obtained on the other side of the bridge.
      * @return approximate execution time.
      */
-    function optimisticMesssageExecutionTime(bytes32 _messageId) public view returns (uint256) {
+    function optimisticMessageExecutionTime(bytes32 _messageId) public view returns (uint256) {
         uint256 submitTime = optimisticMessageSubmissionTime(_messageId);
         uint256 rejects = optimisticMessageRejectsCount(_messageId);
         uint256 validatorSetExpirationTime = posValidatorSetContract().expirationTime();

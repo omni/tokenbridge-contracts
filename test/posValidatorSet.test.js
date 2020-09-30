@@ -147,6 +147,8 @@ contract('POSValidatorSet', async accounts => {
       expect(await posValidatorSet.validatorsRoot()).to.be.equal(newValidatorsRoot)
       expect(await posValidatorSet.requiredSignatures()).to.be.bignumber.equal('2')
       expect(await posValidatorSet.expirationTime()).to.be.bignumber.equal('200')
+
+      await posValidatorSet.updateValidatorSet(newValidatorsRoot, 2, 200, signatures).should.be.fulfilled
     })
 
     it('should reject insufficient amount of signatures', async () => {

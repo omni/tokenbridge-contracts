@@ -238,3 +238,20 @@ function generateMerkleProof(arr, validatorIndex) {
 }
 
 module.exports.generateMerkleProof = generateMerkleProof
+
+async function increaseTime(web3, seconds = 1) {
+  return new Promise(res =>
+    web3.currentProvider.send({ jsonrpc: '2.0', method: 'evm_increaseTime', params: [seconds], id: 1 }, res)
+  )
+}
+
+module.exports.increaseTime = increaseTime
+
+async function suspendMiner(ms) {
+  await new Promise(res => web3.currentProvider.send({ jsonrpc: '2.0', method: 'miner_stop', params: [], id: 1 }, res))
+  const resume = () =>
+    new Promise(res => web3.currentProvider.send({ jsonrpc: '2.0', method: 'miner_start', params: [], id: 1 }, res))
+  delay(ms).then(resume)
+}
+
+module.exports.suspendMiner = suspendMiner

@@ -18,7 +18,6 @@ library ArbitraryMessage {
     * offset 111/143/112 + X : Y bytes  :: bytes   - destination chain id
 
     * NOTE: when message structure is changed, make sure that MESSAGE_PACKING_VERSION from VersionableAMB is updated as well
-    * NOTE: assembly code uses calldatacopy, make sure that message is passed as the first argument in the calldata
     * @param _data encoded message
     */
     function unpackData(bytes _data)
@@ -100,7 +99,7 @@ library ArbitraryMessage {
             datasize := sub(mload(_data), srcdataptr)
 
             // set a payload pointer
-            data := sub(add(_data, srcdataptr), 32)
+            data := add(_data, srcdataptr)
             // NOTE: this line modifies the message stored in memory, don't use the _data argument further
             mstore(data, datasize)
         }

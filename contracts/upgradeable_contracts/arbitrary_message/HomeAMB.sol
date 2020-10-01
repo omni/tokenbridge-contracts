@@ -58,10 +58,19 @@ contract HomeAMB is BasicAMB, MessageDelivery {
         uint256[2] memory chainIds;
         uint256 gasPrice;
         uint256 offset;
-        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, offset) = ArbitraryMessage.unpackHeader(_message);
+        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, offset) = ArbitraryMessage.unpackHeader(
+            _message
+        );
         require(_isMessageVersionValid(messageId));
         require(_isDestinationChainIdValid(chainIds[1]));
-        processMessage(sender, executor, messageId, gasLimit, chainIds[0], ArbitraryMessage.unpackPayload(_message, offset));
+        processMessage(
+            sender,
+            executor,
+            messageId,
+            gasLimit,
+            chainIds[0],
+            ArbitraryMessage.unpackPayload(_message, offset)
+        );
     }
 
     function submitSignature(bytes signature, bytes message) external onlyValidator {

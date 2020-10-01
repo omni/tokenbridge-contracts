@@ -17,7 +17,9 @@ contract MessageTest {
             uint256 offset
         )
     {
-        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, offset) = ArbitraryMessage.unpackHeader(_data);
+        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, offset) = ArbitraryMessage.unpackHeader(
+            _data
+        );
     }
 
     function unpackPayload(bytes _data, uint256 _offset) external pure returns (bytes memory) {

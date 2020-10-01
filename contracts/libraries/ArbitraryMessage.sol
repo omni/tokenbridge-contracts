@@ -93,6 +93,7 @@ library ArbitraryMessage {
             mstore(add(chainIds, 32), and(mload(add(_data, offset)), mask))
 
             // at this moment offset points to payload
+
         }
     }
 

@@ -124,7 +124,7 @@ contract OptimisticForeignAMB is ForeignAMB {
         require(_isMessageVersionValid(_messageId));
 
         require(now >= optimisticMessageExecutionTime(_messageId));
-        require(optimisticMessageRejectsCount(_messageId) < posValidatorSetContract().requiredSignatures());
+        require(!isOptimisticMessageRejected(_messageId));
         address optimisticSender = optimisticMessageSender(_messageId);
         uint256 bond = optimisticMessageBond(_messageId);
         require(bond > 0);
@@ -137,7 +137,7 @@ contract OptimisticForeignAMB is ForeignAMB {
         // if message was already executed by bridge validators, nothing will be done, bond will be returned to the optimistic message sender
         if (!relayedMessages(_messageId)) {
             setRelayedMessages(_messageId, true);
-            (, address sender, address executor, uint32 gasLimit, bytes1 dataType, uint256[2] memory chainIds, uint256 gasPrice, uint256 offset) = ArbitraryMessage
+            (, address sender, address executor, uint32 gasLimit, , uint256[2] memory chainIds, , uint256 offset) = ArbitraryMessage
                 .unpackHeader(data);
             bytes memory payload = ArbitraryMessage.unpackPayload(data, offset);
             processMessage(sender, executor, _messageId, gasLimit, chainIds[0], payload);
@@ -152,26 +152,10 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @param _messageId id of the message obtained on the other side of the bridge.
      * @param _merkleProof merkle tree proof that confirmes that transaction sender is indeed a validator.
      */
-    function rejectOptimisticMessage(bytes32 _messageId, bytes32[] _merkleProof) external optimisticBridgeEnabled {
-        require(now < optimisticMessageExecutionTime(_messageId));
-        POSValidatorSet validatorSetContract = posValidatorSetContract();
-        require(validatorSetContract.isPOSValidator(msg.sender, _merkleProof));
-
-        bytes32 countKey = keccak256(abi.encodePacked(OPTIMISTIC_MESSAGE_REJECTS_COUNT, _messageId));
-        uint256 count = uintStorage[countKey];
-        require(count < REJECTED_FLAG);
-        bytes32 partyKey = keccak256(abi.encodePacked(OPTIMISTIC_MESSAGE_REJECTS_PARTY, _messageId, msg.sender));
-        require(!boolStorage[partyKey]);
-        boolStorage[partyKey] = true;
-        count += 1;
-        if (count >= validatorSetContract.requiredSignatures()) {
-            uintStorage[countKey] = count | REJECTED_FLAG;
-            emit OptimisticMessageRejected(_messageId, count);
-        } else {
-            uintStorage[countKey] = count;
-        }
-
-        emit OptimisticMessageRejectSubmitted(_messageId, msg.sender);
+    function rejectOptimisticMessage(bytes32 _messageId, bytes32[] _merkleProof) external {
+        bytes32[] memory messageIds = new bytes32[](1);
+        messageIds[0] = _messageId;
+        rejectOptimisticMessageBatch(messageIds, _merkleProof);
     }
 
     /**
@@ -181,7 +165,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @param _merkleProof merkle tree proof that confirmes that transaction sender is indeed a validator.
      */
     function rejectOptimisticMessageBatch(bytes32[] _messageIds, bytes32[] _merkleProof)
-        external
+        public
         optimisticBridgeEnabled
     {
         POSValidatorSet validatorSetContract = posValidatorSetContract();
@@ -205,6 +189,8 @@ contract OptimisticForeignAMB is ForeignAMB {
                 } else {
                     uintStorage[countKey] = count;
                 }
+            } else {
+                require(_messageIds.length > 1);
             }
 
             emit OptimisticMessageRejectSubmitted(messageId, msg.sender);
@@ -215,7 +201,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @dev Claims a part of the reward for one particular rejected optimitic message.
      * @param _messageId id of the message obtained on the other side of the bridge that was already rejected by POS validators.
      */
-    function claimReward(bytes32 _messageId) external optimisticBridgeEnabled {
+    function claimReward(bytes32 _messageId) external {
         bytes32[] memory messageIds = new bytes32[](1);
         messageIds[0] = _messageId;
         claimRewardBatch(messageIds);
@@ -266,11 +252,20 @@ contract OptimisticForeignAMB is ForeignAMB {
     /**
      * @dev Retrieves the number of collected rejects for some optimistic message.
      * @param _messageId id of the message obtained on the other side of the bridge.
-     * @return address of the contract.
+     * @return number of received requests
      */
     function optimisticMessageRejectsCount(bytes32 _messageId) public view returns (uint256) {
         return
             uintStorage[keccak256(abi.encodePacked(OPTIMISTIC_MESSAGE_REJECTS_COUNT, _messageId))] & REJECTS_COUNT_MASK;
+    }
+
+    /**
+     * @dev Checks if the message was rejected by validators.
+     * @param _messageId id of the message obtained on the other side of the bridge.
+     * @return true, if the optimistic message was rejected by the required number of validators.
+     */
+    function isOptimisticMessageRejected(bytes32 _messageId) public view returns (bool) {
+        return uintStorage[keccak256(abi.encodePacked(OPTIMISTIC_MESSAGE_REJECTS_COUNT, _messageId))] > REJECTED_FLAG;
     }
 
     /**

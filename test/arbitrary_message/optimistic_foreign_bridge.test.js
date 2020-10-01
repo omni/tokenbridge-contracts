@@ -85,6 +85,16 @@ contract('OptimisticForeignAMB', async accounts => {
     })
   }
 
+  async function claimReward(messageId, validatorIndex) {
+    const data = await foreignBridge.contract.methods.claimReward(messageId).encodeABI()
+    return web3.eth.sendTransaction({
+      from: validators[validatorIndex].address,
+      to: foreignBridge.address,
+      data,
+      gas: 200000
+    })
+  }
+
   describe('initialize', () => {
     it('should initialize bridge with valid parameters', async () => {
       await foreignBridge.initialize(
@@ -126,7 +136,7 @@ contract('OptimisticForeignAMB', async accounts => {
     })
   })
 
-  describe('set params', () => {
+  describe('after init', () => {
     beforeEach(async () => {
       await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
@@ -141,311 +151,321 @@ contract('OptimisticForeignAMB', async accounts => {
       ).should.be.fulfilled
     })
 
-    it('should update minimal bond for optimistic execution', async () => {
-      await foreignBridge.setMinimalBondForOptimisticExecution(ether('2'), { from: user }).should.be.rejected
-      const { logs } = await foreignBridge.setMinimalBondForOptimisticExecution(ether('2'), { from: owner }).should.be
-        .fulfilled
+    describe('set params', () => {
+      it('should update minimal bond for optimistic execution', async () => {
+        await foreignBridge.setMinimalBondForOptimisticExecution(ether('2'), { from: user }).should.be.rejected
+        const { logs } = await foreignBridge.setMinimalBondForOptimisticExecution(ether('2'), { from: owner }).should.be
+          .fulfilled
 
-      expect(await foreignBridge.minimalBondForOptimisticExecution()).to.be.bignumber.equal(ether('2'))
-      expectEventInLogs(logs, 'MinimalBondForOptimisticExecutionUpdated')
-    })
-
-    it('should update pos validator set contract', async () => {
-      await foreignBridge.setPosValidatorSetContract(validatorContract.address, { from: user }).should.be.rejected
-      const { logs } = await foreignBridge.setPosValidatorSetContract(validatorContract.address, { from: owner }).should
-        .be.fulfilled
-
-      expect(await foreignBridge.posValidatorSetContract()).to.be.equal(validatorContract.address)
-      expectEventInLogs(logs, 'ValidatorSetContractUpdated')
-    })
-
-    it('should disable/enable optimistic bridge', async () => {
-      await foreignBridge.emergencyShutdownOptimisticBridge(true, { from: user }).should.be.rejected
-      const { logs } = await foreignBridge.emergencyShutdownOptimisticBridge(true, { from: owner }).should.be.fulfilled
-
-      expect(await foreignBridge.isOptimisticBridgeEnabled()).to.be.equal(false)
-      expectEventInLogs(logs, 'OptimisticBridgeShutdowned')
-
-      await foreignBridge.emergencyShutdownOptimisticBridge(false, { from: user }).should.be.rejected
-      const { logs: logs2 } = await foreignBridge.emergencyShutdownOptimisticBridge(false, { from: owner }).should.be
-        .fulfilled
-
-      expect(await foreignBridge.isOptimisticBridgeEnabled()).to.be.equal(true)
-      expectEventInLogs(logs2, 'OptimisticBridgeShutdowned')
-    })
-  })
-
-  describe('requestToExecuteMessage', () => {
-    beforeEach(async () => {
-      await foreignBridge.initialize(
-        FOREIGN_CHAIN_ID_HEX,
-        HOME_CHAIN_ID_HEX,
-        validatorContract.address,
-        ether('1'),
-        gasPrice,
-        requiredBlockConfirmations,
-        owner,
-        posValidatorSet.address,
-        ether('1')
-      ).should.be.fulfilled
-    })
-
-    it('should accept valid message', async () => {
-      const setValueData = await box.contract.methods.setValue(3).encodeABI()
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
-        from: user
+        expect(await foreignBridge.minimalBondForOptimisticExecution()).to.be.bignumber.equal(ether('2'))
+        expectEventInLogs(logs, 'MinimalBondForOptimisticExecutionUpdated')
       })
 
-      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
+      it('should update pos validator set contract', async () => {
+        await foreignBridge.setPosValidatorSetContract(validatorContract.address, { from: user }).should.be.rejected
+        const { logs } = await foreignBridge.setPosValidatorSetContract(validatorContract.address, { from: owner })
+          .should.be.fulfilled
 
-      await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('0.9') }).should.be.rejected
-      const { logs } = await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be
-        .fulfilled
-      await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.rejected
+        expect(await foreignBridge.posValidatorSetContract()).to.be.equal(validatorContract.address)
+        expectEventInLogs(logs, 'ValidatorSetContractUpdated')
+      })
 
-      expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('0')
-      expect(await foreignBridge.optimisticMessageSubmissionTime(messageId)).to.be.bignumber.gt('0')
-      expect(await foreignBridge.optimisticMessageExecutionTime(messageId)).to.be.bignumber.gt('0')
-      expect(await foreignBridge.optimisticMessageSender(messageId)).to.be.equal(user)
-      expect(await foreignBridge.optimisticMessageData(messageId)).to.be.equal(message)
-      expect(await foreignBridge.relayedMessages(messageId)).to.be.equal(false)
+      it('should disable/enable optimistic bridge', async () => {
+        await foreignBridge.emergencyShutdownOptimisticBridge(true, { from: user }).should.be.rejected
+        const { logs } = await foreignBridge.emergencyShutdownOptimisticBridge(true, { from: owner }).should.be
+          .fulfilled
 
-      expectEventInLogs(logs, 'OptimisticMessageSubmitted', {
-        messageId,
-        messageHash: web3.utils.soliditySha3(message)
+        expect(await foreignBridge.isOptimisticBridgeEnabled()).to.be.equal(false)
+        expectEventInLogs(logs, 'OptimisticBridgeShutdowned')
+
+        await foreignBridge.emergencyShutdownOptimisticBridge(false, { from: user }).should.be.rejected
+        const { logs: logs2 } = await foreignBridge.emergencyShutdownOptimisticBridge(false, { from: owner }).should.be
+          .fulfilled
+
+        expect(await foreignBridge.isOptimisticBridgeEnabled()).to.be.equal(true)
+        expectEventInLogs(logs2, 'OptimisticBridgeShutdowned')
       })
     })
 
-    it('should not accept invalid message', async () => {
-      const setValueData = await box.contract.methods.setValue(3).encodeABI()
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
-        from: user
+    describe('requestToExecuteMessage', () => {
+      it('should accept valid message', async () => {
+        const setValueData = await box.contract.methods.setValue(3).encodeABI()
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
+          from: user
+        })
+
+        const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
+
+        await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('0.9') }).should.be.rejected
+        const { logs } = await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should
+          .be.fulfilled
+        await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.rejected
+
+        expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('0')
+        expect(await foreignBridge.optimisticMessageSubmissionTime(messageId)).to.be.bignumber.gt('0')
+        expect(await foreignBridge.optimisticMessageExecutionTime(messageId)).to.be.bignumber.gt('0')
+        expect(await foreignBridge.optimisticMessageSender(messageId)).to.be.equal(user)
+        expect(await foreignBridge.optimisticMessageData(messageId)).to.be.equal(message)
+        expect(await foreignBridge.relayedMessages(messageId)).to.be.equal(false)
+
+        expectEventInLogs(logs, 'OptimisticMessageSubmitted', {
+          messageId,
+          messageHash: web3.utils.soliditySha3(message)
+        })
       })
 
-      const message = resultPassMessageTx.logs[0].args.encodedData
-      const invalidMessage1 = `0x00000000${message.substr(10)}`
-      const foreignTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 200000, {
-        from: user
+      it('should not accept invalid message', async () => {
+        const setValueData = await box.contract.methods.setValue(3).encodeABI()
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
+          from: user
+        })
+
+        const message = resultPassMessageTx.logs[0].args.encodedData
+        const invalidMessage1 = `0x00000000${message.substr(10)}`
+        const foreignTx = await foreignBridge.requireToPassMessage(box.address, setValueData, 200000, {
+          from: user
+        })
+        const invalidMessage2 = foreignTx.logs[0].args.encodedData
+
+        await foreignBridge.requestToExecuteMessage(invalidMessage1, { from: user, value: ether('1') }).should.be
+          .rejected
+        await foreignBridge.requestToExecuteMessage(invalidMessage2, { from: user, value: ether('1') }).should.be
+          .rejected
+
+        await foreignBridge.emergencyShutdownOptimisticBridge(true, { from: owner }).should.be.fulfilled
+
+        await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.rejected
+
+        await foreignBridge.emergencyShutdownOptimisticBridge(false, { from: owner }).should.be.fulfilled
+
+        await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.fulfilled
       })
-      const invalidMessage2 = foreignTx.logs[0].args.encodedData
 
-      await foreignBridge.requestToExecuteMessage(invalidMessage1, { from: user, value: ether('1') }).should.be.rejected
-      await foreignBridge.requestToExecuteMessage(invalidMessage2, { from: user, value: ether('1') }).should.be.rejected
+      it('should also update the validator set', async () => {
+        const setValueData = await box.contract.methods.setValue(3).encodeABI()
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
+          from: user
+        })
 
-      await foreignBridge.emergencyShutdownOptimisticBridge(true, { from: owner }).should.be.fulfilled
+        const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
-      await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.rejected
-
-      await foreignBridge.emergencyShutdownOptimisticBridge(false, { from: owner }).should.be.fulfilled
-
-      await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.fulfilled
-    })
-
-    it('should also update the validator set', async () => {
-      const setValueData = await box.contract.methods.setValue(3).encodeABI()
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
-        from: user
-      })
-
-      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
-
-      let signatures = '0x'
-      const validatorsMessage = web3.eth.abi.encodeParameters(
-        ['bytes32', 'uint256', 'uint256'],
-        [newValidatorsRoot, 2, 200]
-      )
-      for (let i = 0; i < 19; i++) {
-        if (i < 3) {
-          const { v, r, s } = await validators[i].sign(validatorsMessage)
-          signatures += v.substr(2) + r.substr(2) + s.substr(2)
-        } else {
-          signatures += `00${validators[i].address.substr(2)}`
+        let signatures = '0x'
+        const validatorsMessage = web3.eth.abi.encodeParameters(
+          ['bytes32', 'uint256', 'uint256'],
+          [newValidatorsRoot, 2, 200]
+        )
+        for (let i = 0; i < 19; i++) {
+          if (i < 3) {
+            const { v, r, s } = await validators[i].sign(validatorsMessage)
+            signatures += v.substr(2) + r.substr(2) + s.substr(2)
+          } else {
+            signatures += `00${validators[i].address.substr(2)}`
+          }
         }
-      }
 
-      const { logs } = await foreignBridge.requestToExecuteMessageWithValidatorSet(
-        message,
-        newValidatorsRoot,
-        2,
-        200,
-        signatures,
-        { from: user, value: ether('1') }
-      ).should.be.fulfilled
+        const { logs } = await foreignBridge.requestToExecuteMessageWithValidatorSet(
+          message,
+          newValidatorsRoot,
+          2,
+          200,
+          signatures,
+          { from: user, value: ether('1') }
+        ).should.be.fulfilled
 
-      expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('0')
-      expect(await foreignBridge.optimisticMessageSubmissionTime(messageId)).to.be.bignumber.gt('0')
-      expect(await foreignBridge.optimisticMessageExecutionTime(messageId)).to.be.bignumber.gt('0')
-      expect(await foreignBridge.optimisticMessageSender(messageId)).to.be.equal(user)
-      expect(await foreignBridge.optimisticMessageData(messageId)).to.be.equal(message)
-      expect(await posValidatorSet.validatorsRoot()).to.be.equal(newValidatorsRoot)
+        expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('0')
+        expect(await foreignBridge.optimisticMessageSubmissionTime(messageId)).to.be.bignumber.gt('0')
+        expect(await foreignBridge.optimisticMessageExecutionTime(messageId)).to.be.bignumber.gt('0')
+        expect(await foreignBridge.optimisticMessageSender(messageId)).to.be.equal(user)
+        expect(await foreignBridge.optimisticMessageData(messageId)).to.be.equal(message)
+        expect(await posValidatorSet.validatorsRoot()).to.be.equal(newValidatorsRoot)
 
-      expectEventInLogs(logs, 'OptimisticMessageSubmitted', {
-        messageId,
-        messageHash: web3.utils.soliditySha3(message)
-      })
-    })
-
-    it('should skip update of the validator set', async () => {
-      const setValueData = await box.contract.methods.setValue(3).encodeABI()
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
-        from: user
+        expectEventInLogs(logs, 'OptimisticMessageSubmitted', {
+          messageId,
+          messageHash: web3.utils.soliditySha3(message)
+        })
       })
 
-      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
+      it('should skip update of the validator set', async () => {
+        const setValueData = await box.contract.methods.setValue(3).encodeABI()
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
+          from: user
+        })
 
-      let signatures = '0x'
-      const validatorsMessage = web3.eth.abi.encodeParameters(
-        ['bytes32', 'uint256', 'uint256'],
-        [newValidatorsRoot, 2, 200]
-      )
-      for (let i = 0; i < 19; i++) {
-        if (i < 3) {
-          const { v, r, s } = await validators[i].sign(validatorsMessage)
-          signatures += v.substr(2) + r.substr(2) + s.substr(2)
-        } else {
-          signatures += `00${validators[i].address.substr(2)}`
+        const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
+
+        let signatures = '0x'
+        const validatorsMessage = web3.eth.abi.encodeParameters(
+          ['bytes32', 'uint256', 'uint256'],
+          [newValidatorsRoot, 2, 200]
+        )
+        for (let i = 0; i < 19; i++) {
+          if (i < 3) {
+            const { v, r, s } = await validators[i].sign(validatorsMessage)
+            signatures += v.substr(2) + r.substr(2) + s.substr(2)
+          } else {
+            signatures += `00${validators[i].address.substr(2)}`
+          }
         }
-      }
 
-      await posValidatorSet.forceUpdateValidatorSet(newValidatorsRoot, 2, '999999999999').should.be.fulfilled
-      expect(await posValidatorSet.validatorsRoot()).to.be.equal(newValidatorsRoot)
+        await posValidatorSet.forceUpdateValidatorSet(newValidatorsRoot, 2, '999999999999').should.be.fulfilled
+        expect(await posValidatorSet.validatorsRoot()).to.be.equal(newValidatorsRoot)
 
-      const { logs } = await foreignBridge.requestToExecuteMessageWithValidatorSet(
-        message,
-        newValidatorsRoot,
-        2,
-        200,
-        signatures,
-        { from: user, value: ether('1') }
-      ).should.be.fulfilled
+        const { logs } = await foreignBridge.requestToExecuteMessageWithValidatorSet(
+          message,
+          newValidatorsRoot,
+          2,
+          200,
+          signatures,
+          { from: user, value: ether('1') }
+        ).should.be.fulfilled
 
-      expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('0')
-      expect(await foreignBridge.optimisticMessageSubmissionTime(messageId)).to.be.bignumber.gt('0')
-      expect(await foreignBridge.optimisticMessageExecutionTime(messageId)).to.be.bignumber.gt('0')
-      expect(await foreignBridge.optimisticMessageSender(messageId)).to.be.equal(user)
-      expect(await foreignBridge.optimisticMessageData(messageId)).to.be.equal(message)
-      expect(await posValidatorSet.validatorsRoot()).to.be.equal(newValidatorsRoot)
+        expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('0')
+        expect(await foreignBridge.optimisticMessageSubmissionTime(messageId)).to.be.bignumber.gt('0')
+        expect(await foreignBridge.optimisticMessageExecutionTime(messageId)).to.be.bignumber.gt('0')
+        expect(await foreignBridge.optimisticMessageSender(messageId)).to.be.equal(user)
+        expect(await foreignBridge.optimisticMessageData(messageId)).to.be.equal(message)
+        expect(await posValidatorSet.validatorsRoot()).to.be.equal(newValidatorsRoot)
 
-      expectEventInLogs(logs, 'OptimisticMessageSubmitted', {
-        messageId,
-        messageHash: web3.utils.soliditySha3(message)
+        expectEventInLogs(logs, 'OptimisticMessageSubmitted', {
+          messageId,
+          messageHash: web3.utils.soliditySha3(message)
+        })
       })
     })
-  })
 
-  describe('executeMessage', () => {
-    beforeEach(async () => {
-      await foreignBridge.initialize(
-        FOREIGN_CHAIN_ID_HEX,
-        HOME_CHAIN_ID_HEX,
-        validatorContract.address,
-        ether('1'),
-        gasPrice,
-        requiredBlockConfirmations,
-        owner,
-        posValidatorSet.address,
-        ether('1')
-      ).should.be.fulfilled
-      await posValidatorSet.forceUpdateValidatorSet(newValidatorsRoot, 2, '999999999999').should.be.fulfilled
-    })
-
-    it('should execute previously submitted message', async () => {
-      const setValueData = await box.contract.methods.setValue(5).encodeABI()
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
-        from: user
+    describe('executeMessage', () => {
+      beforeEach(async () => {
+        await posValidatorSet.forceUpdateValidatorSet(newValidatorsRoot, 2, '999999999999').should.be.fulfilled
       })
 
-      const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
+      it('should execute previously submitted message', async () => {
+        const setValueData = await box.contract.methods.setValue(5).encodeABI()
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
+          from: user
+        })
 
-      await foreignBridge.executeMessage(messageId).should.be.rejected
-      await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.fulfilled
-      await foreignBridge.executeMessage(messageId).should.be.rejected
+        const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
 
-      const balance = toBN(await web3.eth.getBalance(user))
+        await foreignBridge.executeMessage(messageId).should.be.rejected
+        await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.fulfilled
+        await foreignBridge.executeMessage(messageId).should.be.rejected
 
-      await increaseTime(web3, 25 * 60 * 60)
+        const balance = toBN(await web3.eth.getBalance(user))
 
-      await foreignBridge.emergencyShutdownOptimisticBridge(true).should.be.fulfilled
-      await foreignBridge.executeMessage(messageId).should.be.rejected
-      await foreignBridge.emergencyShutdownOptimisticBridge(false).should.be.fulfilled
-      const { logs } = await foreignBridge.executeMessage(messageId).should.be.fulfilled
-      await foreignBridge.executeMessage(messageId).should.be.rejected
+        await increaseTime(web3, 25 * 60 * 60)
 
-      expect(await foreignBridge.relayedMessages(messageId)).to.be.equal(true)
-      expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
-      expect(await box.value()).to.be.bignumber.equal('5')
-      expect(toBN(await web3.eth.getBalance(user))).to.be.bignumber.equal(balance.add(ether('1')))
-      expectEventInLogs(logs, 'OptimisticMessageExecuted')
+        await foreignBridge.emergencyShutdownOptimisticBridge(true).should.be.fulfilled
+        await foreignBridge.executeMessage(messageId).should.be.rejected
+        await foreignBridge.emergencyShutdownOptimisticBridge(false).should.be.fulfilled
+        const { logs } = await foreignBridge.executeMessage(messageId).should.be.fulfilled
+        await foreignBridge.executeMessage(messageId).should.be.rejected
+
+        expect(await foreignBridge.relayedMessages(messageId)).to.be.equal(true)
+        expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
+        expect(await box.value()).to.be.bignumber.equal('5')
+        expect(toBN(await web3.eth.getBalance(user))).to.be.bignumber.equal(balance.add(ether('1')))
+        expectEventInLogs(logs, 'OptimisticMessageExecuted')
+      })
     })
-  })
 
-  describe('rejectOptimisticMessage', () => {
-    let messageId
-    beforeEach(async () => {
-      await foreignBridge.initialize(
-        FOREIGN_CHAIN_ID_HEX,
-        HOME_CHAIN_ID_HEX,
-        validatorContract.address,
-        ether('1'),
-        gasPrice,
-        requiredBlockConfirmations,
-        owner,
-        posValidatorSet.address,
-        ether('1')
-      ).should.be.fulfilled
-      await posValidatorSet.forceUpdateValidatorSet(validatorsRoot, 3, '999999999999').should.be.fulfilled
-      const setValueData = await box.contract.methods.setValue(5).encodeABI()
-      const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
-        from: user
+    describe('rejectOptimisticMessage', () => {
+      let messageId
+      beforeEach(async () => {
+        await posValidatorSet.forceUpdateValidatorSet(validatorsRoot, 3, '999999999999').should.be.fulfilled
+        const setValueData = await box.contract.methods.setValue(5).encodeABI()
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
+          from: user
+        })
+
+        const message = resultPassMessageTx.logs[0].args.encodedData
+        messageId = resultPassMessageTx.logs[0].args.messageId
+
+        await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.fulfilled
+
+        expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal(ZERO)
+        expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(false)
       })
 
-      const message = resultPassMessageTx.logs[0].args.encodedData
-      messageId = resultPassMessageTx.logs[0].args.messageId
+      it('should accept rejects from validators', async () => {
+        await sendReject(messageId, 0).should.be.fulfilled
 
-      await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.fulfilled
+        expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('1')
+        expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(false)
 
-      expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal(ZERO)
-      expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(false)
+        await sendReject(messageId, 0).should.be.rejected
+        await sendReject(messageId, 1).should.be.fulfilled
+
+        expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('2')
+        expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(false)
+
+        await sendReject(messageId, 0).should.be.rejected
+        await sendReject(messageId, 1).should.be.rejected
+        await sendReject(messageId, 2).should.be.fulfilled
+
+        expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('3')
+        expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(true)
+
+        await increaseTime(web3, 25 * 60 * 60)
+
+        await foreignBridge.executeMessage(messageId).should.be.rejected
+      })
+
+      it('should not allow rejects after timeout', async () => {
+        await sendReject(messageId, 0).should.be.fulfilled
+
+        expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('1')
+        expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(false)
+
+        await increaseTime(web3, 25 * 60 * 60)
+        await foreignBridge.executeMessage(messageId).should.be.rejected
+        await increaseTime(web3, 50 * 60 * 60)
+
+        await sendReject(messageId, 0).should.be.rejected
+        await sendReject(messageId, 1).should.be.rejected
+
+        await foreignBridge.executeMessage(messageId).should.be.fulfilled
+      })
     })
 
-    it('should accept rejects from validators', async () => {
-      await sendReject(messageId, 0).should.be.fulfilled
+    describe('claimReward', () => {
+      let messageId
 
-      expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('1')
-      expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(false)
+      beforeEach(async () => {
+        await posValidatorSet.forceUpdateValidatorSet(validatorsRoot, 2, '999999999999').should.be.fulfilled
+        const setValueData = await box.contract.methods.setValue(5).encodeABI()
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, setValueData, 200000, {
+          from: user
+        })
 
-      await sendReject(messageId, 0).should.be.rejected
-      await sendReject(messageId, 1).should.be.fulfilled
+        const message = resultPassMessageTx.logs[0].args.encodedData
+        messageId = resultPassMessageTx.logs[0].args.messageId
 
-      expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('2')
-      expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(false)
+        await foreignBridge.requestToExecuteMessage(message, { from: user, value: ether('1') }).should.be.fulfilled
+      })
 
-      await sendReject(messageId, 0).should.be.rejected
-      await sendReject(messageId, 1).should.be.rejected
-      await sendReject(messageId, 2).should.be.fulfilled
+      it('should allow to claim reward after enough rejects are collected', async () => {
+        const balance1 = toBN(await web3.eth.getBalance(validators[0].address))
+        const balance2 = toBN(await web3.eth.getBalance(validators[1].address))
 
-      expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('3')
-      expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(true)
+        await claimReward(messageId, 0).should.be.rejected
 
-      await increaseTime(web3, 25 * 60 * 60)
+        await sendReject(messageId, 0).should.be.fulfilled
 
-      await foreignBridge.executeMessage(messageId).should.be.rejected
-    })
+        await claimReward(messageId, 0).should.be.rejected
 
-    it('should not allow rejects after timeout', async () => {
-      await sendReject(messageId, 0).should.be.fulfilled
+        await sendReject(messageId, 1).should.be.fulfilled
 
-      expect(await foreignBridge.optimisticMessageRejectsCount(messageId)).to.be.bignumber.equal('1')
-      expect(await foreignBridge.isOptimisticMessageRejected(messageId)).to.be.equal(false)
+        await claimReward(messageId, 0).should.be.fulfilled
 
-      await increaseTime(web3, 25 * 60 * 60)
-      await foreignBridge.executeMessage(messageId).should.be.rejected
-      await increaseTime(web3, 50 * 60 * 60)
+        expect(toBN(await web3.eth.getBalance(validators[0].address))).to.be.bignumber.gt(balance1)
+        expect(toBN(await web3.eth.getBalance(validators[0].address))).to.be.bignumber.lt(balance1.add(ether('0.5')))
+        expect(toBN(await web3.eth.getBalance(validators[1].address))).to.be.bignumber.lt(balance2)
 
-      await sendReject(messageId, 0).should.be.rejected
-      await sendReject(messageId, 1).should.be.rejected
+        await claimReward(messageId, 1).should.be.fulfilled
 
-      await foreignBridge.executeMessage(messageId).should.be.fulfilled
+        expect(toBN(await web3.eth.getBalance(validators[1].address))).to.be.bignumber.gt(balance2)
+        expect(toBN(await web3.eth.getBalance(validators[1].address))).to.be.bignumber.lt(balance2.add(ether('0.5')))
+      })
     })
   })
 })

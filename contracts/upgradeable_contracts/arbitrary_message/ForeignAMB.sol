@@ -18,7 +18,7 @@ contract ForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
     function executeSignatures(bytes _data, bytes _signatures) external {
         Message.hasEnoughValidSignatures(_data, _signatures, validatorContract(), true);
 
-        (bytes32 messageId, address sender, address executor, uint32 gasLimit, bytes1 dataType, uint256[2] memory chainIds, uint256 gasPrice, uint256 offset) = ArbitraryMessage
+        (bytes32 messageId, address sender, address executor, uint32 gasLimit, , uint256[2] memory chainIds, , uint256 offset) = ArbitraryMessage
             .unpackHeader(_data);
         require(_isMessageVersionValid(messageId));
         require(_isDestinationChainIdValid(chainIds[1]));

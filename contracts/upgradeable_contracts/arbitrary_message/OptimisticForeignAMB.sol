@@ -82,11 +82,7 @@ contract OptimisticForeignAMB is ForeignAMB {
      * @param _data message data that will be used during the later execution.
      */
     function requestToExecuteMessage(bytes _data) public payable optimisticBridgeEnabled {
-        bytes memory copy = new bytes(_data.length);
-        assembly {
-            calldatacopy(add(copy, 32), add(calldataload(4), 36), mload(_data))
-        }
-        (bytes32 messageId, , , , , uint256[2] memory chainIds, , ) = ArbitraryMessage.unpackData(copy);
+        (bytes32 messageId, , , , , uint256[2] memory chainIds, , ) = ArbitraryMessage.unpackHeader(_data);
 
         require(_isMessageVersionValid(messageId));
         require(_isDestinationChainIdValid(chainIds[1]));
@@ -140,10 +136,11 @@ contract OptimisticForeignAMB is ForeignAMB {
 
         // if message was already executed by bridge validators, nothing will be done, bond will be returned to the optimistic message sender
         if (!relayedMessages(_messageId)) {
-            (, address sender, address executor, uint32 gasLimit, bytes1 dataType, uint256[2] memory chainIds, uint256 gasPrice, bytes memory payload) = ArbitraryMessage
-                .unpackData(data);
             setRelayedMessages(_messageId, true);
-            processMessage(sender, executor, _messageId, gasLimit, dataType, gasPrice, chainIds[0], payload);
+            (, address sender, address executor, uint32 gasLimit, bytes1 dataType, uint256[2] memory chainIds, uint256 gasPrice, uint256 offset) = ArbitraryMessage
+                .unpackHeader(data);
+            bytes memory payload = ArbitraryMessage.unpackPayload(data, offset);
+            processMessage(sender, executor, _messageId, gasLimit, chainIds[0], payload);
 
             emit OptimisticMessageExecuted(_messageId);
         }

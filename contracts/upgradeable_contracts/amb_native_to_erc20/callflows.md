@@ -41,7 +41,8 @@ It is necessary to note that the mediator on the terminating side could be confi
 ```=
 >>Bridge
 ForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -115,7 +116,8 @@ If it is configured, the fee manager is involved to calculate and distribute fee
 >>Bridge
 HomeAMB::executeAffirmation
 ..HomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -163,7 +165,8 @@ A failure happens within the message handler on the mediator contract's side whe
 ```=
 >>Bridge
 ForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -204,7 +207,8 @@ The Home chain initially originated the request, that is why the extension is im
 >>Bridge
 HomeAMB::executeAffirmation
 ..HomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -232,7 +236,8 @@ A failure happens within the message handler on the mediator contract's side whe
 >>Bridge
 HomeAMB::executeAffirmation
 ..HomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -272,7 +277,8 @@ The Foreign chain initially originated the request. It has no ERC677 tokens anym
 ```=
 >>Bridge
 ForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender

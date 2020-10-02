@@ -48,7 +48,8 @@ ERC677BridgeToken::transferAndCall
 >>Bridge
 HomeAMB::executeAffirmation
 ..HomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -114,7 +115,8 @@ The calls flow provided below consider only the case when the balance of the For
 ```=
 >>Bridge
 ForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -164,7 +166,8 @@ A failure happens within the message handler on the mediator contract's side whe
 >>Bridge
 HomeAMB::executeAffirmation
 ..HomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -204,7 +207,8 @@ The Foreign chain initially originated the request that is why the extension is 
 ```=
 >>Bridge
 ForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -241,7 +245,8 @@ A failure happens within the message handler on the mediator contract's side whe
 ```=
 >>Bridge
 ForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -282,7 +287,8 @@ The Home chain initially originated the request. It has no STAKE/xDai tokens any
 >>Bridge
 HomeAMB::executeAffirmation
 ..HomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender

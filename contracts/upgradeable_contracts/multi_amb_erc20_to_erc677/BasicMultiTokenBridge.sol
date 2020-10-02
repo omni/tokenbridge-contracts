@@ -119,7 +119,6 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     * @return day number.
     */
     function getCurrentDay() public view returns (uint256) {
-        // solhint-disable-next-line not-rely-on-time
         return now / 1 days;
     }
 

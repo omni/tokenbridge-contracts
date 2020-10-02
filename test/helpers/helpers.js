@@ -202,3 +202,56 @@ async function delay(ms) {
 }
 
 module.exports.delay = delay
+
+function merkleRoot(arr) {
+  const tree = arr.map(acc => `0x${'00'.repeat(12)}${acc.address.substr(2).toLowerCase()}`)
+  for (let i = 1; i < arr.length; i *= 2) {
+    for (let j = 0; i + j < arr.length; j += i * 2) {
+      if (tree[j] < tree[j + i]) {
+        tree[j] = web3.utils.soliditySha3(tree[j] + tree[j + i].substr(2))
+      } else {
+        tree[j] = web3.utils.soliditySha3(tree[j + i] + tree[j].substr(2))
+      }
+    }
+  }
+  return tree[0]
+}
+
+module.exports.merkleRoot = merkleRoot
+
+function generateMerkleProof(arr, validatorIndex) {
+  const tree = arr.map(acc => `0x${'00'.repeat(12)}${acc.address.substr(2).toLowerCase()}`)
+  const proof = []
+  for (let i = 1; i < arr.length; i *= 2) {
+    for (let j = 0; i + j < arr.length; j += i * 2) {
+      if (validatorIndex >= j && validatorIndex < j + i * 2) {
+        proof.push(tree[j + (validatorIndex < j + i ? i : 0)])
+      }
+      if (tree[j] < tree[j + i]) {
+        tree[j] = web3.utils.soliditySha3(tree[j] + tree[j + i].substr(2))
+      } else {
+        tree[j] = web3.utils.soliditySha3(tree[j + i] + tree[j].substr(2))
+      }
+    }
+  }
+  return proof
+}
+
+module.exports.generateMerkleProof = generateMerkleProof
+
+async function increaseTime(web3, seconds = 1) {
+  return new Promise(res =>
+    web3.currentProvider.send({ jsonrpc: '2.0', method: 'evm_increaseTime', params: [seconds], id: 1 }, res)
+  )
+}
+
+module.exports.increaseTime = increaseTime
+
+async function suspendMiner(ms) {
+  await new Promise(res => web3.currentProvider.send({ jsonrpc: '2.0', method: 'miner_stop', params: [], id: 1 }, res))
+  const resume = () =>
+    new Promise(res => web3.currentProvider.send({ jsonrpc: '2.0', method: 'miner_start', params: [], id: 1 }, res))
+  delay(ms).then(resume)
+}
+
+module.exports.suspendMiner = suspendMiner

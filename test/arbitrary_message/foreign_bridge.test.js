@@ -13,7 +13,8 @@ const {
   expectEventInLogs,
   signatureToVRS,
   packSignatures,
-  createFullAccounts
+  createFullAccounts,
+  suspendMiner
 } = require('../helpers/helpers')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
 
@@ -301,27 +302,31 @@ contract('ForeignAMB', async accounts => {
       )
 
       tx.receipt.logs.length.should.be.equal(1)
-      expect(tx.receipt.logs[0].args.messageId).to.include(`${bridgeId}0000000000000000`)
+      const { messageId } = tx.receipt.logs[0].args
+      expect(messageId).to.include(`${bridgeId}${tx.receipt.blockNumber.toString(16).padStart(12, '0')}0000`)
     })
     it('should generate different message ids', async () => {
       const user = accounts[8]
 
-      const resultPassMessageTx1 = await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
-        from: user
-      })
-      const resultPassMessageTx2 = await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
-        from: user
-      })
-      const resultPassMessageTx3 = await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
-        from: user
-      })
+      await suspendMiner(1000)
 
-      const messageId1 = resultPassMessageTx1.logs[0].args.messageId
-      const messageId2 = resultPassMessageTx2.logs[0].args.messageId
-      const messageId3 = resultPassMessageTx3.logs[0].args.messageId
-      expect(messageId1).to.include(`${bridgeId}0000000000000000`)
-      expect(messageId2).to.include(`${bridgeId}0000000000000001`)
-      expect(messageId3).to.include(`${bridgeId}0000000000000002`)
+      const results = await Promise.all([
+        foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, { from: user }),
+        foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, { from: user }),
+        foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, { from: user })
+      ])
+
+      const messageId1 = results[0].logs[0].args.messageId
+      const messageId2 = results[1].logs[0].args.messageId
+      const messageId3 = results[2].logs[0].args.messageId
+      const blockNumber = results[0].receipt.blockNumber.toString(16).padStart(12, '0')
+      expect(messageId1).to.include(`${bridgeId}${blockNumber}0000`)
+      expect(messageId2).to.include(`${bridgeId}${blockNumber}0001`)
+      expect(messageId3).to.include(`${bridgeId}${blockNumber}0002`)
+
+      const tx = await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, { from: user })
+      const messageId = tx.logs[0].args.messageId
+      expect(messageId).to.include(`${bridgeId}${tx.receipt.blockNumber.toString(16).padStart(12, '0')}0000`)
     })
   })
   describe('executeSignatures', () => {

@@ -6,7 +6,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { sign, ether, expectEventInLogs } = require('../helpers/helpers')
+const { sign, ether, expectEventInLogs, suspendMiner } = require('../helpers/helpers')
 
 const requiredBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -278,7 +278,8 @@ contract('HomeAMB', async accounts => {
       )
 
       tx.receipt.logs.length.should.be.equal(1)
-      expect(tx.receipt.logs[0].args.messageId).to.include(`${bridgeId}0000000000000000`)
+      const { messageId } = tx.receipt.logs[0].args
+      expect(messageId).to.include(`${bridgeId}${tx.receipt.blockNumber.toString(16).padStart(12, '0')}0000`)
     })
     it('call requireToPassMessage(address, bytes, uint256) should fail', async () => {
       // Should fail because gas < minimumGasUsage
@@ -320,23 +321,25 @@ contract('HomeAMB', async accounts => {
     })
     it('should generate different message ids', async () => {
       const user = accounts[8]
+      await suspendMiner(1000)
 
-      const resultPassMessageTx1 = await homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
-        from: user
-      })
-      const resultPassMessageTx2 = await homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
-        from: user
-      })
-      const resultPassMessageTx3 = await homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, {
-        from: user
-      })
+      const results = await Promise.all([
+        homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, { from: user }),
+        homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, { from: user }),
+        homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, { from: user })
+      ])
 
-      const messageId1 = resultPassMessageTx1.logs[0].args.messageId
-      const messageId2 = resultPassMessageTx2.logs[0].args.messageId
-      const messageId3 = resultPassMessageTx3.logs[0].args.messageId
-      expect(messageId1).to.include(`${bridgeId}0000000000000000`)
-      expect(messageId2).to.include(`${bridgeId}0000000000000001`)
-      expect(messageId3).to.include(`${bridgeId}0000000000000002`)
+      const messageId1 = results[0].logs[0].args.messageId
+      const messageId2 = results[1].logs[0].args.messageId
+      const messageId3 = results[2].logs[0].args.messageId
+      const blockNumber = results[0].receipt.blockNumber.toString(16).padStart(12, '0')
+      expect(messageId1).to.include(`${bridgeId}${blockNumber}0000`)
+      expect(messageId2).to.include(`${bridgeId}${blockNumber}0001`)
+      expect(messageId3).to.include(`${bridgeId}${blockNumber}0002`)
+
+      const tx = await homeBridge.requireToPassMessage(accounts[7], '0x11223344', 221254, { from: user })
+      const messageId = tx.logs[0].args.messageId
+      expect(messageId).to.include(`${bridgeId}${tx.receipt.blockNumber.toString(16).padStart(12, '0')}0000`)
     })
   })
   describe('executeAffirmation', () => {

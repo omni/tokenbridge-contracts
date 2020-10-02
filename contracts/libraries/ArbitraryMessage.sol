@@ -18,10 +18,9 @@ library ArbitraryMessage {
     * offset 111/143/112 + X : Y bytes  :: bytes   - destination chain id
 
     * NOTE: when message structure is changed, make sure that MESSAGE_PACKING_VERSION from VersionableAMB is updated as well
-    * NOTE: assembly code uses calldatacopy, make sure that message is passed as the first argument in the calldata
     * @param _data encoded message
     */
-    function unpackData(bytes _data)
+    function unpackHeader(bytes _data)
         internal
         pure
         returns (
@@ -32,12 +31,11 @@ library ArbitraryMessage {
             bytes1 dataType,
             uint256[2] chainIds,
             uint256 gasPrice,
-            bytes memory data
+            uint256 offset
         )
     {
         // 32 (message id) + 20 (sender) + 20 (executor) + 4 (gasLimit) + 1 (source chain id length) + 1 (destination chain id length) + 1 (dataType)
-        uint256 srcdataptr = 32 + 20 + 20 + 4 + 1 + 1 + 1;
-        uint256 datasize;
+        offset = 32 + 20 + 20 + 4 + 1 + 1 + 1;
 
         assembly {
             messageId := mload(add(_data, 32)) // 32 bytes
@@ -60,26 +58,26 @@ library ArbitraryMessage {
                 }
                 case 0x0100000000000000000000000000000000000000000000000000000000000000 {
                     gasPrice := mload(add(_data, 111)) // 32
-                    srcdataptr := add(srcdataptr, 32)
+                    offset := add(offset, 32)
                 }
                 case 0x0200000000000000000000000000000000000000000000000000000000000000 {
                     gasPrice := 0
-                    srcdataptr := add(srcdataptr, 1)
+                    offset := add(offset, 1)
                 }
 
-            // at this moment srcdataptr points to sourceChainId
+            // at this moment offset points to sourceChainId
 
             // mask for sourceChainId
             // e.g. length X -> (1 << (X * 8)) - 1
             let mask := sub(shl(shl(3, chainIdLength), 1), 1)
 
             // increase payload offset by length of source chain id
-            srcdataptr := add(srcdataptr, chainIdLength)
+            offset := add(offset, chainIdLength)
 
             // write sourceChainId
-            mstore(chainIds, and(mload(add(_data, srcdataptr)), mask))
+            mstore(chainIds, and(mload(add(_data, offset)), mask))
 
-            // at this moment srcdataptr points to destinationChainId
+            // at this moment offset points to destinationChainId
 
             // load destination chain id length
             chainIdLength := byte(25, blob)
@@ -89,24 +87,28 @@ library ArbitraryMessage {
             mask := sub(shl(shl(3, chainIdLength), 1), 1)
 
             // increase payload offset by length of destination chain id
-            srcdataptr := add(srcdataptr, chainIdLength)
+            offset := add(offset, chainIdLength)
 
             // write destinationChainId
-            mstore(add(chainIds, 32), and(mload(add(_data, srcdataptr)), mask))
+            mstore(add(chainIds, 32), and(mload(add(_data, offset)), mask))
 
-            // at this moment srcdataptr points to payload
+            // at this moment offset points to payload
 
-            // datasize = message length - payload offset
-            datasize := sub(mload(_data), srcdataptr)
         }
+    }
 
-        data = new bytes(datasize);
+    /**
+    * @dev Unpacks the payload field from the AMB message
+    * NOTE: function modifies the given memory bytes object, it is unsafe to reuse it further
+    * @param data encoded message
+    * @param offset length of the message header
+    * @return payload of the AMB message
+    */
+    function unpackPayload(bytes memory data, uint256 offset) internal pure returns (bytes memory payload) {
         assembly {
-            // 36 = 4 (selector) + 32 (bytes length header)
-            srcdataptr := add(srcdataptr, 36)
-
-            // calldataload(4) - offset of first bytes argument in the calldata
-            calldatacopy(add(data, 32), add(calldataload(4), srcdataptr), datasize)
+            // set a payload pointer
+            payload := add(offset, data)
+            mstore(payload, sub(mload(data), offset))
         }
     }
 }

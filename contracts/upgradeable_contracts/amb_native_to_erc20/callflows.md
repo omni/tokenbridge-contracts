@@ -40,8 +40,9 @@ It is necessary to note that the mediator on the terminating side could be confi
 
 ```=
 >>Bridge
-BasicForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+ForeignAMB::executeSignatures
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -113,9 +114,10 @@ If it is configured, the fee manager is involved to calculate and distribute fee
 
 ```=
 >>Bridge
-BasicHomeAMB::executeAffirmation
-..BasicHomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+HomeAMB::executeAffirmation
+..HomeAMB::handleMessage
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -162,8 +164,9 @@ A failure happens within the message handler on the mediator contract's side whe
 
 ```=
 >>Bridge
-BasicForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+ForeignAMB::executeSignatures
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -202,9 +205,10 @@ The Home chain initially originated the request, that is why the extension is im
 
 ```=
 >>Bridge
-BasicHomeAMB::executeAffirmation
-..BasicHomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+HomeAMB::executeAffirmation
+..HomeAMB::handleMessage
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -230,9 +234,10 @@ A failure happens within the message handler on the mediator contract's side whe
 
 ```=
 >>Bridge
-BasicHomeAMB::executeAffirmation
-..BasicHomeAMB::handleMessage
-....ArbitraryMessage::unpackData
+HomeAMB::executeAffirmation
+..HomeAMB::handleMessage
+....ArbitraryMessage::unpackHeader
+....ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender
@@ -271,8 +276,9 @@ The Foreign chain initially originated the request. It has no ERC677 tokens anym
 
 ```=
 >>Bridge
-BasicForeignAMB::executeSignatures
-..ArbitraryMessage.unpackData
+ForeignAMB::executeSignatures
+..ArbitraryMessage::unpackHeader
+..ArbitraryMessage::unpackPayload
 ....MessageProcessor::processMessage
 ......MessageProcessor::_passMessage
 ........MessageProcessor::setMessageSender

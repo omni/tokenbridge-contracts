@@ -22,8 +22,8 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     );
 
     function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
+        bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
         if (withinExecutionLimit(value)) {
-            bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
             bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
             // Duplicated affirmations
             require(!affirmationsSigned(hashSender));
@@ -43,12 +43,12 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
                 if (value > 0) {
-                    require(onExecuteAffirmation(recipient, value, transactionHash));
+                    require(onExecuteAffirmation(recipient, value, transactionHash, hashMsg));
                 }
                 emit AffirmationCompleted(recipient, value, transactionHash);
             }
         } else {
-            onFailedAffirmation(recipient, value, transactionHash);
+            onFailedAffirmation(recipient, value, transactionHash, hashMsg);
         }
     }
 
@@ -92,7 +92,10 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     }
 
     /* solcov ignore next */
-    function onExecuteAffirmation(address, uint256, bytes32) internal returns (bool);
+    function onExecuteAffirmation(address, uint256, bytes32, bytes32) internal returns (bool);
+
+    /* solcov ignore next */
+    function onFailedAffirmation(address, uint256, bytes32, bytes32) internal;
 
     /* solcov ignore next */
     function onSignaturesCollected(bytes) internal;
@@ -153,7 +156,4 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     function requiredMessageLength() public pure returns (uint256) {
         return Message.requiredMessageLength();
     }
-
-    /* solcov ignore next */
-    function onFailedAffirmation(address, uint256, bytes32) internal;
 }

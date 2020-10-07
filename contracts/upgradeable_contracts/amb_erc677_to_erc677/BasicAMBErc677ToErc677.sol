@@ -129,7 +129,6 @@ contract BasicAMBErc677ToErc677 is
         external
         onlyIfUpgradeabilityOwner
     {
-        require(!fixedAssets(messageId));
         require(valueToUnlock <= maxPerTx());
         address recipient;
         uint256 value;
@@ -139,9 +138,6 @@ contract BasicAMBErc677ToErc677 is
         uint256 pendingValue = value.sub(valueToUnlock);
         setTxAboveLimitsValue(pendingValue, messageId);
         emit AssetAboveLimitsFixed(messageId, valueToUnlock, pendingValue);
-        if (pendingValue == 0) {
-            setFixedAssets(messageId);
-        }
         if (unlockOnForeign) {
             passMessage(recipient, recipient, valueToUnlock);
         }

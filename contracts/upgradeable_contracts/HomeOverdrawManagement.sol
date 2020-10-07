@@ -3,31 +3,25 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Upgradeable.sol";
 import "./RewardableBridge.sol";
-import "./BasicTokenBridge.sol";
+import "./BasicHomeBridge.sol";
 import "./BaseOverdrawManagement.sol";
 
-contract OverdrawManagement is BaseOverdrawManagement, RewardableBridge, Upgradeable, BasicTokenBridge {
+contract HomeOverdrawManagement is BaseOverdrawManagement, RewardableBridge, Upgradeable, BasicHomeBridge {
     using SafeMath for uint256;
 
-    event UserRequestForSignature(address recipient, uint256 value);
-
-    function fixAssetsAboveLimits(bytes32 txHash, bool unlockOnForeign, uint256 valueToUnlock)
+    function fixAssetsAboveLimits(bytes32 hashMsg, bool unlockOnForeign, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
     {
-        require(!fixedAssets(txHash));
+        uint256 signed = numAffirmationsSigned(hashMsg);
+        require(!isAlreadyProcessed(signed));
         require(valueToUnlock <= maxPerTx());
-        address recipient;
-        uint256 value;
-        (recipient, value) = txAboveLimits(txHash);
+        (address recipient, uint256 value) = txAboveLimits(hashMsg);
         require(recipient != address(0) && value > 0 && value >= valueToUnlock);
         setOutOfLimitAmount(outOfLimitAmount().sub(valueToUnlock));
         uint256 pendingValue = value.sub(valueToUnlock);
-        setTxAboveLimitsValue(pendingValue, txHash);
-        emit AssetAboveLimitsFixed(txHash, valueToUnlock, pendingValue);
-        if (pendingValue == 0) {
-            setFixedAssets(txHash);
-        }
+        setTxAboveLimitsValue(pendingValue, hashMsg);
+        emit AssetAboveLimitsFixed(hashMsg, valueToUnlock, pendingValue);
         if (unlockOnForeign) {
             address feeManager = feeManagerContract();
             uint256 eventValue = valueToUnlock;

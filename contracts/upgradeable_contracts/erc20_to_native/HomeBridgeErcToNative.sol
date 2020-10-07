@@ -4,14 +4,14 @@ import "../../libraries/Message.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBlockReward.sol";
 import "../BasicHomeBridge.sol";
-import "../OverdrawManagement.sol";
+import "../HomeOverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToNative.sol";
 import "../BlockRewardBridge.sol";
 
 contract HomeBridgeErcToNative is
     EternalStorage,
     BasicHomeBridge,
-    OverdrawManagement,
+    HomeOverdrawManagement,
     RewardableHomeBridgeErcToNative,
     BlockRewardBridge
 {
@@ -145,7 +145,17 @@ contract HomeBridgeErcToNative is
         setOwner(_owner);
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
+        internal
+        returns (bool)
+    {
+        (address aboveLimitsRecipient, uint256 aboveLimitsValue) = txAboveLimits(_hashMsg);
+        if (aboveLimitsRecipient != address(0)) {
+            // revert if a given transaction hash was already processed by the call to fixAssetsAboveLimits
+            require(aboveLimitsValue == _value);
+            setTxAboveLimits(address(0), 0, _hashMsg);
+            setOutOfLimitAmount(outOfLimitAmount().sub(_value));
+        }
         addTotalExecutedPerDay(getCurrentDay(), _value);
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
@@ -153,7 +163,7 @@ contract HomeBridgeErcToNative is
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager, txHash);
+            distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToMint = valueToMint.sub(fee);
         }
         blockReward.addExtraReceiver(valueToMint, _recipient);
@@ -177,13 +187,11 @@ contract HomeBridgeErcToNative is
         uintStorage[TOTAL_BURNT_COINS] = _amount;
     }
 
-    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
-        address recipient;
-        uint256 value;
-        (recipient, value) = txAboveLimits(_txHash);
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg) internal {
+        (address recipient, uint256 value) = txAboveLimits(_hashMsg);
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
-        setTxAboveLimits(_recipient, _value, _txHash);
-        emit AmountLimitExceeded(_recipient, _value, _txHash);
+        setTxAboveLimits(_recipient, _value, _hashMsg);
+        emit AmountLimitExceeded(_recipient, _value, _txHash, _hashMsg);
     }
 }

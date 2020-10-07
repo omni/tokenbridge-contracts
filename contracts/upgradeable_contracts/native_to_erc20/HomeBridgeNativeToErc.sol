@@ -121,14 +121,17 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         }
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
+        internal
+        returns (bool)
+    {
         addTotalExecutedPerDay(getCurrentDay(), _value);
         uint256 valueToTransfer = _shiftValue(_value);
 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToTransfer, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager, txHash);
+            distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToTransfer = valueToTransfer.sub(fee);
         }
 
@@ -139,7 +142,8 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     function onFailedAffirmation(
         address, /*_recipient*/
         uint256, /*_value*/
-        bytes32 /*_txHash*/
+        bytes32, /*_txHash*/
+        bytes32 /*_hashMsg*/
     ) internal {
         revert();
     }

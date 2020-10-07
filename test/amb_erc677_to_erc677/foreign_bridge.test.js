@@ -285,7 +285,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(outOfLimitEvent.length).to.be.equal(1)
       expect(outOfLimitEvent[0].returnValues.recipient).to.be.equal(user)
       expect(outOfLimitEvent[0].returnValues.value).to.be.equal(twoEthers.toString())
-      expect(outOfLimitEvent[0].returnValues.transactionHash).to.be.equal(exampleMessageId)
+      expect(outOfLimitEvent[0].returnValues.messageId).to.be.equal(exampleMessageId)
 
       const TokensBridgedEvent = await getEvents(foreignBridge, { event: 'TokensBridged' })
       expect(TokensBridgedEvent.length).to.be.equal(0)

@@ -6,9 +6,19 @@ import "./RewardableBridge.sol";
 import "./BasicHomeBridge.sol";
 import "./BaseOverdrawManagement.sol";
 
+/**
+ * @title HomeOverdrawManagement
+ * @dev This contract implements functionality for recovering from out-of-limits executions in Home side vanilla bridges.
+ */
 contract HomeOverdrawManagement is BaseOverdrawManagement, RewardableBridge, Upgradeable, BasicHomeBridge {
     using SafeMath for uint256;
 
+    /**
+    * @dev Fixes locked tokens, that were out of execution limits during the call to executeAffirmation.
+    * @param hashMsg reference for bridge operation that was out of execution limits.
+    * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge.
+    * @param valueToUnlock unlocked amount of tokens, should be less than maxPerTx() and saved txAboveLimitsValue.
+    */
     function fixAssetsAboveLimits(bytes32 hashMsg, bool unlockOnForeign, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner

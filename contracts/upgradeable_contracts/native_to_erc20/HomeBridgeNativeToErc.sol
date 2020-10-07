@@ -6,6 +6,11 @@ import "../BasicHomeBridge.sol";
 import "./RewardableHomeBridgeNativeToErc.sol";
 import "../../libraries/Address.sol";
 
+/**
+ * @title HomeBridgeNativeToErc
+ * @dev This contract Home side logic for the native-to-erc vanilla bridge mode.
+ * It is designed to be used as an implementation contract of EternalStorageProxy contract.
+ */
 contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
     function() public payable {
         require(msg.data.length == 0);
@@ -121,6 +126,15 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         }
     }
 
+    /**
+     * @dev Internal callback to be called on successfull message execution.
+     * Should be called only after enough affirmations from the validators are already collected.
+     * @param _recipient address of the receiver where the new coins should be unlocked.
+     * @param _value amount of coins to unlock.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     * @return true, if execution completed successfully.
+     */
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
         internal
         returns (bool)
@@ -139,12 +153,16 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         return true;
     }
 
-    function onFailedAffirmation(
-        address, /*_recipient*/
-        uint256, /*_value*/
-        bytes32, /*_txHash*/
-        bytes32 /*_hashMsg*/
-    ) internal {
+    /**
+     * @dev Internal callback to be called on failed message execution due to the out-of-limits error.
+     * This function saves the bridge operation information for further processing.
+     * @param _recipient address of the receiver where the new coins should be unlocked.
+     * @param _value amount of coins to unlock.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     */
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg) internal {
+        // solhint-disable-previous-line no-unused-vars
         revert();
     }
 

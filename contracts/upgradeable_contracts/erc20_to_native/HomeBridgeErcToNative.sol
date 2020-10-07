@@ -8,6 +8,11 @@ import "../HomeOverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToNative.sol";
 import "../BlockRewardBridge.sol";
 
+/**
+ * @title HomeBridgeErcToNative
+ * @dev This contract Home side logic for the erc-to-native vanilla bridge mode.
+ * It is designed to be used as an implementation contract of EternalStorageProxy contract.
+ */
 contract HomeBridgeErcToNative is
     EternalStorage,
     BasicHomeBridge,
@@ -145,6 +150,15 @@ contract HomeBridgeErcToNative is
         setOwner(_owner);
     }
 
+    /**
+     * @dev Internal callback to be called on successfull message execution.
+     * Should be called only after enough affirmations from the validators are already collected.
+     * @param _recipient address of the receiver where the new coins should be minted.
+     * @param _value amount of coins to mint.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     * @return true, if execution completed successfully.
+     */
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
         internal
         returns (bool)
@@ -187,6 +201,14 @@ contract HomeBridgeErcToNative is
         uintStorage[TOTAL_BURNT_COINS] = _amount;
     }
 
+    /**
+     * @dev Internal callback to be called on failed message execution due to the out-of-limits error.
+     * This function saves the bridge operation information for further processing.
+     * @param _recipient address of the receiver where the new coins should be minted.
+     * @param _value amount of coins to mint.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     */
     function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg) internal {
         (address recipient, uint256 value) = txAboveLimits(_hashMsg);
         require(recipient == address(0) && value == 0);

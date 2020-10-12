@@ -4,16 +4,15 @@ import "./BasicAMBErc20ToNative.sol";
 import "../BaseERC677Bridge.sol";
 import "../ReentrancyGuard.sol";
 import "../../libraries/SafeERC20.sol";
+import "../MediatorBalanceStorage.sol";
 
 /**
 * @title ForeignAMBErc20ToNative
 * @dev Foreign mediator implementation for erc20-to-native bridge intended to work on top of AMB bridge.
 * It is design to be used as implementation contract of EternalStorageProxy contract.
 */
-contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, BaseERC677Bridge {
+contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, BaseERC677Bridge, MediatorBalanceStorage {
     using SafeERC20 for ERC677;
-
-    bytes32 internal constant MEDIATOR_BALANCE = 0x3db340e280667ee926fa8c51e8f9fcf88a0ff221a66d84d63b4778127d97d139; // keccak256(abi.encodePacked("mediatorBalance"))
 
     /**
     * @dev Stores the initial parameters of the mediator.
@@ -115,17 +114,9 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     }
 
     /**
-    * @dev Tells the token balance of the contract.
-    * @return the current tracked token balance of the contract.
-    */
-    function mediatorBalance() public view returns (uint256) {
-        return uintStorage[MEDIATOR_BALANCE];
-    }
-
-    /**
-    * @dev Allows to send to the other network the amount of locked native tokens that can be forced into the contract
+    * @dev Allows to send to the other network the amount of locked tokens that can be forced into the contract
     * without the invocation of the required methods.
-    * @param _receiver the address that will receive the tokens on the other network
+    * @param _receiver the address that will receive the native coins on the other network
     */
     function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
         uint256 balance = _erc677token().balanceOf(address(this));
@@ -191,13 +182,5 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     */
     function bridgeContractOnOtherSide() internal view returns (address) {
         return mediatorContractOnOtherSide();
-    }
-
-    /**
-    * @dev Sets the updated token balance of the contract.
-    * @param _balance the new token balance of the contract.
-    */
-    function _setMediatorBalance(uint256 _balance) internal {
-        uintStorage[MEDIATOR_BALANCE] = _balance;
     }
 }

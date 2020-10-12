@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+import "../MediatorBalanceStorage.sol";
 import "./BasicAMBNativeToErc20.sol";
 
 /**
@@ -7,9 +8,7 @@ import "./BasicAMBNativeToErc20.sol";
 * @dev Home mediator implementation for native-to-erc20 bridge intended to work on top of AMB bridge.
 * It is design to be used as implementation contract of EternalStorageProxy contract.
 */
-contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
-    bytes32 internal constant MEDIATOR_BALANCE = 0x3db340e280667ee926fa8c51e8f9fcf88a0ff221a66d84d63b4778127d97d139; // keccak256(abi.encodePacked("mediatorBalance"))
-
+contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20, MediatorBalanceStorage {
     /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
@@ -73,7 +72,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
         require(msg.value > 0);
         require(withinLimit(msg.value));
         addTotalSpentPerDay(getCurrentDay(), msg.value);
-        setMediatorBalance(mediatorBalance().add(msg.value));
+        _setMediatorBalance(mediatorBalance().add(msg.value));
         passMessage(msg.sender, _receiver, msg.value);
     }
 
@@ -85,7 +84,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     */
     function executeActionOnBridgedTokens(address _receiver, uint256 _value) internal {
         uint256 valueToTransfer = _shiftValue(_value);
-        setMediatorBalance(mediatorBalance().sub(valueToTransfer));
+        _setMediatorBalance(mediatorBalance().sub(valueToTransfer));
 
         bytes32 _messageId = messageId();
         IMediatorFeeManager feeManager = feeManagerContract();
@@ -107,7 +106,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     * @param _value amount of native tokens to be received
     */
     function executeActionOnFixedTokens(address _receiver, uint256 _value) internal {
-        setMediatorBalance(mediatorBalance().sub(_value));
+        _setMediatorBalance(mediatorBalance().sub(_value));
         Address.safeSendValue(_receiver, _value);
     }
 
@@ -118,22 +117,6 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     */
     function onFeeDistribution(address _feeManager, uint256 _fee) internal {
         Address.safeSendValue(_feeManager, _fee);
-    }
-
-    /**
-    * @dev Tells the native balance of the contract.
-    * @return the current tracked native balance of the contract.
-    */
-    function mediatorBalance() public view returns (uint256) {
-        return uintStorage[MEDIATOR_BALANCE];
-    }
-
-    /**
-    * @dev Sets the updated native balance of the contract.
-    * @param _balance the new native balance of the contract.
-    */
-    function setMediatorBalance(uint256 _balance) internal {
-        uintStorage[MEDIATOR_BALANCE] = _balance;
     }
 
     /**
@@ -163,7 +146,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
             diff = available;
         }
         addTotalSpentPerDay(getCurrentDay(), diff);
-        setMediatorBalance(expectedBalance.add(diff));
+        _setMediatorBalance(expectedBalance.add(diff));
         passMessage(_receiver, _receiver, diff);
     }
 }

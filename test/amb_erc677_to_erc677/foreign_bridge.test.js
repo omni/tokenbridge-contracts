@@ -455,4 +455,31 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(events.length).to.be.equal(3)
     })
   })
+
+  describe('claimTokens', () => {
+    it('should not allow to claim bridged token', async () => {
+      const storageProxy = await EternalStorageProxy.new()
+      foreignBridge = await ForeignAMBErc677ToErc677.new()
+      await storageProxy.upgradeTo('1', foreignBridge.address).should.be.fulfilled
+      foreignBridge = await ForeignAMBErc677ToErc677.at(storageProxy.address)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(foreignBridge.address, twoEthers, { from: owner }).should.be.fulfilled
+
+      ambBridgeContract = await AMBMock.new()
+      await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
+      await foreignBridge.initialize(
+        ambBridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      await foreignBridge.claimTokens(erc677Token.address, accounts[3], { from: accounts[3] }).should.be.rejected
+      await foreignBridge.claimTokens(erc677Token.address, accounts[3], { from: owner }).should.be.rejected
+    })
+  })
 })

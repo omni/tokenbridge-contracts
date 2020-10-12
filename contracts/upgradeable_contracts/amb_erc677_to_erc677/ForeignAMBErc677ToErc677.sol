@@ -95,4 +95,14 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677, MediatorBalanceStor
         _setMediatorBalance(mediatorBalance().sub(_value));
         erc677token().safeTransfer(_recipient, _value);
     }
+
+    /**
+    * @dev Allows to transfer any locked token on this contract that is not part of the bridge operations.
+    * @param _token address of the token, if it is not provided, native tokens will be transferred.
+    * @param _to address that will receive the locked tokens on this contract.
+    */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner validAddress(_to) {
+        require(_token != address(_erc677token()));
+        claimValues(_token, _to);
+    }
 }

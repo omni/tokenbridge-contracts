@@ -147,7 +147,12 @@ contract BasicAMBErc677ToErc677 is
         }
     }
 
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
+    /**
+    * @dev Allows to transfer any locked token on this contract.
+    * @param _token address of the token, if it is not provided, native tokens will be transferred.
+    * @param _to address that will receive the locked tokens on this contract.
+    */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner validAddress(_to) {
         claimValues(_token, _to);
     }
 }

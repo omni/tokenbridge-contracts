@@ -309,23 +309,6 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
       })
     })
 
-    it('sends tokens to contract that does not contains onTokenTransfer method', async () => {
-      await addBridge(token, homeErcToErcContract.address).should.be.fulfilled
-      await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
-
-      const result = await token.transfer(validatorContract.address, minPerTx, { from: user }).should.be.fulfilled
-      expectEventInLogs(result.logs, 'Transfer', {
-        from: user,
-        to: validatorContract.address,
-        value: minPerTx
-      })
-      expectEventInLogs(result.logs, 'ContractFallbackCallFailed', {
-        from: user,
-        to: validatorContract.address,
-        value: minPerTx
-      })
-    })
-
     it('fail to send tokens to bridge contract out of limits', async () => {
       const lessThanMin = ether('0.0001')
       await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
@@ -588,7 +571,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
     })
   })
   describe('#transfer', async () => {
-    it('if transfer called on contract, onTokenTransfer is also invoked', async () => {
+    it('if transfer called on contract, onTokenTransfer is not invoked', async () => {
       const receiver = await ERC677ReceiverTest.new()
       expect(await receiver.from()).to.be.equal(ZERO_ADDRESS)
       expect(await receiver.value()).to.be.bignumber.equal(ZERO)
@@ -600,8 +583,8 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
 
       expect(await token.balanceOf(receiver.address)).to.be.bignumber.equal('1')
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
-      expect(await receiver.from()).to.be.equal(user)
-      expect(await receiver.value()).to.be.bignumber.equal('1')
+      expect(await receiver.from()).to.be.equal(ZERO_ADDRESS)
+      expect(await receiver.value()).to.be.bignumber.equal(ZERO)
       expect(await receiver.data()).to.be.equal(null)
       expect(logs[0].event).to.be.equal('Transfer')
     })

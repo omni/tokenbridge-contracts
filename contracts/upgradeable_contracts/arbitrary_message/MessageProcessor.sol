@@ -158,8 +158,7 @@ contract MessageProcessor is EternalStorage {
         address _executor,
         bytes32 _messageId,
         uint256 _gasLimit,
-        bytes1, /* dataType */
-        uint256, /* gasPrice */
+        uint8, /* dataType */
         uint256 _sourceChainId,
         bytes memory _data
     ) internal {

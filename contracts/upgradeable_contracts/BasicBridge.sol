@@ -50,7 +50,12 @@ contract BasicBridge is
         return uintStorage[REQUIRED_BLOCK_CONFIRMATIONS];
     }
 
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
+    /**
+     * @dev Withdraws the erc20 tokens or native coins from this contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
+    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner {
         claimValues(_token, _to);
     }
 

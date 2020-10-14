@@ -88,7 +88,7 @@ contract BasicAMBNativeToErc20 is
     * @param _token address of the token, if it is not provided, native tokens will be transferred.
     * @param _to address that will receive the locked tokens on this contract.
     */
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
+    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner {
         claimValues(_token, _to);
     }
 }

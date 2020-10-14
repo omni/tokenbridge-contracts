@@ -202,7 +202,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @param _receiver the address that will receive the tokens on the other network.
     */
     function fixMediatorBalance(address _token, address _receiver)
-        public
+        external
         onlyIfUpgradeabilityOwner
         validAddress(_receiver)
     {

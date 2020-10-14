@@ -136,7 +136,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20, MediatorBalanceStorage {
     * without the invocation of the required methods.
     * @param _receiver the address that will receive the tokens on the other network
     */
-    function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner validAddress(_receiver) {
+    function fixMediatorBalance(address _receiver) external onlyIfUpgradeabilityOwner validAddress(_receiver) {
         uint256 balance = address(this).balance;
         uint256 expectedBalance = mediatorBalance();
         require(balance > expectedBalance);

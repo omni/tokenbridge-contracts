@@ -10,7 +10,7 @@ const { expect } = require('chai')
 const { shouldBehaveLikeBasicAMBErc677ToErc677 } = require('./AMBErc677ToErc677Behavior.test')
 const { ether } = require('../helpers/helpers')
 const { getEvents, strip0x } = require('../helpers/helpers')
-const { ERROR_MSG, toBN } = require('../setup')
+const { ERROR_MSG, toBN, ZERO_ADDRESS } = require('../setup')
 
 const ZERO = toBN(0)
 const halfEther = ether('0.5')
@@ -404,6 +404,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(events.length).to.be.equal(1)
 
       await foreignBridge.fixMediatorBalance(owner, { from: user }).should.be.rejected
+      await foreignBridge.fixMediatorBalance(ZERO_ADDRESS, { from: owner }).should.be.rejected
       await foreignBridge.fixMediatorBalance(owner, { from: owner }).should.be.fulfilled
       await foreignBridge.fixMediatorBalance(owner, { from: owner }).should.be.rejected
 

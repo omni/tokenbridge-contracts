@@ -53,7 +53,7 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677, MediatorBalanceStor
      * without the invocation of the required methods.
      * @param _receiver the address that will receive the tokens on the other network
      */
-    function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
+    function fixMediatorBalance(address _receiver) external onlyIfUpgradeabilityOwner validAddress(_receiver) {
         uint256 balance = _erc677token().balanceOf(address(this));
         uint256 expectedBalance = mediatorBalance();
         require(balance > expectedBalance);

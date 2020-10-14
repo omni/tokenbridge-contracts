@@ -34,7 +34,13 @@ contract BasicForeignBridgeErcToErc is BasicForeignBridge {
         return 0xba4690f5; // bytes4(keccak256(abi.encodePacked("erc-to-erc-core")))
     }
 
+    /**
+     * @dev Withdraws the erc20 tokens or native coins from this contract. Bridged token cannot be withdrawn by this function.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
     function claimTokens(address _token, address _to) public {
+        // Since bridged tokens are locked at this contract, it is not allowed to claim them with the use of claimTokens function
         require(_token != address(erc20token()));
         super.claimTokens(_token, _to);
     }

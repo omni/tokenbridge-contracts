@@ -126,6 +126,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20, MediatorBalanceStorage {
     * @param _to address that will receive the locked tokens on this contract.
     */
     function claimTokens(address _token, address _to) public {
+        // Since bridged coins are locked at this contract, it is not allowed to claim them with the use of claimTokens function
         require(_token != address(0));
         super.claimTokens(_token, _to);
     }
@@ -135,7 +136,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20, MediatorBalanceStorage {
     * without the invocation of the required methods.
     * @param _receiver the address that will receive the tokens on the other network
     */
-    function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
+    function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner validAddress(_receiver) {
         uint256 balance = address(this).balance;
         uint256 expectedBalance = mediatorBalance();
         require(balance > expectedBalance);

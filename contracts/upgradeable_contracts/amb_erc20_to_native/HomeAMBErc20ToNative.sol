@@ -207,7 +207,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
     * @param _token address of the token.
     * @param _to address that will receive the locked tokens on this contract.
     */
-    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner validAddress(_to) {
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
         require(_token != address(0));
         claimValues(_token, _to);
     }
@@ -217,7 +217,7 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
     * without the invocation of the required methods.
     * @param _receiver the address that will receive the tokens on the other network
     */
-    function fixMediatorBalance(address _receiver) external onlyIfUpgradeabilityOwner {
+    function fixMediatorBalance(address _receiver) external onlyIfUpgradeabilityOwner validAddress(_receiver) {
         uint256 balance = address(this).balance;
         uint256 available = maxAvailablePerTx();
         if (balance > available) {

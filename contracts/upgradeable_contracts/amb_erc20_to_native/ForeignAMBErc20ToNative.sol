@@ -108,7 +108,8 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     * @param _token address of the token, if it is not provided, native tokens will be transferred.
     * @param _to address that will receive the locked tokens on this contract.
     */
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
+    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner {
+        // Since bridged tokens are locked at this contract, it is not allowed to claim them with the use of claimTokens function
         require(_token != address(_erc677token()));
         claimValues(_token, _to);
     }
@@ -118,7 +119,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     * without the invocation of the required methods.
     * @param _receiver the address that will receive the native coins on the other network
     */
-    function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner {
+    function fixMediatorBalance(address _receiver) public onlyIfUpgradeabilityOwner validAddress(_receiver) {
         uint256 balance = _erc677token().balanceOf(address(this));
         uint256 expectedBalance = mediatorBalance();
         require(balance > expectedBalance);

@@ -125,10 +125,10 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20, MediatorBalanceStorage {
     * @param _token address of the token.
     * @param _to address that will receive the locked tokens on this contract.
     */
-    function claimTokens(address _token, address _to) public {
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
         // Since bridged coins are locked at this contract, it is not allowed to claim them with the use of claimTokens function
         require(_token != address(0));
-        super.claimTokens(_token, _to);
+        claimValues(_token, _to);
     }
 
     /**

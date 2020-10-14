@@ -108,7 +108,7 @@ contract ForeignAMBErc20ToNative is BasicAMBErc20ToNative, ReentrancyGuard, Base
     * @param _token address of the token, if it is not provided, native tokens will be transferred.
     * @param _to address that will receive the locked tokens on this contract.
     */
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner {
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
         // Since bridged tokens are locked at this contract, it is not allowed to claim them with the use of claimTokens function
         require(_token != address(_erc677token()));
         claimValues(_token, _to);

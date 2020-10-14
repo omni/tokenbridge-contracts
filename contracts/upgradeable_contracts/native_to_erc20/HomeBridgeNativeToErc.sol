@@ -94,7 +94,6 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
@@ -103,7 +102,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);
         _setExecutionLimits(_foreignDailyLimitForeignMaxPerTxArray);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
     }
 
     function onSignaturesCollected(bytes _message) internal {

@@ -43,7 +43,6 @@ contract BasicAMBNativeToErc20 is
         address _feeManager
     ) internal {
         require(!isInitialized());
-        require(_owner != address(0));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
@@ -52,7 +51,7 @@ contract BasicAMBNativeToErc20 is
         _setExecutionLimits(_executionDailyLimitExecutionMaxPerTxArray);
         _setDecimalShift(_decimalShift);
         _setFeeManagerContract(_feeManager);
-        setOwner(_owner);
+        _setOwner(_owner);
     }
 
     /**

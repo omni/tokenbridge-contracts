@@ -55,14 +55,14 @@ contract Ownable is EternalStorage {
     * @param newOwner the address to transfer ownership to.
     */
     function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0));
-        setOwner(newOwner);
+        _setOwner(newOwner);
     }
 
     /**
     * @dev Sets a new owner address
     */
-    function setOwner(address newOwner) internal {
+    function _setOwner(address newOwner) internal {
+        require(newOwner != address(0));
         emit OwnershipTransferred(owner(), newOwner);
         addressStorage[OWNER] = newOwner;
     }

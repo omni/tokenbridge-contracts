@@ -144,6 +144,18 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         owner
       ).should.be.rejected
 
+      // not valid owner
+      await contract.initialize(
+        bridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        ZERO_ADDRESS
+      ).should.be.rejected
+
       const { logs } = await contract.initialize(
         bridgeContract.address,
         mediatorContract.address,

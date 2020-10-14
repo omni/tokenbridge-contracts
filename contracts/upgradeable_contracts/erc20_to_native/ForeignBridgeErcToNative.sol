@@ -19,8 +19,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_owner != address(0));
-        require(_bridgeOnOtherSide != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
@@ -30,7 +28,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
         _setExecutionLimits(_homeDailyLimitHomeMaxPerTxArray);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
         setInitialize();
 

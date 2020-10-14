@@ -11,11 +11,9 @@ library ArbitraryMessage {
     * offset 104             : 4 bytes  :: uint32  - gasLimit
     * offset 108             : 1 bytes  :: uint8   - source chain id length (X)
     * offset 109             : 1 bytes  :: uint8   - destination chain id length (Y)
-    * offset 110             : 1 bytes  :: bytes1  - dataType
-    * (optional) 111         : 32 bytes :: uint256 - gasPrice
-    * (optional) 111         : 1 bytes  :: bytes1  - gasPriceSpeed
-    * offset 111/143/112     : X bytes  :: bytes   - source chain id
-    * offset 111/143/112 + X : Y bytes  :: bytes   - destination chain id
+    * offset 110             : 1 bytes  :: uint8   - dataType
+    * offset 111             : X bytes  :: bytes   - source chain id
+    * offset 111 + X         : Y bytes  :: bytes   - destination chain id
 
     * NOTE: when message structure is changed, make sure that MESSAGE_PACKING_VERSION from VersionableAMB is updated as well
     * NOTE: assembly code uses calldatacopy, make sure that message is passed as the first argument in the calldata
@@ -29,9 +27,8 @@ library ArbitraryMessage {
             address sender,
             address executor,
             uint32 gasLimit,
-            bytes1 dataType,
+            uint8 dataType,
             uint256[2] chainIds,
-            uint256 gasPrice,
             bytes memory data
         )
     {
@@ -50,22 +47,15 @@ library ArbitraryMessage {
             executor := shr(96, blob)
             gasLimit := and(shr(64, blob), 0xffffffff)
 
+            dataType := byte(26, blob)
+            if gt(dataType, 0) {
+                // for now, only 0 datatype is supported - regular AMB calls
+                // other dataType values are kept reserved for future use
+                revert(0, 0)
+            }
+
             // load source chain id length
             let chainIdLength := byte(24, blob)
-
-            dataType := and(shl(208, blob), 0xFF00000000000000000000000000000000000000000000000000000000000000)
-            switch dataType
-                case 0x0000000000000000000000000000000000000000000000000000000000000000 {
-                    gasPrice := 0
-                }
-                case 0x0100000000000000000000000000000000000000000000000000000000000000 {
-                    gasPrice := mload(add(_data, 111)) // 32
-                    srcdataptr := add(srcdataptr, 32)
-                }
-                case 0x0200000000000000000000000000000000000000000000000000000000000000 {
-                    gasPrice := 0
-                    srcdataptr := add(srcdataptr, 1)
-                }
 
             // at this moment srcdataptr points to sourceChainId
 

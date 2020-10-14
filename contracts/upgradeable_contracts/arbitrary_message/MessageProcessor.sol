@@ -194,6 +194,19 @@ contract MessageProcessor is EternalStorage {
         setMessageSender(_sender);
         setMessageId(_messageId);
         setMessageSourceChainId(_sourceChainId);
+
+        // After EIP-150, max gas cost allowed to be passed to the internal call is equal to the 63/64 of total gas left.
+        // In reallity, min(gasLimit, 63/64 * gasleft()) will be used as the call gas limit.
+        // Imagine a situation, when message requires 10000000 gas to be executed successfully.
+        // Also suppose, that at this point, gasleft() is equal to 10158000, so the callee will receive ~ 10158000 * 63 / 64 = 9999300 gas.
+        // That amount of gas is not enough, so the call will fail. At the same time,
+        // even if the callee failed the bridge contract still has ~ 158000 gas to
+        // finish its execution and it will be enough. The internal call fails but
+        // only because the oracle provides incorrect gas limit for the transaction
+        // This check is needed here in order to force contract to pass exactly the requested amount of gas.
+        // Avoiding it may leed to the unwanted message failure in some extreme cases.
+        require((gasleft() * 63) / 64 > _gas);
+
         bool status = _contract.call.gas(_gas)(_data);
         setMessageSender(address(0));
         setMessageId(bytes32(0));

@@ -82,7 +82,7 @@ contract BaseMediatorFeeManager is Ownable {
     function addRewardAccount(address _account) external onlyOwner {
         require(isValidAccount(_account));
         require(!isRewardAccount(_account));
-        require(rewardAccounts.length.add(1) < MAX_REWARD_ACCOUNTS);
+        require(rewardAccounts.length < MAX_REWARD_ACCOUNTS);
         rewardAccounts.push(_account);
     }
 

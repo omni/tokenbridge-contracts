@@ -143,6 +143,7 @@ contract HomeAMBNativeToErc20 is BasicAMBNativeToErc20 {
     * @param _to address that will receive the locked tokens on this contract.
     */
     function claimTokens(address _token, address _to) public {
+        // Since bridged coins are locked at this contract, it is not allowed to claim them with the use of claimTokens function
         require(_token != address(0));
         super.claimTokens(_token, _to);
     }

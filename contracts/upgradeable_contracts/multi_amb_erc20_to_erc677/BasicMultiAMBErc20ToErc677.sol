@@ -76,7 +76,8 @@ contract BasicMultiAMBErc20ToErc677 is
     * @param _to address of tokens receiver
     */
     function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
-        require(_token == address(0) || !isTokenRegistered(_token)); // native coins or token not registered
+        // Only unregistered tokens and native coins are allowed to be claimed with the use of this function
+        require(_token == address(0) || !isTokenRegistered(_token));
         claimValues(_token, _to);
     }
 

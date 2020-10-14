@@ -153,6 +153,8 @@ contract BasicAMBErc677ToErc677 is
      * @param _to address of the tokens/coins receiver.
      */
     function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner {
+        // For home side of the bridge, tokens are not locked at the contract, they are minted and burned instead.
+        // So, its is safe to allow claiming of any tokens. Native coins are allowed as well.
         claimValues(_token, _to);
     }
 }

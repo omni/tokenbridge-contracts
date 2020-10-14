@@ -47,6 +47,7 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
      * @param _to address of the tokens/coins receiver.
      */
     function claimTokens(address _token, address _to) public {
+        // Since bridged tokens are locked at this contract, it is not allowed to claim them with the use of claimTokens function
         require(_token != address(erc20token()));
         // Chai token is not claimable if investing into Chai is enabled
         require(_token != address(chaiToken()) || !isChaiTokenEnabled());

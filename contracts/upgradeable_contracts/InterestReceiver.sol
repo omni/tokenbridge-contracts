@@ -101,6 +101,7 @@ contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
     * @param _to address of tokens receiver
     */
     function claimTokens(address _token, address _to) external onlyOwner {
+        // Only tokens other than CHAI/DAI can be claimed from this contract.
         require(_token != address(chaiToken()) && _token != address(daiToken()));
         claimValues(_token, _to);
     }

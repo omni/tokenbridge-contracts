@@ -82,7 +82,7 @@ contract BaseMediatorFeeManager is Ownable {
     function addRewardAccount(address _account) external onlyOwner {
         require(isValidAccount(_account));
         require(!isRewardAccount(_account));
-        require(rewardAccounts.length.add(1) < MAX_REWARD_ACCOUNTS);
+        require(rewardAccounts.length < MAX_REWARD_ACCOUNTS);
         rewardAccounts.push(_account);
     }
 
@@ -154,6 +154,12 @@ contract BaseMediatorFeeManager is Ownable {
     */
     function distributeFee(uint256 _fee) internal {
         uint256 numOfAccounts = rewardAccountsCount();
+        if (numOfAccounts == 0) {
+            // In case there are no reward accounts defined, no actual fee distribution will happen.
+            // Funds will be kept locked on the contract until some of the reward accounts will be added.
+            // After it, locked funds ca be distributed by a call to onTokenTransfer() of this contract, which can be done by anyone.
+            return;
+        }
         uint256 feePerAccount = _fee.div(numOfAccounts);
         uint256 randomAccountIndex;
         uint256 diff = _fee.sub(feePerAccount.mul(numOfAccounts));

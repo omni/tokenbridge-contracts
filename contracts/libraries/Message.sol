@@ -83,6 +83,9 @@ library Message {
             s := mload(add(signature, 0x40))
             v := mload(add(signature, 0x60))
         }
+        require(uint8(v) == 27 || uint8(v) == 28);
+        require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0);
+
         return ecrecover(hashMessage(message, isAMBMessage), uint8(v), r, s);
     }
 

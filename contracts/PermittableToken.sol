@@ -116,6 +116,9 @@ contract PermittableToken is ERC677BridgeToken {
         require(_spender != address(0));
         require(_expiry == 0 || _now() <= _expiry);
 
+        require(_v == 27 || _v == 28);
+        require(uint256(_s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0);
+
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",

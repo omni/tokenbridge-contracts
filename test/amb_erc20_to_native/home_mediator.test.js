@@ -969,6 +969,8 @@ contract('HomeAMBErc20ToNative', async accounts => {
         // only owner can call the method
         await contract.fixMediatorBalance(user, { from: user }).should.be.rejected
 
+        await contract.fixMediatorBalance(ZERO_ADDRESS, { from: owner }).should.be.rejected
+
         await contract.fixMediatorBalance(user, { from: owner }).should.be.fulfilled
 
         expect(await contract.totalBurntCoins()).to.be.bignumber.equal(ether('0.1'))

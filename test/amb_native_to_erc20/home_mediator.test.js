@@ -1442,6 +1442,8 @@ contract('HomeAMBNativeToErc20', async accounts => {
       // only owner can call the method
       await contract.fixMediatorBalance(user, { from: user }).should.be.rejectedWith(ERROR_MSG)
 
+      await contract.fixMediatorBalance(ZERO_ADDRESS, { from: owner }).should.be.rejected
+
       await contract.fixMediatorBalance(user, { from: owner }).should.be.fulfilled
 
       // imbalance was already fixed

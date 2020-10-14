@@ -18,7 +18,7 @@ contract RewardableBridge is Ownable, FeeTypes {
     bytes4 internal constant DISTRIBUTE_FEE_FROM_SIGNATURES = 0x59d78464; // distributeFeeFromSignatures(uint256)
     bytes4 internal constant DISTRIBUTE_FEE_FROM_AFFIRMATION = 0x054d46ec; // distributeFeeFromAffirmation(uint256)
 
-    function _getFee(bytes32 _feeType) internal view returns (uint256) {
+    function _getFee(bytes32 _feeType) internal view validFeeType(_feeType) returns (uint256) {
         uint256 fee;
         address feeManager = feeManagerContract();
         bytes4 method = _feeType == HOME_FEE ? GET_HOME_FEE : GET_FOREIGN_FEE;
@@ -61,7 +61,7 @@ contract RewardableBridge is Ownable, FeeTypes {
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
     }
 
-    function _setFee(address _feeManager, uint256 _fee, bytes32 _feeType) internal {
+    function _setFee(address _feeManager, uint256 _fee, bytes32 _feeType) internal validFeeType(_feeType) {
         bytes4 method = _feeType == HOME_FEE ? SET_HOME_FEE : SET_FOREIGN_FEE;
         require(_feeManager.delegatecall(abi.encodeWithSelector(method, _fee)));
     }

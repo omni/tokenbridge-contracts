@@ -95,6 +95,7 @@ contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
             daiToken().approve(address(bridgeContract), 0);
             emit RelayTokensFailed(receiverInXDai, finalDaiBalance);
         }
+        return true;
     }
 
     /**

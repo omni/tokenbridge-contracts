@@ -865,6 +865,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
       await contract.fixMediatorBalance(token.address, owner, { from: user }).should.be.rejected
       await contract.fixMediatorBalance(ZERO_ADDRESS, owner, { from: owner }).should.be.rejected
+      await contract.fixMediatorBalance(token.address, ZERO_ADDRESS, { from: owner }).should.be.rejected
       await contract.fixMediatorBalance(token.address, owner, { from: owner }).should.be.fulfilled
       await contract.fixMediatorBalance(token.address, owner, { from: owner }).should.be.rejected
 

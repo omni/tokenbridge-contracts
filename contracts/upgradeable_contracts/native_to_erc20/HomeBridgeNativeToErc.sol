@@ -83,6 +83,18 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         return 0x92a8d7fe; // bytes4(keccak256(abi.encodePacked("native-to-erc-core")))
     }
 
+    /**
+    * @dev Allows to transfer any locked token on this contract that is not part of the bridge operations.
+    * Native tokens are not allowed to be claimed.
+    * @param _token address of the token.
+    * @param _to address that will receive the locked tokens on this contract.
+    */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        // Since bridged coins are locked at this contract, it is not allowed to claim them with the use of claimTokens function
+        require(_token != address(0));
+        claimValues(_token, _to);
+    }
+
     function _initialize(
         address _validatorContract,
         uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]

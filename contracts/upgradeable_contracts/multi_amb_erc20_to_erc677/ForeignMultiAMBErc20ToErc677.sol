@@ -200,7 +200,11 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @param _token address of the token contract.
     * @param _receiver the address that will receive the tokens on the other network.
     */
-    function fixMediatorBalance(address _token, address _receiver) public onlyIfUpgradeabilityOwner {
+    function fixMediatorBalance(address _token, address _receiver)
+        external
+        onlyIfUpgradeabilityOwner
+        validAddress(_receiver)
+    {
         require(isTokenRegistered(_token));
         uint256 balance = ERC677(_token).balanceOf(address(this));
         uint256 expectedBalance = mediatorBalance(_token);

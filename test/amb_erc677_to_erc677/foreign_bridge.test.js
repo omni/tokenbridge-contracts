@@ -10,7 +10,7 @@ const { expect } = require('chai')
 const { shouldBehaveLikeBasicAMBErc677ToErc677 } = require('./AMBErc677ToErc677Behavior.test')
 const { ether } = require('../helpers/helpers')
 const { getEvents, strip0x } = require('../helpers/helpers')
-const { ERROR_MSG, toBN } = require('../setup')
+const { ERROR_MSG, toBN, ZERO_ADDRESS } = require('../setup')
 
 const ZERO = toBN(0)
 const halfEther = ether('0.5')
@@ -98,6 +98,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(events.length).to.be.equal(1)
       expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
       expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(halfEther)
     })
     it('should be able to specify a different receiver', async () => {
       // Given
@@ -126,6 +127,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(events.length).to.be.equal(1)
       expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
       expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(halfEther)
     })
   })
   describe('handleBridgedTokens', () => {
@@ -146,8 +148,9 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
         decimalShiftZero,
         owner
       ).should.be.fulfilled
-      await erc677Token.mint(foreignBridge.address, twoEthers, { from: owner }).should.be.fulfilled
-      await erc677Token.transferOwnership(foreignBridge.address)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      await erc677Token.transfer(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
+      await erc677Token.transfer(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
     })
     it('should transfer locked tokens on message from amb', async () => {
       // Given
@@ -156,6 +159,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       const initialEvents = await getEvents(erc677Token, { event: 'Transfer' })
       expect(initialEvents.length).to.be.equal(0)
       expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
 
       // can't be called by user
@@ -184,6 +188,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       // Then
       expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(oneEther)
       expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(oneEther)
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(oneEther)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
 
       const TokensBridgedEvent = await getEvents(foreignBridge, { event: 'TokensBridged' })
@@ -208,14 +213,16 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
           decimalShift,
           owner
         ).should.be.fulfilled
-        await erc677Token.mint(foreignBridge.address, twoEthers, { from: owner }).should.be.fulfilled
-        await erc677Token.transferOwnership(foreignBridge.address)
+        await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+        await erc677Token.transfer(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
+        await erc677Token.transfer(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
 
         const currentDay = await foreignBridge.getCurrentDay()
         expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
         const initialEvents = await getEvents(erc677Token, { event: 'Transfer' })
         expect(initialEvents.length).to.be.equal(0)
         expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
+        expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers)
         expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
 
         const valueOnForeign = toBN('1000')
@@ -242,6 +249,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
         // Then
         expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(valueOnHome)
         expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers.sub(valueOnForeign))
+        expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers.sub(valueOnForeign))
         expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(valueOnForeign)
 
         const TokensBridgedEvent = await getEvents(foreignBridge, { event: 'TokensBridged' })
@@ -258,6 +266,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       const initialEvents = await getEvents(erc677Token, { event: 'Transfer' })
       expect(initialEvents.length).to.be.equal(0)
       expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
 
       const outOfLimitValueData = await foreignBridge.contract.methods
@@ -278,6 +287,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       // Then
       expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
       expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
 
       expect(await foreignBridge.outOfLimitAmount()).to.be.bignumber.equal(twoEthers)
@@ -289,6 +299,188 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
 
       const TokensBridgedEvent = await getEvents(foreignBridge, { event: 'TokensBridged' })
       expect(TokensBridgedEvent.length).to.be.equal(0)
+    })
+  })
+
+  describe('fixFailedMessage', () => {
+    it('should update mediatorBalance ', async () => {
+      ambBridgeContract = await AMBMock.new()
+      await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
+      mediatorContract = await HomeAMBErc677ToErc677.new()
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+
+      foreignBridge = await ForeignAMBErc677ToErc677.new()
+
+      await foreignBridge.initialize(
+        ambBridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+      await erc677Token.transferOwnership(foreignBridge.address)
+
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+
+      // User transfer tokens
+      await erc677Token.transferAndCall(foreignBridge.address, oneEther, '0x', { from: user }).should.be.fulfilled
+
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(oneEther)
+
+      const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+      const transferMessageId = events[0].returnValues.messageId
+      // Given
+      expect(await foreignBridge.messageFixed(transferMessageId)).to.be.equal(false)
+
+      // When
+      const fixData = await foreignBridge.contract.methods.fixFailedMessage(transferMessageId).encodeABI()
+      await ambBridgeContract.executeMessageCall(
+        foreignBridge.address,
+        mediatorContract.address,
+        fixData,
+        exampleMessageId,
+        1000000
+      ).should.be.fulfilled
+
+      // Then
+      expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(ZERO)
+      expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+      expect(await erc677Token.totalSupply()).to.be.bignumber.equal(twoEthers)
+      expect(await foreignBridge.messageFixed(transferMessageId)).to.be.equal(true)
+    })
+  })
+
+  describe('fixMediatorBalance', () => {
+    let currentDay
+    beforeEach(async () => {
+      const storageProxy = await EternalStorageProxy.new()
+      foreignBridge = await ForeignAMBErc677ToErc677.new()
+      await storageProxy.upgradeTo('1', foreignBridge.address).should.be.fulfilled
+      foreignBridge = await ForeignAMBErc677ToErc677.at(storageProxy.address)
+
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+      await erc677Token.mint(foreignBridge.address, twoEthers, { from: owner }).should.be.fulfilled
+
+      ambBridgeContract = await AMBMock.new()
+      await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
+      await foreignBridge.initialize(
+        ambBridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      currentDay = await foreignBridge.getCurrentDay()
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+      const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(initialEvents.length).to.be.equal(0)
+    })
+
+    it('should allow to fix extra mediator balance', async () => {
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(ZERO)
+      expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
+
+      await erc677Token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
+      await foreignBridge.setDailyLimit(ether('3')).should.be.fulfilled
+      await foreignBridge.setMaxPerTx(twoEthers).should.be.fulfilled
+
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(halfEther)
+      expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+      let events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+
+      await foreignBridge.fixMediatorBalance(owner, { from: user }).should.be.rejected
+      await foreignBridge.fixMediatorBalance(ZERO_ADDRESS, { from: owner }).should.be.rejected
+      await foreignBridge.fixMediatorBalance(owner, { from: owner }).should.be.fulfilled
+      await foreignBridge.fixMediatorBalance(owner, { from: owner }).should.be.rejected
+
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers.add(halfEther))
+      expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
+
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(2)
+    })
+
+    it('should allow to fix extra mediator balance with respect to limits', async () => {
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(ZERO)
+      expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
+
+      await erc677Token.transferAndCall(foreignBridge.address, halfEther, '0x', { from: user }).should.be.fulfilled
+      await foreignBridge.setMinPerTx('1').should.be.fulfilled
+      await foreignBridge.setMaxPerTx(halfEther).should.be.fulfilled
+      await foreignBridge.setDailyLimit(ether('1.25')).should.be.fulfilled
+
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(halfEther)
+      expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(halfEther)
+      let events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(1)
+
+      await foreignBridge.fixMediatorBalance(owner, { from: user }).should.be.rejected
+      // should fix 0.5 ether
+      await foreignBridge.fixMediatorBalance(owner, { from: owner }).should.be.fulfilled
+
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(oneEther)
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(oneEther)
+
+      // should fix 0.25 ether
+      await foreignBridge.fixMediatorBalance(owner, { from: owner }).should.be.fulfilled
+      // no remaining daily quota
+      await foreignBridge.fixMediatorBalance(owner, { from: owner }).should.be.rejected
+
+      await foreignBridge.setDailyLimit(oneEther).should.be.fulfilled
+
+      // no remaining daily quota
+      await foreignBridge.fixMediatorBalance(owner, { from: owner }).should.be.rejected
+
+      expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(ether('1.25'))
+      expect(await foreignBridge.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ether('1.25'))
+
+      expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+      expect(events.length).to.be.equal(3)
+    })
+  })
+
+  describe('claimTokens', () => {
+    it('should not allow to claim bridged token', async () => {
+      const storageProxy = await EternalStorageProxy.new()
+      foreignBridge = await ForeignAMBErc677ToErc677.new()
+      await storageProxy.upgradeTo('1', foreignBridge.address).should.be.fulfilled
+      foreignBridge = await ForeignAMBErc677ToErc677.at(storageProxy.address)
+      erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await erc677Token.mint(foreignBridge.address, twoEthers, { from: owner }).should.be.fulfilled
+
+      ambBridgeContract = await AMBMock.new()
+      await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
+      await foreignBridge.initialize(
+        ambBridgeContract.address,
+        mediatorContract.address,
+        erc677Token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      await foreignBridge.claimTokens(erc677Token.address, accounts[3], { from: accounts[3] }).should.be.rejected
+      await foreignBridge.claimTokens(erc677Token.address, accounts[3], { from: owner }).should.be.rejected
     })
   })
 })

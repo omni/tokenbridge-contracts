@@ -121,6 +121,11 @@ contract HomeBridgeErcToErc is
         setErc677token(_erc677token);
     }
 
+    /**
+     * @dev Withdraws erc20 tokens or native coins from the token contract. It is required since the bridge contract is the owner of the token contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
         IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }

@@ -146,8 +146,4 @@ contract BasicAMBErc677ToErc677 is
             passMessage(recipient, recipient, valueToUnlock);
         }
     }
-
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
-        claimValues(_token, _to);
-    }
 }

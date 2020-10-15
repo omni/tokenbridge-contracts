@@ -1083,7 +1083,7 @@ contract('HomeBridge', async accounts => {
       expect(await tokenMock.balanceOf(homeBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await tokenMock.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
-    it('should work for native coins', async () => {
+    it('should not work for native coins', async () => {
       const storageProxy = await EternalStorageProxy.new()
       const data = homeContract.contract.methods
         .initialize(
@@ -1099,14 +1099,11 @@ contract('HomeBridge', async accounts => {
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
       const homeBridge = await HomeBridge.at(storageProxy.address)
 
-      const balanceBefore = toBN(await web3.eth.getBalance(accounts[3]))
-
       await homeBridge.sendTransaction({ from: accounts[2], value: halfEther }).should.be.fulfilled
       expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(halfEther)
 
-      await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.fulfilled
-      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(ZERO)
-      expect(toBN(await web3.eth.getBalance(accounts[3]))).to.be.bignumber.equal(balanceBefore.add(halfEther))
+      await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: accounts[3] }).should.be.rejected
+      await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.rejected
     })
   })
 

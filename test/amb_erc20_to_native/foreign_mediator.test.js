@@ -751,6 +751,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       expect(events.length).to.be.equal(1)
 
       await contract.fixMediatorBalance(owner, { from: user }).should.be.rejected
+      await contract.fixMediatorBalance(ZERO_ADDRESS, { from: owner }).should.be.rejected
       await contract.fixMediatorBalance(owner, { from: owner }).should.be.fulfilled
       await contract.fixMediatorBalance(owner, { from: owner }).should.be.rejected
 

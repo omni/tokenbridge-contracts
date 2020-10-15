@@ -207,9 +207,9 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
     * @param _to address that will receive the locked tokens on this contract.
     */
     function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
-        // Since native coins are being minted by the blockReward contract and burned by sending them to the address(0),
-        // they are not locked at the contract during the normal operation.
-        // So, any erc20 token and native coins can be safely claimed.
+        // In case native coins were forced into this contract by using a selfdestruct opcode,
+        // they should be handled by a call to fixMediatorBalance, instead of using a claimTokens function.
+        require(_token != address(0));
         claimValues(_token, _to);
     }
 

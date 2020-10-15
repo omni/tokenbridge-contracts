@@ -29,6 +29,7 @@ contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
     */
     constructor(address _owner, address _bridgeContract, address _receiverInXDai) public {
         require(AddressUtils.isContract(_bridgeContract));
+        require(_receiverInXDai != address(0));
         _transferOwnership(_owner);
         bridgeContract = _bridgeContract;
         receiverInXDai = _receiverInXDai;
@@ -49,6 +50,7 @@ contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
     * @param _receiverInXDai address of new receiver account in the xDai chain
     */
     function setReceiverInXDai(address _receiverInXDai) external onlyOwner {
+        require(_receiverInXDai != address(0));
         receiverInXDai = _receiverInXDai;
     }
 
@@ -93,6 +95,7 @@ contract InterestReceiver is ERC677Receiver, Ownable, Claimable, TokenSwapper {
             daiToken().approve(address(bridgeContract), 0);
             emit RelayTokensFailed(receiverInXDai, finalDaiBalance);
         }
+        return true;
     }
 
     /**

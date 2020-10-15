@@ -1598,6 +1598,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         })
 
         it('should update bridge contract address', async () => {
+          await interestRecipient.setReceiverInXDai(ZERO_ADDRESS, { from: receiverOwner }).should.be.rejected
           await interestRecipient.setReceiverInXDai(accounts[8], { from: receiverOwner }).should.be.fulfilled
           expect(await interestRecipient.receiverInXDai()).to.be.equal(accounts[8])
         })

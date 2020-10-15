@@ -98,6 +98,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
     ) external onlyMediator {
         string memory name = _name;
         string memory symbol = _symbol;
+        require(bytes(name).length > 0 || bytes(symbol).length > 0);
         if (bytes(name).length == 0) {
             name = symbol;
         } else if (bytes(symbol).length == 0) {

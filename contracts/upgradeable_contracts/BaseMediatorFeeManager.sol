@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 
 /**
 * @title BaseMediatorFeeManager
@@ -32,8 +33,10 @@ contract BaseMediatorFeeManager is Ownable {
     * @param _owner address of the owner of the fee manager contract.
     * @param _fee the fee percentage amount.
     * @param _rewardAccountList list of addresses that will receive the fee rewards.
+    * @param _mediatorContract address of the mediator contract used together with this fee manager.
     */
     constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _mediatorContract) public {
+        require(AddressUtils.isContract(_mediatorContract));
         require(_rewardAccountList.length > 0 && _rewardAccountList.length <= MAX_REWARD_ACCOUNTS);
         _transferOwnership(_owner);
         _setFee(_fee);

@@ -631,6 +631,8 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
         // Mint some extra tokens for the `holder`
         await token.mint(holder, '10000', { from: owner }).should.be.fulfilled
         ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
+        web3.eth.accounts.wallet.add(privateKey)
+        await web3.eth.sendTransaction({ from: owner, to: holder, value: oneEther })
       })
       it('should permit', async () => {
         // Holder signs the `permit` params with their privateKey
@@ -749,6 +751,61 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
         // Spender can't transfer the remaining holder's funds because of expiry
         await token.setNow(901).should.be.fulfilled
         await token.transferFrom(holder, accounts[9], '4000', { from: spender }).should.be.rejectedWith(ERROR_MSG)
+      })
+      it('should reset expiration on subsequent approve', async () => {
+        expiry = 900
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+        await token.setNow(800).should.be.fulfilled
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        const data = await token.contract.methods.approve(spender, -1).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
+      })
+      it('should reset expiration on subsequent increaseAllowance', async () => {
+        expiry = 900
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+        await token.setNow(800).should.be.fulfilled
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        let data = await token.contract.methods.approve(spender, -2).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        data = await token.contract.methods.increaseAllowance(spender, 1).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
       })
       it('should disallow unlimited allowance', async () => {
         expiry = 900

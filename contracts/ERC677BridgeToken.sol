@@ -65,6 +65,14 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
         return true;
     }
 
+    /**
+     * @dev Internal function that calls onTokenTransfer callback on the receiver after the successful transfer.
+     * Since it is not present in the original ERC677 standard, the callback is only called on the bridge contract,
+     * in order to simplify UX. In other cases, this token complies with the ERC677/ERC20 standard.
+     * @param _from tokens sender address.
+     * @param _to tokens receiver address.
+     * @param _value amount of sent tokens.
+     */
     function callAfterTransfer(address _from, address _to, uint256 _value) internal {
         if (isBridge(_to)) {
             require(contractFallback(_from, _to, _value, new bytes(0)));

@@ -390,12 +390,12 @@ contract('HomeAMBErc20ToNative', async accounts => {
       expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal(oneEther)
     })
 
-    it('should not work for native coins', async () => {
+    it('should work for native coins', async () => {
       // Contract doesn't have a fallback method to accept native coins so it transfers using a self destruct contract
       await Sacrifice.new(contract.address, { value: oneEther }).catch(() => {})
       expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(oneEther)
 
-      await contract.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.rejected
+      await contract.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.fulfilled
     })
   })
 

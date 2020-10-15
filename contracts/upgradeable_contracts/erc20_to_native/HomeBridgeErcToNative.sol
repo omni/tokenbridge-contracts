@@ -119,6 +119,18 @@ contract HomeBridgeErcToNative is
         _setBlockRewardContract(_blockReward);
     }
 
+    /**
+     * @dev Withdraws the erc20 tokens or native coins from this contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        // Since native coins are being minted by the blockReward contract and burned by sending them to the address(0),
+        // they are not locked at the contract during the normal operation.
+        // So, any erc20 token and native coins can be safely claimed.
+        claimValues(_token, _to);
+    }
+
     function _initialize(
         address _validatorContract,
         uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]

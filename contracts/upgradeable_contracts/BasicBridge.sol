@@ -51,15 +51,6 @@ contract BasicBridge is
     }
 
     /**
-     * @dev Withdraws the erc20 tokens or native coins from this contract.
-     * @param _token address of the claimed token or address(0) for native coins.
-     * @param _to address of the tokens/coins receiver.
-     */
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner {
-        claimValues(_token, _to);
-    }
-
-    /**
     * @dev Internal function for updating fallback gas price value.
     * @param _gasPrice new value for the gas price, zero gas price is allowed.
     */

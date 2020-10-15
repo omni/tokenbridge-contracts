@@ -419,6 +419,34 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await homeToken.decimals()).to.be.bignumber.equal('18')
       })
 
+      it('should not register new token with empty name and empty symbol', async () => {
+        const data1 = await contract.contract.methods
+          .deployAndHandleBridgedTokens(accounts[0], '', '', 18, user, oneEther.toString(10))
+          .encodeABI()
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data1,
+          exampleMessageId,
+          2000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(false)
+
+        const data2 = await contract.contract.methods
+          .deployAndHandleBridgedTokens(accounts[1], 'TEST', '', 18, user, oneEther.toString(10))
+          .encodeABI()
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data2,
+          otherMessageId,
+          2000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(otherMessageId)).to.be.equal(true)
+      })
+
       for (const decimals of [3, 18, 20]) {
         it(`should initialize limits according to decimals = ${decimals}`, async () => {
           const f1 = toBN(`1${'0'.repeat(decimals)}`)

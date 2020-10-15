@@ -38,7 +38,6 @@ contract('ForeignAMBErc20ToNative', async accounts => {
     await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
     otherSideMediator = await HomeAMBErc20ToNative.new()
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
-    await token.setBridgeContract(contract.address)
   })
 
   describe('initialize', () => {
@@ -373,8 +372,8 @@ contract('ForeignAMBErc20ToNative', async accounts => {
 
     describe('handleBridgedTokens', () => {
       it('should unlock tokens on message from amb', async () => {
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
         expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
 
@@ -429,8 +428,8 @@ contract('ForeignAMBErc20ToNative', async accounts => {
             owner,
             token.address
           ).should.be.fulfilled
-          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+          await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
+          await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
           expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
           expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
 
@@ -462,8 +461,8 @@ contract('ForeignAMBErc20ToNative', async accounts => {
         })
 
         it('should revert when out of execution limits on message from amb', async () => {
-          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-          await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+          await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
+          await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
           expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
           expect(await contract.mediatorBalance()).to.be.bignumber.equal(twoEthers)
 
@@ -515,7 +514,7 @@ contract('ForeignAMBErc20ToNative', async accounts => {
       })
 
       it('should be a failed transaction', async () => {
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
         // Given
         const data = await contract.contract.methods.handleBridgedTokens(user, value.toString()).encodeABI()
 

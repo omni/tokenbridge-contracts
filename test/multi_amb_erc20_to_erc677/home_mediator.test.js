@@ -97,7 +97,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
   async function bridgeToken(token, value = oneEther, forceFail = false) {
     await token.mint(user, value).should.be.fulfilled
-    const { receipt } = await token.transfer(otherSideMediator.address, value, { from: user }).should.be.fulfilled
+    const { receipt } = await token.transferAndCall(otherSideMediator.address, value, '0x', { from: user }).should.be
+      .fulfilled
     const encodedData = strip0x(
       web3.eth.abi.decodeParameters(
         ['bytes'],

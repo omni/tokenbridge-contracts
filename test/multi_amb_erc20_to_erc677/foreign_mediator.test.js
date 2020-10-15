@@ -44,10 +44,6 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
   })
 
   const sendFunctions = [
-    async function simpleTransfer() {
-      await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-      return user
-    },
     async function emptyAlternativeReceiver() {
       await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
       return user
@@ -221,7 +217,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       await token.mint(user, oneEther).should.be.fulfilled
       expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
 
-      await token.transfer(contract.address, oneEther, { from: user }).should.be.fulfilled
+      await token.transferAndCall(contract.address, oneEther, '0x', { from: user }).should.be.fulfilled
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(oneEther)
 
@@ -329,7 +325,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           await contract.setExecutionDailyLimit(token.address, ether('5'), { from: owner }).should.be.rejected
           await contract.setExecutionMaxPerTx(token.address, ether('1.5'), { from: owner }).should.be.rejected
 
-          await token.transfer(contract.address, value, { from: user })
+          await token.transferAndCall(contract.address, value, '0x', { from: user })
 
           await contract.setDailyLimit(token.address, ether('5'), { from: owner }).should.be.fulfilled
           await contract.setMaxPerTx(token.address, ether('1.5'), { from: owner }).should.be.fulfilled
@@ -513,7 +509,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
           token = await ERC677BridgeToken.new('TEST', 'TST', decimals)
           await token.mint(user, value.mul(f1).div(f2)).should.be.fulfilled
-          await token.transfer(contract.address, value.mul(f1).div(f2), { from: user }).should.be.fulfilled
+          await token.transferAndCall(contract.address, value.mul(f1).div(f2), '0x', { from: user }).should.be.fulfilled
 
           expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(dailyLimit.mul(f1).div(f2))
           expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(maxPerTx.mul(f1).div(f2))
@@ -530,7 +526,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       it(`should initialize limits according to decimals = 0`, async () => {
         token = await ERC677BridgeToken.new('TEST', 'TST', 0)
         await token.mint(user, '1').should.be.fulfilled
-        await token.transfer(contract.address, '1', { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, '1', '0x', { from: user }).should.be.fulfilled
 
         expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('10000')
         expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('100')
@@ -542,8 +538,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
     describe('handleBridgedTokens', () => {
       it('should unlock tokens on message from amb', async () => {
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
         expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(twoEthers)
 
@@ -605,8 +601,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should not allow to operate when global shutdown is enabled', async () => {
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
 
         const data = await contract.contract.methods
           .handleBridgedTokens(token.address, user, value.toString())
@@ -662,7 +658,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should be a failed transaction', async () => {
-        await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
+        await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
         // Given
         const data = await contract.contract.methods
           .handleBridgedTokens(token.address, user, value.toString())
@@ -857,7 +853,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(ZERO)
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
 
-      await token.transfer(contract.address, halfEther, { from: user }).should.be.fulfilled
+      await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
       await contract.setDailyLimit(token.address, ether('5')).should.be.fulfilled
       await contract.setMaxPerTx(token.address, ether('2')).should.be.fulfilled
 
@@ -884,7 +880,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(ZERO)
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
 
-      await token.transfer(contract.address, halfEther, { from: user }).should.be.fulfilled
+      await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
 
       expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))

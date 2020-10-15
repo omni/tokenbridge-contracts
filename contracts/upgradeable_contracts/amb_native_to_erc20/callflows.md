@@ -123,6 +123,7 @@ BasicHomeAMB::executeAffirmation
 >>Mediator
 ........TokenBridgeMediator::handleBridgedTokens
 ..........HomeAMBNativeToErc20::executeActionOnBridgedTokens
+............MediatorBalanceStorage::_setMediatorBalance
 ............RewardableMediator::distributeFee
 ..............HomeAMBNativeToErc20::onFeeDistribution
 ................Address::safeSendValue
@@ -214,6 +215,7 @@ BasicHomeAMB::executeAffirmation
 ..........TokenBridgeMediator::messageHashRecipient
 ..........TokenBridgeMediator::messageHashValue
 ..........HomeAMBNativeToErc20::executeActionOnFixedTokens
+............MediatorBalanceStorage::_setMediatorBalance
 ............Address::safeSendValue
 ..........emit FailedMessageFixed
 >>Bridge
@@ -308,6 +310,7 @@ The mediator on the Home side has the `relayTokens` method which is payable. The
 >>Mediator
 HomeAMBNativeToErc20::relayTokens
 ..HomeAMBNativeToErc20::nativeTransfer
+....MediatorBalanceStorage::_setMediatorBalance
 ....TokenBridgeMediator::passMessage
 ......TokenBridgeMediator::setMessageHashValue
 ......TokenBridgeMediator::setMessageHashRecipient

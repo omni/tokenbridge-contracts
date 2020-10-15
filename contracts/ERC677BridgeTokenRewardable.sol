@@ -13,11 +13,29 @@ contract ERC677BridgeTokenRewardable is ERC677MultiBridgeToken {
         // solhint-disable-previous-line no-empty-blocks
     }
 
+    /**
+     * @dev Updates the address of the used block reward contract.
+     * Only the token owner can call this method. 
+     * Even though this function is inteded only for the initialization purpose,
+     * it is still possible to change the already used block reward contract.
+     * In this case users of the old contract won't lose their accumulated rewards,
+     * they can proceed with the withdrawal by calling the old block reward contract directly.
+     * @param _blockRewardContract address of the new block reward contract.
+     */
     function setBlockRewardContract(address _blockRewardContract) external onlyOwner {
         require(AddressUtils.isContract(_blockRewardContract));
         blockRewardContract = _blockRewardContract;
     }
 
+    /**
+     * @dev Updates the address of the used staking contract.
+     * Only the token owner can call this method. 
+     * Even though this function is inteded only for the initialization purpose,
+     * it is still possible to change the already used staking contract.
+     * In this case users of the old staking contract won't lose their tokens,
+     * they can proceed with the withdrawal by calling the old staking contract directly.
+     * @param _stakingContract address of the new staking contract.
+     */
     function setStakingContract(address _stakingContract) external onlyOwner {
         require(AddressUtils.isContract(_stakingContract));
         require(balanceOf(_stakingContract) == 0);

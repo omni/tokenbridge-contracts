@@ -276,6 +276,9 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
             // e.g. minPerTx(address(0)) == 10 ** 14, _decimals == 3. _minPerTx happens to be 0, which is not allowed.
             // in this case, limits are raised to the default values
             if (_minPerTx == 0) {
+                // Numbers 1, 100, 10000 are chosen in a semi-random way,
+                // so that any token with small decimals can still be bridged in some amounts.
+                // It is possible to override limits for the particular token later if needed.
                 _minPerTx = 1;
                 if (_maxPerTx <= _minPerTx) {
                     _maxPerTx = 100;

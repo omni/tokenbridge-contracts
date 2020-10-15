@@ -31,7 +31,7 @@ contract BaseMediatorFeeManager is Ownable {
     * @dev Stores the initial parameters of the fee manager.
     * @param _owner address of the owner of the fee manager contract.
     * @param _fee the fee percentage amount.
-    * @param _rewardAccountList list of addresses that will receive the fee rewards.
+    * @param _rewardAccountList list of unique addresses that will receive the fee rewards.
     */
     constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _mediatorContract) public {
         require(_rewardAccountList.length > 0 && _rewardAccountList.length <= MAX_REWARD_ACCOUNTS);

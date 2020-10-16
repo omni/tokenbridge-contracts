@@ -149,15 +149,13 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
         owner
       ).should.be.fulfilled
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
-      await erc677Token.transfer(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
-      await erc677Token.transfer(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
+      await erc677Token.transferAndCall(foreignBridge.address, oneEther, '0x', { from: user }).should.be.fulfilled
+      await erc677Token.transferAndCall(foreignBridge.address, oneEther, '0x', { from: user }).should.be.fulfilled
     })
     it('should transfer locked tokens on message from amb', async () => {
       // Given
       const currentDay = await foreignBridge.getCurrentDay()
       expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-      const initialEvents = await getEvents(erc677Token, { event: 'Transfer' })
-      expect(initialEvents.length).to.be.equal(0)
       expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
       expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
@@ -214,13 +212,11 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
           owner
         ).should.be.fulfilled
         await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
-        await erc677Token.transfer(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
-        await erc677Token.transfer(foreignBridge.address, oneEther, { from: user }).should.be.fulfilled
+        await erc677Token.transferAndCall(foreignBridge.address, oneEther, '0x', { from: user }).should.be.fulfilled
+        await erc677Token.transferAndCall(foreignBridge.address, oneEther, '0x', { from: user }).should.be.fulfilled
 
         const currentDay = await foreignBridge.getCurrentDay()
         expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-        const initialEvents = await getEvents(erc677Token, { event: 'Transfer' })
-        expect(initialEvents.length).to.be.equal(0)
         expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
         expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers)
         expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
@@ -263,8 +259,6 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       // Given
       const currentDay = await foreignBridge.getCurrentDay()
       expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-      const initialEvents = await getEvents(erc677Token, { event: 'Transfer' })
-      expect(initialEvents.length).to.be.equal(0)
       expect(await erc677Token.balanceOf(foreignBridge.address)).to.be.bignumber.equal(twoEthers)
       expect(await foreignBridge.mediatorBalance()).to.be.bignumber.equal(twoEthers)
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)

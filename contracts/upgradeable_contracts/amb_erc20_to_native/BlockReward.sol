@@ -100,8 +100,8 @@ contract BlockReward is EternalStorage {
 
         uint256 i;
 
-        uint256 sumOfRewards;
-        uint256 sumOfBridgeAmounts;
+        uint256 sumOfRewards = 0;
+        uint256 sumOfBridgeAmounts = 0;
 
         for (i = 0; i < extraLength; i++) {
             address extraAddress = extraReceiverByIndex(i);

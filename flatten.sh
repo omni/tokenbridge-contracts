@@ -28,6 +28,7 @@ ${FLATTENER} contracts/PermittableToken.sol > flats/PermittableToken_flat.sol
 echo "Flattening bridge validators contracts"
 ${FLATTENER} ${VALIDATOR_CONTRACTS_DIR}/BridgeValidators.sol > flats/validators/BridgeValidators_flat.sol
 ${FLATTENER} ${VALIDATOR_CONTRACTS_DIR}/RewardableValidators.sol > flats/validators/RewardableValidators_flat.sol
+${FLATTENER} ${VALIDATOR_CONTRACTS_DIR}/BridgeValidatorsWithSynchronization.sol > flats/validators/BridgeValidatorsWithSynchronization_flat.sol
 
 echo "Flattening contracts related to native-to-erc bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/ForeignBridgeNativeToErc.sol > flats/native_to_erc20/ForeignBridgeNativeToErc_flat.sol

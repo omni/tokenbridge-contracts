@@ -4,7 +4,7 @@ import "./BaseBridgeValidators.sol";
 
 contract BridgeValidators is BaseBridgeValidators {
     function initialize(uint256 _requiredSignatures, address[] _initialValidators, address _owner)
-        external
+        public
         onlyRelevantSender
         returns (bool)
     {

@@ -3,9 +3,6 @@ pragma solidity 0.4.24;
 import "./HomeBridgeErcToErc.sol";
 
 contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
-    bytes4 internal constant BLOCK_REWARD_CONTRACT_SELECTOR = 0x56b54bae; // blockRewardContract()
-    bytes4 internal constant SET_BLOCK_REWARD_CONTRACT = 0x27a3e16b; // setBlockRewardContract(address)
-
     function rewardableInitialize(
         address _validatorContract,
         uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
@@ -38,21 +35,8 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
     }
 
     function blockRewardContract() public view returns (address) {
-        address blockReward;
-        address feeManager = feeManagerContract();
-        bytes memory callData = abi.encodeWithSelector(BLOCK_REWARD_CONTRACT_SELECTOR);
-
-        assembly {
-            let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
-            blockReward := mload(0)
-
-            switch result
-                case 0 {
-                    revert(0, 0)
-                }
-        }
-
-        return blockReward;
+        bytes memory callData = abi.encodeWithSelector(this.blockRewardContract.selector);
+        return address(_delegateReadToFeeManager(callData));
     }
 
     function setBlockRewardContract(address _blockReward) external onlyOwner {
@@ -61,6 +45,7 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
     }
 
     function _setBlockRewardContract(address _feeManager, address _blockReward) internal {
-        require(_feeManager.delegatecall(abi.encodeWithSelector(SET_BLOCK_REWARD_CONTRACT, _blockReward)));
+        bytes memory callData = abi.encodeWithSelector(this.setBlockRewardContract.selector, _blockReward);
+        require(_feeManager.delegatecall(callData));
     }
 }

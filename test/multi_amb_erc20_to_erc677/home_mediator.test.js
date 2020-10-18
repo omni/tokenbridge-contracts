@@ -1339,6 +1339,19 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
         expect(feeEvents.length).to.be.equal(2)
       })
+
+      it('should not collect and distribute fee if sender is a reward address', async () => {
+        await token.transfer(owner, value, { from: user }).should.be.fulfilled
+
+        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
+        await token.transfer(contract.address, value, { from: owner }).should.be.fulfilled
+        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(owner)).to.be.bignumber.equal(ZERO)
+
+        const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
+        expect(feeEvents.length).to.be.equal(0)
+      })
     })
   })
 })

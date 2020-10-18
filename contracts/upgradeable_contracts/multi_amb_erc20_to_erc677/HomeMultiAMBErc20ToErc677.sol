@@ -249,10 +249,12 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
         if (!lock()) {
             bytes32 _messageId = messageId();
             uint256 valueToBridge = _value;
-            uint256 fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);
-            if (fee > 0) {
-                emit FeeDistributed(fee, _token, _messageId);
-                valueToBridge = valueToBridge.sub(fee);
+            if (!isRewardAddress(_from)) {
+                uint256 fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);
+                if (fee > 0) {
+                    valueToBridge = valueToBridge.sub(fee);
+                    emit FeeDistributed(fee, _token, _messageId);
+                }
             }
             IBurnableMintableERC677Token(_token).burn(valueToBridge);
             passMessage(_token, _from, chooseReceiver(_from, _data), valueToBridge);

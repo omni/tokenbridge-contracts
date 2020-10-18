@@ -1020,13 +1020,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await contract.addRewardAddress(owner).should.be.rejected
       await contract.addRewardAddress(accounts[8]).should.be.fulfilled
 
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[8], owner])
+      expect(await contract.rewardAddressList()).to.be.eql([owner, accounts[8]])
       expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
       expect(await contract.isRewardAddress(owner)).to.be.equal(true)
       expect(await contract.isRewardAddress(accounts[8])).to.be.equal(true)
 
       await contract.addRewardAddress(accounts[9]).should.be.fulfilled
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[9], accounts[8], owner])
+      expect(await contract.rewardAddressList()).to.be.eql([owner, accounts[8], accounts[9]])
       expect(await contract.rewardAddressCount()).to.be.bignumber.equal('3')
 
       await contract.removeRewardAddress(owner, { from: user }).should.be.rejected
@@ -1034,7 +1034,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await contract.removeRewardAddress(accounts[8]).should.be.fulfilled
       await contract.removeRewardAddress(accounts[8]).should.be.rejected
 
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[9], owner])
+      expect(await contract.rewardAddressList()).to.be.eql([owner, accounts[9]])
       expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
       expect(await contract.isRewardAddress(accounts[8])).to.be.equal(false)
 

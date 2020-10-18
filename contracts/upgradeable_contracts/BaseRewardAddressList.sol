@@ -5,7 +5,7 @@ import "./Ownable.sol";
 
 /**
 * @title BaseRewardAddressList
-* @dev Implements the logic to store, add and remove reward account addresses. Works as a linked list.
+* @dev Implements the logic to store, add and remove reward account addresses. Works as an array list.
 */
 contract BaseRewardAddressList is BaseAddressList, Ownable {
     event RewardAddressAdded(address indexed addr);
@@ -60,7 +60,7 @@ contract BaseRewardAddressList is BaseAddressList, Ownable {
     }
 
     /**
-     * @dev Internal function for initializing linked list with the array of the initial reward addresses.
+     * @dev Internal function for initializing array list with initial reward addresses.
      * @param _rewardAddresses initial reward addresses list.
      */
     function _setRewardAddressList(address[] _rewardAddresses) internal {

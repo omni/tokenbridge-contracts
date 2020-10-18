@@ -228,20 +228,6 @@ contract('HomeAMBErc20ToNative', async accounts => {
       expect(await contract.isRewardAddress(owner)).to.be.equal(false)
       await contract.getFee(exampleMessageId).should.be.rejected
 
-      // empty reward list
-      await contract.rewardableInitialize(
-        ambBridgeContract.address,
-        otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        decimalShiftZero,
-        owner,
-        blockReward.address,
-        [],
-        [ether('0.01'), ether('0.02')]
-      ).should.be.rejected
-
       // too high fee
       await contract.rewardableInitialize(
         ambBridgeContract.address,
@@ -1073,13 +1059,13 @@ contract('HomeAMBErc20ToNative', async accounts => {
       await contract.addRewardAddress(owner).should.be.rejected
       await contract.addRewardAddress(accounts[8]).should.be.fulfilled
 
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[8], owner])
+      expect(await contract.rewardAddressList()).to.be.eql([owner, accounts[8]])
       expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
       expect(await contract.isRewardAddress(owner)).to.be.equal(true)
       expect(await contract.isRewardAddress(accounts[8])).to.be.equal(true)
 
       await contract.addRewardAddress(accounts[9]).should.be.fulfilled
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[9], accounts[8], owner])
+      expect(await contract.rewardAddressList()).to.be.eql([owner, accounts[8], accounts[9]])
       expect(await contract.rewardAddressCount()).to.be.bignumber.equal('3')
 
       await contract.removeRewardAddress(owner, { from: user }).should.be.rejected
@@ -1087,7 +1073,7 @@ contract('HomeAMBErc20ToNative', async accounts => {
       await contract.removeRewardAddress(accounts[8]).should.be.fulfilled
       await contract.removeRewardAddress(accounts[8]).should.be.rejected
 
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[9], owner])
+      expect(await contract.rewardAddressList()).to.be.eql([owner, accounts[9]])
       expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
       expect(await contract.isRewardAddress(accounts[8])).to.be.equal(false)
 
@@ -1220,8 +1206,8 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
         expect(await contract.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ether('0.100000000000000100'))
         expect(await blockReward.extraReceiversLength()).to.be.bignumber.equal('3')
-        expect(await blockReward.extraReceiverByIndex(0)).to.be.equal(accounts[9])
-        expect(await blockReward.extraReceiverByIndex(1)).to.be.equal(owner)
+        expect(await blockReward.extraReceiverByIndex(0)).to.be.equal(owner)
+        expect(await blockReward.extraReceiverByIndex(1)).to.be.equal(accounts[9])
         expect(await blockReward.extraReceiverByIndex(2)).to.be.equal(user)
         const amount1 = await blockReward.extraReceiverAmount(owner)
         const amount2 = await blockReward.extraReceiverAmount(accounts[9])

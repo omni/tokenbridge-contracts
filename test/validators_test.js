@@ -2,7 +2,7 @@ const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
 const { expect } = require('chai')
-const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS, BN } = require('./setup')
+const { ERROR_MSG, ZERO_ADDRESS, BN } = require('./setup')
 const { expectEventInLogs, createAccounts } = require('./helpers/helpers')
 
 const MAX_GAS = 8000000
@@ -29,9 +29,6 @@ contract('BridgeValidators', async accounts => {
 
       await bridgeValidators
         .initialize(1, [ZERO_ADDRESS], accounts[1], { from: accounts[1] })
-        .should.be.rejectedWith(ERROR_MSG)
-      await bridgeValidators
-        .initialize(1, [F_ADDRESS], accounts[1], { from: accounts[1] })
         .should.be.rejectedWith(ERROR_MSG)
       await bridgeValidators.initialize(2, accounts.slice(0, 2), accounts[2], { from: accounts[2] }).should.be.fulfilled
       await bridgeValidators
@@ -102,11 +99,6 @@ contract('BridgeValidators', async accounts => {
       true.should.be.equal(await bridgeValidators.isValidator(validators[0]))
       await bridgeValidators.addValidator(validators[0], { from: owner }).should.be.rejectedWith(ERROR_MSG)
       expect(await bridgeValidators.validatorCount()).to.be.bignumber.equal('2')
-    })
-
-    it(`cannot add 0xf as validator address`, async () => {
-      // Given
-      await bridgeValidators.addValidator(F_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
 
     it(`cannot add 0x0 as validator address`, async () => {
@@ -217,25 +209,6 @@ contract('BridgeValidators', async accounts => {
 
       // Then
       expectEventInLogs(logs, 'ValidatorRemoved', { validator: accounts[0] })
-    })
-
-    it(`Removed validator should return zero address on nextValidator`, async () => {
-      // Given
-      const { initialize, isInitialized, removeValidator, getNextValidator } = bridgeValidators
-      await initialize(1, accounts.slice(0, 2), owner, { from: owner }).should.be.fulfilled
-      true.should.be.equal(await isInitialized())
-      const initialNextValidator = await getNextValidator(accounts[0])
-
-      // When
-      const { logs } = await removeValidator(accounts[0], { from: owner }).should.be.fulfilled
-
-      // Then
-      expectEventInLogs(logs, 'ValidatorRemoved', { validator: accounts[0] })
-
-      const updatedNextValidator = await getNextValidator(accounts[0])
-
-      initialNextValidator.should.be.equals(accounts[1])
-      updatedNextValidator.should.be.equals(ZERO_ADDRESS)
     })
 
     accounts.slice(0, 5).forEach(validator => {

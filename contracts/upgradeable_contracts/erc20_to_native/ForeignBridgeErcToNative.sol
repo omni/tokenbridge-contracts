@@ -22,7 +22,6 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc20token(_erc20token);
-        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);
         _setGasPrice(_gasPrice);
         _setLimits(_dailyLimitMaxPerTxMinPerTxArray);

@@ -148,7 +148,6 @@ contract HomeBridgeErcToNative is
         require(_blockReward == address(0) || AddressUtils.isContract(_blockReward));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
-        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
         _setGasPrice(_homeGasPrice);
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);

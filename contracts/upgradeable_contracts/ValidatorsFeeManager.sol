@@ -22,8 +22,6 @@ contract ValidatorsFeeManager is BaseFeeManager, ValidatorStorage {
 
     function distributeFeeProportionally(uint256 _fee, bytes32 _direction) internal {
         IRewardableValidators validators = rewardableValidatorContract();
-        // solhint-disable-next-line var-name-mixedcase
-        address F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
         uint256 numOfValidators = validators.validatorCount();
 
         uint256 feePerValidator = _fee.div(numOfValidators);
@@ -34,22 +32,15 @@ contract ValidatorsFeeManager is BaseFeeManager, ValidatorStorage {
             randomValidatorIndex = random(numOfValidators);
         }
 
-        address nextValidator = validators.getNextValidator(F_ADDR);
-        require((nextValidator != F_ADDR) && (nextValidator != address(0)));
-
-        uint256 i = 0;
-        while (nextValidator != F_ADDR) {
+        address[] memory validatorList = validators.validatorList();
+        for (uint256 i = 0; i < numOfValidators; i++) {
             uint256 feeToDistribute = feePerValidator;
             if (diff > 0 && randomValidatorIndex == i) {
                 feeToDistribute = feeToDistribute.add(diff);
             }
 
-            address rewardAddress = validators.getValidatorRewardAddress(nextValidator);
+            address rewardAddress = validators.getValidatorRewardAddress(validatorList[i]);
             onFeeDistribution(rewardAddress, feeToDistribute, _direction);
-
-            nextValidator = validators.getNextValidator(nextValidator);
-            require(nextValidator != address(0));
-            i = i + 1;
         }
     }
 

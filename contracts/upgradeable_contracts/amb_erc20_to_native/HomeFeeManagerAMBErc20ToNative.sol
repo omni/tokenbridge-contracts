@@ -1,14 +1,13 @@
 pragma solidity 0.4.24;
 
 import "../BaseRewardAddressList.sol";
-import "../Ownable.sol";
 
 /**
 * @title HomeFeeManagerAMBErc20ToNative
 * @dev Implements the logic to distribute fees from the erc20 to native mediator contract operations.
 * The fees are distributed in the form of native tokens to the list of reward accounts.
 */
-contract HomeFeeManagerAMBErc20ToNative is BaseRewardAddressList, Ownable {
+contract HomeFeeManagerAMBErc20ToNative is BaseRewardAddressList {
     using SafeMath for uint256;
 
     event FeeUpdated(bytes32 feeType, uint256 fee);
@@ -35,24 +34,6 @@ contract HomeFeeManagerAMBErc20ToNative is BaseRewardAddressList, Ownable {
         require(_feeType == HOME_TO_FOREIGN_FEE || _feeType == FOREIGN_TO_HOME_FEE);
         /* solcov ignore next */
         _;
-    }
-
-    /**
-    * @dev Adds a new reward address to the list, which will receive fees collected from the bridge operations.
-    * Only the owner can call this method.
-    * @param _addr new reward account.
-    */
-    function addRewardAddress(address _addr) external onlyOwner {
-        _addRewardAddress(_addr);
-    }
-
-    /**
-    * @dev Removes a reward address from the rewards list.
-    * Only the owner can call this method.
-    * @param _addr old reward account, that should be removed.
-    */
-    function removeRewardAddress(address _addr) external onlyOwner {
-        _removeRewardAddress(_addr);
     }
 
     /**
@@ -111,7 +92,7 @@ contract HomeFeeManagerAMBErc20ToNative is BaseRewardAddressList, Ownable {
     * @return total amount of fee subtracted from the transferred value and distributed between the reward accounts.
     */
     function _distributeFee(bytes32 _feeType, uint256 _value) internal returns (uint256) {
-        uint256 numOfAccounts = rewardAddressCount();
+        uint256 numOfAccounts = _addressCount();
         uint256 _fee = calculateFee(_feeType, _value);
         if (numOfAccounts == 0 || _fee == 0) {
             return 0;
@@ -123,21 +104,13 @@ contract HomeFeeManagerAMBErc20ToNative is BaseRewardAddressList, Ownable {
             randomAccountIndex = random(numOfAccounts);
         }
 
-        address nextAddr = getNextRewardAddress(F_ADDR);
-        require(nextAddr != F_ADDR && nextAddr != address(0));
-
-        uint256 i = 0;
-        while (nextAddr != F_ADDR) {
+        for (uint256 i = 0; i < numOfAccounts; i++) {
             uint256 feeToDistribute = feePerAccount;
             if (diff > 0 && randomAccountIndex == i) {
                 feeToDistribute = feeToDistribute.add(diff);
             }
 
-            onFeeDistribution(_feeType, nextAddr, feeToDistribute);
-
-            nextAddr = getNextRewardAddress(nextAddr);
-            require(nextAddr != address(0));
-            i = i + 1;
+            onFeeDistribution(_feeType, _addressByIndex(i), feeToDistribute);
         }
         return _fee;
     }

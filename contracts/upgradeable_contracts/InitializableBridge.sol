@@ -8,4 +8,9 @@ contract InitializableBridge is Initializable {
     function deployedAtBlock() external view returns (uint256) {
         return uintStorage[DEPLOYED_AT_BLOCK];
     }
+
+    function setInitialize() internal {
+        super.setInitialize();
+        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
+    }
 }

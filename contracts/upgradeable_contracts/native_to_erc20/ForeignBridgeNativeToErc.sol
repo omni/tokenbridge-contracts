@@ -109,7 +109,6 @@ contract ForeignBridgeNativeToErc is
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc677token(_erc677token);
         _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
-        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         _setGasPrice(_foreignGasPrice);
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);
         _setExecutionLimits(_homeDailyLimitHomeMaxPerTxArray);

@@ -11,7 +11,7 @@ import "../../interfaces/IBurnableMintableERC677Token.sol";
 * @dev Implements the logic to distribute fees from the multi erc20 to erc677 mediator contract operations.
 * The fees are distributed in the form of native tokens to the list of reward accounts.
 */
-contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, BasicMultiTokenBridge {
+contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, BasicMultiTokenBridge {
     using SafeMath for uint256;
 
     event FeeUpdated(bytes32 feeType, address indexed token, uint256 fee);
@@ -38,24 +38,6 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
         require(_feeType == HOME_TO_FOREIGN_FEE || _feeType == FOREIGN_TO_HOME_FEE);
         /* solcov ignore next */
         _;
-    }
-
-    /**
-    * @dev Adds a new reward address to the list, which will receive fees collected from the bridge operations.
-    * Only the owner can call this method.
-    * @param _addr new reward account.
-    */
-    function addRewardAddress(address _addr) external onlyOwner {
-        _addRewardAddress(_addr);
-    }
-
-    /**
-    * @dev Removes a reward address from the rewards list.
-    * Only the owner can call this method.
-    * @param _addr old reward account, that should be removed.
-    */
-    function removeRewardAddress(address _addr) external onlyOwner {
-        _removeRewardAddress(_addr);
     }
 
     /**
@@ -120,7 +102,7 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
     * @return total amount of fee subtracted from the transferred value and distributed between the reward accounts.
     */
     function _distributeFee(bytes32 _feeType, address _token, uint256 _value) internal returns (uint256) {
-        uint256 numOfAccounts = rewardAddressCount();
+        uint256 numOfAccounts = _addressCount();
         uint256 _fee = calculateFee(_feeType, _token, _value);
         if (numOfAccounts == 0 || _fee == 0) {
             return 0;
@@ -132,25 +114,18 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
             randomAccountIndex = random(numOfAccounts);
         }
 
-        address nextAddr = getNextRewardAddress(F_ADDR);
-        require(nextAddr != F_ADDR && nextAddr != address(0));
-
-        uint256 i = 0;
-        while (nextAddr != F_ADDR) {
+        for (uint256 i = 0; i < numOfAccounts; i++) {
             uint256 feeToDistribute = feePerAccount;
             if (diff > 0 && randomAccountIndex == i) {
                 feeToDistribute = feeToDistribute.add(diff);
             }
 
+            address receiver = _addressByIndex(i);
             if (_feeType == HOME_TO_FOREIGN_FEE) {
-                ERC677(_token).transfer(nextAddr, feeToDistribute);
+                ERC677(_token).transfer(receiver, feeToDistribute);
             } else {
-                IBurnableMintableERC677Token(_token).mint(nextAddr, feeToDistribute);
+                IBurnableMintableERC677Token(_token).mint(receiver, feeToDistribute);
             }
-
-            nextAddr = getNextRewardAddress(nextAddr);
-            require(nextAddr != address(0));
-            i = i + 1;
         }
         return _fee;
     }

@@ -35,7 +35,6 @@ contract BasicAMB is BasicBridge, VersionableAMB {
 
         _setChainIds(_sourceChainId, _destinationChainId);
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
-        uintStorage[DEPLOYED_AT_BLOCK] = block.number;
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
         _setGasPrice(_gasPrice);
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);

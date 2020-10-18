@@ -7,5 +7,4 @@ interface IRewardableValidators {
     function validatorList() external view returns (address[]);
     function getValidatorRewardAddress(address _validator) external view returns (address);
     function validatorCount() external view returns (uint256);
-    function getNextValidator(address _address) external view returns (address);
 }

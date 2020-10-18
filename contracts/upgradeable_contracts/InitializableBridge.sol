@@ -9,6 +9,9 @@ contract InitializableBridge is Initializable {
         return uintStorage[DEPLOYED_AT_BLOCK];
     }
 
+    /**
+     * @dev Marks the contract as initialized. Set the block where initialization happened.
+     */
     function setInitialize() internal {
         super.setInitialize();
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;

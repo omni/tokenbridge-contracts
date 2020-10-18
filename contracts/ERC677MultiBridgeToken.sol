@@ -7,10 +7,8 @@ import "./PermittableToken.sol";
  * @dev This contract extends ERC677BridgeToken to support several bridge simulteniously
  */
 contract ERC677MultiBridgeToken is PermittableToken {
-    address public constant F_ADDR = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
     uint256 internal constant MAX_BRIDGES = 50;
-    mapping(address => address) public bridgePointers;
-    uint256 public bridgeCount;
+    address[] internal bridges;
 
     event BridgeAdded(address indexed bridge);
     event BridgeRemoved(address indexed bridge);
@@ -19,7 +17,7 @@ contract ERC677MultiBridgeToken is PermittableToken {
         public
         PermittableToken(_name, _symbol, _decimals, _chainId)
     {
-        bridgePointers[F_ADDR] = F_ADDR; // empty bridge contracts list
+        // solhint-disable-previous-line no-empty-blocks
     }
 
     /**
@@ -41,15 +39,11 @@ contract ERC677MultiBridgeToken is PermittableToken {
     * @param _bridge bridge contract address
     */
     function addBridge(address _bridge) external onlyOwner {
-        require(bridgeCount < MAX_BRIDGES);
+        require(bridges.length < MAX_BRIDGES);
         require(AddressUtils.isContract(_bridge));
         require(!isBridge(_bridge));
 
-        address firstBridge = bridgePointers[F_ADDR];
-        require(firstBridge != address(0));
-        bridgePointers[F_ADDR] = _bridge;
-        bridgePointers[_bridge] = firstBridge;
-        bridgeCount = bridgeCount.add(1);
+        bridges.push(_bridge);
 
         emit BridgeAdded(_bridge);
     }
@@ -59,25 +53,28 @@ contract ERC677MultiBridgeToken is PermittableToken {
     * @param _bridge bridge contract address
     */
     function removeBridge(address _bridge) external onlyOwner {
-        require(isBridge(_bridge));
-
-        address nextBridge = bridgePointers[_bridge];
-        address index = F_ADDR;
-        address next = bridgePointers[index];
-        require(next != address(0));
-
-        while (next != _bridge) {
-            index = next;
-            next = bridgePointers[index];
-
-            require(next != F_ADDR && next != address(0));
+        uint256 count = bridges.length;
+        for (uint256 i = 0; i < count; i++) {
+            if (bridges[i] == _bridge) {
+                if (i < count - 1) {
+                    bridges[i] = bridges[count - 1];
+                }
+                delete bridges[count - 1];
+                bridges.length--;
+                emit BridgeRemoved(_bridge);
+                return;
+            }
         }
+        // If bridge is not found and nothing was removed, the transactions is reverted
+        revert();
+    }
 
-        bridgePointers[index] = nextBridge;
-        delete bridgePointers[_bridge];
-        bridgeCount = bridgeCount.sub(1);
-
-        emit BridgeRemoved(_bridge);
+    /**
+     * @dev Returns the number of registered bridges.
+     * @return number of registered bridges.
+     */
+    function bridgeCount() external view returns (uint256) {
+        return bridges.length;
     }
 
     /**
@@ -85,20 +82,7 @@ contract ERC677MultiBridgeToken is PermittableToken {
     * @return address[] bridge contract addresses
     */
     function bridgeList() external view returns (address[]) {
-        address[] memory list = new address[](bridgeCount);
-        uint256 counter = 0;
-        address nextBridge = bridgePointers[F_ADDR];
-        require(nextBridge != address(0));
-
-        while (nextBridge != F_ADDR) {
-            list[counter] = nextBridge;
-            nextBridge = bridgePointers[nextBridge];
-            counter++;
-
-            require(nextBridge != address(0));
-        }
-
-        return list;
+        return bridges;
     }
 
     /**
@@ -107,6 +91,11 @@ contract ERC677MultiBridgeToken is PermittableToken {
     * @return bool true, if given address is a known bridge contract 
     */
     function isBridge(address _address) public view returns (bool) {
-        return _address != F_ADDR && bridgePointers[_address] != address(0);
+        for (uint256 i = 0; i < bridges.length; i++) {
+            if (bridges[i] == _address) {
+                return true;
+            }
+        }
+        return false;
     }
 }

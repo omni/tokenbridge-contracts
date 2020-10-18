@@ -2,7 +2,7 @@ const ERC677MultiBridgeToken = artifacts.require('ERC677MultiBridgeToken.sol')
 const StubContract = artifacts.require('RevertFallback.sol')
 
 const { expect } = require('chai')
-const { ERROR_MSG, ZERO_ADDRESS, F_ADDRESS, BN } = require('./setup')
+const { ERROR_MSG, ZERO_ADDRESS, BN } = require('./setup')
 const { expectEventInLogs } = require('./helpers/helpers')
 
 const MAX_BRIDGES = 50
@@ -68,10 +68,6 @@ contract('ERC677MultiBridgeToken', async accounts => {
       await token.addBridge(contracts[0], { from: owner }).should.be.fulfilled
       await token.addBridge(contracts[0], { from: owner }).should.be.rejectedWith(ERROR_MSG)
       expect(await token.bridgeCount()).to.be.bignumber.equal('1')
-    })
-
-    it('should not allow to add 0xf as bridge address', async () => {
-      await token.addBridge(F_ADDRESS, { from: owner }).should.be.rejectedWith(ERROR_MSG)
     })
 
     it('should not allow to add 0x0 as bridge address', async () => {
@@ -165,11 +161,11 @@ contract('ERC677MultiBridgeToken', async accounts => {
 
       await token.addBridge(contracts[1], { from: owner }).should.be.fulfilled
 
-      expect(await token.bridgeList()).to.be.eql([contracts[1], contracts[0]])
+      expect(await token.bridgeList()).to.be.eql([contracts[0], contracts[1]])
 
       await token.addBridge(contracts[2], { from: owner }).should.be.fulfilled
 
-      expect(await token.bridgeList()).to.be.eql([contracts[2], contracts[1], contracts[0]])
+      expect(await token.bridgeList()).to.be.eql([contracts[0], contracts[1], contracts[2]])
     })
 
     it('should shrink bridge list when removing bridges', async () => {
@@ -177,15 +173,15 @@ contract('ERC677MultiBridgeToken', async accounts => {
       await token.addBridge(contracts[1], { from: owner }).should.be.fulfilled
       await token.addBridge(contracts[2], { from: owner }).should.be.fulfilled
       await token.addBridge(contracts[3], { from: owner }).should.be.fulfilled
-      expect(await token.bridgeList()).to.be.eql([contracts[3], contracts[2], contracts[1], contracts[0]])
+      expect(await token.bridgeList()).to.be.eql([contracts[0], contracts[1], contracts[2], contracts[3]])
 
       await token.removeBridge(contracts[1], { from: owner }).should.be.fulfilled
 
-      expect(await token.bridgeList()).to.be.eql([contracts[3], contracts[2], contracts[0]])
+      expect(await token.bridgeList()).to.be.eql([contracts[0], contracts[3], contracts[2]])
 
       await token.removeBridge(contracts[3], { from: owner }).should.be.fulfilled
 
-      expect(await token.bridgeList()).to.be.eql([contracts[2], contracts[0]])
+      expect(await token.bridgeList()).to.be.eql([contracts[0], contracts[2]])
 
       await token.removeBridge(contracts[0], { from: owner }).should.be.fulfilled
 

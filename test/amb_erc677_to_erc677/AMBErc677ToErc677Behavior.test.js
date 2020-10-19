@@ -379,7 +379,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
         1000000
       ).should.be.fulfilled
 
-      const outOfLimitEvent = await getEvents(contract, { event: 'AmountLimitExceeded' })
+      const outOfLimitEvent = await getEvents(contract, { event: 'MediatorAmountLimitExceeded' })
       expect(outOfLimitEvent.length).to.be.equal(1)
       expect(outOfLimitEvent[0].returnValues.recipient).to.be.equal(user)
       expect(outOfLimitEvent[0].returnValues.value).to.be.equal(twoEthers.toString())

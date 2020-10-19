@@ -116,7 +116,7 @@ contract BasicAMBErc677ToErc677 is
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _messageId);
-        emit AmountLimitExceeded(_recipient, _value, _messageId);
+        emit MediatorAmountLimitExceeded(_recipient, _value, _messageId);
     }
 
     /**

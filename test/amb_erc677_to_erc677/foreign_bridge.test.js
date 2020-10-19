@@ -251,7 +251,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
         expect(TokensBridgedEvent[0].returnValues.messageId).to.be.equal(exampleMessageId)
       })
     }
-    it('should emit AmountLimitExceeded and not transfer tokens when out of execution limits', async () => {
+    it('should emit MediatorAmountLimitExceeded and not transfer tokens when out of execution limits', async () => {
       // Given
       const currentDay = await foreignBridge.getCurrentDay()
       expect(await foreignBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
@@ -281,7 +281,7 @@ contract('ForeignAMBErc677ToErc677', async accounts => {
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
 
       expect(await foreignBridge.outOfLimitAmount()).to.be.bignumber.equal(twoEthers)
-      const outOfLimitEvent = await getEvents(foreignBridge, { event: 'AmountLimitExceeded' })
+      const outOfLimitEvent = await getEvents(foreignBridge, { event: 'MediatorAmountLimitExceeded' })
       expect(outOfLimitEvent.length).to.be.equal(1)
       expect(outOfLimitEvent[0].returnValues.recipient).to.be.equal(user)
       expect(outOfLimitEvent[0].returnValues.value).to.be.equal(twoEthers.toString())

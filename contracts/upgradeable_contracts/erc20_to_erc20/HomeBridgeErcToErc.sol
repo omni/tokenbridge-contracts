@@ -147,13 +147,7 @@ contract HomeBridgeErcToErc is
         internal
         returns (bool)
     {
-        (address aboveLimitsRecipient, uint256 aboveLimitsValue) = txAboveLimits(_hashMsg);
-        if (aboveLimitsRecipient != address(0)) {
-            // revert if a given transaction hash was already processed by the call to fixAssetsAboveLimits
-            require(aboveLimitsValue == _value);
-            setTxAboveLimits(address(0), 0, _hashMsg);
-            setOutOfLimitAmount(outOfLimitAmount().sub(_value));
-        }
+        _clearAboveLimitsMarker(_hashMsg, _value);
         addTotalExecutedPerDay(getCurrentDay(), _value);
         uint256 valueToMint = _shiftValue(_value);
         address feeManager = feeManagerContract();

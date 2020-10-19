@@ -386,7 +386,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       expect(outOfLimitEvent[0].returnValues.messageId).to.be.equal(exampleMessageId)
     })
     it('Should revert if value to unlock is bigger than max per transaction', async function() {
-      await contract.fixAssetsAboveLimits(exampleMessageId, false, twoEthers).should.be.rejectedWith(ERROR_MSG)
+      await contract.fixAssetsAboveLimits(exampleMessageId, true, twoEthers).should.be.rejectedWith(ERROR_MSG)
     })
     it('Should allow to partially reduce outOfLimitAmount and not emit amb event', async function() {
       const { logs } = await contract.fixAssetsAboveLimits(exampleMessageId, false, halfEther).should.be.fulfilled

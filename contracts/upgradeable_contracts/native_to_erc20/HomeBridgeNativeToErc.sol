@@ -133,6 +133,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
      * @param _value amount of coins to unlock.
      * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
      * @param _hashMsg unique identifier of the particular bridge operation.
+     * Not used in this bridge mode, but required for interface unification with other bridge modes.
      * @return true, if execution completed successfully.
      */
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)

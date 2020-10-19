@@ -1420,7 +1420,8 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       const outOfLimitAmount = await homeBridge.outOfLimitAmount()
       outOfLimitAmount.should.be.bignumber.equal(value)
 
-      await homeBridge.fixAssetsAboveLimits(messageId, false, value).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.fixAssetsAboveLimits(messageId, true, value).should.be.rejectedWith(ERROR_MSG)
+      await homeBridge.fixAssetsAboveLimits(messageId, false, value).should.be.fulfilled
     })
     it('Should allow to partially reduce outOfLimitAmount and not emit UserRequestForSignature', async () => {
       const recipient = accounts[5]

@@ -601,6 +601,15 @@ contract('ForeignAMBNativeToErc20', async accounts => {
             mediator.address,
             token.address
           ).should.be.rejectedWith(ERROR_MSG)
+          // invalid mediator contract address
+          await ForeignFeeManagerAMBNativeToErc20.new(
+            owner,
+            fee,
+            rewardAccountList,
+            ZERO_ADDRESS,
+            token.address
+          ).should.be.rejectedWith(ERROR_MSG)
+          // invalid token address
           await ForeignFeeManagerAMBNativeToErc20.new(
             owner,
             fee,

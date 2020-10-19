@@ -16,7 +16,12 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     bytes32 internal constant HOME_FEE_STORAGE_KEY = 0xc3781f3cec62d28f56efe98358f59c2105504b194242dbcb2cc0806850c306e7; // keccak256(abi.encodePacked("homeFee"))
     bytes32 internal constant FOREIGN_FEE_STORAGE_KEY = 0x68c305f6c823f4d2fa4140f9cf28d32a1faccf9b8081ff1c2de11cf32c733efc; // keccak256(abi.encodePacked("foreignFee"))
 
-    function calculateFee(uint256 _value, bool _recover, bytes32 _feeType) public view returns (uint256) {
+    function calculateFee(uint256 _value, bool _recover, bytes32 _feeType)
+        public
+        view
+        validFeeType(_feeType)
+        returns (uint256)
+    {
         uint256 fee = _feeType == HOME_FEE ? getHomeFee() : getForeignFee();
         if (!_recover) {
             return _value.mul(fee).div(MAX_FEE);

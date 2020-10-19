@@ -309,23 +309,6 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
       })
     })
 
-    it('sends tokens to contract that does not contains onTokenTransfer method', async () => {
-      await addBridge(token, homeErcToErcContract.address).should.be.fulfilled
-      await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
-
-      const result = await token.transfer(validatorContract.address, minPerTx, { from: user }).should.be.fulfilled
-      expectEventInLogs(result.logs, 'Transfer', {
-        from: user,
-        to: validatorContract.address,
-        value: minPerTx
-      })
-      expectEventInLogs(result.logs, 'ContractFallbackCallFailed', {
-        from: user,
-        to: validatorContract.address,
-        value: minPerTx
-      })
-    })
-
     it('fail to send tokens to bridge contract out of limits', async () => {
       const lessThanMin = ether('0.0001')
       await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
@@ -588,7 +571,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
     })
   })
   describe('#transfer', async () => {
-    it('if transfer called on contract, onTokenTransfer is also invoked', async () => {
+    it('if transfer called on contract, onTokenTransfer is not invoked', async () => {
       const receiver = await ERC677ReceiverTest.new()
       expect(await receiver.from()).to.be.equal(ZERO_ADDRESS)
       expect(await receiver.value()).to.be.bignumber.equal(ZERO)
@@ -600,8 +583,8 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
 
       expect(await token.balanceOf(receiver.address)).to.be.bignumber.equal('1')
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
-      expect(await receiver.from()).to.be.equal(user)
-      expect(await receiver.value()).to.be.bignumber.equal('1')
+      expect(await receiver.from()).to.be.equal(ZERO_ADDRESS)
+      expect(await receiver.value()).to.be.bignumber.equal(ZERO)
       expect(await receiver.data()).to.be.equal(null)
       expect(logs[0].event).to.be.equal('Transfer')
     })
@@ -648,6 +631,8 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
         // Mint some extra tokens for the `holder`
         await token.mint(holder, '10000', { from: owner }).should.be.fulfilled
         ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
+        web3.eth.accounts.wallet.add(privateKey)
+        await web3.eth.sendTransaction({ from: owner, to: holder, value: oneEther })
       })
       it('should permit', async () => {
         // Holder signs the `permit` params with their privateKey
@@ -766,6 +751,61 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
         // Spender can't transfer the remaining holder's funds because of expiry
         await token.setNow(901).should.be.fulfilled
         await token.transferFrom(holder, accounts[9], '4000', { from: spender }).should.be.rejectedWith(ERROR_MSG)
+      })
+      it('should reset expiration on subsequent approve', async () => {
+        expiry = 900
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+        await token.setNow(800).should.be.fulfilled
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        const data = await token.contract.methods.approve(spender, -1).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
+      })
+      it('should reset expiration on subsequent increaseAllowance', async () => {
+        expiry = 900
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+        await token.setNow(800).should.be.fulfilled
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        let data = await token.contract.methods.approve(spender, -2).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        data = await token.contract.methods.increaseAllowance(spender, 1).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
       })
       it('should disallow unlimited allowance', async () => {
         expiry = 900

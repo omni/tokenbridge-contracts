@@ -97,7 +97,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
   async function bridgeToken(token, value = oneEther, forceFail = false) {
     await token.mint(user, value).should.be.fulfilled
-    const { receipt } = await token.transfer(otherSideMediator.address, value, { from: user }).should.be.fulfilled
+    const { receipt } = await token.transferAndCall(otherSideMediator.address, value, '0x', { from: user }).should.be
+      .fulfilled
     const encodedData = strip0x(
       web3.eth.abi.decodeParameters(
         ['bytes'],
@@ -416,6 +417,34 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await homeToken.name()).to.be.equal('TEST on xDai')
         expect(await homeToken.symbol()).to.be.equal('TEST')
         expect(await homeToken.decimals()).to.be.bignumber.equal('18')
+      })
+
+      it('should not register new token with empty name and empty symbol', async () => {
+        const data1 = await contract.contract.methods
+          .deployAndHandleBridgedTokens(accounts[0], '', '', 18, user, oneEther.toString(10))
+          .encodeABI()
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data1,
+          exampleMessageId,
+          2000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(false)
+
+        const data2 = await contract.contract.methods
+          .deployAndHandleBridgedTokens(accounts[1], 'TEST', '', 18, user, oneEther.toString(10))
+          .encodeABI()
+        await ambBridgeContract.executeMessageCall(
+          contract.address,
+          otherSideMediator.address,
+          data2,
+          otherMessageId,
+          2000000
+        ).should.be.fulfilled
+
+        expect(await ambBridgeContract.messageCallStatus(otherMessageId)).to.be.equal(true)
       })
 
       for (const decimals of [3, 18, 20]) {

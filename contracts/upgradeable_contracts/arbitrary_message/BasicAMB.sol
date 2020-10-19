@@ -39,7 +39,7 @@ contract BasicAMB is BasicBridge, VersionableAMB {
         uintStorage[MAX_GAS_PER_TX] = _maxGasPerTx;
         _setGasPrice(_gasPrice);
         _setRequiredBlockConfirmations(_requiredBlockConfirmations);
-        setOwner(_owner);
+        _setOwner(_owner);
         setInitialize();
 
         return isInitialized();
@@ -106,6 +106,11 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     function _setChainIds(uint256 _sourceChainId, uint256 _destinationChainId) internal {
         require(_sourceChainId > 0 && _destinationChainId > 0);
         require(_sourceChainId != _destinationChainId);
+
+        // Length fields are needed further when encoding the message.
+        // Chain ids are compressed, so that leading zero bytes are not preserved.
+        // In order to save some gas during calls to MessageDelivery.c,
+        // lengths of chain ids are precalculated and being saved in the storage.
         uint256 sourceChainIdLength = 0;
         uint256 destinationChainIdLength = 0;
         uint256 mask = 0xff;

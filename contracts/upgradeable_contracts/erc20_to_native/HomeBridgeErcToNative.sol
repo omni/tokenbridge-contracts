@@ -119,6 +119,20 @@ contract HomeBridgeErcToNative is
         _setBlockRewardContract(_blockReward);
     }
 
+    /**
+     * @dev Withdraws the erc20 tokens or native coins from this contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        // Since native coins are being minted by the blockReward contract and burned by sending them to the address(0),
+        // they are not locked at the contract during the normal operation. However, they can be still forced into this contract
+        // by using a selfdestruct opcode, or by using this contract address as a coinbase account.
+        // In this case it is necessary to allow claiming native coins back.
+        // Any other erc20 token can be safely claimed as well.
+        claimValues(_token, _to);
+    }
+
     function _initialize(
         address _validatorContract,
         uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
@@ -132,7 +146,6 @@ contract HomeBridgeErcToNative is
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
         require(_blockReward == address(0) || AddressUtils.isContract(_blockReward));
-        require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
@@ -142,7 +155,7 @@ contract HomeBridgeErcToNative is
         addressStorage[BLOCK_REWARD_CONTRACT] = _blockReward;
         _setExecutionLimits(_foreignDailyLimitForeignMaxPerTxArray);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
     }
 
     function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {

@@ -73,7 +73,7 @@ library TokenReader {
             ptr := mload(0x40)
             mstore(ptr, 0x95d89b4100000000000000000000000000000000000000000000000000000000) // symbol()
             if iszero(staticcall(gas, _token, ptr, 4, ptr, 32)) {
-                mstore(ptr, 0xf76f8d7800000000000000000000000000000000000000000000000000000000) // SYMBOl()
+                mstore(ptr, 0xf76f8d7800000000000000000000000000000000000000000000000000000000) // SYMBOL()
                 staticcall(gas, _token, ptr, 4, ptr, 32)
                 pop
             }

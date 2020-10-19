@@ -2,6 +2,7 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/AddressUtils.sol";
 
 /**
 * @title BaseMediatorFeeManager
@@ -31,9 +32,11 @@ contract BaseMediatorFeeManager is Ownable {
     * @dev Stores the initial parameters of the fee manager.
     * @param _owner address of the owner of the fee manager contract.
     * @param _fee the fee percentage amount.
-    * @param _rewardAccountList list of addresses that will receive the fee rewards.
+    * @param _rewardAccountList list of unique addresses that will receive the fee rewards.
+    * @param _mediatorContract address of the mediator contract used together with this fee manager.
     */
     constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _mediatorContract) public {
+        require(AddressUtils.isContract(_mediatorContract));
         require(_rewardAccountList.length > 0 && _rewardAccountList.length <= MAX_REWARD_ACCOUNTS);
         _transferOwnership(_owner);
         _setFee(_fee);
@@ -82,7 +85,7 @@ contract BaseMediatorFeeManager is Ownable {
     function addRewardAccount(address _account) external onlyOwner {
         require(isValidAccount(_account));
         require(!isRewardAccount(_account));
-        require(rewardAccounts.length.add(1) < MAX_REWARD_ACCOUNTS);
+        require(rewardAccounts.length < MAX_REWARD_ACCOUNTS);
         rewardAccounts.push(_account);
     }
 
@@ -154,6 +157,12 @@ contract BaseMediatorFeeManager is Ownable {
     */
     function distributeFee(uint256 _fee) internal {
         uint256 numOfAccounts = rewardAccountsCount();
+        if (numOfAccounts == 0) {
+            // In case there are no reward accounts defined, no actual fee distribution will happen.
+            // Funds will be kept locked on the contract until some of the reward accounts will be added.
+            // After it, locked funds ca be distributed by a call to onTokenTransfer() of this contract, which can be done by anyone.
+            return;
+        }
         uint256 feePerAccount = _fee.div(numOfAccounts);
         uint256 randomAccountIndex;
         uint256 diff = _fee.sub(feePerAccount.mul(numOfAccounts));

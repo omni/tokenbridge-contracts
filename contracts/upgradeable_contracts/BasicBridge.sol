@@ -50,10 +50,6 @@ contract BasicBridge is
         return uintStorage[REQUIRED_BLOCK_CONFIRMATIONS];
     }
 
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
-        claimValues(_token, _to);
-    }
-
     /**
     * @dev Internal function for updating fallback gas price value.
     * @param _gasPrice new value for the gas price, zero gas price is allowed.

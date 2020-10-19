@@ -155,6 +155,19 @@ contract('ForeignBridge', async accounts => {
         otherSideBridgeAddress
       ).should.be.rejected
 
+      // not valid otherSideBridgeAddress
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        '9',
+        ZERO_ADDRESS
+      ).should.be.rejected
+
       const { logs } = await foreignBridge.initialize(
         validatorContract.address,
         token.address,

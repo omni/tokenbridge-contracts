@@ -2,26 +2,6 @@ pragma solidity 0.4.24;
 import "../interfaces/IBridgeValidators.sol";
 
 library Message {
-    // function uintToString(uint256 inputValue) internal pure returns (string) {
-    //     // figure out the length of the resulting string
-    //     uint256 length = 0;
-    //     uint256 currentValue = inputValue;
-    //     do {
-    //         length++;
-    //         currentValue /= 10;
-    //     } while (currentValue != 0);
-    //     // allocate enough memory
-    //     bytes memory result = new bytes(length);
-    //     // construct the string backwards
-    //     uint256 i = length - 1;
-    //     currentValue = inputValue;
-    //     do {
-    //         result[i--] = byte(48 + currentValue % 10);
-    //         currentValue /= 10;
-    //     } while (currentValue != 0);
-    //     return string(result);
-    // }
-
     function addressArrayContains(address[] array, address value) internal pure returns (bool) {
         for (uint256 i = 0; i < array.length; i++) {
             if (array[i] == value) {
@@ -83,6 +63,9 @@ library Message {
             s := mload(add(signature, 0x40))
             v := mload(add(signature, 0x60))
         }
+        require(uint8(v) == 27 || uint8(v) == 28);
+        require(uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0);
+
         return ecrecover(hashMessage(message, isAMBMessage), uint8(v), r, s);
     }
 

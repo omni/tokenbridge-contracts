@@ -64,4 +64,14 @@ contract ForeignStakeTokenMediator is BasicStakeTokenMediator {
             token.transfer(_recipient, _value);
         }
     }
+
+    /**
+     * @dev Allows to transfer any locked token on this contract other than stake token.
+     * @param _token address of the token, if it is not provided, native tokens will be transferred.
+     * @param _to address that will receive the locked tokens on this contract.
+     */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        require(_token != address(_erc677token()));
+        claimValues(_token, _to);
+    }
 }

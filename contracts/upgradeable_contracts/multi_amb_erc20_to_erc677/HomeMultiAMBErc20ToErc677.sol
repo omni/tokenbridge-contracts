@@ -42,14 +42,13 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
         uint256[2] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
-        require(_owner != address(0));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
         _setLimits(address(0), _dailyLimitMaxPerTxMinPerTxArray);
         _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
-        setOwner(_owner);
+        _setOwner(_owner);
         _setTokenImage(_tokenImage);
         if (_rewardAddreses.length > 0) {
             _setRewardAddressList(_rewardAddreses);
@@ -99,6 +98,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
     ) external onlyMediator {
         string memory name = _name;
         string memory symbol = _symbol;
+        require(bytes(name).length > 0 || bytes(symbol).length > 0);
         if (bytes(name).length == 0) {
             name = symbol;
         } else if (bytes(symbol).length == 0) {

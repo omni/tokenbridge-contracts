@@ -11,15 +11,12 @@ contract MessageTest {
             address sender,
             address executor,
             uint32 gasLimit,
-            bytes1 dataType,
+            uint8 dataType,
             uint256[2] chainIds,
-            uint256 gasPrice,
             bytes memory data
         )
     {
-        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
-            _data
-        );
+        (messageId, sender, executor, gasLimit, dataType, chainIds, data) = ArbitraryMessage.unpackData(_data);
     }
 
     function unpackDataWithExtraParams(
@@ -33,15 +30,12 @@ contract MessageTest {
             address sender,
             address executor,
             uint32 gasLimit,
-            bytes1 dataType,
+            uint8 dataType,
             uint256[2] chainIds,
-            uint256 gasPrice,
             bytes memory data
         )
     {
-        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
-            _data
-        );
+        (messageId, sender, executor, gasLimit, dataType, chainIds, data) = ArbitraryMessage.unpackData(_data);
     }
 
 }

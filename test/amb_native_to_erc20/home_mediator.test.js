@@ -1120,6 +1120,10 @@ contract('HomeAMBNativeToErc20', async accounts => {
             [...rewardAccountList, mediator.address],
             mediator.address
           ).should.be.rejectedWith(ERROR_MSG)
+          // invalid mediator contract
+          await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, ZERO_ADDRESS).should.be.rejectedWith(
+            ERROR_MSG
+          )
           await HomeFeeManagerAMBNativeToErc20.new(owner, fee, rewardAccountList, mediator.address)
         })
       })
@@ -1441,6 +1445,8 @@ contract('HomeAMBNativeToErc20', async accounts => {
       // When
       // only owner can call the method
       await contract.fixMediatorBalance(user, { from: user }).should.be.rejectedWith(ERROR_MSG)
+
+      await contract.fixMediatorBalance(ZERO_ADDRESS, { from: owner }).should.be.rejected
 
       await contract.fixMediatorBalance(user, { from: owner }).should.be.fulfilled
 

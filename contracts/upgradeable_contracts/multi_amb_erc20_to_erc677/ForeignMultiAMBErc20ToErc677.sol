@@ -35,14 +35,13 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         address _owner
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
-        require(_owner != address(0));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
         _setLimits(address(0), _dailyLimitMaxPerTxMinPerTxArray);
         _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
-        setOwner(_owner);
+        _setOwner(_owner);
 
         setInitialize();
 
@@ -201,7 +200,11 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @param _token address of the token contract.
     * @param _receiver the address that will receive the tokens on the other network.
     */
-    function fixMediatorBalance(address _token, address _receiver) public onlyIfUpgradeabilityOwner {
+    function fixMediatorBalance(address _token, address _receiver)
+        external
+        onlyIfUpgradeabilityOwner
+        validAddress(_receiver)
+    {
         require(isTokenRegistered(_token));
         uint256 balance = ERC677(_token).balanceOf(address(this));
         uint256 expectedBalance = mediatorBalance(_token);

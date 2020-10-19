@@ -44,7 +44,7 @@ contract BasicAMBErc677ToErc677 is
         _setExecutionLimits(_executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
         setInitialize();
 
         return isInitialized();
@@ -145,9 +145,5 @@ contract BasicAMBErc677ToErc677 is
         if (unlockOnForeign) {
             passMessage(recipient, recipient, valueToUnlock);
         }
-    }
-
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
-        claimValues(_token, _to);
     }
 }

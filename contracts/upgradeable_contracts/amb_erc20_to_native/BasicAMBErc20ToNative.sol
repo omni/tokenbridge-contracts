@@ -33,7 +33,6 @@ contract BasicAMBErc20ToNative is Initializable, Upgradeable, Claimable, Version
         address _owner
     ) internal {
         require(!isInitialized());
-        require(_owner != address(0));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
@@ -41,7 +40,7 @@ contract BasicAMBErc20ToNative is Initializable, Upgradeable, Claimable, Version
         _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
         _setExecutionLimits(_executionDailyLimitExecutionMaxPerTxArray);
         _setDecimalShift(_decimalShift);
-        setOwner(_owner);
+        _setOwner(_owner);
     }
 
     /**

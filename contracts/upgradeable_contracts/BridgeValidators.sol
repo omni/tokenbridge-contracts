@@ -9,8 +9,7 @@ contract BridgeValidators is BaseBridgeValidators {
         returns (bool)
     {
         require(!isInitialized());
-        require(_owner != address(0));
-        setOwner(_owner);
+        _setOwner(_owner);
         require(_requiredSignatures != 0);
         require(_initialValidators.length >= _requiredSignatures);
 

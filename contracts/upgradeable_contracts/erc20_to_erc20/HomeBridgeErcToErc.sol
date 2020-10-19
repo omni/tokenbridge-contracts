@@ -4,15 +4,20 @@ import "../../libraries/Message.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../BasicHomeBridge.sol";
-import "../OverdrawManagement.sol";
+import "../HomeOverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToErc.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 
+/**
+ * @title HomeBridgeErcToErc
+ * @dev This contract Home side logic for the erc-to-erc vanilla bridge mode.
+ * It is designed to be used as an implementation contract of EternalStorageProxy contract.
+ */
 contract HomeBridgeErcToErc is
     EternalStorage,
     BasicHomeBridge,
     ERC677BridgeForBurnableMintableToken,
-    OverdrawManagement,
+    HomeOverdrawManagement,
     RewardableHomeBridgeErcToErc
 {
     function initialize(
@@ -134,13 +139,26 @@ contract HomeBridgeErcToErc is
         return 0xba4690f5; // bytes4(keccak256(abi.encodePacked("erc-to-erc-core")))
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
+    /**
+     * @dev Internal callback to be called on successfull message execution.
+     * Should be called only after enough affirmations from the validators are already collected.
+     * @param _recipient address of the receiver where the new tokens should be minted.
+     * @param _value amount of tokens to mint.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     * @return true, if execution completed successfully.
+     */
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
+        internal
+        returns (bool)
+    {
+        _clearAboveLimitsMarker(_hashMsg, _value);
         addTotalExecutedPerDay(getCurrentDay(), _value);
         uint256 valueToMint = _shiftValue(_value);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager, txHash);
+            distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToMint = valueToMint.sub(fee);
         }
         return IBurnableMintableERC677Token(erc677token()).mint(_recipient, valueToMint);
@@ -169,13 +187,19 @@ contract HomeBridgeErcToErc is
         }
     }
 
-    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
-        address recipient;
-        uint256 value;
-        (recipient, value) = txAboveLimits(_txHash);
+    /**
+     * @dev Internal callback to be called on failed message execution due to the out-of-limits error.
+     * This function saves the bridge operation information for further processing.
+     * @param _recipient address of the receiver where the new tokens should be minted.
+     * @param _value amount of tokens to mint.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     */
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg) internal {
+        (address recipient, uint256 value) = txAboveLimits(_hashMsg);
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
-        setTxAboveLimits(_recipient, _value, _txHash);
-        emit AmountLimitExceeded(_recipient, _value, _txHash);
+        setTxAboveLimits(_recipient, _value, _hashMsg);
+        emit AmountLimitExceeded(_recipient, _value, _txHash, _hashMsg);
     }
 }

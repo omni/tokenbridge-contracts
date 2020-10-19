@@ -8,6 +8,10 @@ import "../libraries/Message.sol";
 import "./BasicBridge.sol";
 import "./BasicTokenBridge.sol";
 
+/**
+ * @title BasicHomeBridge
+ * @dev This contract implements common functionality for all vanilla bridge modes on the Home side.
+ */
 contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicTokenBridge {
     using SafeMath for uint256;
 
@@ -21,9 +25,16 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
         uint256 NumberOfCollectedSignatures
     );
 
+    /**
+     * @dev Executes a message affirmation for some Foreign side event.
+     * Can be called only by a current bridge validator.
+     * @param recipient tokens/coins of receiver address, where the assets should be unlocked/minted.
+     * @param value amount of assets to unlock/mint.
+     * @param transactionHash reference event transaction hash on the Foreign side of the bridge.
+     */
     function executeAffirmation(address recipient, uint256 value, bytes32 transactionHash) external onlyValidator {
+        bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
         if (withinExecutionLimit(value)) {
-            bytes32 hashMsg = keccak256(abi.encodePacked(recipient, value, transactionHash));
             bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
             // Duplicated affirmations
             require(!affirmationsSigned(hashSender));
@@ -43,12 +54,12 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
                 // it will couse funds lock on the home side of the bridge
                 setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
                 if (value > 0) {
-                    require(onExecuteAffirmation(recipient, value, transactionHash));
+                    require(onExecuteAffirmation(recipient, value, transactionHash, hashMsg));
                 }
                 emit AffirmationCompleted(recipient, value, transactionHash);
             }
         } else {
-            onFailedAffirmation(recipient, value, transactionHash);
+            onFailedAffirmation(recipient, value, transactionHash, hashMsg);
         }
     }
 
@@ -92,7 +103,10 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     }
 
     /* solcov ignore next */
-    function onExecuteAffirmation(address, uint256, bytes32) internal returns (bool);
+    function onExecuteAffirmation(address, uint256, bytes32, bytes32) internal returns (bool);
+
+    /* solcov ignore next */
+    function onFailedAffirmation(address, uint256, bytes32, bytes32) internal;
 
     /* solcov ignore next */
     function onSignaturesCollected(bytes) internal;
@@ -153,7 +167,4 @@ contract BasicHomeBridge is EternalStorage, Validatable, BasicBridge, BasicToken
     function requiredMessageLength() public pure returns (uint256) {
         return Message.requiredMessageLength();
     }
-
-    /* solcov ignore next */
-    function onFailedAffirmation(address, uint256, bytes32) internal;
 }

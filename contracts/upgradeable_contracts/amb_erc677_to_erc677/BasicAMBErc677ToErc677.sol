@@ -116,33 +116,28 @@ contract BasicAMBErc677ToErc677 is
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _messageId);
-        emit AmountLimitExceeded(_recipient, _value, _messageId);
+        emit MediatorAmountLimitExceeded(_recipient, _value, _messageId);
     }
 
     /**
     * @dev Fixes locked tokens, that were out of execution limits during the call to handleBridgedTokens
     * @param messageId reference for bridge operation that was out of execution limits
-    * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge
-    * @param valueToUnlock unlocked amount of tokens, should be less than maxPerTx() and saved txAboveLimitsValue
+    * @param unlockOnOtherSide true if fixed tokens should be unlocked to the other side of the bridge
+    * @param valueToUnlock unlocked amount of tokens, should be less than saved txAboveLimitsValue.
+    * Should be less than maxPerTx(), if tokens need to be unlocked on the other side.
     */
-    function fixAssetsAboveLimits(bytes32 messageId, bool unlockOnForeign, uint256 valueToUnlock)
+    function fixAssetsAboveLimits(bytes32 messageId, bool unlockOnOtherSide, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
     {
-        require(!fixedAssets(messageId));
-        require(valueToUnlock <= maxPerTx());
-        address recipient;
-        uint256 value;
-        (recipient, value) = txAboveLimits(messageId);
+        (address recipient, uint256 value) = txAboveLimits(messageId);
         require(recipient != address(0) && value > 0 && value >= valueToUnlock);
         setOutOfLimitAmount(outOfLimitAmount().sub(valueToUnlock));
         uint256 pendingValue = value.sub(valueToUnlock);
         setTxAboveLimitsValue(pendingValue, messageId);
         emit AssetAboveLimitsFixed(messageId, valueToUnlock, pendingValue);
-        if (pendingValue == 0) {
-            setFixedAssets(messageId);
-        }
-        if (unlockOnForeign) {
+        if (unlockOnOtherSide) {
+            require(valueToUnlock <= maxPerTx());
             passMessage(recipient, recipient, valueToUnlock);
         }
     }

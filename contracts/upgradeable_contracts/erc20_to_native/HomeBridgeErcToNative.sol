@@ -4,14 +4,19 @@ import "../../libraries/Message.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBlockReward.sol";
 import "../BasicHomeBridge.sol";
-import "../OverdrawManagement.sol";
+import "../HomeOverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToNative.sol";
 import "../BlockRewardBridge.sol";
 
+/**
+ * @title HomeBridgeErcToNative
+ * @dev This contract Home side logic for the erc-to-native vanilla bridge mode.
+ * It is designed to be used as an implementation contract of EternalStorageProxy contract.
+ */
 contract HomeBridgeErcToNative is
     EternalStorage,
     BasicHomeBridge,
-    OverdrawManagement,
+    HomeOverdrawManagement,
     RewardableHomeBridgeErcToNative,
     BlockRewardBridge
 {
@@ -158,7 +163,20 @@ contract HomeBridgeErcToNative is
         _setOwner(_owner);
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
+    /**
+     * @dev Internal callback to be called on successfull message execution.
+     * Should be called only after enough affirmations from the validators are already collected.
+     * @param _recipient address of the receiver where the new coins should be minted.
+     * @param _value amount of coins to mint.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     * @return true, if execution completed successfully.
+     */
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
+        internal
+        returns (bool)
+    {
+        _clearAboveLimitsMarker(_hashMsg, _value);
         addTotalExecutedPerDay(getCurrentDay(), _value);
         IBlockReward blockReward = blockRewardContract();
         require(blockReward != address(0));
@@ -166,7 +184,7 @@ contract HomeBridgeErcToNative is
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager, txHash);
+            distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToMint = valueToMint.sub(fee);
         }
         blockReward.addExtraReceiver(valueToMint, _recipient);
@@ -190,13 +208,19 @@ contract HomeBridgeErcToNative is
         uintStorage[TOTAL_BURNT_COINS] = _amount;
     }
 
-    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
-        address recipient;
-        uint256 value;
-        (recipient, value) = txAboveLimits(_txHash);
+    /**
+     * @dev Internal callback to be called on failed message execution due to the out-of-limits error.
+     * This function saves the bridge operation information for further processing.
+     * @param _recipient address of the receiver where the new coins should be minted.
+     * @param _value amount of coins to mint.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     */
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg) internal {
+        (address recipient, uint256 value) = txAboveLimits(_hashMsg);
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
-        setTxAboveLimits(_recipient, _value, _txHash);
-        emit AmountLimitExceeded(_recipient, _value, _txHash);
+        setTxAboveLimits(_recipient, _value, _hashMsg);
+        emit AmountLimitExceeded(_recipient, _value, _txHash, _hashMsg);
     }
 }

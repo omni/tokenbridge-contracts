@@ -6,6 +6,11 @@ import "../BasicHomeBridge.sol";
 import "./RewardableHomeBridgeNativeToErc.sol";
 import "../../libraries/Address.sol";
 
+/**
+ * @title HomeBridgeNativeToErc
+ * @dev This contract Home side logic for the native-to-erc vanilla bridge mode.
+ * It is designed to be used as an implementation contract of EternalStorageProxy contract.
+ */
 contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHomeBridgeNativeToErc {
     function() public payable {
         require(msg.data.length == 0);
@@ -132,14 +137,27 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         }
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
+    /**
+     * @dev Internal callback to be called on successfull message execution.
+     * Should be called only after enough affirmations from the validators are already collected.
+     * @param _recipient address of the receiver where the new coins should be unlocked.
+     * @param _value amount of coins to unlock.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     * Not used in this bridge mode, but required for interface unification with other bridge modes.
+     * @return true, if execution completed successfully.
+     */
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
+        internal
+        returns (bool)
+    {
         addTotalExecutedPerDay(getCurrentDay(), _value);
         uint256 valueToTransfer = _shiftValue(_value);
 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToTransfer, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager, txHash);
+            distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToTransfer = valueToTransfer.sub(fee);
         }
 
@@ -147,11 +165,16 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         return true;
     }
 
-    function onFailedAffirmation(
-        address, /*_recipient*/
-        uint256, /*_value*/
-        bytes32 /*_txHash*/
-    ) internal {
+    /**
+     * @dev Internal callback to be called on failed message execution due to the out-of-limits error.
+     * This function saves the bridge operation information for further processing.
+     * @param _recipient address of the receiver where the new coins should be unlocked.
+     * @param _value amount of coins to unlock.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     */
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg) internal {
+        // solhint-disable-previous-line no-unused-vars
         revert();
     }
 

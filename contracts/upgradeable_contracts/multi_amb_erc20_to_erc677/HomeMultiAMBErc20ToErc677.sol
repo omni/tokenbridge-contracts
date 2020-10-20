@@ -249,6 +249,10 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
         if (!lock()) {
             bytes32 _messageId = messageId();
             uint256 valueToBridge = _value;
+            // Next line disables fee collection in case sender is one of the reward addresses.
+            // It is needed to allow a 100% withdrawal of tokens from the home side.
+            // If fees are not disabled for reward receivers, small fraction of tokens will always
+            // be redistributed between the same set of reward addresses, which is not the desired behaviour.
             if (!isRewardAddress(_from)) {
                 uint256 fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);
                 if (fee > 0) {

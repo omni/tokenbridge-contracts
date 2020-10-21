@@ -67,9 +67,13 @@ contract RewardableBridge is Ownable, FeeTypes {
         assembly {
             let result := callcode(gas, _impl, 0x0, add(callData, 0x20), mload(callData), 0, 32)
 
-            if and(eq(returndatasize, 32), result) {
-                fee := mload(0)
-            }
+            switch and(eq(returndatasize, 32), result)
+                case 1 {
+                    fee := mload(0)
+                }
+                default {
+                    revert(0, 0)
+                }
         }
     }
 

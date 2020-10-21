@@ -27,9 +27,13 @@ contract RewardableHomeBridgeErcToNative is RewardableBridge {
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
 
-            if and(eq(returndatasize, 32), result) {
-                amount := mload(0)
-            }
+            switch and(eq(returndatasize, 32), result)
+                case 1 {
+                    amount := mload(0)
+                }
+                default {
+                    revert(0, 0)
+                }
         }
     }
 }

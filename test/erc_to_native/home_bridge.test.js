@@ -1810,6 +1810,15 @@ contract('HomeBridge_ERC20_to_Native', async accounts => {
       const bridgeForeignFee = await homeBridge.getForeignFee()
       bridgeForeignFee.should.be.bignumber.equal(foreignFee)
     })
+    it('should return zero parameters for zero fee manager', async () => {
+      // When
+      await homeBridge.setFeeManagerContract(ZERO_ADDRESS, { from: owner }).should.be.fulfilled
+
+      // Then
+      expect(await homeBridge.getFeeManagerMode()).to.be.equal('0x00000000')
+      expect(await homeBridge.getHomeFee()).to.be.bignumber.equal(ZERO)
+      expect(await homeBridge.getForeignFee()).to.be.bignumber.equal(ZERO)
+    })
     it('should be able to get fee manager mode', async () => {
       // Given
       const feeManager = await FeeManagerErcToNative.new()

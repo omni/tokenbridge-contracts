@@ -18,38 +18,30 @@ contract RewardableBridge is Ownable, FeeTypes {
     bytes4 internal constant DISTRIBUTE_FEE_FROM_SIGNATURES = 0x59d78464; // distributeFeeFromSignatures(uint256)
     bytes4 internal constant DISTRIBUTE_FEE_FROM_AFFIRMATION = 0x054d46ec; // distributeFeeFromAffirmation(uint256)
 
-    function _getFee(bytes32 _feeType) internal view validFeeType(_feeType) returns (uint256) {
-        uint256 fee;
+    function _getFee(bytes32 _feeType) internal view validFeeType(_feeType) returns (uint256 fee) {
         address feeManager = feeManagerContract();
         bytes4 method = _feeType == HOME_FEE ? GET_HOME_FEE : GET_FOREIGN_FEE;
         bytes memory callData = abi.encodeWithSelector(method);
 
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
-            fee := mload(0)
 
-            switch result
-                case 0 {
-                    revert(0, 0)
-                }
+            if and(eq(returndatasize, 32), result) {
+                fee := mload(0)
+            }
         }
-        return fee;
     }
 
-    function getFeeManagerMode() external view returns (bytes4) {
-        bytes4 mode;
+    function getFeeManagerMode() external view returns (bytes4 mode) {
         bytes memory callData = abi.encodeWithSelector(GET_FEE_MANAGER_MODE);
         address feeManager = feeManagerContract();
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 4)
-            mode := mload(0)
 
-            switch result
-                case 0 {
-                    revert(0, 0)
-                }
+            if and(eq(returndatasize, 32), result) {
+                mode := mload(0)
+            }
         }
-        return mode;
     }
 
     function feeManagerContract() public view returns (address) {
@@ -69,20 +61,20 @@ contract RewardableBridge is Ownable, FeeTypes {
     function calculateFee(uint256 _value, bool _recover, address _impl, bytes32 _feeType)
         internal
         view
-        returns (uint256)
+        returns (uint256 fee)
     {
-        uint256 fee;
         bytes memory callData = abi.encodeWithSelector(CALCULATE_FEE, _value, _recover, _feeType);
         assembly {
             let result := callcode(gas, _impl, 0x0, add(callData, 0x20), mload(callData), 0, 32)
-            fee := mload(0)
 
-            switch result
-                case 0 {
+            switch and(eq(returndatasize, 32), result)
+                case 1 {
+                    fee := mload(0)
+                }
+                default {
                     revert(0, 0)
                 }
         }
-        return fee;
     }
 
     function distributeFeeFromSignatures(uint256 _fee, address _feeManager, bytes32 _txHash) internal {

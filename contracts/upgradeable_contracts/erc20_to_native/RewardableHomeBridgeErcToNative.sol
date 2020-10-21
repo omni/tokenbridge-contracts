@@ -21,19 +21,19 @@ contract RewardableHomeBridgeErcToNative is RewardableBridge {
         return _getFee(FOREIGN_FEE);
     }
 
-    function getAmountToBurn(uint256 _value) public view returns (uint256) {
-        uint256 amount;
+    function getAmountToBurn(uint256 _value) public view returns (uint256 amount) {
         bytes memory callData = abi.encodeWithSelector(GET_AMOUNT_TO_BURN, _value);
         address feeManager = feeManagerContract();
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
-            amount := mload(0)
 
-            switch result
-                case 0 {
+            switch and(eq(returndatasize, 32), result)
+                case 1 {
+                    amount := mload(0)
+                }
+                default {
                     revert(0, 0)
                 }
         }
-        return amount;
     }
 }

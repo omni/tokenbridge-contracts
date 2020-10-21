@@ -37,22 +37,17 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         return isInitialized();
     }
 
-    function blockRewardContract() public view returns (address) {
-        address blockReward;
+    function blockRewardContract() public view returns (address blockReward) {
         address feeManager = feeManagerContract();
         bytes memory callData = abi.encodeWithSelector(BLOCK_REWARD_CONTRACT_SELECTOR);
 
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
-            blockReward := mload(0)
 
-            switch result
-                case 0 {
-                    revert(0, 0)
-                }
+            if and(eq(returndatasize, 32), result) {
+                blockReward := mload(0)
+            }
         }
-
-        return blockReward;
     }
 
     function setBlockRewardContract(address _blockReward) external onlyOwner {

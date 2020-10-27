@@ -1301,6 +1301,27 @@ contract('HomeAMBErc20ToNative', async accounts => {
         expect(feeEvents.length).to.be.equal(1)
       })
 
+      it('should not collect fee from reward receiver', async () => {
+        await contract.addRewardAddress(accounts[9]).should.be.fulfilled
+        expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
+
+        await contract.sendTransaction({
+          from: accounts[9],
+          value
+        })
+
+        expect(await contract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(value)
+
+        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+
+        expect(events[0].returnValues.encodedData.includes('8b6c0354')).to.be.equal(true)
+        expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
+        expect(await contract.totalBurntCoins()).to.be.bignumber.equal(value)
+
+        const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
+        expect(feeEvents.length).to.be.equal(0)
+      })
+
       it('should collect and distribute 1% fee between two reward addresses', async () => {
         await contract.addRewardAddress(accounts[9]).should.be.fulfilled
         expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')

@@ -153,7 +153,10 @@ contract HomeAMBErc20ToNative is BasicAMBErc20ToNative, BlockRewardBridge, HomeF
         uint256 valueToTransfer = msg.value;
         bytes32 _messageId = messageId();
 
-        uint256 fee = _distributeFee(HOME_TO_FOREIGN_FEE, valueToTransfer);
+        uint256 fee = 0;
+        if (!isRewardAddress(msg.sender)) {
+            fee = _distributeFee(HOME_TO_FOREIGN_FEE, valueToTransfer);
+        }
         if (fee > 0) {
             emit FeeDistributed(fee, _messageId);
             valueToTransfer = valueToTransfer.sub(fee);

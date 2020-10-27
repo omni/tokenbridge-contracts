@@ -38,7 +38,8 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
 
     /**
      * @dev Calculates the fee amount to be subtracted from the value.
-     * @param _value the base value from which fees are calculated
+     * @param _value the base value from which fees are calculated.
+     * @return fee amount that should be subtracted from the transferred value.
      */
     function calculateFee(uint256 _value) public view returns (uint256) {
         return _value.mul(getFee()).div(MAX_FEE);
@@ -73,7 +74,7 @@ contract HomeStakeTokenFeeManager is BlockRewardBridge, Ownable {
 
     /**
      * @dev Distributes fee as per the logic of the fee manager.
-     * In this particular case, the amount of fee is passed the block 
+     * In this particular case, the amount of fee is passed the block
      * reward contract which will mint new tokens and distribute them
      * among the stakers.
      * IMPORTANT: make sure that the code checks that the block reward

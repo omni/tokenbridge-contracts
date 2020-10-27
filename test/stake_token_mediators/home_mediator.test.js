@@ -246,9 +246,10 @@ contract('HomeStakeTokenMediator', async accounts => {
     describe('bridge tokens from xDai chain', async () => {
       beforeEach(async () => {
         await token.mint(user, oneEther)
+        await token.mint(authorities[0], oneEther)
         await token.transferOwnership(homeMediator.address)
 
-        expect(await token.totalSupply()).to.be.bignumber.equal(oneEther)
+        expect(await token.totalSupply()).to.be.bignumber.equal(twoEthers)
       })
 
       it('should accept tokens, no fee', async () => {
@@ -260,7 +261,7 @@ contract('HomeStakeTokenMediator', async accounts => {
         const message = events[0].returnValues.encodedData
         const bridgedValue = toBN(message.slice(message.length - 64))
         expect(bridgedValue).to.be.bignumber.equal(halfEther)
-        expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
+        expect(await token.totalSupply()).to.be.bignumber.equal(ether('1.5'))
         expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(blockReward.address)).to.be.bignumber.equal(ZERO)
@@ -278,10 +279,28 @@ contract('HomeStakeTokenMediator', async accounts => {
         const bridgedValue = toBN(message.slice(message.length - 64))
 
         expect(bridgedValue).to.be.bignumber.equal(ether('0.45'))
-        expect(await token.totalSupply()).to.be.bignumber.equal(ether('0.55'))
+        expect(await token.totalSupply()).to.be.bignumber.equal(ether('1.55'))
         expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(blockReward.address)).to.be.bignumber.equal(ether('0.05'))
+      })
+
+      it('should accept tokens, no fee if sender is a validator', async () => {
+        await homeMediator.setBlockRewardContract(blockReward.address)
+        await homeMediator.setFee(ether('0.1')).should.be.fulfilled
+
+        await token.transferAndCall(homeMediator.address, halfEther, '0x', { from: authorities[0] }).should.be.fulfilled
+
+        const events = await getEvents(homeBridge, { event: 'MockedEvent' })
+        expect(events.length).to.be.equal(1)
+        const message = events[0].returnValues.encodedData
+        const bridgedValue = toBN(message.slice(message.length - 64))
+
+        expect(bridgedValue).to.be.bignumber.equal(halfEther)
+        expect(await token.totalSupply()).to.be.bignumber.equal(ether('1.5'))
+        expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(authorities[0])).to.be.bignumber.equal(halfEther)
+        expect(await token.balanceOf(blockReward.address)).to.be.bignumber.equal(ZERO)
       })
 
       it('should accept tokens, block reward contract is not configured', async () => {
@@ -295,7 +314,7 @@ contract('HomeStakeTokenMediator', async accounts => {
         const bridgedValue = toBN(message.slice(message.length - 64))
 
         expect(bridgedValue).to.be.bignumber.equal(halfEther)
-        expect(await token.totalSupply()).to.be.bignumber.equal(halfEther)
+        expect(await token.totalSupply()).to.be.bignumber.equal(ether('1.5'))
         expect(await token.balanceOf(homeMediator.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(halfEther)
         expect(await token.balanceOf(blockReward.address)).to.be.bignumber.equal(ZERO)

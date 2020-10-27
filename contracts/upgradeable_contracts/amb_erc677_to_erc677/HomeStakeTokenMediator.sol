@@ -141,7 +141,11 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
             IBurnableMintableERC677Token(_token).burn(_value);
 
             if (isFeeCollectingActivated()) {
-                uint256 fee = calculateFee(_value);
+                IValidatorSetContract validatorContract = _blockRewardContract().validatorSetContract();
+                uint256 fee = 0;
+                if (address(validatorContract) == address(0) || !validatorContract.isValidator(_from)) {
+                    fee = calculateFee(_value);
+                }
                 // the calculated fee is subtracted from the original value
                 passMessage(_from, chooseReceiver(_from, _data), _value.sub(fee));
                 if (fee > 0) {

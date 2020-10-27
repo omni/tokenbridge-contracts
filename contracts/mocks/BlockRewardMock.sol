@@ -47,6 +47,19 @@ contract BlockRewardMock {
         validatorList = _initialValidators;
     }
 
+    function validatorSetContract() external view returns (IValidatorSetContract) {
+        return IValidatorSetContract(this);
+    }
+
+    function isValidator(address _validator) external view returns (bool) {
+        for (uint256 i = 0; i < validatorList.length; i++) {
+            if (validatorList[i] == _validator) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function setToken(address _token) external {
         token = _token;
     }

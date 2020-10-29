@@ -24,7 +24,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         uint256 valueToTransfer = msg.value;
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
+            uint256 fee = calculateFee(valueToTransfer, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
             _saveCalculatedFee(_receiver, valueToTransfer, feeManager, fee);
         }
@@ -153,7 +153,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
 
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToTransfer, false, feeManager, FOREIGN_FEE);
+            uint256 fee = calculateFee(valueToTransfer, feeManager, FOREIGN_FEE);
             distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToTransfer = valueToTransfer.sub(fee);
         }

@@ -18,7 +18,7 @@ contract RewardableBridge is Ownable, FeeTypes {
     bytes4 internal constant GET_FEE_MANAGER_MODE = 0xf2ba9561; // getFeeManagerMode()
     bytes4 internal constant SET_HOME_FEE = 0x34a9e148; // setHomeFee(uint256)
     bytes4 internal constant SET_FOREIGN_FEE = 0x286c4066; // setForeignFee(uint256)
-    bytes4 internal constant CALCULATE_FEE = 0x9862f26f; // calculateFee(uint256,bool,bytes32)
+    bytes4 internal constant CALCULATE_FEE = 0x3a652b90; // calculateFee(uint256,bytes32)
     bytes4 internal constant DISTRIBUTE_FEE_FROM_SIGNATURES = 0x59d78464; // distributeFeeFromSignatures(uint256)
     bytes4 internal constant DISTRIBUTE_FEE_FROM_AFFIRMATION = 0x054d46ec; // distributeFeeFromAffirmation(uint256)
 
@@ -89,17 +89,12 @@ contract RewardableBridge is Ownable, FeeTypes {
     /**
      * @dev Calculates the exact fee amount by using the fee manager.
      * @param _value transferred value for which fee should be calculated.
-     * @param _recover true, if a fee was already subtracted from the _value.
      * @param _impl address of the fee manager contract.
      * @param _feeType type of the fee, should be either HOME_FEE of FOREIGN_FEE.
      * @return calculated fee amount.
      */
-    function calculateFee(uint256 _value, bool _recover, address _impl, bytes32 _feeType)
-        internal
-        view
-        returns (uint256 fee)
-    {
-        bytes memory callData = abi.encodeWithSelector(CALCULATE_FEE, _value, _recover, _feeType);
+    function calculateFee(uint256 _value, address _impl, bytes32 _feeType) internal view returns (uint256 fee) {
+        bytes memory callData = abi.encodeWithSelector(CALCULATE_FEE, _value, _feeType);
         assembly {
             let result := callcode(gas, _impl, 0x0, add(callData, 0x20), mload(callData), 0, 32)
 

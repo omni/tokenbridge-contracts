@@ -157,7 +157,7 @@ contract HomeBridgeErcToErc is
         uint256 valueToMint = _shiftValue(_value);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
+            uint256 fee = calculateFee(valueToMint, feeManager, FOREIGN_FEE);
             distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToMint = valueToMint.sub(fee);
         }
@@ -168,7 +168,7 @@ contract HomeBridgeErcToErc is
         uint256 valueToTransfer = _value;
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
+            uint256 fee = calculateFee(valueToTransfer, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
             _saveCalculatedFee(_from, valueToTransfer, feeManager, fee);
         }

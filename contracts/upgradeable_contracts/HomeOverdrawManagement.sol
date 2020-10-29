@@ -37,7 +37,7 @@ contract HomeOverdrawManagement is BaseOverdrawManagement, RewardableBridge, Upg
             address feeManager = feeManagerContract();
             uint256 eventValue = valueToUnlock;
             if (feeManager != address(0)) {
-                uint256 fee = calculateFee(valueToUnlock, false, feeManager, HOME_FEE);
+                uint256 fee = calculateFee(valueToUnlock, feeManager, HOME_FEE);
                 eventValue = valueToUnlock.sub(fee);
             }
             emit UserRequestForSignature(recipient, eventValue);

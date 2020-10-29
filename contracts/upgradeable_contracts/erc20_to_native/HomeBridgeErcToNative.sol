@@ -192,6 +192,11 @@ contract HomeBridgeErcToNative is
         return true;
     }
 
+    /**
+     * @dev Internal function to be called when enough signatures are collected.
+     * Distributed the fee for collecting signatures.
+     * @param _message encoded message signed by the validators.
+     */
     function onSignaturesCollected(bytes _message) internal {
         (address recipient, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
         (address feeManager, uint256 fee) = _restoreCalculatedFee(recipient, amount);

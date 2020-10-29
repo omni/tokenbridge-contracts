@@ -66,6 +66,8 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         // 79 = 4 + 20 + 8 + 20 + 20 + 4 + 1 + 1 + 1
         header = new bytes(79 + srcChainIdLength + dstChainIdLength);
 
+        uint256 datatype = _messageDatatype();
+
         // In order to save the gas, the header is packed in the reverse order.
         // With such approach, it is possible to store right-aligned values without any additional bit shifts.
         assembly {
@@ -73,7 +75,7 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
             mstore(ptr, dstChainId)
             mstore(sub(ptr, dstChainIdLength), srcChainId)
 
-            mstore(add(header, 79), 0x00)
+            mstore(add(header, 79), datatype)
             mstore(add(header, 78), dstChainIdLength)
             mstore(add(header, 77), srcChainIdLength)
             mstore(add(header, 76), _gas)
@@ -82,6 +84,14 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
 
             mstore(add(header, 32), or(mVer, or(bridgeId, nonce)))
         }
+    }
+
+    /**
+     * @dev Returns the message datatype to be when creating a new AMB message.
+     * @return message datatype, 1 byte.
+     */
+    function _messageDatatype() internal pure returns (uint256) {
+        return 0x00;
     }
 
     /* solcov ignore next */

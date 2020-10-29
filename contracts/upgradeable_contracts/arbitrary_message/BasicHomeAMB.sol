@@ -38,6 +38,16 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
     }
 
     /**
+    * @dev Requests message relay to the opposite network, message is sent to the manual lane.
+    * @param _contract executor address on the other side.
+    * @param _data calldata passed to the executor on the other side.
+    * @param _gas gas limit used on the other network for executing a message.
+    */
+    function requireToConfirmMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32) {
+        return requireToPassMessage(_contract, _data, _gas);
+    }
+
+    /**
      * Parses given message, processes a call inside it
      * @param _message relayed message
      */
@@ -149,5 +159,13 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
 
     function setNumAffirmationsSigned(bytes32 _hash, uint256 _number) internal {
         uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _hash))] = _number;
+    }
+
+    /**
+     * @dev Returns the message datatype to be when creating a new AMB message.
+     * @return message datatype, 1 byte.
+     */
+    function _messageDatatype() internal pure returns (uint256) {
+        return msg.sig == this.requireToConfirmMessage.selector ? 0xf0 : 0x00;
     }
 }

@@ -1661,7 +1661,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await blockRewardContract.setValidatorsRewards(rewards)
       await blockRewardContract.setToken(token.address)
       await token.setBlockRewardContract(blockRewardContract.address, { from: owner })
+      await token.mint(recipient, halfEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(homeBridge.address, { from: owner })
+      await token.transferAndCall(homeBridge.address, halfEther, '0x', { from: recipient }).should.be.fulfilled
 
       const valueCalc = 0.5 * (1 - fee)
       const value = ether(valueCalc.toString())
@@ -1708,7 +1710,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await blockRewardContract.setValidatorsRewards(rewards)
       await blockRewardContract.setToken(token.address)
       await token.setBlockRewardContract(blockRewardContract.address)
+      await token.mint(recipient, halfEther, { from: accounts[0] }).should.be.fulfilled
       await token.transferOwnership(homeBridge.address)
+      await token.transferAndCall(homeBridge.address, halfEther, '0x', { from: recipient }).should.be.fulfilled
 
       const calcValue = 0.5 * (1 - fee)
       const value = ether(calcValue.toString())
@@ -1766,7 +1770,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await blockRewardContract.setValidatorsRewards(rewards)
       await blockRewardContract.setToken(token.address)
       await token.setBlockRewardContract(blockRewardContract.address)
+      await token.mint(recipient, halfEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(homeBridge.address)
+      await token.transferAndCall(homeBridge.address, halfEther, '0x', { from: recipient }).should.be.fulfilled
 
       const valueCalc = 0.5 * (1 - fee)
       const value = ether(valueCalc.toString())
@@ -1824,7 +1830,9 @@ contract('HomeBridge_ERC20_to_ERC20', async accounts => {
       await blockRewardContract.setValidatorsRewards(rewards)
       await blockRewardContract.setToken(token.address)
       await token.setBlockRewardContract(blockRewardContract.address, { from: owner })
+      await token.mint(recipient, halfEther, { from: owner }).should.be.fulfilled
       await token.transferOwnership(homeBridge.address, { from: owner })
+      await token.transferAndCall(homeBridge.address, halfEther, '0x', { from: recipient }).should.be.fulfilled
 
       const valueCalc = 0.5 * (1 - fee)
       const value = ether(valueCalc.toString())

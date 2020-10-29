@@ -26,6 +26,7 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
+            _saveCalculatedFee(_receiver, valueToTransfer, feeManager, fee);
         }
         emit UserRequestForSignature(_receiver, valueToTransfer);
     }
@@ -123,18 +124,9 @@ contract HomeBridgeNativeToErc is EternalStorage, BasicHomeBridge, RewardableHom
     }
 
     function onSignaturesCollected(bytes _message) internal {
-        address feeManager = feeManagerContract();
-        if (feeManager != address(0)) {
-            address recipient;
-            uint256 amount;
-            bytes32 txHash;
-            address contractAddress;
-            (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
-            uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
-            if (fee != 0) {
-                distributeFeeFromSignatures(fee, feeManager, txHash);
-            }
-        }
+        (address recipient, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
+        (address feeManager, uint256 fee) = _restoreCalculatedFee(recipient, amount);
+        distributeFeeFromSignatures(fee, feeManager, txHash);
     }
 
     /**

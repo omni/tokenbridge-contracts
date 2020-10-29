@@ -78,12 +78,34 @@ contract RewardableBridge is Ownable, FeeTypes {
     }
 
     function distributeFeeFromSignatures(uint256 _fee, address _feeManager, bytes32 _txHash) internal {
-        require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_SIGNATURES, _fee)));
-        emit FeeDistributedFromSignatures(_fee, _txHash);
+        if (_fee > 0) {
+            require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_SIGNATURES, _fee)));
+            emit FeeDistributedFromSignatures(_fee, _txHash);
+        }
     }
 
     function distributeFeeFromAffirmation(uint256 _fee, address _feeManager, bytes32 _txHash) internal {
-        require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_AFFIRMATION, _fee)));
-        emit FeeDistributedFromAffirmation(_fee, _txHash);
+        if (_fee > 0) {
+            require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_AFFIRMATION, _fee)));
+            emit FeeDistributedFromAffirmation(_fee, _txHash);
+        }
+    }
+
+    function _saveCalculatedFee(address _receiver, uint256 _amount, address _feeManager, uint256 _fee) internal {
+        if (_fee > 0) {
+            bytes32 key = keccak256(abi.encodePacked("calculatedFee", _receiver, _amount));
+            require(uintStorage[key] == 0);
+            addressStorage[key] = _feeManager;
+            uintStorage[key] = _fee;
+        }
+    }
+
+    function _restoreCalculatedFee(address _receiver, uint256 _amount) internal returns (address, uint256) {
+        bytes32 key = keccak256(abi.encodePacked("calculatedFee", _receiver, _amount));
+        address feeManager = addressStorage[key];
+        uint256 fee = uintStorage[key];
+        delete addressStorage[key];
+        delete uintStorage[key];
+        return (feeManager, fee);
     }
 }

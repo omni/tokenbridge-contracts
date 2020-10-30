@@ -124,8 +124,10 @@ contract ForeignBridgeNativeToErc is
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, feeManager, HOME_FEE);
-            distributeFeeFromSignatures(fee, feeManager, _txHash);
-            valueToMint = valueToMint.sub(fee);
+            if (fee > 0) {
+                distributeFeeFromSignatures(fee, feeManager, _txHash);
+                valueToMint = valueToMint.sub(fee);
+            }
         }
         return IBurnableMintableERC677Token(erc677token()).mint(_recipient, valueToMint);
     }

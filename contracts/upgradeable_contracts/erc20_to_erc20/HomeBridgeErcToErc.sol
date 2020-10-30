@@ -174,14 +174,15 @@ contract HomeBridgeErcToErc is
         emit UserRequestForSignature(_from, valueToTransfer);
     }
 
+    /**
+     * @dev Internal function to be called when enough signatures are collected.
+     * Distributed the fee for collecting signatures.
+     * @param _message encoded message signed by the validators.
+     */
     function onSignaturesCollected(bytes _message) internal {
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            address recipient;
-            uint256 amount;
-            bytes32 txHash;
-            address contractAddress;
-            (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
+            (, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
             distributeFeeFromSignatures(fee, feeManager, txHash);
         }

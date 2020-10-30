@@ -5,10 +5,22 @@ import "../RewardableBridge.sol";
 contract RewardableHomeBridgeErcToNative is RewardableBridge {
     bytes4 internal constant GET_AMOUNT_TO_BURN = 0x916850e9; // getAmountToBurn(uint256)
 
+    /**
+     * @dev Updates the fee percentage for home->foreign bridge operations.
+     * Only owner is allowed to call this method.
+     * If during this operation, home fee is changed, it is highly recommended to stop the bridge operations first.
+     * Otherwise, pending signature requests can become a reason for imbalance between two bridge sides.
+     * @param _fee new value for fee percentage.
+     */
     function setHomeFee(uint256 _fee) external onlyOwner {
         _setFee(feeManagerContract(), _fee, HOME_FEE);
     }
 
+    /**
+     * @dev Updates the fee percentage for foreign->home bridge operations.
+     * Only owner is allowed to call this method.
+     * @param _fee new value for fee percentage.
+     */
     function setForeignFee(uint256 _fee) external onlyOwner {
         _setFee(feeManagerContract(), _fee, FOREIGN_FEE);
     }

@@ -20,7 +20,7 @@ contract FeeManagerErcToNative is ValidatorsFeeManager, BlockRewardBridge {
     }
 
     function getAmountToBurn(uint256 _value) public view returns (uint256) {
-        uint256 fee = calculateFee(_value, HOME_FEE);
+        uint256 fee = calculateFee(_value, false, HOME_FEE);
         return _value.sub(fee);
     }
 }

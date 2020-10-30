@@ -123,7 +123,7 @@ contract ForeignBridgeNativeToErc is
         uint256 valueToMint = _unshiftValue(_amount);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToMint, feeManager, HOME_FEE);
+            uint256 fee = calculateFee(valueToMint, false, feeManager, HOME_FEE);
             if (fee > 0) {
                 distributeFeeFromSignatures(fee, feeManager, _txHash);
                 valueToMint = valueToMint.sub(fee);

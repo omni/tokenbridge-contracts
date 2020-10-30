@@ -3,6 +3,13 @@ pragma solidity 0.4.24;
 import "../RewardableBridge.sol";
 
 contract RewardableForeignBridgeNativeToErc is RewardableBridge {
+    /**
+     * @dev Updates the fee percentage for home->foreign bridge operations.
+     * Only owner is allowed to call this method.
+     * If during this operation, home fee is changed, it is highly recommended to stop the bridge operations first.
+     * Otherwise, pending signature requests can become a reason for imbalance between two bridge sides.
+     * @param _fee new value for fee percentage.
+     */
     function setHomeFee(uint256 _fee) external onlyOwner {
         _setFee(feeManagerContract(), _fee, HOME_FEE);
     }

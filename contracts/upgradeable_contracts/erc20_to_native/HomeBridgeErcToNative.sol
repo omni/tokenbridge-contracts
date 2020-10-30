@@ -39,10 +39,9 @@ contract HomeBridgeErcToNative is
         address feeManager = feeManagerContract();
         uint256 valueToBurn = msg.value;
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToTransfer, feeManager, HOME_FEE);
+            uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
             valueToBurn = getAmountToBurn(valueToBurn);
-            _saveCalculatedFee(_receiver, valueToTransfer, feeManager, fee);
         }
         setTotalBurntCoins(totalBurnt.add(valueToBurn));
         address(0).transfer(valueToBurn);
@@ -184,7 +183,7 @@ contract HomeBridgeErcToNative is
         uint256 valueToMint = _shiftValue(_value);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToMint, feeManager, FOREIGN_FEE);
+            uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
             distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToMint = valueToMint.sub(fee);
         }
@@ -198,9 +197,12 @@ contract HomeBridgeErcToNative is
      * @param _message encoded message signed by the validators.
      */
     function onSignaturesCollected(bytes _message) internal {
-        (address recipient, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
-        (address feeManager, uint256 fee) = _restoreCalculatedFee(recipient, amount);
-        distributeFeeFromSignatures(fee, feeManager, txHash);
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            (, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
+            uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
+            distributeFeeFromSignatures(fee, feeManager, txHash);
+        }
     }
 
     function setTotalBurntCoins(uint256 _amount) internal {

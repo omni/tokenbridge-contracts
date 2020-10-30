@@ -157,7 +157,7 @@ contract HomeBridgeErcToErc is
         uint256 valueToMint = _shiftValue(_value);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToMint, feeManager, FOREIGN_FEE);
+            uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
             distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToMint = valueToMint.sub(fee);
         }
@@ -168,9 +168,8 @@ contract HomeBridgeErcToErc is
         uint256 valueToTransfer = _value;
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            uint256 fee = calculateFee(valueToTransfer, feeManager, HOME_FEE);
+            uint256 fee = calculateFee(valueToTransfer, false, feeManager, HOME_FEE);
             valueToTransfer = valueToTransfer.sub(fee);
-            _saveCalculatedFee(_from, valueToTransfer, feeManager, fee);
         }
         emit UserRequestForSignature(_from, valueToTransfer);
     }
@@ -181,9 +180,12 @@ contract HomeBridgeErcToErc is
      * @param _message encoded message signed by the validators.
      */
     function onSignaturesCollected(bytes _message) internal {
-        (address recipient, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
-        (address feeManager, uint256 fee) = _restoreCalculatedFee(recipient, amount);
-        distributeFeeFromSignatures(fee, feeManager, txHash);
+        address feeManager = feeManagerContract();
+        if (feeManager != address(0)) {
+            (, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
+            uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
+            distributeFeeFromSignatures(fee, feeManager, txHash);
+        }
     }
 
     /**

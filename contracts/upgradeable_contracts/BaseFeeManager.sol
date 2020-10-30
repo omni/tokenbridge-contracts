@@ -19,12 +19,21 @@ contract BaseFeeManager is EternalStorage, FeeTypes {
     /**
      * @dev Calculated the amount of fee for the particular bridge operation.
      * @param _value bridged amount of tokens/coins for which fee amount is calculated.
+     * @param _recover true, if the fee was already subtracted from the given _value and needs to be restored.
      * @param _feeType type of the fee, should be either HOME_FEE of FOREIGN_FEE.
      * @return calculated fee amount.
      */
-    function calculateFee(uint256 _value, bytes32 _feeType) public view validFeeType(_feeType) returns (uint256) {
+    function calculateFee(uint256 _value, bool _recover, bytes32 _feeType)
+        public
+        view
+        validFeeType(_feeType)
+        returns (uint256)
+    {
         uint256 fee = _feeType == HOME_FEE ? getHomeFee() : getForeignFee();
-        return _value.mul(fee).div(MAX_FEE);
+        if (!_recover) {
+            return _value.mul(fee).div(MAX_FEE);
+        }
+        return _value.mul(fee).div(MAX_FEE.sub(fee));
     }
 
     modifier validFee(uint256 _fee) {

@@ -18,7 +18,7 @@ contract RewardableBridge is Ownable, FeeTypes {
     bytes4 internal constant GET_FEE_MANAGER_MODE = 0xf2ba9561; // getFeeManagerMode()
     bytes4 internal constant SET_HOME_FEE = 0x34a9e148; // setHomeFee(uint256)
     bytes4 internal constant SET_FOREIGN_FEE = 0x286c4066; // setForeignFee(uint256)
-    bytes4 internal constant CALCULATE_FEE = 0x3a652b90; // calculateFee(uint256,bytes32)
+    bytes4 internal constant CALCULATE_FEE = 0x9862f26f; // calculateFee(uint256,bool,bytes32)
     bytes4 internal constant DISTRIBUTE_FEE_FROM_SIGNATURES = 0x59d78464; // distributeFeeFromSignatures(uint256)
     bytes4 internal constant DISTRIBUTE_FEE_FROM_AFFIRMATION = 0x054d46ec; // distributeFeeFromAffirmation(uint256)
 
@@ -68,6 +68,8 @@ contract RewardableBridge is Ownable, FeeTypes {
     /**
      * @dev Updates the address of the used fee manager contract.
      * Only contract owner can call this method.
+     * If during this operation, home fee is changed, it is highly recommended to stop the bridge operations first.
+     * Otherwise, pending signature requests can become a reason for imbalance between two bridge sides.
      * @param _feeManager address of the new fee manager contract, or zero address to disable fee collection.
      */
     function setFeeManagerContract(address _feeManager) external onlyOwner {
@@ -89,12 +91,17 @@ contract RewardableBridge is Ownable, FeeTypes {
     /**
      * @dev Calculates the exact fee amount by using the fee manager.
      * @param _value transferred value for which fee should be calculated.
+     * @param _recover true, if the fee was already subtracted from the given _value and needs to be restored.
      * @param _impl address of the fee manager contract.
      * @param _feeType type of the fee, should be either HOME_FEE of FOREIGN_FEE.
      * @return calculated fee amount.
      */
-    function calculateFee(uint256 _value, address _impl, bytes32 _feeType) internal view returns (uint256 fee) {
-        bytes memory callData = abi.encodeWithSelector(CALCULATE_FEE, _value, _feeType);
+    function calculateFee(uint256 _value, bool _recover, address _impl, bytes32 _feeType)
+        internal
+        view
+        returns (uint256 fee)
+    {
+        bytes memory callData = abi.encodeWithSelector(CALCULATE_FEE, _value, _recover, _feeType);
         assembly {
             let result := callcode(gas, _impl, 0x0, add(callData, 0x20), mload(callData), 0, 32)
 
@@ -132,36 +139,5 @@ contract RewardableBridge is Ownable, FeeTypes {
             require(_feeManager.delegatecall(abi.encodeWithSelector(DISTRIBUTE_FEE_FROM_AFFIRMATION, _fee)));
             emit FeeDistributedFromAffirmation(_fee, _txHash);
         }
-    }
-
-    /**
-     * @dev Internal function for saving the calculated fee, so that it can be used in the execution transaction.
-     * @param _receiver receiver of the bridge tokens.
-     * @param _amount amount of bridge tokens with subtracted fee.
-     * @param _fee amount of fee subtracted from bridged tokens.
-     * @param _feeManager address of the fee manager contract.
-     */
-    function _saveCalculatedFee(address _receiver, uint256 _amount, address _feeManager, uint256 _fee) internal {
-        if (_fee > 0) {
-            bytes32 key = keccak256(abi.encodePacked("calculatedFee", _receiver, _amount));
-            require(uintStorage[key] == 0);
-            addressStorage[key] = _feeManager;
-            uintStorage[key] = _fee;
-        }
-    }
-
-    /**
-     * @dev Internal function for restoring back the calculated fee.
-     * @param _receiver receiver of the bridge tokens.
-     * @param _amount amount of bridge tokens with subtracted fee.
-     * @return pair of fee manager contract address and the calculated fee amount.
-     */
-    function _restoreCalculatedFee(address _receiver, uint256 _amount) internal returns (address, uint256) {
-        bytes32 key = keccak256(abi.encodePacked("calculatedFee", _receiver, _amount));
-        address feeManager = addressStorage[key];
-        uint256 fee = uintStorage[key];
-        delete addressStorage[key];
-        delete uintStorage[key];
-        return (feeManager, fee);
     }
 }

@@ -15,6 +15,8 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
         uint256 NumberOfCollectedSignatures
     );
 
+    uint256 internal constant SEND_TO_MANUAL_LANE = 0xf0;
+
     function executeAffirmation(bytes message) external onlyValidator {
         bytes32 hashMsg = keccak256(abi.encodePacked(message));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
@@ -44,7 +46,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
     * @param _gas gas limit used on the other network for executing a message.
     */
     function requireToConfirmMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32) {
-        return _sendMessage(_contract, _data, _gas, 0xf0);
+        return _sendMessage(_contract, _data, _gas, SEND_TO_MANUAL_LANE);
     }
 
     /**

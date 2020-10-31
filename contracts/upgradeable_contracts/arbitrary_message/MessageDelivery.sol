@@ -9,6 +9,8 @@ import "../../libraries/Bytes.sol";
 contract MessageDelivery is BasicAMB, MessageProcessor {
     using SafeMath for uint256;
 
+    uint256 internal constant SEND_TO_ORACLE_DRIVEN_LANE = 0x00;
+
     /**
     * @dev Requests message relay to the opposite network
     * @param _contract executor address on the other side
@@ -16,7 +18,7 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
     * @param _gas gas limit used on the other network for executing a message
     */
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public returns (bytes32) {
-        return _sendMessage(_contract, _data, _gas, 0);
+        return _sendMessage(_contract, _data, _gas, SEND_TO_ORACLE_DRIVEN_LANE);
     }
 
     /**

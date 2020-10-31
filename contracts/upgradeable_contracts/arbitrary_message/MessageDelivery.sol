@@ -16,13 +16,24 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
     * @param _gas gas limit used on the other network for executing a message
     */
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) public returns (bytes32) {
+        return _sendMessage(_contract, _data, _gas, 0);
+    }
+
+    /**
+    * @dev Initiates sending of an AMB message to the opposite network
+    * @param _contract executor address on the other side
+    * @param _data calldata passed to the executor on the other side
+    * @param _gas gas limit used on the other network for executing a message
+    * @param _dataType AMB message dataType to be included as a part of the header
+    */
+    function _sendMessage(address _contract, bytes _data, uint256 _gas, uint256 _dataType) public returns (bytes32) {
         // it is not allowed to pass messages while other messages are processed
         require(messageId() == bytes32(0));
 
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
 
         bytes32 _messageId;
-        bytes memory header = _packHeader(_contract, _gas);
+        bytes memory header = _packHeader(_contract, _gas, _dataType);
         _setNonce(_nonce() + 1);
 
         assembly {
@@ -50,8 +61,13 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
     * @dev Packs message header into a single bytes blob
     * @param _contract executor address on the other side
     * @param _gas gas limit used on the other network for executing a message
+    * @param _dataType AMB message dataType to be included as a part of the header
     */
-    function _packHeader(address _contract, uint256 _gas) internal view returns (bytes memory header) {
+    function _packHeader(address _contract, uint256 _gas, uint256 _dataType)
+        internal
+        view
+        returns (bytes memory header)
+    {
         uint256 srcChainId = sourceChainId();
         uint256 srcChainIdLength = _sourceChainIdLength();
         uint256 dstChainId = destinationChainId();
@@ -66,8 +82,6 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         // 79 = 4 + 20 + 8 + 20 + 20 + 4 + 1 + 1 + 1
         header = new bytes(79 + srcChainIdLength + dstChainIdLength);
 
-        uint256 datatype = _messageDatatype();
-
         // In order to save the gas, the header is packed in the reverse order.
         // With such approach, it is possible to store right-aligned values without any additional bit shifts.
         assembly {
@@ -75,7 +89,7 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
             mstore(ptr, dstChainId)
             mstore(sub(ptr, dstChainIdLength), srcChainId)
 
-            mstore(add(header, 79), datatype)
+            mstore(add(header, 79), _dataType)
             mstore(add(header, 78), dstChainIdLength)
             mstore(add(header, 77), srcChainIdLength)
             mstore(add(header, 76), _gas)
@@ -84,14 +98,6 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
 
             mstore(add(header, 32), or(mVer, or(bridgeId, nonce)))
         }
-    }
-
-    /**
-     * @dev Returns the message datatype to be when creating a new AMB message.
-     * @return message datatype, 1 byte.
-     */
-    function _messageDatatype() internal pure returns (uint256) {
-        return 0x00;
     }
 
     /* solcov ignore next */

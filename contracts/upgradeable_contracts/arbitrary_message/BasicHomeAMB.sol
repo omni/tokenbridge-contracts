@@ -44,7 +44,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
     * @param _gas gas limit used on the other network for executing a message.
     */
     function requireToConfirmMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32) {
-        return requireToPassMessage(_contract, _data, _gas);
+        return _sendMessage(_contract, _data, _gas, 0xf0);
     }
 
     /**
@@ -159,13 +159,5 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
 
     function setNumAffirmationsSigned(bytes32 _hash, uint256 _number) internal {
         uintStorage[keccak256(abi.encodePacked("numAffirmationsSigned", _hash))] = _number;
-    }
-
-    /**
-     * @dev Returns the message datatype to be when creating a new AMB message.
-     * @return message datatype, 1 byte.
-     */
-    function _messageDatatype() internal pure returns (uint256) {
-        return msg.sig == this.requireToConfirmMessage.selector ? 0xf0 : 0x00;
     }
 }

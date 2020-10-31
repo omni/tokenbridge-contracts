@@ -258,7 +258,7 @@ contract('HomeAMB', async accounts => {
       expect(await proxy.upgradeabilityOwner()).to.be.equal(newOwner)
     })
   })
-  describe('requireToPassMessage', () => {
+  describe('requireToPassMessage & requireToConfirmMessage', () => {
     let homeBridge
     let bridgeId
     beforeEach(async () => {
@@ -289,7 +289,22 @@ contract('HomeAMB', async accounts => {
       )
 
       tx.receipt.logs.length.should.be.equal(1)
-      expect(tx.receipt.logs[0].args.messageId).to.include(`${bridgeId}0000000000000000`)
+      const { messageId, encodedData } = tx.receipt.logs[0].args
+      expect(messageId).to.include(`${bridgeId}0000000000000000`)
+      expect(encodedData.substr(2 + (32 + 20 + 20 + 4 + 1 + 1) * 2, 2)).to.be.equal('00')
+    })
+    it('call requireToConfirmMessage(address, bytes, uint256)', async () => {
+      const tx = await homeBridge.requireToConfirmMessage(
+        '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
+        '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
+        1535604485,
+        { from: accounts[3] }
+      )
+
+      tx.receipt.logs.length.should.be.equal(1)
+      const { messageId, encodedData } = tx.receipt.logs[0].args
+      expect(messageId).to.include(`${bridgeId}0000000000000000`)
+      expect(encodedData.substr(2 + (32 + 20 + 20 + 4 + 1 + 1) * 2, 2)).to.be.equal('f0')
     })
     it('call requireToPassMessage(address, bytes, uint256) should fail', async () => {
       // Should fail because gas < minimumGasUsage

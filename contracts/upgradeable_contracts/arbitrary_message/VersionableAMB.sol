@@ -17,6 +17,6 @@ contract VersionableAMB is VersionableBridge {
      * @return (major, minor, patch) version triple
      */
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (5, 3, 0);
+        return (5, 4, 0);
     }
 }

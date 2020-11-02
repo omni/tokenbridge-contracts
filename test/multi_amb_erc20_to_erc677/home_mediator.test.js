@@ -995,6 +995,56 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         })
       }
     })
+
+    describe('oracle driven lane permissions', () => {
+      it('should allow to set/update lane permissions', async () => {
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(true)
+
+        await contract.setTokenDestinationLane(token.address, 1, { from: user }).should.be.rejected
+        await contract.setTokenDestinationLane(token.address, 1, { from: owner }).should.be.fulfilled
+
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(true)
+        expect(await contract.oracleDrivenLaneAllowed(ambBridgeContract.address, user, user2)).to.be.equal(true)
+
+        await contract.setTokenDestinationLane(token.address, -1, { from: owner }).should.be.fulfilled
+
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(false)
+        expect(await contract.oracleDrivenLaneAllowed(ambBridgeContract.address, user, user2)).to.be.equal(true)
+
+        await contract.setSenderDestinationLane(user, 1, { from: user }).should.be.rejected
+        await contract.setSenderDestinationLane(user, 1, { from: owner }).should.be.fulfilled
+
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(true)
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user)).to.be.equal(false)
+
+        await contract.setReceiverDestinationLane(user, 1, { from: user }).should.be.rejected
+        await contract.setReceiverDestinationLane(user, 1, { from: owner }).should.be.fulfilled
+
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user)).to.be.equal(true)
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user2)).to.be.equal(false)
+
+        await contract.setTokenDestinationLane(token.address, 0, { from: owner }).should.be.fulfilled
+        await contract.setSenderDestinationLane(user, -1, { from: owner }).should.be.fulfilled
+        await contract.setReceiverDestinationLane(user, -1, { from: owner }).should.be.fulfilled
+
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(false)
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user)).to.be.equal(false)
+        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user2)).to.be.equal(true)
+      })
+
+      it('should send a message to the manual lane', async () => {
+        homeToken = await bridgeToken(token)
+
+        await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
+        await contract.setTokenDestinationLane(token.address, -1, { from: owner }).should.be.fulfilled
+        await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
+
+        const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
+        expect(events.length).to.be.equal(2)
+        expect(strip0x(events[0].returnValues.encodedData).slice(156, 158)).to.be.equal('00')
+        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('f0')
+      })
+    })
   })
 
   describe('fees management', () => {

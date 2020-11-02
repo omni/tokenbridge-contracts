@@ -31,8 +31,8 @@ contract HomeMultiAMBErc20ToErc677 is
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
     * @param _tokenImage address of the PermittableToken contract that will be used for deploying of new tokens.
-    * @param _rewardAddreses list of reward addresses, between whom fees will be distributed.
-    * @param _fees array with initial fees for both bridge firections.
+    * @param _rewardAddresses list of reward addresses, between whom fees will be distributed.
+    * @param _fees array with initial fees for both bridge directions.
     *   [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     */
     function initialize(
@@ -43,7 +43,7 @@ contract HomeMultiAMBErc20ToErc677 is
         uint256 _requestGasLimit,
         address _owner,
         address _tokenImage,
-        address[] _rewardAddreses,
+        address[] _rewardAddresses,
         uint256[2] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
@@ -55,8 +55,8 @@ contract HomeMultiAMBErc20ToErc677 is
         _setRequestGasLimit(_requestGasLimit);
         _setOwner(_owner);
         _setTokenImage(_tokenImage);
-        if (_rewardAddreses.length > 0) {
-            _setRewardAddressList(_rewardAddreses);
+        if (_rewardAddresses.length > 0) {
+            _setRewardAddressList(_rewardAddresses);
         }
         _setFee(HOME_TO_FOREIGN_FEE, address(0), _fees[0]);
         _setFee(FOREIGN_TO_HOME_FEE, address(0), _fees[1]);

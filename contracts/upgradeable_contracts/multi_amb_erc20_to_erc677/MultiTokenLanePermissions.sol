@@ -2,6 +2,10 @@ pragma solidity 0.4.24;
 
 import "../../upgradeable_contracts/Ownable.sol";
 
+/**
+ * @title MultiTokenLanePermissions
+ * @dev Multi token mediator functionality for managing destination AMB lanes permissions.
+ */
 contract MultiTokenLanePermissions is Ownable {
     uint256 internal constant TOKEN_DESTINATION_LANE_TAG = 0;
     uint256 internal constant SENDER_DESTINATION_LANE_TAG = 1;

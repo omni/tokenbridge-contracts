@@ -4,7 +4,7 @@ import "./BasicMultiAMBErc20ToErc677.sol";
 import "./TokenProxy.sol";
 import "./HomeFeeManagerMultiAMBErc20ToErc677.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
-import "./MultiTokenLanePermissions.sol";
+import "./MultiTokenForwardingRules.sol";
 
 /**
 * @title HomeMultiAMBErc20ToErc677
@@ -14,7 +14,7 @@ import "./MultiTokenLanePermissions.sol";
 contract HomeMultiAMBErc20ToErc677 is
     BasicMultiAMBErc20ToErc677,
     HomeFeeManagerMultiAMBErc20ToErc677,
-    MultiTokenLanePermissions
+    MultiTokenForwardingRules
 {
     bytes32 internal constant TOKEN_IMAGE_CONTRACT = 0x20b8ca26cc94f39fab299954184cf3a9bd04f69543e4f454fab299f015b8130f; // keccak256(abi.encodePacked("tokenImageContract"))
 
@@ -291,7 +291,7 @@ contract HomeMultiAMBErc20ToErc677 is
 
         // Address of the foreign token is used here for determining lane permissions.
         // Such decision makes it possible to set rules for tokens that are not bridged yet.
-        bytes32 _messageId = oracleDrivenLaneAllowed(foreignToken, _from, _receiver)
+        bytes32 _messageId = destinationLane(foreignToken, _from, _receiver) >= 0
             ? bridge.requireToPassMessage(executor, data, gasLimit)
             : bridge.requireToConfirmMessage(executor, data, gasLimit);
 

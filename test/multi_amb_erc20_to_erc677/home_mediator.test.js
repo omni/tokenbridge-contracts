@@ -998,48 +998,40 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
     describe('oracle driven lane permissions', () => {
       it('should allow to set/update lane permissions', async () => {
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(true)
+        const ANY_ADDR = await contract.ANY_ADDRESS().should.be.fulfilled
+        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('0')
 
-        await contract.setTokenDestinationLane(token.address, 1, { from: user }).should.be.rejected
-        await contract.setTokenDestinationLane(token.address, 1, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, -1, { from: user }).should.be.rejected
+        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, -2, { from: owner }).should.be.rejected
+        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, -1, { from: owner }).should.be.fulfilled
 
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(true)
-        expect(await contract.oracleDrivenLaneAllowed(ambBridgeContract.address, user, user2)).to.be.equal(true)
+        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setTokenDestinationLane(token.address, -1, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(token.address, user, ANY_ADDR, 1, { from: owner }).should.be.fulfilled
 
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(false)
-        expect(await contract.oracleDrivenLaneAllowed(ambBridgeContract.address, user, user2)).to.be.equal(true)
+        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('1')
+        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setSenderDestinationLane(token.address, user, 1, { from: user }).should.be.rejected
-        await contract.setSenderDestinationLane(token.address, user, 1, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(token.address, user, user2, -1, { from: owner }).should.be.fulfilled
 
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(true)
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user)).to.be.equal(false)
+        expect(await contract.destinationLane(token.address, user, user)).to.be.bignumber.equal('1')
+        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setReceiverDestinationLane(token.address, user, 1, { from: user }).should.be.rejected
-        await contract.setReceiverDestinationLane(token.address, user, 1, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, 1, { from: owner }).should.be.fulfilled
 
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user)).to.be.equal(true)
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user2)).to.be.equal(false)
+        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('1')
 
-        await contract.setTokenDestinationLane(token.address, 0, { from: owner }).should.be.fulfilled
-        await contract.setSenderDestinationLane(token.address, user, -1, { from: owner }).should.be.fulfilled
-        await contract.setReceiverDestinationLane(token.address, user, -1, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(ANY_ADDR, user2, ANY_ADDR, -1, { from: owner }).should.be.fulfilled
 
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user, user2)).to.be.equal(false)
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user)).to.be.equal(false)
-        expect(await contract.oracleDrivenLaneAllowed(token.address, user2, user2)).to.be.equal(true)
-        expect(await contract.oracleDrivenLaneAllowed(ambBridgeContract.address, user, user2)).to.be.equal(true)
-        expect(await contract.oracleDrivenLaneAllowed(ambBridgeContract.address, user2, user)).to.be.equal(true)
-        expect(await contract.oracleDrivenLaneAllowed(ambBridgeContract.address, user2, user2)).to.be.equal(true)
+        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
       })
 
       it('should send a message to the manual lane', async () => {
+        const ANY_ADDR = await contract.ANY_ADDRESS().should.be.fulfilled
         homeToken = await bridgeToken(token)
 
         await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
-        await contract.setTokenDestinationLane(token.address, -1, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, -1, { from: owner }).should.be.fulfilled
         await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
 
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })

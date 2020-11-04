@@ -289,6 +289,8 @@ contract HomeMultiAMBErc20ToErc677 is
         uint256 gasLimit = requestGasLimit();
         IAMB bridge = bridgeContract();
 
+        // Address of the foreign token is used here for determining lane permissions.
+        // Such decision makes it possible to set rules for tokens that are not bridged yet.
         bytes32 _messageId = oracleDrivenLaneAllowed(foreignToken, _from, _receiver)
             ? bridge.requireToPassMessage(executor, data, gasLimit)
             : bridge.requireToConfirmMessage(executor, data, gasLimit);

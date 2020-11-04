@@ -59,6 +59,8 @@ contract MultiTokenLanePermissions is Ownable {
      * @dev Updates the preferred destination lane for the specific token contract.
      * Only owner can call this method.
      * @param _token address of the token contract on the foreign side of the bridge.
+     * It was decided to use the address of foreign token contract,
+     * since it allows to set rules for tokens that are not bridged yet.
      * @param _lane preferred destination lane for the particular token contract.
      */
     function setTokenDestinationLane(address _token, int256 _lane) external onlyOwner {

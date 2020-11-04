@@ -1012,7 +1012,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('1')
         expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setForwardingRule(token.address, user, user2, -1, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(token.address, user, ANY_ADDR, 0, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(token.address, ANY_ADDR, user, 1, { from: owner }).should.be.fulfilled
 
         expect(await contract.destinationLane(token.address, user, user)).to.be.bignumber.equal('1')
         expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')

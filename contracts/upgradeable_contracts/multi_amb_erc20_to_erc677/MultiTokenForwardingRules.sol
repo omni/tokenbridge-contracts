@@ -23,11 +23,7 @@ contract MultiTokenForwardingRules is Ownable {
      * -1 - manual lane should be used.
      */
     function destinationLane(address _token, address _sender, address _receiver) public view returns (int256) {
-        int256 lane = forwardingRule(_token, _sender, _receiver); // specific token for specific sender-receiver pair
-        if (lane != 0) return lane;
-        lane = forwardingRule(ANY_ADDRESS, _sender, _receiver); // all tokens for specific sender-receiver pair
-        if (lane != 0) return lane;
-        lane = forwardingRule(_token, _sender, ANY_ADDRESS); // specific token for specific sender
+        int256 lane = forwardingRule(_token, _sender, ANY_ADDRESS); // specific token for specific sender
         if (lane != 0) return lane;
         lane = forwardingRule(_token, ANY_ADDRESS, _receiver); // specific token for specific receiver
         if (lane != 0) return lane;
@@ -35,9 +31,7 @@ contract MultiTokenForwardingRules is Ownable {
         if (lane != 0) return lane;
         lane = forwardingRule(ANY_ADDRESS, ANY_ADDRESS, _receiver); // all tokens for specific receiver
         if (lane != 0) return lane;
-        lane = forwardingRule(_token, ANY_ADDRESS, ANY_ADDRESS); // specific token for all senders and receivers
-        if (lane != 0) return lane;
-        return forwardingRule(ANY_ADDRESS, ANY_ADDRESS, ANY_ADDRESS); // any token, any sender, any receiver
+        return forwardingRule(_token, ANY_ADDRESS, ANY_ADDRESS); // specific token for all senders and receivers
     }
 
     /**

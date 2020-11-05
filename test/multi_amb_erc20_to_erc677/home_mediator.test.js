@@ -1018,13 +1018,17 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.destinationLane(token.address, user, user)).to.be.bignumber.equal('1')
         expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, 1, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, 0, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('1')
+        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('0')
 
         await contract.setForwardingRule(ANY_ADDR, user2, ANY_ADDR, -1, { from: owner }).should.be.fulfilled
 
         expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
+
+        await contract.setForwardingRule(ANY_ADDR, ANY_ADDR, user2, -1, { from: owner }).should.be.fulfilled
+
+        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
       })
 
       it('should send a message to the manual lane', async () => {

@@ -23,15 +23,18 @@ contract MultiTokenForwardingRules is Ownable {
      * -1 - manual lane should be used.
      */
     function destinationLane(address _token, address _sender, address _receiver) public view returns (int256) {
-        int256 lane = forwardingRule(_token, _sender, ANY_ADDRESS); // specific token for specific sender
-        if (lane != 0) return lane;
-        lane = forwardingRule(_token, ANY_ADDRESS, _receiver); // specific token for specific receiver
-        if (lane != 0) return lane;
+        int256 defaultLane = forwardingRule(_token, ANY_ADDRESS, ANY_ADDRESS); // specific token for all senders and receivers
+        int256 lane;
+        if (defaultLane < 0) {
+            lane = forwardingRule(_token, _sender, ANY_ADDRESS); // specific token for specific sender
+            if (lane != 0) return lane;
+            lane = forwardingRule(_token, ANY_ADDRESS, _receiver); // specific token for specific receiver
+            if (lane != 0) return lane;
+            return defaultLane;
+        }
         lane = forwardingRule(ANY_ADDRESS, _sender, ANY_ADDRESS); // all tokens for specific sender
         if (lane != 0) return lane;
-        lane = forwardingRule(ANY_ADDRESS, ANY_ADDRESS, _receiver); // all tokens for specific receiver
-        if (lane != 0) return lane;
-        return forwardingRule(_token, ANY_ADDRESS, ANY_ADDRESS); // specific token for all senders and receivers
+        return forwardingRule(ANY_ADDRESS, ANY_ADDRESS, _receiver); // all tokens for specific receiver
     }
 
     /**
@@ -40,7 +43,7 @@ contract MultiTokenForwardingRules is Ownable {
      * Examples:
      *   setForwardingRule(tokenA, ANY_ADDRESS, ANY_ADDRESS, -1) - forward all operations on tokenA to the manual lane
      *   setForwardingRule(tokenA, Alice, ANY_ADDRESS, 1) - allow Alice to use the oracle-driven lane for bridging tokenA
-     *   setForwardingRule(tokenA, ANY_ADDRESS, Bob, 1) - forward all bridge operations, where Bob is the receiver, to the oracle-driven lane
+     *   setForwardingRule(tokenA, ANY_ADDRESS, Bob, 1) - forward all tokenA bridge operations, where Bob is the receiver, to the oracle-driven lane
      *   setForwardingRule(ANY_ADDRESS, Mallory, ANY_ADDRESS, -1) - forward all bridge operations from Mallory to the manual lane
      * @param _token address of the token contract on the foreign side of the bridge.
      * @param _sender address of the tokens sender on the home side of the bridge.

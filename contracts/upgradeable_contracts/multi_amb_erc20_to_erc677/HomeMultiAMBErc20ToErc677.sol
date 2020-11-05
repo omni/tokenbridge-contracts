@@ -4,13 +4,18 @@ import "./BasicMultiAMBErc20ToErc677.sol";
 import "./TokenProxy.sol";
 import "./HomeFeeManagerMultiAMBErc20ToErc677.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
+import "./MultiTokenForwardingRules.sol";
 
 /**
 * @title HomeMultiAMBErc20ToErc677
 * @dev Home side implementation for multi-erc20-to-erc677 mediator intended to work on top of AMB bridge.
 * It is designed to be used as an implementation contract of EternalStorageProxy contract.
 */
-contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManagerMultiAMBErc20ToErc677 {
+contract HomeMultiAMBErc20ToErc677 is
+    BasicMultiAMBErc20ToErc677,
+    HomeFeeManagerMultiAMBErc20ToErc677,
+    MultiTokenForwardingRules
+{
     bytes32 internal constant TOKEN_IMAGE_CONTRACT = 0x20b8ca26cc94f39fab299954184cf3a9bd04f69543e4f454fab299f015b8130f; // keccak256(abi.encodePacked("tokenImageContract"))
 
     event NewTokenRegistered(address indexed foreignToken, address indexed homeToken);
@@ -26,8 +31,8 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
     * @param _tokenImage address of the PermittableToken contract that will be used for deploying of new tokens.
-    * @param _rewardAddreses list of reward addresses, between whom fees will be distributed.
-    * @param _fees array with initial fees for both bridge firections.
+    * @param _rewardAddresses list of reward addresses, between whom fees will be distributed.
+    * @param _fees array with initial fees for both bridge directions.
     *   [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     */
     function initialize(
@@ -38,7 +43,7 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
         uint256 _requestGasLimit,
         address _owner,
         address _tokenImage,
-        address[] _rewardAddreses,
+        address[] _rewardAddresses,
         uint256[2] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
@@ -50,8 +55,8 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
         _setRequestGasLimit(_requestGasLimit);
         _setOwner(_owner);
         _setTokenImage(_tokenImage);
-        if (_rewardAddreses.length > 0) {
-            _setRewardAddressList(_rewardAddreses);
+        if (_rewardAddresses.length > 0) {
+            _setRewardAddressList(_rewardAddresses);
         }
         _setFee(HOME_TO_FOREIGN_FEE, address(0), _fees[0]);
         _setFee(FOREIGN_TO_HOME_FEE, address(0), _fees[1]);
@@ -242,26 +247,26 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
      * @dev Executes action on withdrawal of bridged tokens
      * @param _token address of token contract
      * @param _from address of tokens sender
-     * @param _value requsted amount of bridged tokens
+     * @param _value requested amount of bridged tokens
      * @param _data alternative receiver, if specified
      */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
         if (!lock()) {
-            bytes32 _messageId = messageId();
             uint256 valueToBridge = _value;
+            uint256 fee = 0;
             // Next line disables fee collection in case sender is one of the reward addresses.
             // It is needed to allow a 100% withdrawal of tokens from the home side.
             // If fees are not disabled for reward receivers, small fraction of tokens will always
             // be redistributed between the same set of reward addresses, which is not the desired behaviour.
             if (!isRewardAddress(_from)) {
-                uint256 fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);
-                if (fee > 0) {
-                    valueToBridge = valueToBridge.sub(fee);
-                    emit FeeDistributed(fee, _token, _messageId);
-                }
+                fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);
+                valueToBridge = valueToBridge.sub(fee);
             }
             IBurnableMintableERC677Token(_token).burn(valueToBridge);
-            passMessage(_token, _from, chooseReceiver(_from, _data), valueToBridge);
+            bytes32 _messageId = passMessage(_token, _from, chooseReceiver(_from, _data), valueToBridge);
+            if (fee > 0) {
+                emit FeeDistributed(fee, _token, _messageId);
+            }
         }
     }
 
@@ -273,20 +278,27 @@ contract HomeMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677, HomeFeeManager
     * @param _from address of sender, if bridge operation fails, tokens will be returned to this address
     * @param _receiver address of receiver on the other side, will eventually receive bridged tokens
     * @param _value bridged amount of tokens
+    * @return id of the created and passed message
     */
-    function passMessage(ERC677 _token, address _from, address _receiver, uint256 _value) internal {
+    function passMessage(ERC677 _token, address _from, address _receiver, uint256 _value) internal returns (bytes32) {
         bytes4 methodSelector = this.handleBridgedTokens.selector;
         address foreignToken = foreignTokenAddress(_token);
         bytes memory data = abi.encodeWithSelector(methodSelector, foreignToken, _receiver, _value);
 
-        bytes32 _messageId = bridgeContract().requireToPassMessage(
-            mediatorContractOnOtherSide(),
-            data,
-            requestGasLimit()
-        );
+        address executor = mediatorContractOnOtherSide();
+        uint256 gasLimit = requestGasLimit();
+        IAMB bridge = bridgeContract();
+
+        // Address of the foreign token is used here for determining lane permissions.
+        // Such decision makes it possible to set rules for tokens that are not bridged yet.
+        bytes32 _messageId = destinationLane(foreignToken, _from, _receiver) >= 0
+            ? bridge.requireToPassMessage(executor, data, gasLimit)
+            : bridge.requireToConfirmMessage(executor, data, gasLimit);
 
         setMessageToken(_messageId, _token);
         setMessageValue(_messageId, _value);
         setMessageRecipient(_messageId, _from);
+
+        return _messageId;
     }
 }

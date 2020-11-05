@@ -998,45 +998,51 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
     describe('oracle driven lane permissions', () => {
       it('should allow to set/update lane permissions', async () => {
-        const ANY_ADDR = await contract.ANY_ADDRESS().should.be.fulfilled
         expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('0')
 
-        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, -1, { from: user }).should.be.rejected
-        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, -2, { from: owner }).should.be.rejected
-        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, -1, { from: owner }).should.be.fulfilled
+        await contract.setTokenForwardingRule(token.address, true, { from: user }).should.be.rejected
+        await contract.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
 
         expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setForwardingRule(token.address, user, ANY_ADDR, 1, { from: owner }).should.be.fulfilled
+        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
+          .rejected
+        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
+          .fulfilled
 
         expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('1')
         expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setForwardingRule(token.address, user, ANY_ADDR, 0, { from: owner }).should.be.fulfilled
-        await contract.setForwardingRule(token.address, ANY_ADDR, user, 1, { from: owner }).should.be.fulfilled
+        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, false, { from: owner }).should.be
+          .fulfilled
+        await contract.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
+          .rejected
+        await contract.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
+          .fulfilled
 
         expect(await contract.destinationLane(token.address, user, user)).to.be.bignumber.equal('1')
         expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, 0, { from: owner }).should.be.fulfilled
+        await contract.setTokenForwardingRule(token.address, false, { from: owner }).should.be.fulfilled
 
         expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('0')
 
-        await contract.setForwardingRule(ANY_ADDR, user2, ANY_ADDR, -1, { from: owner }).should.be.fulfilled
+        await contract.setSenderForwardingRule(user2, true, { from: user }).should.be.rejected
+        await contract.setSenderForwardingRule(user2, true, { from: owner }).should.be.fulfilled
 
         expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setForwardingRule(ANY_ADDR, ANY_ADDR, user2, -1, { from: owner }).should.be.fulfilled
+        await contract.setReceiverForwardingRule(user2, true, { from: user }).should.be.rejected
+        await contract.setReceiverForwardingRule(user2, true, { from: owner }).should.be.fulfilled
 
         expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
       })
 
       it('should send a message to the manual lane', async () => {
-        const ANY_ADDR = await contract.ANY_ADDRESS().should.be.fulfilled
         homeToken = await bridgeToken(token)
 
         await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
-        await contract.setForwardingRule(token.address, ANY_ADDR, ANY_ADDR, -1, { from: owner }).should.be.fulfilled
+        await contract.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
         await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
 
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })

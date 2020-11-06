@@ -4,7 +4,7 @@ import "./BasicAMBErc677ToErc677.sol";
 
 contract BasicStakeTokenMediator is BasicAMBErc677ToErc677 {
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 1, 0);
+        return (1, 2, 0);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {

@@ -163,9 +163,4 @@ contract PermittableToken is ERC677BridgeToken {
     function _now() internal view returns (uint256) {
         return now;
     }
-
-    /// @dev Version of the token contract.
-    function getTokenInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (2, 3, 0);
-    }
 }

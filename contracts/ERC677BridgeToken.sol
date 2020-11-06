@@ -46,7 +46,7 @@ contract ERC677BridgeToken is IBurnableMintableERC677Token, DetailedERC20, Burna
     }
 
     function getTokenInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (2, 2, 0);
+        return (2, 4, 0);
     }
 
     function superTransfer(address _to, uint256 _value) internal returns (bool) {

@@ -28,7 +28,7 @@ contract TokenProxy is Proxy {
     mapping(address => mapping(address => uint256)) internal expirations;
 
     /**
-    * @dev Creates a non-upgradeable token proxy for PermitableToken.sol, initializes its eternalStorage.
+    * @dev Creates a non-upgradeable token proxy for PermittableToken.sol, initializes its eternalStorage.
     * @param _tokenImage address of the token image used for mirroring all functions.
     * @param _name token name.
     * @param _symbol token symbol.

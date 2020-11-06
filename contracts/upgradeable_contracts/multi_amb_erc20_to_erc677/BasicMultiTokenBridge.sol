@@ -174,9 +174,9 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     }
 
     /**
-    * @dev Updates minumum per transaction for the particular token. Only owner can call this method.
+    * @dev Updates minimum per transaction for the particular token. Only owner can call this method.
     * @param _token address of the token contract, or address(0) for configuring the default limit.
-    * @param _minPerTx minumum amount of tokens per one transaction, should be less than maxPerTx and dailyLimit.
+    * @param _minPerTx minimum amount of tokens per one transaction, should be less than maxPerTx and dailyLimit.
     */
     function setMinPerTx(address _token, uint256 _minPerTx) external onlyOwner {
         require(isTokenRegistered(_token));
@@ -210,7 +210,7 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     }
 
     /**
-    * @dev Internal function for adding execcuted amount for some token.
+    * @dev Internal function for adding executed amount for some token.
     * @param _token address of the token contract.
     * @param _day day number, when tokens are processed.
     * @param _value amount of bridge tokens.

@@ -71,7 +71,7 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677, MediatorBalanceStor
     /**
      * @dev Executes action on deposit of bridged tokens
      * @param _from address of tokens sender
-     * @param _value requsted amount of bridged tokens
+     * @param _value requested amount of bridged tokens
      * @param _data alternative receiver, if specified
      */
     function bridgeSpecificActionsOnTokenTransfer(

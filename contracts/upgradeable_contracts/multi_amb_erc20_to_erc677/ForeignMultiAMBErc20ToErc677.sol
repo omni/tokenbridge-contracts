@@ -111,7 +111,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
      * @dev Executes action on deposit of bridged tokens
      * @param _token address of the token contract
      * @param _from address of tokens sender
-     * @param _value requsted amount of bridged tokens
+     * @param _value requested amount of bridged tokens
      * @param _data alternative receiver, if specified
      */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {

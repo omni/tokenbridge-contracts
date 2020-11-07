@@ -1,7 +1,7 @@
 /* solhint-disable */
 pragma solidity 0.4.24;
 
-import "../../contracts/libraries/TokenReader.sol";
+import "../libraries/TokenReader.sol";
 
 contract Token1 {
     function name() external view returns (string) {

@@ -40,11 +40,14 @@ start_ganache() {
   )
 
   if [ "$SOLIDITY_COVERAGE" != true ]; then
-    node_modules/.bin/ganache-cli --gasLimit 0xfffffffffff "${accounts[@]}" > /dev/null &
+    node_modules/.bin/ganache-cli --chainId 1337 --gasLimit 0xfffffffffff "${accounts[@]}" > /dev/null &
   fi
 
   ganache_pid=$!
 }
+
+echo "Compiling contracts for solidity 0.7.4"
+NEW_SOLC_VERSION=true node_modules/.bin/truffle compile
 
 if [ "$SOLIDITY_COVERAGE" != true ]; then
     if ganache_running; then

@@ -1,16 +1,14 @@
-pragma solidity 0.4.24;
-
-import "../../upgradeability/Proxy.sol";
+pragma solidity 0.7.4;
 
 interface IPermittableTokenVersion {
-    function version() external pure returns (string);
+    function version() external pure returns (string memory);
 }
 
 /**
 * @title TokenProxy
 * @dev Helps to reduces the size of the deployed bytecode for automatically created tokens, by using a proxy contract.
 */
-contract TokenProxy is Proxy {
+contract TokenProxy {
     // storage layout is copied from PermittableToken.sol
     string internal name;
     string internal symbol;
@@ -33,37 +31,57 @@ contract TokenProxy is Proxy {
     * @param _name token name.
     * @param _symbol token symbol.
     * @param _decimals token decimals.
-    * @param _chainId chain id for current network.
+    * @param _owner owner of the newly created token contract.
     */
-    constructor(address _tokenImage, string memory _name, string memory _symbol, uint8 _decimals, uint256 _chainId)
-        public
-    {
+    constructor(address _tokenImage, string memory _name, string memory _symbol, uint8 _decimals, address _owner) {
         string memory version = IPermittableTokenVersion(_tokenImage).version();
 
+        uint256 id;
         assembly {
-            // EIP 1967
-            // bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)
+            id := chainid()
+        // EIP 1967
+        // bytes32(uint256(keccak256('eip1967.proxy.implementation')) - 1)
             sstore(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc, _tokenImage)
         }
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
-        owner = msg.sender; // msg.sender == HomeMultiAMBErc20ToErc677 mediator
-        bridgeContractAddr = msg.sender;
+        owner = _owner; // _owner == HomeMultiAMBErc20ToErc677 mediator
+        bridgeContractAddr = _owner;
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes(_name)),
                 keccak256(bytes(version)),
-                _chainId,
+                id,
                 address(this)
             )
         );
     }
 
+    fallback() external payable {
+        assembly {
+            let impl := sload(0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc)
+            let ptr := mload(0x40)
+
+            calldatacopy(ptr, 0, calldatasize())
+
+            let result := delegatecall(gas(), impl, ptr, calldatasize(), 0, 0)
+            returndatacopy(ptr, 0, returndatasize())
+
+            switch result
+                case 0 {
+                    revert(ptr, returndatasize())
+                }
+                default {
+                    return(ptr, returndatasize())
+                }
+        }
+    }
+
     /**
     * @dev Retrieves the implementation contract address, mirrored token image.
-    * @return token image address.
+    * @return impl token image address.
     */
     function implementation() public view returns (address impl) {
         assembly {

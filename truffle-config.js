@@ -2,10 +2,13 @@ const { CoverageSubprovider, Web3ProviderEngine } = require('@0x/sol-coverage')
 const { TruffleArtifactAdapter } = require('@0x/sol-trace')
 const { GanacheSubprovider } = require('@0x/subproviders')
 
-const contractsBuildDirectory = './build/contracts'
-const evmVersion = 'byzantium'
+const { NEW_SOLC_VERSION, GASREPORT, SOLIDITY_COVERAGE } = process.env
+
+const contractsDirectory = NEW_SOLC_VERSION === 'true' ? './contracts-solc0.7.4' : './contracts'
+const contractsBuildDirectory = NEW_SOLC_VERSION === 'true' ? './build/contracts-solc0.7.4' : './build/contracts'
+const evmVersion = NEW_SOLC_VERSION === 'true' ? 'istanbul' : 'byzantium'
 const mochaOptions =
-  process.env.GASREPORT === 'true'
+  GASREPORT === 'true'
     ? {
         reporter: 'eth-gas-reporter',
         reporterOptions: {
@@ -16,12 +19,12 @@ const mochaOptions =
     : {}
 
 const projectRoot = ''
-const solcVersion = '0.4.24+commit.e67f0147'
+const solcVersion = NEW_SOLC_VERSION === 'true' ? '0.7.4+commit.3f05b770' : '0.4.24+commit.e67f0147'
 const defaultFromAddress = '0x5409ed021d9299bf6814279a6a1411a7e866a631'
 const isVerbose = true
 const artifactAdapter = new TruffleArtifactAdapter(projectRoot, solcVersion)
 const provider = new Web3ProviderEngine()
-if (process.env.SOLIDITY_COVERAGE === 'true') {
+if (SOLIDITY_COVERAGE === 'true') {
   global.coverageSubprovider = new CoverageSubprovider(artifactAdapter, defaultFromAddress, {
     isVerbose,
     ignoreFilesGlobs: ['**/Migrations.sol', '**/node_modules/**', '**/mocks/**', '**/interfaces/**']
@@ -87,6 +90,7 @@ if (process.env.SOLIDITY_COVERAGE === 'true') {
 }
 
 module.exports = {
+  contracts_directory: contractsDirectory,
   contracts_build_directory: contractsBuildDirectory,
   networks: {
     development: {
@@ -104,7 +108,7 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: '0.4.24',
+      version: NEW_SOLC_VERSION === 'true' ? '0.7.4' : '0.4.24',
       settings: {
         optimizer: {
           enabled: true,

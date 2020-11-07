@@ -76,4 +76,8 @@ contract AMBMock {
     function sourceChainId() external pure returns (uint256) {
         return 1337;
     }
+
+    function destinationChainId() external pure returns (uint256) {
+        return 1338;
+    }
 }

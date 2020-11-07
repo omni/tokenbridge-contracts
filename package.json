@@ -7,7 +7,7 @@
     "test": "scripts/test.sh",
     "test:gasreport": "GASREPORT=true npm run test",
     "test:gasreport:ci": "npm run test:gasreport && npx codechecks",
-    "compile": "truffle compile",
+    "compile": "truffle compile && NEW_SOLC_VERSION=true truffle compile",
     "flatten": "bash flatten.sh",
     "lint": "npm run lint:js && npm run lint:sol",
     "lint:js": "eslint .",
@@ -23,6 +23,7 @@
     "@0x/sol-coverage": "^4.0.10",
     "@0x/sol-trace": "^3.0.10",
     "@0x/subproviders": "^6.1.1",
+    "@truffle/contract": "^4.2.29",
     "openzeppelin-solidity": "1.12.0",
     "truffle": "^5.1.52",
     "truffle-flattener": "^1.4.2"

@@ -1,3 +1,5 @@
+const truffleContract = require('@truffle/contract')
+
 const POA20 = artifacts.require('ERC677BridgeToken.sol')
 const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.sol')
 const POA20RewardableMock = artifacts.require('ERC677BridgeTokenRewardableMock')
@@ -7,11 +9,14 @@ const StakingTest = artifacts.require('Staking.sol')
 const HomeErcToErcBridge = artifacts.require('HomeBridgeErcToErc.sol')
 const ForeignNativeToErcBridge = artifacts.require('ForeignBridgeNativeToErc.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
-const TokenProxy = artifacts.require('TokenProxy.sol')
 const PermittableTokenMock = artifacts.require('PermittableTokenMock.sol')
 
 const { expect } = require('chai')
 const ethUtil = require('ethereumjs-util')
+
+const TokenProxy = truffleContract(require('../build/contracts-solc0.7.4/TokenProxy.json'))
+
+TokenProxy.setProvider(web3.currentProvider)
 
 const { ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS, BN } = require('./setup')
 const { ether, expectEventInLogs } = require('./helpers/helpers')

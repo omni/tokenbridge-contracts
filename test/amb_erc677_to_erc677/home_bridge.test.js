@@ -261,7 +261,7 @@ contract('HomeAMBErc677ToErc677', async accounts => {
         expect(TokensBridgedEvent[0].returnValues.messageId).to.be.equal(exampleMessageId)
       })
     }
-    it('should emit AmountLimitExceeded and not mint tokens when out of execution limits', async () => {
+    it('should emit MediatorAmountLimitExceeded and not mint tokens when out of execution limits', async () => {
       // Given
       const currentDay = await homeBridge.getCurrentDay()
       expect(await homeBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(ZERO)
@@ -292,11 +292,11 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       expect(await erc677Token.balanceOf(user)).to.be.bignumber.equal(ZERO)
 
       expect(await homeBridge.outOfLimitAmount()).to.be.bignumber.equal(twoEthers)
-      const outOfLimitEvent = await getEvents(homeBridge, { event: 'AmountLimitExceeded' })
+      const outOfLimitEvent = await getEvents(homeBridge, { event: 'MediatorAmountLimitExceeded' })
       expect(outOfLimitEvent.length).to.be.equal(1)
       expect(outOfLimitEvent[0].returnValues.recipient).to.be.equal(user)
       expect(outOfLimitEvent[0].returnValues.value).to.be.equal(twoEthers.toString())
-      expect(outOfLimitEvent[0].returnValues.transactionHash).to.be.equal(exampleMessageId)
+      expect(outOfLimitEvent[0].returnValues.messageId).to.be.equal(exampleMessageId)
 
       const TokensBridgedEvent = await getEvents(homeBridge, { event: 'TokensBridged' })
       expect(TokensBridgedEvent.length).to.be.equal(0)

@@ -45,4 +45,10 @@ contract Box {
         bytes memory encodedData = abi.encodeWithSelector(methodSelector, _i);
         IAMB(_bridge).requireToPassMessage(_executor, encodedData, 141647);
     }
+
+    function setValueOnOtherNetworkUsingManualLane(uint256 _i, address _bridge, address _executor) public {
+        bytes4 methodSelector = this.setValue.selector;
+        bytes memory encodedData = abi.encodeWithSelector(methodSelector, _i);
+        IAMB(_bridge).requireToConfirmMessage(_executor, encodedData, 141647);
+    }
 }

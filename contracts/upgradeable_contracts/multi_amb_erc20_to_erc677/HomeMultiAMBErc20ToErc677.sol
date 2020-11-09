@@ -1,7 +1,7 @@
 pragma solidity 0.4.24;
 
 import "./BasicMultiAMBErc20ToErc677.sol";
-import "./TokenProxy.sol";
+import "./TokenFactory.sol";
 import "./HomeFeeManagerMultiAMBErc20ToErc677.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "./MultiTokenForwardingRules.sol";
@@ -16,7 +16,7 @@ contract HomeMultiAMBErc20ToErc677 is
     HomeFeeManagerMultiAMBErc20ToErc677,
     MultiTokenForwardingRules
 {
-    bytes32 internal constant TOKEN_IMAGE_CONTRACT = 0x20b8ca26cc94f39fab299954184cf3a9bd04f69543e4f454fab299f015b8130f; // keccak256(abi.encodePacked("tokenImageContract"))
+    bytes32 internal constant TOKEN_FACTORY_CONTRACT = 0x269c5905f777ee6391c7a361d17039a7d62f52ba9fffeb98c5ade342705731a3; // keccak256(abi.encodePacked("tokenFactoryContract"))
 
     event NewTokenRegistered(address indexed foreignToken, address indexed homeToken);
 
@@ -30,7 +30,7 @@ contract HomeMultiAMBErc20ToErc677 is
     *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
-    * @param _tokenImage address of the PermittableToken contract that will be used for deploying of new tokens.
+    * @param _tokenFactory address of the TokenFactory contract that will be used for the deployment of new tokens.
     * @param _rewardAddresses list of reward addresses, between whom fees will be distributed.
     * @param _fees array with initial fees for both bridge directions.
     *   [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
@@ -42,7 +42,7 @@ contract HomeMultiAMBErc20ToErc677 is
         uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
         address _owner,
-        address _tokenImage,
+        address _tokenFactory,
         address[] _rewardAddresses,
         uint256[2] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     ) external onlyRelevantSender returns (bool) {
@@ -54,7 +54,7 @@ contract HomeMultiAMBErc20ToErc677 is
         _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
         _setOwner(_owner);
-        _setTokenImage(_tokenImage);
+        _setTokenFactory(_tokenFactory);
         if (_rewardAddresses.length > 0) {
             _setRewardAddressList(_rewardAddresses);
         }
@@ -67,19 +67,19 @@ contract HomeMultiAMBErc20ToErc677 is
     }
 
     /**
-    * @dev Updates an address of the token image contract used for proxifying newly created tokens.
-    * @param _tokenImage address of PermittableToken contract.
+    * @dev Updates an address of the used TokenFactory contract used for creating new tokens.
+    * @param _tokenFactory address of TokenFactory contract contract.
     */
-    function setTokenImage(address _tokenImage) external onlyOwner {
-        _setTokenImage(_tokenImage);
+    function setTokenFactory(address _tokenFactory) external onlyOwner {
+        _setTokenFactory(_tokenFactory);
     }
 
     /**
-    * @dev Retrieves address of the token image contract.
-    * @return address of block reward contract.
+    * @dev Retrieves an address of the token factory contract.
+    * @return address of the TokenFactory contract.
     */
-    function tokenImage() public view returns (address) {
-        return addressStorage[TOKEN_IMAGE_CONTRACT];
+    function tokenFactory() public view returns (TokenFactory) {
+        return TokenFactory(addressStorage[TOKEN_FACTORY_CONTRACT]);
     }
 
     /**
@@ -110,7 +110,7 @@ contract HomeMultiAMBErc20ToErc677 is
             symbol = name;
         }
         name = string(abi.encodePacked(name, " on xDai"));
-        address homeToken = new TokenProxy(tokenImage(), name, symbol, _decimals, bridgeContract().sourceChainId());
+        address homeToken = tokenFactory().deploy(name, symbol, _decimals, bridgeContract().sourceChainId());
         _setTokenAddressPair(_token, homeToken);
         _initializeTokenBridgeLimits(homeToken, _decimals);
         _setFee(HOME_TO_FOREIGN_FEE, homeToken, getFee(HOME_TO_FOREIGN_FEE, address(0)));
@@ -225,9 +225,9 @@ contract HomeMultiAMBErc20ToErc677 is
     }
 
     /**
-    * @dev Internal function for updating an address of the token image contract.
+    * @dev Internal function for updating a pair of addresses for the bridged token.
     * @param _foreignToken address of bridged foreign token contract.
-    * @param _foreignToken address of created home token contract.
+    * @param _homeToken address of created home token contract.
     */
     function _setTokenAddressPair(address _foreignToken, address _homeToken) internal {
         addressStorage[keccak256(abi.encodePacked("homeTokenAddress", _foreignToken))] = _homeToken;
@@ -235,12 +235,12 @@ contract HomeMultiAMBErc20ToErc677 is
     }
 
     /**
-    * @dev Internal function for updating an address of the token image contract.
-    * @param _tokenImage address of deployed PermittableToken contract.
+    * @dev Internal function for updating an address of the token factory contract.
+    * @param _tokenFactory address of the deployed TokenFactory contract.
     */
-    function _setTokenImage(address _tokenImage) internal {
-        require(AddressUtils.isContract(_tokenImage));
-        addressStorage[TOKEN_IMAGE_CONTRACT] = _tokenImage;
+    function _setTokenFactory(address _tokenFactory) internal {
+        require(AddressUtils.isContract(_tokenFactory));
+        addressStorage[TOKEN_FACTORY_CONTRACT] = _tokenFactory;
     }
 
     /**

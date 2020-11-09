@@ -961,7 +961,7 @@ contract('ERC677BridgeTokenRewardable', accounts => {
 contract('TokenProxy', accounts => {
   const createToken = async args => {
     const impl = await PermittableTokenMock.new(...args)
-    const proxy = await TokenProxy.new(impl.address, ...args)
+    const proxy = await TokenProxy.new(impl.address, ...args, accounts[0])
     return PermittableTokenMock.at(proxy.address)
   }
 

@@ -5,6 +5,7 @@ const AMBMock = artifacts.require('AMBMock.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const PermittableToken = artifacts.require('PermittableToken.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
+const TokenFactory = artifacts.require('TokenFactory.sol')
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
@@ -33,6 +34,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
   let otherSideMediator
   let currentDay
   let tokenImage
+  let tokenFactory
   let homeToken
   const owner = accounts[0]
   const user = accounts[1]
@@ -55,6 +57,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     )
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
     tokenImage = await PermittableToken.new('TEST', 'TST', 18, 1337)
+    tokenFactory = await TokenFactory.new(tokenImage.address)
     currentDay = await contract.getCurrentDay()
   })
 
@@ -147,7 +150,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.tokenImage()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.tokenFactory()).to.be.equal(ZERO_ADDRESS)
 
       // When
       // not valid bridge address
@@ -158,7 +161,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -171,7 +174,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -184,7 +187,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -197,7 +200,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionDailyLimit],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -210,7 +213,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         twoEthers,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -223,7 +226,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         ZERO_ADDRESS,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -248,7 +251,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.fulfilled
@@ -261,7 +264,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -277,7 +280,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(executionMaxPerTx)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.owner()).to.be.equal(owner)
-      expect(await contract.tokenImage()).to.be.equal(tokenImage.address)
+      expect(await contract.tokenFactory()).to.be.equal(tokenFactory.address)
 
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { token: ZERO_ADDRESS, newLimit: executionDailyLimit })
       expectEventInLogs(logs, 'DailyLimitChanged', { token: ZERO_ADDRESS, newLimit: dailyLimit })
@@ -308,7 +311,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [user2],
         [ether('0.1'), ZERO]
       ).should.be.fulfilled
@@ -357,7 +360,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.fulfilled
@@ -572,13 +575,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         })
       })
 
-      describe('tokenImage', () => {
+      describe('tokenFactory', () => {
         it('should allow to change token image', async () => {
-          expect(await contract.tokenImage()).to.be.equal(tokenImage.address)
-          await contract.setTokenImage(token.address, { from: user }).should.be.rejected
-          await contract.setTokenImage(owner, { from: owner }).should.be.rejected
-          await contract.setTokenImage(token.address, { from: owner }).should.be.fulfilled
-          expect(await contract.tokenImage()).to.be.equal(token.address)
+          expect(await contract.tokenFactory()).to.be.equal(tokenFactory.address)
+          await contract.setTokenFactory(token.address, { from: user }).should.be.rejected
+          await contract.setTokenFactory(owner, { from: owner }).should.be.rejected
+          await contract.setTokenFactory(token.address, { from: owner }).should.be.fulfilled
+          expect(await contract.tokenFactory()).to.be.equal(token.address)
         })
       })
     })
@@ -1062,7 +1065,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [owner],
         [ether('0.02'), ether('0.01')]
       ).should.be.fulfilled

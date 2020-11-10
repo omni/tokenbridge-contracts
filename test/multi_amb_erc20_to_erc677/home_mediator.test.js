@@ -8,6 +8,7 @@ const Sacrifice = artifacts.require('Sacrifice.sol')
 const TokenFactory = artifacts.require('TokenFactory.sol')
 const MultiTokenForwardingRulesManager = artifacts.require('MultiTokenForwardingRulesManager.sol')
 const HomeMultiAMBErc20ToErc677FeeManager = artifacts.require('HomeMultiAMBErc20ToErc677FeeManager.sol')
+const BridgeLimitsManager = artifacts.require('BridgeLimitsManager.sol')
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
@@ -38,6 +39,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
   let tokenImage
   let tokenFactory
   let homeToken
+  let otherSideLimitsManager
+  let limitsManager
   const owner = accounts[0]
   const user = accounts[1]
   const user2 = accounts[2]
@@ -49,18 +52,29 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
     await otherSideAMBBridgeContract.setMaxGasPerTx(maxGasPerTx)
     otherSideMediator = await ForeignMultiAMBErc20ToErc677.new()
+    otherSideLimitsManager = await BridgeLimitsManager.new(
+      otherSideMediator.address,
+      owner,
+      [dailyLimit, maxPerTx, minPerTx],
+      [executionDailyLimit, executionMaxPerTx]
+    )
+    limitsManager = await BridgeLimitsManager.new(
+      contract.address,
+      owner,
+      [dailyLimit, maxPerTx, minPerTx],
+      [executionDailyLimit, executionMaxPerTx]
+    )
     await otherSideMediator.initialize(
       otherSideAMBBridgeContract.address,
       contract.address,
-      [dailyLimit, maxPerTx, minPerTx],
-      [executionDailyLimit, executionMaxPerTx],
       maxGasPerTx,
-      owner
+      owner,
+      otherSideLimitsManager.address
     )
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
     tokenImage = await PermittableToken.new('TEST', 'TST', 18, 1337)
     tokenFactory = await TokenFactory.new(tokenImage.address)
-    currentDay = await contract.getCurrentDay()
+    currentDay = await limitsManager.getCurrentDay()
   })
 
   const sendFunctions = [
@@ -148,11 +162,6 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.isInitialized()).to.be.equal(false)
       expect(await contract.bridgeContract()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.mediatorContractOnOtherSide()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-      expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-      expect(await contract.minPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-      expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-      expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.tokenFactory()).to.be.equal(ZERO_ADDRESS)
@@ -162,43 +171,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await contract.initialize(
         ZERO_ADDRESS,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address
-      ).should.be.rejected
-
-      // dailyLimit > maxPerTx
-      await contract.initialize(
-        ambBridgeContract.address,
-        otherSideMediator.address,
-        [maxPerTx, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        owner,
-        tokenFactory.address
-      ).should.be.rejected
-
-      // maxPerTx > minPerTx
-      await contract.initialize(
-        ambBridgeContract.address,
-        otherSideMediator.address,
-        [dailyLimit, minPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        owner,
-        tokenFactory.address
-      ).should.be.rejected
-
-      // executionDailyLimit > executionMaxPerTx
-      await contract.initialize(
-        ambBridgeContract.address,
-        otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionDailyLimit],
-        maxGasPerTx,
-        owner,
+        limitsManager.address,
         tokenFactory.address
       ).should.be.rejected
 
@@ -206,10 +181,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         twoEthers,
         owner,
+        limitsManager.address,
         tokenFactory.address
       ).should.be.rejected
 
@@ -217,31 +191,38 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         ZERO_ADDRESS,
+        limitsManager.address,
         tokenFactory.address
       ).should.be.rejected
 
-      // token image is not a contract
+      // limits manager is not a contract
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
+        owner,
+        tokenFactory.address
+      ).should.be.rejected
+
+      // token factory is not a contract
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        maxGasPerTx,
+        owner,
+        limitsManager.address,
         owner
       ).should.be.rejected
 
-      const { logs } = await contract.initialize(
+      await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
+        limitsManager.address,
         tokenFactory.address
       ).should.be.fulfilled
 
@@ -249,10 +230,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
+        limitsManager.address,
         tokenFactory.address
       ).should.be.rejected
 
@@ -260,17 +240,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.isInitialized()).to.be.equal(true)
       expect(await contract.bridgeContract()).to.be.equal(ambBridgeContract.address)
       expect(await contract.mediatorContractOnOtherSide()).to.be.equal(otherSideMediator.address)
-      expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(dailyLimit)
-      expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(maxPerTx)
-      expect(await contract.minPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(minPerTx)
-      expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(executionDailyLimit)
-      expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(executionMaxPerTx)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.owner()).to.be.equal(owner)
       expect(await contract.tokenFactory()).to.be.equal(tokenFactory.address)
-
-      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { token: ZERO_ADDRESS, newLimit: executionDailyLimit })
-      expectEventInLogs(logs, 'DailyLimitChanged', { token: ZERO_ADDRESS, newLimit: dailyLimit })
     })
   })
 
@@ -291,14 +263,24 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       const storageProxy = await EternalStorageProxy.new()
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await HomeMultiAMBErc20ToErc677.at(storageProxy.address)
-      const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(contract.address, [user2], [ether('0.1'), ZERO])
+      const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(
+        contract.address,
+        owner,
+        [user2],
+        [ether('0.1'), ZERO]
+      )
+      limitsManager = await BridgeLimitsManager.new(
+        contract.address,
+        owner,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx]
+      )
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
+        limitsManager.address,
         tokenFactory.address
       ).should.be.fulfilled
       await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
@@ -343,10 +325,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
+        limitsManager.address,
         tokenFactory.address
       ).should.be.fulfilled
 
@@ -444,13 +425,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           token = await bridgeToken(token, value.mul(f1).div(f2))
 
           expect(await token.decimals()).to.be.bignumber.equal(decimals.toString())
-          expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(dailyLimit.mul(f1).div(f2))
-          expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(maxPerTx.mul(f1).div(f2))
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(minPerTx.mul(f1).div(f2))
-          expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(
+          expect(await limitsManager.dailyLimit(token.address)).to.be.bignumber.equal(dailyLimit.mul(f1).div(f2))
+          expect(await limitsManager.maxPerTx(token.address)).to.be.bignumber.equal(maxPerTx.mul(f1).div(f2))
+          expect(await limitsManager.minPerTx(token.address)).to.be.bignumber.equal(minPerTx.mul(f1).div(f2))
+          expect(await limitsManager.executionDailyLimit(token.address)).to.be.bignumber.equal(
             executionDailyLimit.mul(f1).div(f2)
           )
-          expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal(
+          expect(await limitsManager.executionMaxPerTx(token.address)).to.be.bignumber.equal(
             executionMaxPerTx.mul(f1).div(f2)
           )
         })
@@ -461,16 +442,17 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         token = await bridgeToken(token, '1')
 
         expect(await token.decimals()).to.be.bignumber.equal('0')
-        expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('10000')
-        expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('100')
-        expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('1')
-        expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal('10000')
-        expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal('100')
+        expect(await limitsManager.dailyLimit(token.address)).to.be.bignumber.equal('10000')
+        expect(await limitsManager.maxPerTx(token.address)).to.be.bignumber.equal('100')
+        expect(await limitsManager.minPerTx(token.address)).to.be.bignumber.equal('1')
+        expect(await limitsManager.executionDailyLimit(token.address)).to.be.bignumber.equal('10000')
+        expect(await limitsManager.executionMaxPerTx(token.address)).to.be.bignumber.equal('100')
       })
 
       it('should initialize fees', async () => {
         const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(
           contract.address,
+          owner,
           [],
           [ether('0.01'), ether('0.02')]
         )
@@ -494,77 +476,6 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     })
 
     describe('update mediator parameters', () => {
-      describe('limits', () => {
-        it('should allow to update default daily limits', async () => {
-          await contract.setDailyLimit(ZERO_ADDRESS, ether('5'), { from: user }).should.be.rejected
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ether('5'), { from: user }).should.be.rejected
-          await contract.setDailyLimit(ZERO_ADDRESS, ether('0.5'), { from: owner }).should.be.rejected
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ether('0.5'), { from: owner }).should.be.rejected
-          await contract.setDailyLimit(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.fulfilled
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.fulfilled
-
-          expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ether('5'))
-          expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ether('5'))
-
-          await contract.setDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
-
-          expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-          expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-        })
-
-        it('should allow to update default max per tx limits', async () => {
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: user }).should.be.rejected
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: user }).should.be.rejected
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.rejected
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.rejected
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('0.001'), { from: owner }).should.be.rejected
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: owner }).should.be.fulfilled
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: owner }).should.be.fulfilled
-
-          expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('1.5'))
-          expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('1.5'))
-
-          await contract.setMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
-
-          expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-          expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-        })
-
-        it('should allow to update default min per tx limit', async () => {
-          await contract.setMinPerTx(ZERO_ADDRESS, ether('0.1'), { from: user }).should.be.rejected
-          await contract.setMinPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          await contract.setMinPerTx(ZERO_ADDRESS, ether('0.1'), { from: owner }).should.be.fulfilled
-
-          expect(await contract.minPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.1'))
-
-          await contract.setMinPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-        })
-
-        it('should only allow to update parameters for known tokens', async () => {
-          await contract.setDailyLimit(token.address, ether('5'), { from: owner }).should.be.rejected
-          await contract.setMaxPerTx(token.address, ether('1.5'), { from: owner }).should.be.rejected
-          await contract.setMinPerTx(token.address, ether('0.02'), { from: owner }).should.be.rejected
-          await contract.setExecutionDailyLimit(token.address, ether('5'), { from: owner }).should.be.rejected
-          await contract.setExecutionMaxPerTx(token.address, ether('1.5'), { from: owner }).should.be.rejected
-
-          token = await bridgeToken(token)
-
-          await contract.setDailyLimit(token.address, ether('5'), { from: owner }).should.be.fulfilled
-          await contract.setMaxPerTx(token.address, ether('1.5'), { from: owner }).should.be.fulfilled
-          await contract.setMinPerTx(token.address, ether('0.02'), { from: owner }).should.be.fulfilled
-          await contract.setExecutionDailyLimit(token.address, ether('6'), { from: owner }).should.be.fulfilled
-          await contract.setExecutionMaxPerTx(token.address, ether('1.6'), { from: owner }).should.be.fulfilled
-
-          expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(ether('5'))
-          expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(ether('1.5'))
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(ether('0.02'))
-          expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(ether('6'))
-          expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal(ether('1.6'))
-        })
-      })
-
       describe('tokenFactory', () => {
         it('should allow to change token image', async () => {
           expect(await contract.tokenFactory()).to.be.equal(tokenFactory.address)
@@ -598,14 +509,14 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(token.address).toLowerCase())).to.be.equal(true)
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
+        expect(await limitsManager.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
       })
 
       it('should respect global shutdown', async () => {
-        await contract.setDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await limitsManager.setDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
         await homeToken.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.rejected
-        await contract.setDailyLimit(ZERO_ADDRESS, dailyLimit).should.be.fulfilled
+        await limitsManager.setDailyLimit(ZERO_ADDRESS, dailyLimit).should.be.fulfilled
         await homeToken.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
       })
 
@@ -621,7 +532,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(token.address).toLowerCase())).to.be.equal(true)
         expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
+        expect(await limitsManager.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
       })
     })
@@ -647,7 +558,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(token.address).toLowerCase())).to.be.equal(true)
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
       })
 
@@ -665,7 +576,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(token.address).toLowerCase())).to.be.equal(true)
         expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
       })
 
@@ -683,7 +594,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(token.address).toLowerCase())).to.be.equal(true)
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
       })
 
@@ -734,7 +645,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
 
         // Then
-        expect(await contract.totalExecutedPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(twoEthers)
+        expect(await limitsManager.totalExecutedPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(twoEthers)
         expect(await homeToken.balanceOf(user)).to.be.bignumber.equal(twoEthers)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
 
@@ -751,7 +662,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           .handleBridgedTokens(token.address, user, value.toString())
           .encodeABI()
 
-        await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await limitsManager.setExecutionDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
         await ambBridgeContract.executeMessageCall(
           contract.address,
           otherSideMediator.address,
@@ -761,7 +672,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         ).should.be.fulfilled
 
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(false)
-        await contract.setExecutionDailyLimit(ZERO_ADDRESS, executionDailyLimit).should.be.fulfilled
+        await limitsManager.setExecutionDailyLimit(ZERO_ADDRESS, executionDailyLimit).should.be.fulfilled
         await ambBridgeContract.executeMessageCall(
           contract.address,
           otherSideMediator.address,
@@ -992,8 +903,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     describe('oracle driven lane permissions', () => {
       let manager
       beforeEach(async () => {
-        manager = await MultiTokenForwardingRulesManager.new(contract.address)
-        expect(await manager.mediator()).to.be.equal(contract.address)
+        manager = await MultiTokenForwardingRulesManager.new(owner)
+        expect(await manager.owner()).to.be.equal(owner)
       })
 
       it('should allow to update manager address', async () => {
@@ -1078,14 +989,14 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
+        limitsManager.address,
         tokenFactory.address
       ).should.be.fulfilled
       feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(
         contract.address,
+        owner,
         [owner],
         [ether('0.02'), ether('0.01')]
       )
@@ -1238,7 +1149,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         ).should.be.fulfilled
 
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
-        expect(await contract.totalExecutedPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(twoEthers)
+        expect(await limitsManager.totalExecutedPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(twoEthers)
 
         event = await getEvents(contract, { event: 'TokensBridged' })
         expect(event.length).to.be.equal(2)
@@ -1287,7 +1198,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         ).should.be.fulfilled
 
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
-        expect(await contract.totalExecutedPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(twoEthers)
+        expect(await limitsManager.totalExecutedPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(twoEthers)
 
         event = await getEvents(contract, { event: 'TokensBridged' })
         expect(event.length).to.be.equal(2)
@@ -1338,7 +1249,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         ).should.be.fulfilled
 
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
-        expect(await contract.totalExecutedPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(
+        expect(await limitsManager.totalExecutedPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(
           ether('0.400000000000000200')
         )
 
@@ -1375,12 +1286,12 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       it('should collect and distribute 0% fee', async () => {
         await feeManager.setFee(await feeManager.HOME_TO_FOREIGN_FEE(), token.address, ZERO).should.be.fulfilled
 
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
         await token.transfer(contract.address, value, { from: user })
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
         await token.transfer(contract.address, value, { from: user })
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
 
@@ -1389,14 +1300,14 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should collect and distribute 2% fee', async () => {
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
         await token.transfer(contract.address, value, { from: user })
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(owner)).to.be.bignumber.equal(ether('0.02'))
         await token.transfer(contract.address, value, { from: user })
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(owner)).to.be.bignumber.equal(ether('0.04'))
@@ -1409,9 +1320,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         await feeManager.addRewardAddress(accounts[9]).should.be.fulfilled
         expect(await feeManager.rewardAddressCount()).to.be.bignumber.equal('2')
 
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
         await token.transfer(contract.address, ether('0.100000000000000050'), { from: user })
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(
           ether('0.100000000000000050')
         )
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
@@ -1425,7 +1336,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         ).to.be.equal(true)
 
         await token.transfer(contract.address, value, { from: user }).should.be.fulfilled
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(
           ether('1.100000000000000050')
         )
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
@@ -1438,9 +1349,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       it('should not collect and distribute fee if sender is a reward address', async () => {
         await token.transfer(owner, value, { from: user }).should.be.fulfilled
 
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
         await token.transfer(contract.address, value, { from: owner }).should.be.fulfilled
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(owner)).to.be.bignumber.equal(ZERO)

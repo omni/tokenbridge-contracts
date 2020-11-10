@@ -5,9 +5,10 @@ const AMBMock = artifacts.require('AMBMock.sol')
 const ERC20Mock = artifacts.require('ERC20Mock.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
+const BridgeLimitsManager = artifacts.require('BridgeLimitsManager.sol')
 
 const { expect } = require('chai')
-const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
+const { getEvents, ether, strip0x } = require('../helpers/helpers')
 const { ZERO_ADDRESS, toBN } = require('../setup')
 
 const ZERO = toBN(0)
@@ -29,6 +30,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
   let token
   let ambBridgeContract
   let otherSideMediator
+  let limitsManager
   let currentDay
   const owner = accounts[0]
   const user = accounts[1]
@@ -40,7 +42,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
     await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
     otherSideMediator = await HomeMultiAMBErc20ToErc677.new()
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
-    currentDay = await contract.getCurrentDay()
+    limitsManager = await BridgeLimitsManager.new(
+      contract.address,
+      owner,
+      [dailyLimit, maxPerTx, minPerTx],
+      [executionDailyLimit, executionMaxPerTx]
+    )
+    currentDay = await limitsManager.getCurrentDay()
   })
 
   const sendFunctions = [
@@ -81,108 +89,50 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.isInitialized()).to.be.equal(false)
       expect(await contract.bridgeContract()).to.be.equal(ZERO_ADDRESS)
       expect(await contract.mediatorContractOnOtherSide()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-      expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-      expect(await contract.minPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-      expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-      expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
 
       // When
       // not valid bridge address
-      await contract.initialize(
-        ZERO_ADDRESS,
-        otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        owner
-      ).should.be.rejected
-
-      // dailyLimit > maxPerTx
-      await contract.initialize(
-        ambBridgeContract.address,
-        otherSideMediator.address,
-        [maxPerTx, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        owner
-      ).should.be.rejected
-
-      // maxPerTx > minPerTx
-      await contract.initialize(
-        ambBridgeContract.address,
-        otherSideMediator.address,
-        [dailyLimit, minPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        maxGasPerTx,
-        owner
-      ).should.be.rejected
-
-      // executionDailyLimit > executionMaxPerTx
-      await contract.initialize(
-        ambBridgeContract.address,
-        otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionDailyLimit],
-        maxGasPerTx,
-        owner
-      ).should.be.rejected
-
-      // maxGasPerTx > bridge maxGasPerTx
-      await contract.initialize(
-        ambBridgeContract.address,
-        otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
-        twoEthers,
-        owner
-      ).should.be.rejected
+      await contract.initialize(ZERO_ADDRESS, otherSideMediator.address, maxGasPerTx, owner, limitsManager.address)
+        .should.be.rejected
 
       // not valid owner
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        ZERO_ADDRESS
+        ZERO_ADDRESS,
+        limitsManager.address
       ).should.be.rejected
 
-      const { logs } = await contract.initialize(
+      // not valid limits manager
+      await contract.initialize(ambBridgeContract.address, otherSideMediator.address, maxGasPerTx, owner, ZERO_ADDRESS)
+        .should.be.rejected
+
+      await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        limitsManager.address
       ).should.be.fulfilled
 
       // already initialized
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        limitsManager.address
       ).should.be.rejected
 
       // Then
       expect(await contract.isInitialized()).to.be.equal(true)
       expect(await contract.bridgeContract()).to.be.equal(ambBridgeContract.address)
       expect(await contract.mediatorContractOnOtherSide()).to.be.equal(otherSideMediator.address)
-      expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(dailyLimit)
-      expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(maxPerTx)
-      expect(await contract.minPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(minPerTx)
-      expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(executionDailyLimit)
-      expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(executionMaxPerTx)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.owner()).to.be.equal(owner)
-
-      expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { token: ZERO_ADDRESS, newLimit: executionDailyLimit })
-      expectEventInLogs(logs, 'DailyLimitChanged', { token: ZERO_ADDRESS, newLimit: dailyLimit })
     })
   })
 
@@ -203,13 +153,18 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       const storageProxy = await EternalStorageProxy.new()
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await ForeignMultiAMBErc20ToErc677.at(storageProxy.address)
+      limitsManager = await BridgeLimitsManager.new(
+        contract.address,
+        owner,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx]
+      )
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        limitsManager.address
       ).should.be.fulfilled
     })
 
@@ -259,87 +214,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        limitsManager.address
       ).should.be.fulfilled
 
       const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(initialEvents.length).to.be.equal(0)
-    })
-
-    describe('update mediator parameters', () => {
-      describe('limits', () => {
-        it('should allow to update default daily limits', async () => {
-          await contract.setDailyLimit(ZERO_ADDRESS, ether('5'), { from: user }).should.be.rejected
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ether('5'), { from: user }).should.be.rejected
-          await contract.setDailyLimit(ZERO_ADDRESS, ether('0.5'), { from: owner }).should.be.rejected
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ether('0.5'), { from: owner }).should.be.rejected
-          await contract.setDailyLimit(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.fulfilled
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.fulfilled
-
-          expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ether('5'))
-          expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ether('5'))
-
-          await contract.setDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
-          await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
-
-          expect(await contract.dailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-          expect(await contract.executionDailyLimit(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-        })
-
-        it('should allow to update default max per tx limits', async () => {
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: user }).should.be.rejected
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: user }).should.be.rejected
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.rejected
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.rejected
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('0.001'), { from: owner }).should.be.rejected
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: owner }).should.be.fulfilled
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: owner }).should.be.fulfilled
-
-          expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('1.5'))
-          expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('1.5'))
-
-          await contract.setMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
-          await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.fulfilled
-
-          expect(await contract.maxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-          expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
-        })
-
-        it('should allow to update default min per tx limit', async () => {
-          await contract.setMinPerTx(ZERO_ADDRESS, ether('0.1'), { from: user }).should.be.rejected
-          await contract.setMinPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-          await contract.setMinPerTx(ZERO_ADDRESS, ether('0.1'), { from: owner }).should.be.fulfilled
-
-          expect(await contract.minPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.1'))
-
-          await contract.setMinPerTx(ZERO_ADDRESS, ZERO, { from: owner }).should.be.rejected
-        })
-
-        it('should only allow to update parameters for known tokens', async () => {
-          await contract.setDailyLimit(token.address, ether('5'), { from: owner }).should.be.rejected
-          await contract.setMaxPerTx(token.address, ether('1.5'), { from: owner }).should.be.rejected
-          await contract.setMinPerTx(token.address, ether('0.02'), { from: owner }).should.be.rejected
-          await contract.setExecutionDailyLimit(token.address, ether('5'), { from: owner }).should.be.rejected
-          await contract.setExecutionMaxPerTx(token.address, ether('1.5'), { from: owner }).should.be.rejected
-
-          await token.transferAndCall(contract.address, value, '0x', { from: user })
-
-          await contract.setDailyLimit(token.address, ether('5'), { from: owner }).should.be.fulfilled
-          await contract.setMaxPerTx(token.address, ether('1.5'), { from: owner }).should.be.fulfilled
-          await contract.setMinPerTx(token.address, ether('0.02'), { from: owner }).should.be.fulfilled
-          await contract.setExecutionDailyLimit(token.address, ether('6'), { from: owner }).should.be.fulfilled
-          await contract.setExecutionMaxPerTx(token.address, ether('1.6'), { from: owner }).should.be.fulfilled
-
-          expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(ether('5'))
-          expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(ether('1.5'))
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(ether('0.02'))
-          expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(ether('6'))
-          expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal(ether('1.6'))
-        })
-      })
     })
 
     describe('onTokenTransfer', () => {
@@ -363,16 +244,16 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(halfEther)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(halfEther)
         expect(await contract.isTokenRegistered(token.address)).to.be.equal(true)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
       })
 
       it('should respect global shutdown', async () => {
-        await contract.setDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await limitsManager.setDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
         await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.rejected
-        await contract.setDailyLimit(ZERO_ADDRESS, dailyLimit).should.be.fulfilled
+        await limitsManager.setDailyLimit(ZERO_ADDRESS, dailyLimit).should.be.fulfilled
         await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
       })
 
@@ -388,7 +269,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(halfEther)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(halfEther)
         expect(await contract.isTokenRegistered(token.address)).to.be.equal(true)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
@@ -414,7 +295,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
       })
 
@@ -431,7 +312,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
       })
 
@@ -447,7 +328,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(1)
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
-        expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
       })
 
@@ -511,13 +392,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           await token.mint(user, value.mul(f1).div(f2)).should.be.fulfilled
           await token.transferAndCall(contract.address, value.mul(f1).div(f2), '0x', { from: user }).should.be.fulfilled
 
-          expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(dailyLimit.mul(f1).div(f2))
-          expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(maxPerTx.mul(f1).div(f2))
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(minPerTx.mul(f1).div(f2))
-          expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(
+          expect(await limitsManager.dailyLimit(token.address)).to.be.bignumber.equal(dailyLimit.mul(f1).div(f2))
+          expect(await limitsManager.maxPerTx(token.address)).to.be.bignumber.equal(maxPerTx.mul(f1).div(f2))
+          expect(await limitsManager.minPerTx(token.address)).to.be.bignumber.equal(minPerTx.mul(f1).div(f2))
+          expect(await limitsManager.executionDailyLimit(token.address)).to.be.bignumber.equal(
             executionDailyLimit.mul(f1).div(f2)
           )
-          expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal(
+          expect(await limitsManager.executionMaxPerTx(token.address)).to.be.bignumber.equal(
             executionMaxPerTx.mul(f1).div(f2)
           )
         })
@@ -528,11 +409,11 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         await token.mint(user, '1').should.be.fulfilled
         await token.transferAndCall(contract.address, '1', '0x', { from: user }).should.be.fulfilled
 
-        expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('10000')
-        expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('100')
-        expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('1')
-        expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal('10000')
-        expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal('100')
+        expect(await limitsManager.dailyLimit(token.address)).to.be.bignumber.equal('10000')
+        expect(await limitsManager.maxPerTx(token.address)).to.be.bignumber.equal('100')
+        expect(await limitsManager.minPerTx(token.address)).to.be.bignumber.equal('1')
+        expect(await limitsManager.executionDailyLimit(token.address)).to.be.bignumber.equal('10000')
+        expect(await limitsManager.executionMaxPerTx(token.address)).to.be.bignumber.equal('100')
       })
     })
 
@@ -569,7 +450,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(true)
 
         // Then
-        expect(await contract.totalExecutedPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
+        expect(await limitsManager.totalExecutedPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(user)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
@@ -608,7 +489,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           .handleBridgedTokens(token.address, user, value.toString())
           .encodeABI()
 
-        await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await limitsManager.setExecutionDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
         await ambBridgeContract.executeMessageCall(
           contract.address,
           otherSideMediator.address,
@@ -618,7 +499,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         ).should.be.fulfilled
 
         expect(await ambBridgeContract.messageCallStatus(exampleMessageId)).to.be.equal(false)
-        await contract.setExecutionDailyLimit(ZERO_ADDRESS, executionDailyLimit).should.be.fulfilled
+        await limitsManager.setExecutionDailyLimit(ZERO_ADDRESS, executionDailyLimit).should.be.fulfilled
         await ambBridgeContract.executeMessageCall(
           contract.address,
           otherSideMediator.address,
@@ -796,11 +677,11 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           expect(await contract.tokenRegistrationMessageId(token.address)).to.be.equal(
             '0x0000000000000000000000000000000000000000000000000000000000000000'
           )
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('0')
-          expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal('0')
-          expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal('0')
-          expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal('0')
-          expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal('0')
+          expect(await limitsManager.minPerTx(token.address)).to.be.bignumber.equal('0')
+          expect(await limitsManager.maxPerTx(token.address)).to.be.bignumber.equal('0')
+          expect(await limitsManager.dailyLimit(token.address)).to.be.bignumber.equal('0')
+          expect(await limitsManager.executionMaxPerTx(token.address)).to.be.bignumber.equal('0')
+          expect(await limitsManager.executionDailyLimit(token.address)).to.be.bignumber.equal('0')
 
           const event = await getEvents(contract, { event: 'FailedMessageFixed' })
           expect(event.length).to.be.equal(1)
@@ -831,6 +712,12 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       const storageProxy = await EternalStorageProxy.new()
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await ForeignMultiAMBErc20ToErc677.at(storageProxy.address)
+      limitsManager = await BridgeLimitsManager.new(
+        contract.address,
+        owner,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx]
+      )
 
       await token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
       await token.mint(contract.address, twoEthers, { from: owner }).should.be.fulfilled
@@ -838,13 +725,12 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
-        [dailyLimit, maxPerTx, minPerTx],
-        [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        limitsManager.address
       ).should.be.fulfilled
 
-      expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
+      expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
       const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(initialEvents.length).to.be.equal(0)
     })
@@ -854,12 +740,12 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers)
 
       await token.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
-      await contract.setDailyLimit(token.address, ether('5')).should.be.fulfilled
-      await contract.setMaxPerTx(token.address, ether('2')).should.be.fulfilled
+      await limitsManager.setDailyLimit(token.address, ether('5')).should.be.fulfilled
+      await limitsManager.setMaxPerTx(token.address, ether('2')).should.be.fulfilled
 
       expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
-      expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(halfEther)
+      expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(halfEther)
       let events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
 
@@ -872,7 +758,9 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
 
-      expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers.add(halfEther))
+      expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(
+        twoEthers.add(halfEther)
+      )
       events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(2)
     })
@@ -885,7 +773,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
       expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(halfEther)
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(twoEthers.add(halfEther))
-      expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(halfEther)
+      expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(halfEther)
       let events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(events.length).to.be.equal(1)
 
@@ -895,16 +783,16 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
       expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(ether('1.5'))
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ether('2.5'))
-      expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ether('1.5'))
+      expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ether('1.5'))
 
       await contract.fixMediatorBalance(token.address, owner, { from: owner }).should.be.fulfilled
 
       expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(twoEthers)
       expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ether('2.5'))
-      expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers)
+      expect(await limitsManager.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers)
 
       await contract.fixMediatorBalance(token.address, owner, { from: owner }).should.be.rejected
-      await contract.setDailyLimit(token.address, ether('1.5')).should.be.fulfilled
+      await limitsManager.setDailyLimit(token.address, ether('1.5')).should.be.fulfilled
       await contract.fixMediatorBalance(token.address, owner, { from: owner }).should.be.rejected
 
       events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })

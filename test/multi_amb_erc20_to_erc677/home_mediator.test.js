@@ -6,6 +6,8 @@ const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const PermittableToken = artifacts.require('PermittableToken.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
 const TokenFactory = artifacts.require('TokenFactory.sol')
+const MultiTokenForwardingRulesManager = artifacts.require('MultiTokenForwardingRulesManager.sol')
+const HomeMultiAMBErc20ToErc677FeeManager = artifacts.require('HomeMultiAMBErc20ToErc677FeeManager.sol')
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
@@ -125,14 +127,17 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     expect(events.length).to.be.equal(1)
     expect(events[0].returnValues.foreignToken).to.be.equal(token.address)
     const homeToken = await PermittableToken.at(events[0].returnValues.homeToken)
-    const fee = await contract.getFee(await contract.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS)
-    const rewardAccounts = (await contract.rewardAddressCount()).toNumber()
-    const bridgedValue =
-      rewardAccounts > 0
-        ? toBN(value)
-            .mul(oneEther.sub(fee))
-            .div(oneEther)
-        : value
+    const feeManagerAddress = await contract.feeManager()
+    let bridgedValue = value
+    if (feeManagerAddress !== ZERO_ADDRESS) {
+      const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.at(feeManagerAddress)
+      const fee = await feeManager.getFee(await feeManager.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS)
+      if ((await feeManager.rewardAddressCount()).toNumber() > 0) {
+        bridgedValue = toBN(value)
+          .mul(oneEther.sub(fee))
+          .div(oneEther)
+      }
+    }
     expect(await homeToken.balanceOf(user)).to.be.bignumber.equal(bridgedValue)
     return homeToken
   }
@@ -161,9 +166,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.rejected
 
       // dailyLimit > maxPerTx
@@ -174,9 +177,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.rejected
 
       // maxPerTx > minPerTx
@@ -187,9 +188,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.rejected
 
       // executionDailyLimit > executionMaxPerTx
@@ -200,9 +199,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionDailyLimit],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.rejected
 
       // maxGasPerTx > bridge maxGasPerTx
@@ -213,9 +210,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         twoEthers,
         owner,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.rejected
 
       // not valid owner
@@ -226,9 +221,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         ZERO_ADDRESS,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.rejected
 
       // token image is not a contract
@@ -239,9 +232,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        owner,
-        [],
-        [ZERO, ZERO]
+        owner
       ).should.be.rejected
 
       const { logs } = await contract.initialize(
@@ -251,9 +242,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.fulfilled
 
       // already initialized
@@ -264,9 +253,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.rejected
 
       // Then
@@ -304,6 +291,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       const storageProxy = await EternalStorageProxy.new()
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await HomeMultiAMBErc20ToErc677.at(storageProxy.address)
+      const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(contract.address, [user2], [ether('0.1'), ZERO])
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
@@ -311,10 +299,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
-        [user2],
-        [ether('0.1'), ZERO]
+        tokenFactory.address
       ).should.be.fulfilled
+      await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
     })
 
     it('should only work with unknown token', async () => {
@@ -360,9 +347,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
-        [],
-        [ZERO, ZERO]
+        tokenFactory.address
       ).should.be.fulfilled
 
       const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
@@ -484,22 +469,27 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should initialize fees', async () => {
-        const HOME_TO_FOREIGN_FEE = await contract.HOME_TO_FOREIGN_FEE()
-        const FOREIGN_TO_HOME_FEE = await contract.FOREIGN_TO_HOME_FEE()
-        await contract.setFee(HOME_TO_FOREIGN_FEE, ZERO_ADDRESS, ether('0.01'))
-        await contract.setFee(FOREIGN_TO_HOME_FEE, ZERO_ADDRESS, ether('0.02'))
+        const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(
+          contract.address,
+          [],
+          [ether('0.01'), ether('0.02')]
+        )
+        await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
 
-        expect(await contract.getFee(HOME_TO_FOREIGN_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.01'))
-        expect(await contract.getFee(FOREIGN_TO_HOME_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.02'))
-        expect(await contract.getFee(HOME_TO_FOREIGN_FEE, token.address)).to.be.bignumber.equal(ZERO)
-        expect(await contract.getFee(FOREIGN_TO_HOME_FEE, token.address)).to.be.bignumber.equal(ZERO)
+        const HOME_TO_FOREIGN_FEE = await feeManager.HOME_TO_FOREIGN_FEE()
+        const FOREIGN_TO_HOME_FEE = await feeManager.FOREIGN_TO_HOME_FEE()
+
+        expect(await feeManager.getFee(HOME_TO_FOREIGN_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.01'))
+        expect(await feeManager.getFee(FOREIGN_TO_HOME_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.02'))
+        expect(await feeManager.getFee(HOME_TO_FOREIGN_FEE, token.address)).to.be.bignumber.equal(ZERO)
+        expect(await feeManager.getFee(FOREIGN_TO_HOME_FEE, token.address)).to.be.bignumber.equal(ZERO)
 
         const homeToken = await bridgeToken(token)
 
-        expect(await contract.getFee(HOME_TO_FOREIGN_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.01'))
-        expect(await contract.getFee(FOREIGN_TO_HOME_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.02'))
-        expect(await contract.getFee(HOME_TO_FOREIGN_FEE, homeToken.address)).to.be.bignumber.equal(ether('0.01'))
-        expect(await contract.getFee(FOREIGN_TO_HOME_FEE, homeToken.address)).to.be.bignumber.equal(ether('0.02'))
+        expect(await feeManager.getFee(HOME_TO_FOREIGN_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.01'))
+        expect(await feeManager.getFee(FOREIGN_TO_HOME_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.02'))
+        expect(await feeManager.getFee(HOME_TO_FOREIGN_FEE, homeToken.address)).to.be.bignumber.equal(ether('0.01'))
+        expect(await feeManager.getFee(FOREIGN_TO_HOME_FEE, homeToken.address)).to.be.bignumber.equal(ether('0.02'))
       })
     })
 
@@ -1000,63 +990,90 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     })
 
     describe('oracle driven lane permissions', () => {
+      let manager
+      beforeEach(async () => {
+        manager = await MultiTokenForwardingRulesManager.new(contract.address)
+        expect(await manager.mediator()).to.be.equal(contract.address)
+      })
+
+      it('should allow to update manager address', async () => {
+        await contract.setForwardingRulesManager(manager.address, { from: user }).should.be.rejected
+        await contract.setForwardingRulesManager(manager.address, { from: owner }).should.be.fulfilled
+
+        expect(await contract.forwardingRulesManager()).to.be.equal(manager.address)
+
+        const otherManager = await MultiTokenForwardingRulesManager.new(contract.address)
+        await contract.setForwardingRulesManager(otherManager.address).should.be.fulfilled
+
+        expect(await contract.forwardingRulesManager()).to.be.equal(otherManager.address)
+
+        await contract.setForwardingRulesManager(owner).should.be.rejected
+        await contract.setForwardingRulesManager(ZERO_ADDRESS).should.be.fulfilled
+
+        expect(await contract.forwardingRulesManager()).to.be.equal(ZERO_ADDRESS)
+      })
+
       it('should allow to set/update lane permissions', async () => {
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('0')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('0')
 
-        await contract.setTokenForwardingRule(token.address, true, { from: user }).should.be.rejected
-        await contract.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
+        await manager.setTokenForwardingRule(token.address, true, { from: user }).should.be.rejected
+        await manager.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
+        await manager.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
           .rejected
-        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
+        await manager.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
           .fulfilled
 
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('1')
-        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('1')
+        expect(await manager.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, false, { from: owner }).should.be
+        await manager.setSenderExceptionForTokenForwardingRule(token.address, user, false, { from: owner }).should.be
           .fulfilled
-        await contract.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
+        await manager.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
           .rejected
-        await contract.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
+        await manager.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
           .fulfilled
 
-        expect(await contract.destinationLane(token.address, user, user)).to.be.bignumber.equal('1')
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user, user)).to.be.bignumber.equal('1')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setTokenForwardingRule(token.address, false, { from: owner }).should.be.fulfilled
+        await manager.setTokenForwardingRule(token.address, false, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('0')
+        expect(await manager.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('0')
 
-        await contract.setSenderForwardingRule(user2, true, { from: user }).should.be.rejected
-        await contract.setSenderForwardingRule(user2, true, { from: owner }).should.be.fulfilled
+        await manager.setSenderForwardingRule(user2, true, { from: user }).should.be.rejected
+        await manager.setSenderForwardingRule(user2, true, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setReceiverForwardingRule(user2, true, { from: user }).should.be.rejected
-        await contract.setReceiverForwardingRule(user2, true, { from: owner }).should.be.fulfilled
+        await manager.setReceiverForwardingRule(user2, true, { from: user }).should.be.rejected
+        await manager.setReceiverForwardingRule(user2, true, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
       })
 
       it('should send a message to the manual lane', async () => {
         homeToken = await bridgeToken(token)
 
         await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
-        await contract.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRulesManager(manager.address, { from: owner }).should.be.fulfilled
+        await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
+        await manager.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
         await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
 
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(2)
+        expect(events.length).to.be.equal(3)
         expect(strip0x(events[0].returnValues.encodedData).slice(156, 158)).to.be.equal('00')
-        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('f0')
+        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('00')
+        expect(strip0x(events[2].returnValues.encodedData).slice(156, 158)).to.be.equal('f0')
       })
     })
   })
 
   describe('fees management', () => {
+    let feeManager
     beforeEach(async () => {
       await contract.initialize(
         ambBridgeContract.address,
@@ -1065,114 +1082,123 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenFactory.address,
+        tokenFactory.address
+      ).should.be.fulfilled
+      feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(
+        contract.address,
         [owner],
         [ether('0.02'), ether('0.01')]
-      ).should.be.fulfilled
+      )
 
       const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(initialEvents.length).to.be.equal(0)
     })
 
     it('change reward addresses', async () => {
-      await contract.addRewardAddress(accounts[8], { from: user }).should.be.rejected
-      await contract.addRewardAddress(owner).should.be.rejected
-      await contract.addRewardAddress(accounts[8]).should.be.fulfilled
+      await feeManager.addRewardAddress(accounts[8], { from: user }).should.be.rejected
+      await feeManager.addRewardAddress(owner).should.be.rejected
+      await feeManager.addRewardAddress(accounts[8]).should.be.fulfilled
 
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[8], owner])
-      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
-      expect(await contract.isRewardAddress(owner)).to.be.equal(true)
-      expect(await contract.isRewardAddress(accounts[8])).to.be.equal(true)
+      expect(await feeManager.rewardAddressList()).to.be.eql([owner, accounts[8]])
+      expect(await feeManager.rewardAddressCount()).to.be.bignumber.equal('2')
+      expect(await feeManager.isRewardAddress(owner)).to.be.equal(true)
+      expect(await feeManager.isRewardAddress(accounts[8])).to.be.equal(true)
 
-      await contract.addRewardAddress(accounts[9]).should.be.fulfilled
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[9], accounts[8], owner])
-      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('3')
+      await feeManager.addRewardAddress(accounts[9]).should.be.fulfilled
+      expect(await feeManager.rewardAddressList()).to.be.eql([owner, accounts[8], accounts[9]])
+      expect(await feeManager.rewardAddressCount()).to.be.bignumber.equal('3')
 
-      await contract.removeRewardAddress(owner, { from: user }).should.be.rejected
-      await contract.removeRewardAddress(accounts[7]).should.be.rejected
-      await contract.removeRewardAddress(accounts[8]).should.be.fulfilled
-      await contract.removeRewardAddress(accounts[8]).should.be.rejected
+      await feeManager.removeRewardAddress(owner, { from: user }).should.be.rejected
+      await feeManager.removeRewardAddress(accounts[7]).should.be.rejected
+      await feeManager.removeRewardAddress(accounts[8]).should.be.fulfilled
+      await feeManager.removeRewardAddress(accounts[8]).should.be.rejected
 
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[9], owner])
-      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
-      expect(await contract.isRewardAddress(accounts[8])).to.be.equal(false)
+      expect(await feeManager.rewardAddressList()).to.be.eql([owner, accounts[9]])
+      expect(await feeManager.rewardAddressCount()).to.be.bignumber.equal('2')
+      expect(await feeManager.isRewardAddress(accounts[8])).to.be.equal(false)
 
-      await contract.removeRewardAddress(owner).should.be.fulfilled
-      expect(await contract.rewardAddressList()).to.be.eql([accounts[9]])
-      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('1')
-      expect(await contract.isRewardAddress(owner)).to.be.equal(false)
+      await feeManager.removeRewardAddress(owner).should.be.fulfilled
+      expect(await feeManager.rewardAddressList()).to.be.eql([accounts[9]])
+      expect(await feeManager.rewardAddressCount()).to.be.bignumber.equal('1')
+      expect(await feeManager.isRewardAddress(owner)).to.be.equal(false)
 
-      await contract.removeRewardAddress(accounts[9]).should.be.fulfilled
-      expect(await contract.rewardAddressList()).to.be.eql([])
-      expect(await contract.rewardAddressCount()).to.be.bignumber.equal('0')
-      expect(await contract.isRewardAddress(accounts[9])).to.be.equal(false)
+      await feeManager.removeRewardAddress(accounts[9]).should.be.fulfilled
+      expect(await feeManager.rewardAddressList()).to.be.eql([])
+      expect(await feeManager.rewardAddressCount()).to.be.bignumber.equal('0')
+      expect(await feeManager.isRewardAddress(accounts[9])).to.be.equal(false)
     })
 
     describe('update fee parameters', () => {
       it('should update default fee value', async () => {
-        const feeType = await contract.HOME_TO_FOREIGN_FEE()
-        await contract.setFee(feeType, ZERO_ADDRESS, ether('0.1'), { from: user }).should.be.rejected
-        await contract.setFee(feeType, ZERO_ADDRESS, ether('1.1'), { from: owner }).should.be.rejected
-        const { logs } = await contract.setFee(feeType, ZERO_ADDRESS, ether('0.1'), { from: owner }).should.be.fulfilled
+        const feeType = await feeManager.HOME_TO_FOREIGN_FEE()
+        await feeManager.setFee(feeType, ZERO_ADDRESS, ether('0.1'), { from: user }).should.be.rejected
+        await feeManager.setFee(feeType, ZERO_ADDRESS, ether('1.1'), { from: owner }).should.be.rejected
+        const { logs } = await feeManager.setFee(feeType, ZERO_ADDRESS, ether('0.1'), { from: owner }).should.be
+          .fulfilled
 
         expectEventInLogs(logs, 'FeeUpdated')
-        expect(await contract.getFee(feeType, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.1'))
-        expect(await contract.getFee(await contract.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS)).to.be.bignumber.equal(
+        expect(await feeManager.getFee(feeType, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.1'))
+        expect(await feeManager.getFee(await feeManager.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS)).to.be.bignumber.equal(
           ether('0.01')
         )
       })
 
       it('should update default opposite direction fee value', async () => {
-        const feeType = await contract.FOREIGN_TO_HOME_FEE()
-        await contract.setFee(feeType, ZERO_ADDRESS, ether('0.1'), { from: user }).should.be.rejected
-        await contract.setFee(feeType, ZERO_ADDRESS, ether('1.1'), { from: owner }).should.be.rejected
-        const { logs } = await contract.setFee(feeType, ZERO_ADDRESS, ether('0.1'), { from: owner }).should.be.fulfilled
+        const feeType = await feeManager.FOREIGN_TO_HOME_FEE()
+        await feeManager.setFee(feeType, ZERO_ADDRESS, ether('0.1'), { from: user }).should.be.rejected
+        await feeManager.setFee(feeType, ZERO_ADDRESS, ether('1.1'), { from: owner }).should.be.rejected
+        const { logs } = await feeManager.setFee(feeType, ZERO_ADDRESS, ether('0.1'), { from: owner }).should.be
+          .fulfilled
 
         expectEventInLogs(logs, 'FeeUpdated')
-        expect(await contract.getFee(feeType, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.1'))
-        expect(await contract.getFee(await contract.HOME_TO_FOREIGN_FEE(), ZERO_ADDRESS)).to.be.bignumber.equal(
+        expect(await feeManager.getFee(feeType, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.1'))
+        expect(await feeManager.getFee(await feeManager.HOME_TO_FOREIGN_FEE(), ZERO_ADDRESS)).to.be.bignumber.equal(
           ether('0.02')
         )
       })
 
       it('should update fee value for registered token', async () => {
-        const feeType = await contract.HOME_TO_FOREIGN_FEE()
+        const feeType = await feeManager.HOME_TO_FOREIGN_FEE()
         await token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
-        await contract.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
-        await contract.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
-        await contract.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be.rejected
+        await feeManager.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
+        await feeManager.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
+        await feeManager.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be.rejected
+        await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
 
         token = await bridgeToken(token)
 
-        await contract.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
-        await contract.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
-        const { logs } = await contract.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be
+        await feeManager.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
+        await feeManager.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
+        const { logs } = await feeManager.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be
           .fulfilled
 
         expectEventInLogs(logs, 'FeeUpdated')
-        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
-        expect(await contract.getFee(await contract.FOREIGN_TO_HOME_FEE(), token.address)).to.be.bignumber.equal(
+        expect(await feeManager.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await feeManager.getFee(await feeManager.FOREIGN_TO_HOME_FEE(), token.address)).to.be.bignumber.equal(
           ether('0.01')
         )
       })
 
       it('should update opposite direction fee value for registered token', async () => {
-        const feeType = await contract.FOREIGN_TO_HOME_FEE()
+        const feeType = await feeManager.FOREIGN_TO_HOME_FEE()
         await token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
-        await contract.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
-        await contract.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
-        await contract.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be.rejected
+        await feeManager.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
+        await feeManager.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
+        await feeManager.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be.rejected
+        await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
+
         token = await bridgeToken(token)
-        await contract.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
-        await contract.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
-        const { logs } = await contract.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be
+
+        await feeManager.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
+        await feeManager.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
+        const { logs } = await feeManager.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be
           .fulfilled
 
         expectEventInLogs(logs, 'FeeUpdated')
-        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
-        expect(await contract.getFee(await contract.HOME_TO_FOREIGN_FEE(), token.address)).to.be.bignumber.equal(
+        expect(await feeManager.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await feeManager.getFee(await feeManager.HOME_TO_FOREIGN_FEE(), token.address)).to.be.bignumber.equal(
           ether('0.02')
         )
       })
@@ -1182,10 +1208,11 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       beforeEach(async () => {
         await token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
         expect(await token.balanceOf(user)).to.be.bignumber.equal(twoEthers)
+        await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
       })
 
       it('should collect and distribute 0% fee', async () => {
-        await contract.setFee(await contract.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await feeManager.setFee(await feeManager.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS, ZERO).should.be.fulfilled
         const homeToken = await bridgeToken(token)
 
         let event = await getEvents(contract, { event: 'TokensBridged' })
@@ -1225,6 +1252,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
         expect(await homeToken.balanceOf(user)).to.be.bignumber.equal(twoEthers)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await homeToken.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await homeToken.balanceOf(owner)).to.be.bignumber.equal(ZERO)
       })
 
@@ -1243,6 +1271,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
         expect(await homeToken.balanceOf(user)).to.be.bignumber.equal(ether('0.99'))
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await homeToken.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await homeToken.balanceOf(owner)).to.be.bignumber.equal(ether('0.01'))
 
         const data = await contract.contract.methods
@@ -1272,12 +1301,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
         expect(await homeToken.balanceOf(user)).to.be.bignumber.equal(ether('1.98'))
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await homeToken.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await homeToken.balanceOf(owner)).to.be.bignumber.equal(ether('0.02'))
       })
 
       it('should collect and distribute 1% fee between two reward addresses', async () => {
-        await contract.addRewardAddress(accounts[9]).should.be.fulfilled
-        expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
+        await feeManager.addRewardAddress(accounts[9]).should.be.fulfilled
+        expect(await feeManager.rewardAddressCount()).to.be.bignumber.equal('2')
         const homeToken = await bridgeToken(token, ether('0.200000000000000100'))
 
         let event = await getEvents(contract, { event: 'TokensBridged' })
@@ -1322,7 +1352,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
     describe('distribute fee for home => foreign direction', async () => {
       beforeEach(async () => {
-        await contract.setFee(await contract.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
+        await feeManager.setFee(await feeManager.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS, ZERO).should.be.fulfilled
         const homeToken = await bridgeToken(token)
 
         const data = await contract.contract.methods
@@ -1342,7 +1373,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should collect and distribute 0% fee', async () => {
-        await contract.setFee(await contract.HOME_TO_FOREIGN_FEE(), token.address, ZERO).should.be.fulfilled
+        await feeManager.setFee(await feeManager.HOME_TO_FOREIGN_FEE(), token.address, ZERO).should.be.fulfilled
 
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
         await token.transfer(contract.address, value, { from: user })
@@ -1351,6 +1382,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         await token.transfer(contract.address, value, { from: user })
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
 
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
         expect(feeEvents.length).to.be.equal(0)
@@ -1361,10 +1393,12 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         await token.transfer(contract.address, value, { from: user })
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(owner)).to.be.bignumber.equal(ether('0.02'))
         await token.transfer(contract.address, value, { from: user })
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(twoEthers)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(owner)).to.be.bignumber.equal(ether('0.04'))
 
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
@@ -1372,8 +1406,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should collect and distribute 2% fee between two reward addresses', async () => {
-        await contract.addRewardAddress(accounts[9]).should.be.fulfilled
-        expect(await contract.rewardAddressCount()).to.be.bignumber.equal('2')
+        await feeManager.addRewardAddress(accounts[9]).should.be.fulfilled
+        expect(await feeManager.rewardAddressCount()).to.be.bignumber.equal('2')
 
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
         await token.transfer(contract.address, ether('0.100000000000000050'), { from: user })
@@ -1381,6 +1415,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           ether('0.100000000000000050')
         )
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
 
         const balance1 = (await token.balanceOf(owner)).toString()
         const balance2 = (await token.balanceOf(accounts[9])).toString()
@@ -1394,6 +1429,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           ether('1.100000000000000050')
         )
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
 
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })
         expect(feeEvents.length).to.be.equal(2)
@@ -1406,6 +1442,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         await token.transfer(contract.address, value, { from: owner }).should.be.fulfilled
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+        expect(await token.balanceOf(feeManager.address)).to.be.bignumber.equal(ZERO)
         expect(await token.balanceOf(owner)).to.be.bignumber.equal(ZERO)
 
         const feeEvents = await getEvents(contract, { event: 'FeeDistributed' })

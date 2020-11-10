@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../../upgradeability/Proxy.sol";
+import "../../../../upgradeability/Proxy.sol";
 
 interface IPermittableTokenVersion {
     function version() external pure returns (string);

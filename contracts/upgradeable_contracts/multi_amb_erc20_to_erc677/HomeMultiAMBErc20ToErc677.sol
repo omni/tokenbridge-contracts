@@ -1,10 +1,10 @@
 pragma solidity 0.4.24;
 
-import "./BasicMultiAMBErc20ToErc677.sol";
-import "./TokenFactory.sol";
-import "./HomeFeeManagerMultiAMBErc20ToErc677.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
-import "./MultiTokenForwardingRules.sol";
+import "./BasicMultiAMBErc20ToErc677.sol";
+import "./modules/factory/TokenFactoryConnector.sol";
+import "./modules/forwarding_rules/MultiTokenForwardingRulesConnector.sol";
+import "./modules/fee_manager/FeeManagerConnector.sol";
 
 /**
 * @title HomeMultiAMBErc20ToErc677
@@ -13,11 +13,10 @@ import "./MultiTokenForwardingRules.sol";
 */
 contract HomeMultiAMBErc20ToErc677 is
     BasicMultiAMBErc20ToErc677,
-    HomeFeeManagerMultiAMBErc20ToErc677,
-    MultiTokenForwardingRules
+    FeeManagerConnector,
+    TokenFactoryConnector,
+    MultiTokenForwardingRulesConnector
 {
-    bytes32 internal constant TOKEN_FACTORY_CONTRACT = 0x269c5905f777ee6391c7a361d17039a7d62f52ba9fffeb98c5ade342705731a3; // keccak256(abi.encodePacked("tokenFactoryContract"))
-
     event NewTokenRegistered(address indexed foreignToken, address indexed homeToken);
 
     /**
@@ -31,9 +30,6 @@ contract HomeMultiAMBErc20ToErc677 is
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
     * @param _tokenFactory address of the TokenFactory contract that will be used for the deployment of new tokens.
-    * @param _rewardAddresses list of reward addresses, between whom fees will be distributed.
-    * @param _fees array with initial fees for both bridge directions.
-    *   [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
     */
     function initialize(
         address _bridgeContract,
@@ -42,9 +38,7 @@ contract HomeMultiAMBErc20ToErc677 is
         uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
         address _owner,
-        address _tokenFactory,
-        address[] _rewardAddresses,
-        uint256[2] _fees // [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
+        address _tokenFactory
     ) external onlyRelevantSender returns (bool) {
         require(!isInitialized());
 
@@ -55,31 +49,10 @@ contract HomeMultiAMBErc20ToErc677 is
         _setRequestGasLimit(_requestGasLimit);
         _setOwner(_owner);
         _setTokenFactory(_tokenFactory);
-        if (_rewardAddresses.length > 0) {
-            _setRewardAddressList(_rewardAddresses);
-        }
-        _setFee(HOME_TO_FOREIGN_FEE, address(0), _fees[0]);
-        _setFee(FOREIGN_TO_HOME_FEE, address(0), _fees[1]);
 
         setInitialize();
 
         return isInitialized();
-    }
-
-    /**
-    * @dev Updates an address of the used TokenFactory contract used for creating new tokens.
-    * @param _tokenFactory address of TokenFactory contract contract.
-    */
-    function setTokenFactory(address _tokenFactory) external onlyOwner {
-        _setTokenFactory(_tokenFactory);
-    }
-
-    /**
-    * @dev Retrieves an address of the token factory contract.
-    * @return address of the TokenFactory contract.
-    */
-    function tokenFactory() public view returns (TokenFactory) {
-        return TokenFactory(addressStorage[TOKEN_FACTORY_CONTRACT]);
     }
 
     /**
@@ -113,8 +86,6 @@ contract HomeMultiAMBErc20ToErc677 is
         address homeToken = tokenFactory().deploy(name, symbol, _decimals, bridgeContract().sourceChainId());
         _setTokenAddressPair(_token, homeToken);
         _initializeTokenBridgeLimits(homeToken, _decimals);
-        _setFee(HOME_TO_FOREIGN_FEE, homeToken, getFee(HOME_TO_FOREIGN_FEE, address(0)));
-        _setFee(FOREIGN_TO_HOME_FEE, homeToken, getFee(FOREIGN_TO_HOME_FEE, address(0)));
         _handleBridgedTokens(ERC677(homeToken), _recipient, _value);
 
         emit NewTokenRegistered(_token, homeToken);
@@ -187,10 +158,15 @@ contract HomeMultiAMBErc20ToErc677 is
     function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal {
         bytes32 _messageId = messageId();
         uint256 valueToMint = _value;
-        uint256 fee = _distributeFee(FOREIGN_TO_HOME_FEE, _token, valueToMint);
-        if (fee > 0) {
-            emit FeeDistributed(fee, _token, _messageId);
-            valueToMint = valueToMint.sub(fee);
+        HomeMultiAMBErc20ToErc677FeeManager manager = feeManager();
+        if (address(manager) != address(0)) {
+            uint256 fee = manager.initAndCalculateFee(FOREIGN_TO_HOME_FEE, _token, _value);
+            if (fee > 0) {
+                IBurnableMintableERC677Token(_token).mint(manager, fee);
+                manager.distributeFee(_token, fee);
+                valueToMint = valueToMint.sub(fee);
+                emit FeeDistributed(fee, _token, _messageId);
+            }
         }
         IBurnableMintableERC677Token(_token).mint(_recipient, valueToMint);
         emit TokensBridged(_token, _recipient, valueToMint, _messageId);
@@ -235,15 +211,6 @@ contract HomeMultiAMBErc20ToErc677 is
     }
 
     /**
-    * @dev Internal function for updating an address of the token factory contract.
-    * @param _tokenFactory address of the deployed TokenFactory contract.
-    */
-    function _setTokenFactory(address _tokenFactory) internal {
-        require(AddressUtils.isContract(_tokenFactory));
-        addressStorage[TOKEN_FACTORY_CONTRACT] = _tokenFactory;
-    }
-
-    /**
      * @dev Executes action on withdrawal of bridged tokens
      * @param _token address of token contract
      * @param _from address of tokens sender
@@ -258,9 +225,14 @@ contract HomeMultiAMBErc20ToErc677 is
             // It is needed to allow a 100% withdrawal of tokens from the home side.
             // If fees are not disabled for reward receivers, small fraction of tokens will always
             // be redistributed between the same set of reward addresses, which is not the desired behaviour.
-            if (!isRewardAddress(_from)) {
-                fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);
-                valueToBridge = valueToBridge.sub(fee);
+            HomeMultiAMBErc20ToErc677FeeManager manager = feeManager();
+            if (address(manager) != address(0) && !manager.isRewardAddress(_from)) {
+                fee = manager.initAndCalculateFee(HOME_TO_FOREIGN_FEE, _token, _value);
+                if (fee > 0) {
+                    _token.transfer(manager, fee);
+                    manager.distributeFee(_token, fee);
+                    valueToBridge = valueToBridge.sub(fee);
+                }
             }
             IBurnableMintableERC677Token(_token).burn(valueToBridge);
             bytes32 _messageId = passMessage(_token, _from, chooseReceiver(_from, _data), valueToBridge);
@@ -291,7 +263,7 @@ contract HomeMultiAMBErc20ToErc677 is
 
         // Address of the foreign token is used here for determining lane permissions.
         // Such decision makes it possible to set rules for tokens that are not bridged yet.
-        bytes32 _messageId = destinationLane(foreignToken, _from, _receiver) >= 0
+        bytes32 _messageId = _isOracleDrivenLaneAllowed(foreignToken, _from, _receiver)
             ? bridge.requireToPassMessage(executor, data, gasLimit)
             : bridge.requireToConfirmMessage(executor, data, gasLimit);
 

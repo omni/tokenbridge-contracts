@@ -1,15 +1,21 @@
 pragma solidity 0.4.24;
 
-import "../../upgradeable_contracts/Ownable.sol";
+import "../OwnableModule.sol";
 
 /**
- * @title MultiTokenForwardingRules
+ * @title MultiTokenForwardingRulesManager
  * @dev Multi token mediator functionality for managing destination AMB lanes permissions.
  */
-contract MultiTokenForwardingRules is Ownable {
+contract MultiTokenForwardingRulesManager is OwnableModule {
     address internal constant ANY_ADDRESS = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
+    // Forwarding rules mapping
+    // token => sender => receiver => destination lane
+    mapping(address => mapping(address => mapping(address => int256))) public forwardingRule;
+
     event ForwardingRuleUpdated(address token, address sender, address receiver, int256 lane);
+
+    constructor(address _mediator) public OwnableModule(_mediator) {}
 
     /**
      * @dev Tells the destination lane for a particular bridge operation by checking several wildcard forwarding rules.
@@ -22,18 +28,18 @@ contract MultiTokenForwardingRules is Ownable {
      * -1 - manual lane should be used.
      */
     function destinationLane(address _token, address _sender, address _receiver) public view returns (int256) {
-        int256 defaultLane = forwardingRule(_token, ANY_ADDRESS, ANY_ADDRESS); // specific token for all senders and receivers
+        int256 defaultLane = forwardingRule[_token][ANY_ADDRESS][ANY_ADDRESS]; // specific token for all senders and receivers
         int256 lane;
         if (defaultLane < 0) {
-            lane = forwardingRule(_token, _sender, ANY_ADDRESS); // specific token for specific sender
+            lane = forwardingRule[_token][_sender][ANY_ADDRESS]; // specific token for specific sender
             if (lane != 0) return lane;
-            lane = forwardingRule(_token, ANY_ADDRESS, _receiver); // specific token for specific receiver
+            lane = forwardingRule[_token][ANY_ADDRESS][_receiver]; // specific token for specific receiver
             if (lane != 0) return lane;
             return defaultLane;
         }
-        lane = forwardingRule(ANY_ADDRESS, _sender, ANY_ADDRESS); // all tokens for specific sender
+        lane = forwardingRule[ANY_ADDRESS][_sender][ANY_ADDRESS]; // all tokens for specific sender
         if (lane != 0) return lane;
-        return forwardingRule(ANY_ADDRESS, ANY_ADDRESS, _receiver); // all tokens for specific receiver
+        return forwardingRule[ANY_ADDRESS][ANY_ADDRESS][_receiver]; // all tokens for specific receiver
     }
 
     /**
@@ -96,17 +102,6 @@ contract MultiTokenForwardingRules is Ownable {
     }
 
     /**
-     * @dev Tells forwarding rule set up for a particular bridge operation.
-     * @param _token address of the token contract on the foreign side of the bridge.
-     * @param _sender address of the tokens sender on the home side of the bridge.
-     * @param _receiver address of the tokens receiver on the foreign side of the bridge.
-     * @return preferred destination lane for the particular bridge operation.
-     */
-    function forwardingRule(address _token, address _sender, address _receiver) public view returns (int256) {
-        return intStorage[keccak256(abi.encodePacked("forwardTo", _token, _sender, _receiver))];
-    }
-
-    /**
      * @dev Internal function for updating the preferred destination lane for the specific wildcard pattern.
      * Only owner can call this method.
      * Examples:
@@ -123,7 +118,7 @@ contract MultiTokenForwardingRules is Ownable {
      * -1 - manual lane should be used.
      */
     function _setForwardingRule(address _token, address _sender, address _receiver, int256 _lane) internal onlyOwner {
-        intStorage[keccak256(abi.encodePacked("forwardTo", _token, _sender, _receiver))] = _lane;
+        forwardingRule[_token][_sender][_receiver] = _lane;
 
         emit ForwardingRuleUpdated(_token, _sender, _receiver, _lane);
     }

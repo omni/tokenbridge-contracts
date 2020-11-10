@@ -109,8 +109,6 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
      * @param _data alternative receiver, if specified
      */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
-        if (lock()) return;
-
         bool isKnownToken = isTokenRegistered(_token);
         if (!isKnownToken) {
             string memory name = TokenReader.readName(_token);

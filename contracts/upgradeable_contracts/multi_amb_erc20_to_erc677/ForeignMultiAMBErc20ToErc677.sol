@@ -21,23 +21,16 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @param _mediatorContract the address of the mediator contract on the other network.
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
+    * @param _limitsManager of the contract responsible for limits management.
     */
     function initialize(
         address _bridgeContract,
         address _mediatorContract,
         uint256 _requestGasLimit,
-        address _owner
+        address _owner,
+        address _limitsManager
     ) external onlyRelevantSender returns (bool) {
-        require(!isInitialized());
-
-        _setBridgeContract(_bridgeContract);
-        _setMediatorContractOnOtherSide(_mediatorContract);
-        _setRequestGasLimit(_requestGasLimit);
-        _setOwner(_owner);
-
-        setInitialize();
-
-        return isInitialized();
+        return _initialize(_bridgeContract, _mediatorContract, _requestGasLimit, _owner, _limitsManager);
     }
 
     /**
@@ -172,11 +165,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         super.fixFailedMessage(_messageId);
         address token = messageToken(_messageId);
         if (_messageId == tokenRegistrationMessageId(token)) {
-            delete uintStorage[keccak256(abi.encodePacked("dailyLimit", token))];
-            delete uintStorage[keccak256(abi.encodePacked("maxPerTx", token))];
-            delete uintStorage[keccak256(abi.encodePacked("minPerTx", token))];
-            delete uintStorage[keccak256(abi.encodePacked("executionDailyLimit", token))];
-            delete uintStorage[keccak256(abi.encodePacked("executionMaxPerTx", token))];
+            bridgeLimitsManager().resetLimits(token);
             _setTokenRegistrationMessageId(token, bytes32(0));
         }
     }

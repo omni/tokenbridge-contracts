@@ -25,6 +25,34 @@ contract BasicMultiAMBErc20ToErc677 is
     using SafeMath for uint256;
 
     /**
+    * @dev Internal function for storing common initial parameters of the mediator.
+    * @param _bridgeContract the address of the AMB bridge contract.
+    * @param _mediatorContract the address of the mediator contract on the other network.
+    * @param _requestGasLimit the gas limit for the message execution.
+    * @param _owner address of the owner of the mediator contract.
+    * @param _limitsManager of the contract responsible for limits management.
+    */
+    function _initialize(
+        address _bridgeContract,
+        address _mediatorContract,
+        uint256 _requestGasLimit,
+        address _owner,
+        address _limitsManager
+    ) internal returns (bool) {
+        require(!isInitialized());
+
+        _setBridgeContract(_bridgeContract);
+        _setMediatorContractOnOtherSide(_mediatorContract);
+        _setRequestGasLimit(_requestGasLimit);
+        _setBridgeLimitsManager(_limitsManager);
+        _setOwner(_owner);
+
+        setInitialize();
+
+        return isInitialized();
+    }
+
+    /**
     * @dev Tells the address of the mediator contract on the other side, used by chooseReceiver method
     * to avoid sending the native tokens to that address.
     * @return address of the mediator contract con the other side
@@ -61,7 +89,7 @@ contract BasicMultiAMBErc20ToErc677 is
     * @return patch value of the version
     */
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 2, 0);
+        return (2, 0, 0);
     }
 
     /**
@@ -84,6 +112,7 @@ contract BasicMultiAMBErc20ToErc677 is
         claimValues(_token, _to);
     }
 
+    /* solcov ignore next */
     function isTokenRegistered(address _token) public view returns (bool);
 
     /* solcov ignore next */

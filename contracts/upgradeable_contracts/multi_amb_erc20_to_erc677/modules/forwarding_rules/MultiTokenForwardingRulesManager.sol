@@ -15,7 +15,7 @@ contract MultiTokenForwardingRulesManager is OwnableModule {
 
     event ForwardingRuleUpdated(address token, address sender, address receiver, int256 lane);
 
-    constructor(address _mediator) public OwnableModule(_mediator) {}
+    constructor(address _owner) public OwnableModule(_owner) {}
 
     /**
      * @dev Tells the destination lane for a particular bridge operation by checking several wildcard forwarding rules.

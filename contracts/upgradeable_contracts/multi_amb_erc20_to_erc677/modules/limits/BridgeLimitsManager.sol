@@ -2,9 +2,9 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
-import "../OwnableModule.sol";
+import "../MediatorOwnableModule.sol";
 
-contract BridgeLimitsManager is OwnableModule {
+contract BridgeLimitsManager is MediatorOwnableModule {
     using SafeMath for uint256;
 
     // token == 0x00..00 represents default limits (assuming decimals == 18) for all newly created tokens
@@ -33,9 +33,10 @@ contract BridgeLimitsManager is OwnableModule {
 
     constructor(
         address _mediator,
+        address _owner,
         uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256[2] _executionDailyLimitExecutionMaxPerTxArray // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
-    ) public OwnableModule(_mediator) {
+    ) public MediatorOwnableModule(_mediator, _owner) {
         _setLimits(address(0), _dailyLimitMaxPerTxMinPerTxArray);
         _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
     }
@@ -48,9 +49,10 @@ contract BridgeLimitsManager is OwnableModule {
         }
         require(
             dailyLimit[address(0)] > 0 &&
-            updatedTotal <= dailyLimit[_token] &&
-            _amount <= maxPerTx[_token] &&
-            _amount >= minPerTx[_token]);
+                updatedTotal <= dailyLimit[_token] &&
+                _amount <= maxPerTx[_token] &&
+                _amount >= minPerTx[_token]
+        );
         totalSpentPerDay[_token][day] = updatedTotal;
     }
 
@@ -62,9 +64,18 @@ contract BridgeLimitsManager is OwnableModule {
         }
         require(
             executionDailyLimit[address(0)] > 0 &&
-            updatedTotal <= executionDailyLimit[_token] &&
-            _amount <= executionMaxPerTx[_token]);
+                updatedTotal <= executionDailyLimit[_token] &&
+                _amount <= executionMaxPerTx[_token]
+        );
         totalExecutedPerDay[_token][day] = updatedTotal;
+    }
+
+    function resetLimits(address _token) external onlyMediator {
+        delete dailyLimit[_token];
+        delete maxPerTx[_token];
+        delete minPerTx[_token];
+        delete executionDailyLimit[_token];
+        delete executionMaxPerTx[_token];
     }
 
     /**
@@ -95,6 +106,7 @@ contract BridgeLimitsManager is OwnableModule {
     * 0 value is also allowed, will stop the bridge operations in incoming direction.
     */
     function setExecutionDailyLimit(address _token, uint256 _dailyLimit) external onlyOwner validTokenAddress(_token) {
+        require(_dailyLimit > executionMaxPerTx[_token] || _dailyLimit == 0);
         executionDailyLimit[_token] = _dailyLimit;
         emit ExecutionDailyLimitChanged(_token, _dailyLimit);
     }

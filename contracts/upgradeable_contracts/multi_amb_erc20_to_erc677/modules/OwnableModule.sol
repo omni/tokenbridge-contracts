@@ -1,23 +1,20 @@
 pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
-import "../../Ownable.sol";
 
 contract OwnableModule {
-    Ownable public mediator;
+    address public owner;
 
-    constructor(address _mediator) public {
-        require(AddressUtils.isContract(_mediator));
-        mediator = Ownable(_mediator);
-    }
-
-    modifier onlyMediator {
-        require(msg.sender == address(mediator));
-        _;
+    constructor(address _owner) public {
+        owner = _owner;
     }
 
     modifier onlyOwner {
-        require(msg.sender == mediator.owner());
+        require(msg.sender == owner);
         _;
+    }
+
+    function transferOwnership(address _newOwner) external onlyOwner {
+        owner = _newOwner;
     }
 }

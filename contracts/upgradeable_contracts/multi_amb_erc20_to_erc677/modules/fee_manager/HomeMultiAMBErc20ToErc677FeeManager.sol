@@ -2,14 +2,14 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../OwnableModule.sol";
+import "../MediatorOwnableModule.sol";
 
 /**
  * @title HomeMultiAMBErc20ToErc677FeeManager
  * @dev Implements the logic to distribute fees from the multi erc20 to erc677 mediator contract operations.
  * The fees are distributed in the form of ERC677 tokens to the list of reward addresses.
  */
-contract HomeMultiAMBErc20ToErc677FeeManager is OwnableModule {
+contract HomeMultiAMBErc20ToErc677FeeManager is MediatorOwnableModule {
     using SafeMath for uint256;
 
     // This is not a real fee value but a relative value used to calculate the fee percentage.
@@ -30,11 +30,15 @@ contract HomeMultiAMBErc20ToErc677FeeManager is OwnableModule {
     /**
      * @dev Stores the initial parameters of the fee manager.
      * @param _mediator address of the mediator contract used together with this fee manager.
+     * @param _owner address of the contract owner.
      * @param _rewardAddresses list of unique initial reward addresses, between whom fees will be distributed
      * @param _fees array with initial fees for both bridge directions.
      *   [ 0 = homeToForeignFee, 1 = foreignToHomeFee ]
      */
-    constructor(address _mediator, address[] _rewardAddresses, uint256[2] _fees) public OwnableModule(_mediator) {
+    constructor(address _mediator, address _owner, address[] _rewardAddresses, uint256[2] _fees)
+        public
+        MediatorOwnableModule(_mediator, _owner)
+    {
         require(_rewardAddresses.length <= MAX_REWARD_ACCOUNTS);
         _setFee(HOME_TO_FOREIGN_FEE, address(0), _fees[0]);
         _setFee(FOREIGN_TO_HOME_FEE, address(0), _fees[1]);

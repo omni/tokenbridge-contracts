@@ -25,6 +25,7 @@ contract HomeMultiAMBErc20ToErc677 is
     * @param _mediatorContract the address of the mediator contract on the other network.
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
+    * @param _limitsManager of the contract responsible for limits management.
     * @param _tokenFactory address of the TokenFactory contract that will be used for the deployment of new tokens.
     */
     function initialize(
@@ -32,19 +33,12 @@ contract HomeMultiAMBErc20ToErc677 is
         address _mediatorContract,
         uint256 _requestGasLimit,
         address _owner,
+        address _limitsManager,
         address _tokenFactory
     ) external onlyRelevantSender returns (bool) {
-        require(!isInitialized());
-
-        _setBridgeContract(_bridgeContract);
-        _setMediatorContractOnOtherSide(_mediatorContract);
-        _setRequestGasLimit(_requestGasLimit);
-        _setOwner(_owner);
         _setTokenFactory(_tokenFactory);
 
-        setInitialize();
-
-        return isInitialized();
+        return _initialize(_bridgeContract, _mediatorContract, _requestGasLimit, _owner, _limitsManager);
     }
 
     /**
@@ -143,15 +137,10 @@ contract HomeMultiAMBErc20ToErc677 is
     function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal {
         bytes32 _messageId = messageId();
         uint256 valueToMint = _value;
-        HomeMultiAMBErc20ToErc677FeeManager manager = feeManager();
-        if (address(manager) != address(0)) {
-            uint256 fee = manager.initAndCalculateFee(FOREIGN_TO_HOME_FEE, _token, _value);
-            if (fee > 0) {
-                IBurnableMintableERC677Token(_token).mint(manager, fee);
-                manager.distributeFee(_token, fee);
-                valueToMint = valueToMint.sub(fee);
-                emit FeeDistributed(fee, _token, _messageId);
-            }
+        uint256 fee = _distributeFee(FOREIGN_TO_HOME_FEE, address(0), _token, _value);
+        if (fee > 0) {
+            valueToMint = valueToMint.sub(fee);
+            emit FeeDistributed(fee, _token, _messageId);
         }
         IBurnableMintableERC677Token(_token).mint(_recipient, valueToMint);
         emit TokensBridged(_token, _recipient, valueToMint, _messageId);
@@ -213,21 +202,12 @@ contract HomeMultiAMBErc20ToErc677 is
      */
     function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
         if (!lock()) {
-            uint256 valueToBridge = _value;
-            uint256 fee = 0;
+            uint256 fee = _distributeFee(HOME_TO_FOREIGN_FEE, _from, _token, _value);
+            uint256 valueToBridge = _value.sub(fee);
             // Next line disables fee collection in case sender is one of the reward addresses.
             // It is needed to allow a 100% withdrawal of tokens from the home side.
             // If fees are not disabled for reward receivers, small fraction of tokens will always
             // be redistributed between the same set of reward addresses, which is not the desired behaviour.
-            HomeMultiAMBErc20ToErc677FeeManager manager = feeManager();
-            if (address(manager) != address(0) && !manager.isRewardAddress(_from)) {
-                fee = manager.initAndCalculateFee(HOME_TO_FOREIGN_FEE, _token, _value);
-                if (fee > 0) {
-                    _token.transfer(manager, fee);
-                    manager.distributeFee(_token, fee);
-                    valueToBridge = valueToBridge.sub(fee);
-                }
-            }
             IBurnableMintableERC677Token(_token).burn(valueToBridge);
             bytes32 _messageId = passMessage(_token, _from, chooseReceiver(_from, _data), valueToBridge);
             if (fee > 0) {

@@ -1,5 +1,6 @@
 pragma solidity 0.4.24;
 
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../../interfaces/IAMB.sol";
 import "./MultiTokenBridgeMediator.sol";
 import "../Ownable.sol";
@@ -21,6 +22,8 @@ contract BasicMultiAMBErc20ToErc677 is
     VersionableBridge,
     MultiTokenBridgeMediator
 {
+    using SafeMath for uint256;
+
     /**
     * @dev Tells the address of the mediator contract on the other side, used by chooseReceiver method
     * to avoid sending the native tokens to that address.
@@ -80,6 +83,8 @@ contract BasicMultiAMBErc20ToErc677 is
         require(_token == address(0) || !isTokenRegistered(_token));
         claimValues(_token, _to);
     }
+
+    function isTokenRegistered(address _token) public view returns (bool);
 
     /* solcov ignore next */
     function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool);

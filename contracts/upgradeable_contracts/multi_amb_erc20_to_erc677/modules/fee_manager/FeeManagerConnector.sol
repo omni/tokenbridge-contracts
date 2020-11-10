@@ -16,7 +16,7 @@ contract FeeManagerConnector is Ownable {
     * @param _feeManager address of fee manager contract.
     */
     function setFeeManager(address _feeManager) external onlyOwner {
-        require(AddressUtils.isContract(_feeManager));
+        require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
         addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
     }
 

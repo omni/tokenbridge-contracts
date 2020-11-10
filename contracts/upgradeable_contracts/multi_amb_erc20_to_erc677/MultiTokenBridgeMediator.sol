@@ -1,10 +1,10 @@
 pragma solidity 0.4.24;
 
 import "../../interfaces/ERC677.sol";
-import "./BasicMultiTokenBridge.sol";
 import "../BasicAMBMediator.sol";
 import "../ChooseReceiverHelper.sol";
 import "../TransferInfoStorage.sol";
+import "./modules/limits/BridgeLimitsConnector.sol";
 
 /**
 * @title MultiTokenBridgeMediator
@@ -12,7 +12,7 @@ import "../TransferInfoStorage.sol";
 */
 contract MultiTokenBridgeMediator is
     BasicAMBMediator,
-    BasicMultiTokenBridge,
+    BridgeLimitsConnector,
     TransferInfoStorage,
     ChooseReceiverHelper
 {
@@ -44,12 +44,8 @@ contract MultiTokenBridgeMediator is
     * @param _value amount of tokens to be received
     */
     function _handleBridgedTokens(ERC677 _token, address _recipient, uint256 _value) internal {
-        if (withinExecutionLimit(_token, _value)) {
-            addTotalExecutedPerDay(_token, getCurrentDay(), _value);
-            executeActionOnBridgedTokens(_token, _recipient, _value);
-        } else {
-            executeActionOnBridgedTokensOutOfLimit(_token, _recipient, _value);
-        }
+        bridgeLimitsManager().recordWithdraw(_token, _value);
+        executeActionOnBridgedTokens(_token, _recipient, _value);
     }
 
     /**
@@ -81,13 +77,6 @@ contract MultiTokenBridgeMediator is
         setMessageFixed(_messageId);
         executeActionOnFixedTokens(token, recipient, value);
         emit FailedMessageFixed(_messageId, token, recipient, value);
-    }
-
-    /**
-    * @dev Execute the action to be performed when the bridge tokens are out of execution limits.
-    */
-    function executeActionOnBridgedTokensOutOfLimit(address, address, uint256) internal {
-        revert();
     }
 
     /* solcov ignore next */

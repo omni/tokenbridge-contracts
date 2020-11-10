@@ -19,18 +19,12 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
     * @param _mediatorContract the address of the mediator contract on the other network.
-    * @param _dailyLimitMaxPerTxMinPerTxArray array with limit values for the assets to be bridged to the other network.
-    *   [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-    * @param _executionDailyLimitExecutionMaxPerTxArray array with limit values for the assets bridged from the other network.
-    *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
     */
     function initialize(
         address _bridgeContract,
         address _mediatorContract,
-        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
         address _owner
     ) external onlyRelevantSender returns (bool) {
@@ -38,8 +32,6 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
-        _setLimits(address(0), _dailyLimitMaxPerTxMinPerTxArray);
-        _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
         _setOwner(_owner);
 
@@ -88,6 +80,15 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     }
 
     /**
+    * @dev Checks if specified token was already bridged at least once.
+    * @param _token address of the token contract.
+    * @return true, if token was already bridged.
+    */
+    function isTokenRegistered(address _token) public view returns (bool) {
+        return tokenRegistrationMessageId(_token) != bytes32(0);
+    }
+
+    /**
     * @dev Validates that the token amount is inside the limits, calls transferFrom to transfer the tokens to the contract
     * and invokes the method to burn/lock the tokens and unlock/mint the tokens on the other network.
     * The user should first call Approve method of the ERC677 token.
@@ -124,12 +125,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
             uint8 decimals = uint8(TokenReader.readDecimals(_token));
 
             require(bytes(name).length > 0 || bytes(symbol).length > 0);
-
-            _initializeTokenBridgeLimits(_token, decimals);
         }
 
-        require(withinLimit(_token, _value));
-        addTotalSpentPerDay(_token, getCurrentDay(), _value);
+        bridgeLimitsManager().recordDeposit(_token, _value);
 
         bytes memory data;
         address receiver = chooseReceiver(_from, _data);
@@ -210,12 +208,13 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         uint256 expectedBalance = mediatorBalance(_token);
         require(balance > expectedBalance);
         uint256 diff = balance - expectedBalance;
-        uint256 available = maxAvailablePerTx(_token);
+        BridgeLimitsManager manager = bridgeLimitsManager();
+        uint256 available = manager.maxAvailablePerTx(_token);
         require(available > 0);
         if (diff > available) {
             diff = available;
         }
-        addTotalSpentPerDay(_token, getCurrentDay(), diff);
+        manager.recordDeposit(_token, diff);
         _setMediatorBalance(_token, expectedBalance.add(diff));
 
         bytes memory data = abi.encodeWithSelector(this.handleBridgedTokens.selector, _token, _receiver, diff);

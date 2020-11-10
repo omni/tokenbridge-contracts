@@ -23,10 +23,6 @@ contract HomeMultiAMBErc20ToErc677 is
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
     * @param _mediatorContract the address of the mediator contract on the other network.
-    * @param _dailyLimitMaxPerTxMinPerTxArray array with limit values for the assets to be bridged to the other network.
-    *   [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
-    * @param _executionDailyLimitExecutionMaxPerTxArray array with limit values for the assets bridged from the other network.
-    *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
     * @param _requestGasLimit the gas limit for the message execution.
     * @param _owner address of the owner of the mediator contract.
     * @param _tokenFactory address of the TokenFactory contract that will be used for the deployment of new tokens.
@@ -34,8 +30,6 @@ contract HomeMultiAMBErc20ToErc677 is
     function initialize(
         address _bridgeContract,
         address _mediatorContract,
-        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
         address _owner,
         address _tokenFactory
@@ -44,8 +38,6 @@ contract HomeMultiAMBErc20ToErc677 is
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
-        _setLimits(address(0), _dailyLimitMaxPerTxMinPerTxArray);
-        _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
         _setOwner(_owner);
         _setTokenFactory(_tokenFactory);
@@ -76,8 +68,8 @@ contract HomeMultiAMBErc20ToErc677 is
     ) external onlyMediator {
         string memory name = _name;
         string memory symbol = _symbol;
-        require(bytes(name).length > 0 || bytes(symbol).length > 0);
         if (bytes(name).length == 0) {
+            require(bytes(symbol).length > 0);
             name = symbol;
         } else if (bytes(symbol).length == 0) {
             symbol = name;
@@ -85,7 +77,6 @@ contract HomeMultiAMBErc20ToErc677 is
         name = string(abi.encodePacked(name, " on xDai"));
         address homeToken = tokenFactory().deploy(name, symbol, _decimals, bridgeContract().sourceChainId());
         _setTokenAddressPair(_token, homeToken);
-        _initializeTokenBridgeLimits(homeToken, _decimals);
         _handleBridgedTokens(ERC677(homeToken), _recipient, _value);
 
         emit NewTokenRegistered(_token, homeToken);
@@ -114,11 +105,8 @@ contract HomeMultiAMBErc20ToErc677 is
         // if onTokenTransfer is called as a part of call to _relayTokens, this callback does nothing
         if (!lock()) {
             ERC677 token = ERC677(msg.sender);
-            // if msg.sender if not a valid token contract, this check will fail, since limits are zeros
-            // so the following check is not needed
-            // require(isTokenRegistered(token));
-            require(withinLimit(token, _value));
-            addTotalSpentPerDay(token, getCurrentDay(), _value);
+            require(isTokenRegistered(token));
+            bridgeLimitsManager().recordDeposit(token, _value);
             bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
         }
         return true;
@@ -138,11 +126,8 @@ contract HomeMultiAMBErc20ToErc677 is
         // which will call passMessage.
         require(!lock());
         address to = address(this);
-        // if msg.sender if not a valid token contract, this check will fail, since limits are zeros
-        // so the following check is not needed
-        // require(isTokenRegistered(token));
-        require(withinLimit(token, _value));
-        addTotalSpentPerDay(token, getCurrentDay(), _value);
+        require(isTokenRegistered(token));
+        bridgeLimitsManager().recordDeposit(token, _value);
 
         setLock(true);
         token.transferFrom(msg.sender, to, _value);
@@ -180,6 +165,15 @@ contract HomeMultiAMBErc20ToErc677 is
     */
     function executeActionOnFixedTokens(address _token, address _recipient, uint256 _value) internal {
         IBurnableMintableERC677Token(_token).mint(_recipient, _value);
+    }
+
+    /**
+    * @dev Checks if specified token was already bridged at least once.
+    * @param _token address of the token contract.
+    * @return true, if token was already bridged.
+    */
+    function isTokenRegistered(address _token) public view returns (bool) {
+        return foreignTokenAddress(_token) != address(0);
     }
 
     /**

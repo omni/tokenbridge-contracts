@@ -46,8 +46,8 @@ contract HomeMultiAMBErc20ToErc677 is
     * Checks that the value is inside the execution limits and invokes the method
     * to execute the Mint or Unlock accordingly.
     * @param _token address of the bridged ERC20/ERC677 token on the foreign side.
-    * @param _name name of the bridged token, "x" will be appended, if empty, symbol will be used instead.
-    * @param _symbol symbol of the bridged token, "x" will be appended, if empty, name will be used instead.
+    * @param _name name of the bridged token, " on xDai" will be appended, if empty, symbol will be used instead.
+    * @param _symbol symbol of the bridged token, if empty, name will be used instead.
     * @param _decimals decimals of the bridge foreign token.
     * @param _recipient address that will receive the tokens.
     * @param _value amount of tokens to be received.

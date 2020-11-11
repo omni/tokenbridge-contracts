@@ -5,10 +5,10 @@ import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "../MediatorOwnableModule.sol";
 
 /**
- * @title BridgeLimitsManager
+ * @title MultiTokenBridgeLimitsManager
  * @dev Manager contract for operations on multi token bridge limits.
  */
-contract BridgeLimitsManager is MediatorOwnableModule {
+contract MultiTokenBridgeLimitsManager is MediatorOwnableModule {
     using SafeMath for uint256;
 
     // token == 0x00..00 represents default limits (assuming decimals == 18) for all newly created tokens

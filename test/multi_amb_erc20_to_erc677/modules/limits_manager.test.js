@@ -1,4 +1,4 @@
-const BridgeLimitsManager = artifacts.require('BridgeLimitsManager.sol')
+const MultiTokenBridgeLimitsManager = artifacts.require('MultiTokenBridgeLimitsManager.sol')
 const MultiTokenMediatorMock = artifacts.require('MultiTokenMediatorMock.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 
@@ -13,7 +13,7 @@ const dailyLimit = ether('10')
 const executionMaxPerTx = maxPerTx
 const executionDailyLimit = dailyLimit
 
-contract('BridgeLimitsManager', accounts => {
+contract('MultiTokenBridgeLimitsManager', accounts => {
   const owner = accounts[0]
   const user = accounts[1]
 
@@ -24,35 +24,35 @@ contract('BridgeLimitsManager', accounts => {
 
   describe('constructor', () => {
     it('should fail to create with incorrect params', async () => {
-      await BridgeLimitsManager.new(
+      await MultiTokenBridgeLimitsManager.new(
         accounts[1], // not contract
         owner,
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx]
       ).should.be.rejected
 
-      await BridgeLimitsManager.new(
+      await MultiTokenBridgeLimitsManager.new(
         mediator.address,
         owner,
         [dailyLimit, maxPerTx, ether('0')], // zero minPerTx
         [executionDailyLimit, executionMaxPerTx]
       ).should.be.rejected
 
-      await BridgeLimitsManager.new(
+      await MultiTokenBridgeLimitsManager.new(
         mediator.address,
         owner,
         [dailyLimit, ether('0.001'), minPerTx], // minPerTx > maxPerTx
         [executionDailyLimit, executionMaxPerTx]
       ).should.be.rejected
 
-      await BridgeLimitsManager.new(
+      await MultiTokenBridgeLimitsManager.new(
         mediator.address,
         owner,
         [ether('0.1'), maxPerTx, minPerTx], // maxPerTx > dailyLimit
         [executionDailyLimit, executionMaxPerTx]
       ).should.be.rejected
 
-      await BridgeLimitsManager.new(
+      await MultiTokenBridgeLimitsManager.new(
         mediator.address,
         owner,
         [dailyLimit, maxPerTx, minPerTx],
@@ -61,7 +61,7 @@ contract('BridgeLimitsManager', accounts => {
     })
 
     it('should initialize default limits', async () => {
-      const manager = await BridgeLimitsManager.new(
+      const manager = await MultiTokenBridgeLimitsManager.new(
         mediator.address,
         owner,
         [dailyLimit, maxPerTx, minPerTx],
@@ -87,7 +87,7 @@ contract('BridgeLimitsManager', accounts => {
     let manager
     let token
     beforeEach(async () => {
-      manager = await BridgeLimitsManager.new(
+      manager = await MultiTokenBridgeLimitsManager.new(
         mediator.address,
         owner,
         [dailyLimit, maxPerTx, minPerTx],

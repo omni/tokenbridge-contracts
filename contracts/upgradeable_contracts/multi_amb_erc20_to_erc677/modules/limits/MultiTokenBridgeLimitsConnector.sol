@@ -2,13 +2,13 @@ pragma solidity 0.4.24;
 
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../../../Ownable.sol";
-import "./BridgeLimitsManager.sol";
+import "./MultiTokenBridgeLimitsManager.sol";
 
 /**
- * @title BridgeLimitsConnector
- * @dev Connectivity functionality for working with BridgeLimitsManager contract.
+ * @title MultiTokenBridgeLimitsConnector
+ * @dev Connectivity functionality for working with MultiTokenBridgeLimitsManager contract.
  */
-contract BridgeLimitsConnector is Ownable {
+contract MultiTokenBridgeLimitsConnector is Ownable {
     bytes32 internal constant BRIDGE_LIMITS_MANAGER_CONTRACT = 0x66a99b9aa49f51e5712ebc27864eff27005edaf6b2c9ec5cd69342f54f6c7850; // keccak256(abi.encodePacked("bridgeLimitsManagerContract"))
 
     /**
@@ -24,8 +24,8 @@ contract BridgeLimitsConnector is Ownable {
      * @dev Retrieves an address of the bridge limits manager contract.
      * @return address of the bridge limits manager contract.
      */
-    function bridgeLimitsManager() public view returns (BridgeLimitsManager) {
-        return BridgeLimitsManager(addressStorage[BRIDGE_LIMITS_MANAGER_CONTRACT]);
+    function bridgeLimitsManager() public view returns (MultiTokenBridgeLimitsManager) {
+        return MultiTokenBridgeLimitsManager(addressStorage[BRIDGE_LIMITS_MANAGER_CONTRACT]);
     }
 
     /**

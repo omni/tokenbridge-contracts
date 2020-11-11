@@ -4,7 +4,7 @@ import "../../interfaces/ERC677.sol";
 import "../BasicAMBMediator.sol";
 import "../ChooseReceiverHelper.sol";
 import "../TransferInfoStorage.sol";
-import "./modules/limits/BridgeLimitsConnector.sol";
+import "./modules/limits/MultiTokenBridgeLimitsConnector.sol";
 
 /**
 * @title MultiTokenBridgeMediator
@@ -12,7 +12,7 @@ import "./modules/limits/BridgeLimitsConnector.sol";
 */
 contract MultiTokenBridgeMediator is
     BasicAMBMediator,
-    BridgeLimitsConnector,
+    MultiTokenBridgeLimitsConnector,
     TransferInfoStorage,
     ChooseReceiverHelper
 {

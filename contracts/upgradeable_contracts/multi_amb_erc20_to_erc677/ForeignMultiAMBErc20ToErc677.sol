@@ -195,7 +195,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         uint256 expectedBalance = mediatorBalance(_token);
         require(balance > expectedBalance);
         uint256 diff = balance - expectedBalance;
-        BridgeLimitsManager manager = bridgeLimitsManager();
+        MultiTokenBridgeLimitsManager manager = bridgeLimitsManager();
         uint256 available = manager.maxAvailablePerTx(_token);
         require(available > 0);
         if (diff > available) {

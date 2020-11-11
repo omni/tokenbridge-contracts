@@ -8,7 +8,7 @@ const Sacrifice = artifacts.require('Sacrifice.sol')
 const TokenFactory = artifacts.require('TokenFactory.sol')
 const MultiTokenForwardingRulesManager = artifacts.require('MultiTokenForwardingRulesManager.sol')
 const MultiTokenFeeManager = artifacts.require('MultiTokenFeeManager.sol')
-const BridgeLimitsManager = artifacts.require('BridgeLimitsManager.sol')
+const MultiTokenBridgeLimitsManager = artifacts.require('MultiTokenBridgeLimitsManager.sol')
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
@@ -52,13 +52,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
     await otherSideAMBBridgeContract.setMaxGasPerTx(maxGasPerTx)
     otherSideMediator = await ForeignMultiAMBErc20ToErc677.new()
-    otherSideLimitsManager = await BridgeLimitsManager.new(
+    otherSideLimitsManager = await MultiTokenBridgeLimitsManager.new(
       otherSideMediator.address,
       owner,
       [dailyLimit, maxPerTx, minPerTx],
       [executionDailyLimit, executionMaxPerTx]
     )
-    limitsManager = await BridgeLimitsManager.new(
+    limitsManager = await MultiTokenBridgeLimitsManager.new(
       contract.address,
       owner,
       [dailyLimit, maxPerTx, minPerTx],
@@ -264,7 +264,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await HomeMultiAMBErc20ToErc677.at(storageProxy.address)
       const feeManager = await MultiTokenFeeManager.new(contract.address, owner, [user2], [ether('0.1'), ZERO])
-      limitsManager = await BridgeLimitsManager.new(
+      limitsManager = await MultiTokenBridgeLimitsManager.new(
         contract.address,
         owner,
         [dailyLimit, maxPerTx, minPerTx],

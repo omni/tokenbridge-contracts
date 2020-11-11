@@ -4,7 +4,7 @@ import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "./BasicMultiAMBErc20ToErc677.sol";
 import "./modules/factory/TokenFactoryConnector.sol";
 import "./modules/forwarding_rules/MultiTokenForwardingRulesConnector.sol";
-import "./modules/fee_manager/FeeManagerConnector.sol";
+import "./modules/fee_manager/MultiTokenFeeManagerConnector.sol";
 
 /**
 * @title HomeMultiAMBErc20ToErc677
@@ -13,7 +13,7 @@ import "./modules/fee_manager/FeeManagerConnector.sol";
 */
 contract HomeMultiAMBErc20ToErc677 is
     BasicMultiAMBErc20ToErc677,
-    FeeManagerConnector,
+    MultiTokenFeeManagerConnector,
     TokenFactoryConnector,
     MultiTokenForwardingRulesConnector
 {

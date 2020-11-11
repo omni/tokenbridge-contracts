@@ -5,7 +5,7 @@ const AMBMock = artifacts.require('AMBMock.sol')
 const ERC20Mock = artifacts.require('ERC20Mock.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
-const BridgeLimitsManager = artifacts.require('BridgeLimitsManager.sol')
+const MultiTokenBridgeLimitsManager = artifacts.require('MultiTokenBridgeLimitsManager.sol')
 
 const { expect } = require('chai')
 const { getEvents, ether, strip0x } = require('../helpers/helpers')
@@ -42,7 +42,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
     await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
     otherSideMediator = await HomeMultiAMBErc20ToErc677.new()
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
-    limitsManager = await BridgeLimitsManager.new(
+    limitsManager = await MultiTokenBridgeLimitsManager.new(
       contract.address,
       owner,
       [dailyLimit, maxPerTx, minPerTx],
@@ -153,7 +153,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       const storageProxy = await EternalStorageProxy.new()
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await ForeignMultiAMBErc20ToErc677.at(storageProxy.address)
-      limitsManager = await BridgeLimitsManager.new(
+      limitsManager = await MultiTokenBridgeLimitsManager.new(
         contract.address,
         owner,
         [dailyLimit, maxPerTx, minPerTx],
@@ -712,7 +712,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       const storageProxy = await EternalStorageProxy.new()
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await ForeignMultiAMBErc20ToErc677.at(storageProxy.address)
-      limitsManager = await BridgeLimitsManager.new(
+      limitsManager = await MultiTokenBridgeLimitsManager.new(
         contract.address,
         owner,
         [dailyLimit, maxPerTx, minPerTx],

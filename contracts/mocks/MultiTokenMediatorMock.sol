@@ -1,14 +1,14 @@
 pragma solidity 0.4.24;
 
-import "../upgradeable_contracts/multi_amb_erc20_to_erc677/modules/fee_manager/FeeManagerConnector.sol";
+import "../upgradeable_contracts/multi_amb_erc20_to_erc677/modules/fee_manager/MultiTokenFeeManagerConnector.sol";
 import "../upgradeable_contracts/multi_amb_erc20_to_erc677/modules/factory/TokenFactoryConnector.sol";
-import "../upgradeable_contracts/multi_amb_erc20_to_erc677/modules/limits/BridgeLimitsConnector.sol";
+import "../upgradeable_contracts/multi_amb_erc20_to_erc677/modules/limits/MultiTokenBridgeLimitsConnector.sol";
 import "../upgradeable_contracts/multi_amb_erc20_to_erc677/modules/forwarding_rules/MultiTokenForwardingRulesConnector.sol";
 
 contract MultiTokenMediatorMock is
-    FeeManagerConnector,
+    MultiTokenFeeManagerConnector,
     TokenFactoryConnector,
-    BridgeLimitsConnector,
+    MultiTokenBridgeLimitsConnector,
     MultiTokenForwardingRulesConnector
 {
     constructor() public {

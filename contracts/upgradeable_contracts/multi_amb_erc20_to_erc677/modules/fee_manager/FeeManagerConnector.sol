@@ -5,6 +5,10 @@ import "../../../../interfaces/IBurnableMintableERC677Token.sol";
 import "../../../Ownable.sol";
 import "./MultiTokenFeeManager.sol";
 
+/**
+ * @title FeeManagerConnector
+ * @dev Connectivity functionality for working with MultiTokenFeeManager contract.
+ */
 contract FeeManagerConnector is Ownable {
     bytes32 internal constant FEE_MANAGER_CONTRACT = 0x779a349c5bee7817f04c960f525ee3e2f2516078c38c68a3149787976ee837e5; // keccak256(abi.encodePacked("feeManagerContract"))
     bytes32 internal constant HOME_TO_FOREIGN_FEE = 0x741ede137d0537e88e0ea0ff25b1f22d837903dbbee8980b4a06e8523247ee26; // keccak256(abi.encodePacked("homeToForeignFee"))
@@ -29,12 +33,24 @@ contract FeeManagerConnector is Ownable {
         return MultiTokenFeeManager(addressStorage[FEE_MANAGER_CONTRACT]);
     }
 
+    /**
+     * @dev Internal function for calculating and distributing fee through the separate fee manager contract.
+     * @param _feeType type of the fee, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+     * @param _from address of the tokens sender, needed only if _feeType is HOME_TO_FOREIGN_FEE.
+     * @param _token address of the token contract, for which fee should be processed.
+     * @param _value amount of tokens bridged.
+     * @return total amount of fee distributed.
+     */
     function _distributeFee(bytes32 _feeType, address _from, address _token, uint256 _value)
         internal
         returns (uint256)
     {
         MultiTokenFeeManager manager = feeManager();
         if (address(manager) != address(0)) {
+            // Next line disables fee collection in case sender is one of the reward addresses.
+            // It is needed to allow a 100% withdrawal of tokens from the home side.
+            // If fees are not disabled for reward receivers, small fraction of tokens will always
+            // be redistributed between the same set of reward addresses, which is not the desired behaviour.
             if (_feeType == HOME_TO_FOREIGN_FEE && manager.isRewardAddress(_from)) {
                 return 0;
             }

@@ -4,6 +4,10 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/DetailedERC20.sol";
 import "../MediatorOwnableModule.sol";
 
+/**
+ * @title BridgeLimitsManager
+ * @dev Manager contract for operations on multi token bridge limits.
+ */
 contract BridgeLimitsManager is MediatorOwnableModule {
     using SafeMath for uint256;
 
@@ -26,11 +30,23 @@ contract BridgeLimitsManager is MediatorOwnableModule {
     // token address => maximum per tx limit on all withdraw operations
     mapping(address => uint256) public executionMaxPerTx;
 
+    /**
+     * @dev Throws if given token address was not used before.
+     */
     modifier validTokenAddress(address _token) {
         require(minPerTx[_token] > 0);
         _;
     }
 
+    /**
+     * @dev Initializes this contract.
+     * @param _mediator address of the mediator contract used together with this manager.
+     * @param _owner this contract owner address.
+     * @param _dailyLimitMaxPerTxMinPerTxArray array with limit values for the assets to be bridged to the other network.
+     *   [ 0 = dailyLimit, 1 = maxPerTx, 2 = minPerTx ]
+     * @param _executionDailyLimitExecutionMaxPerTxArray array with limit values for the assets bridged from the other network.
+     *   [ 0 = executionDailyLimit, 1 = executionMaxPerTx ]
+     */
     constructor(
         address _mediator,
         address _owner,
@@ -41,6 +57,13 @@ contract BridgeLimitsManager is MediatorOwnableModule {
         _setExecutionLimits(address(0), _executionDailyLimitExecutionMaxPerTxArray);
     }
 
+    /**
+     * @dev Records deposit operation, updates total spent statistics.
+     * Reverts, if transfer is out of limits. Initializes token limits on the first deposit.
+     * Can be called only by the mediator contract.
+     * @param _token address of the received token.
+     * @param _amount amount of tokens received.
+     */
     function recordDeposit(address _token, uint256 _amount) external onlyMediator {
         uint256 day = getCurrentDay();
         uint256 updatedTotal = totalSpentPerDay[_token][day].add(_amount);
@@ -56,6 +79,13 @@ contract BridgeLimitsManager is MediatorOwnableModule {
         totalSpentPerDay[_token][day] = updatedTotal;
     }
 
+    /**
+     * @dev Records withdraw operation, updates total executed statistics.
+     * Reverts, if bridge operation is out of limits. Initializes token limits on the first deposit.
+     * Can be called only by the mediator contract.
+     * @param _token address of the token withdrawn.
+     * @param _amount amount of token withdrawn.
+     */
     function recordWithdraw(address _token, uint256 _amount) external onlyMediator {
         uint256 day = getCurrentDay();
         uint256 updatedTotal = totalExecutedPerDay[_token][day].add(_amount);
@@ -70,6 +100,11 @@ contract BridgeLimitsManager is MediatorOwnableModule {
         totalExecutedPerDay[_token][day] = updatedTotal;
     }
 
+    /**
+     * @dev Resets the limits for a particular token, limits will be initialized once again on the next operation.
+     * Can be called only by the mediator contract.
+     * @param _token address of the token contract for which limits should be deleted.
+     */
     function resetLimits(address _token) external onlyMediator {
         delete dailyLimit[_token];
         delete maxPerTx[_token];

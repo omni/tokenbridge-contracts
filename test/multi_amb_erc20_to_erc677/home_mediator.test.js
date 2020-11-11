@@ -263,12 +263,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       const storageProxy = await EternalStorageProxy.new()
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await HomeMultiAMBErc20ToErc677.at(storageProxy.address)
-      const feeManager = await MultiTokenFeeManager.new(
-        contract.address,
-        owner,
-        [user2],
-        [ether('0.1'), ZERO]
-      )
+      const feeManager = await MultiTokenFeeManager.new(contract.address, owner, [user2], [ether('0.1'), ZERO])
       limitsManager = await BridgeLimitsManager.new(
         contract.address,
         owner,
@@ -450,12 +445,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should initialize fees', async () => {
-        const feeManager = await MultiTokenFeeManager.new(
-          contract.address,
-          owner,
-          [],
-          [ether('0.01'), ether('0.02')]
-        )
+        const feeManager = await MultiTokenFeeManager.new(contract.address, owner, [], [ether('0.01'), ether('0.02')])
         await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
 
         const HOME_TO_FOREIGN_FEE = await feeManager.HOME_TO_FOREIGN_FEE()
@@ -994,12 +984,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         limitsManager.address,
         tokenFactory.address
       ).should.be.fulfilled
-      feeManager = await MultiTokenFeeManager.new(
-        contract.address,
-        owner,
-        [owner],
-        [ether('0.02'), ether('0.01')]
-      )
+      feeManager = await MultiTokenFeeManager.new(contract.address, owner, [owner], [ether('0.02'), ether('0.01')])
 
       const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(initialEvents.length).to.be.equal(0)

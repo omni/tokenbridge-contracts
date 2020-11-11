@@ -12,11 +12,6 @@ const {
 } = require('../deploymentUtils')
 
 const {
-  HOME_DAILY_LIMIT,
-  HOME_MAX_AMOUNT_PER_TX,
-  FOREIGN_DAILY_LIMIT,
-  FOREIGN_MAX_AMOUNT_PER_TX,
-  FOREIGN_MIN_AMOUNT_PER_TX,
   FOREIGN_BRIDGE_OWNER,
   FOREIGN_UPGRADEABLE_ADMIN,
   FOREIGN_AMB_BRIDGE,
@@ -31,39 +26,25 @@ async function initializeMediator({
   params: {
     bridgeContract,
     mediatorContract,
-    dailyLimit,
-    maxPerTx,
-    minPerTx,
-    executionDailyLimit,
-    executionMaxPerTx,
     requestGasLimit,
+    limitsManager,
     owner
   }
 }) {
   console.log(`
     AMB contract: ${bridgeContract},
     Mediator contract: ${mediatorContract},
-    DAILY_LIMIT : ${dailyLimit} which is ${Web3Utils.fromWei(dailyLimit)} in eth,
-    MAX_AMOUNT_PER_TX: ${maxPerTx} which is ${Web3Utils.fromWei(maxPerTx)} in eth,
-    MIN_AMOUNT_PER_TX: ${minPerTx} which is ${Web3Utils.fromWei(minPerTx)} in eth,
-    EXECUTION_DAILY_LIMIT : ${executionDailyLimit} which is ${Web3Utils.fromWei(executionDailyLimit)} in eth,
-    EXECUTION_MAX_AMOUNT_PER_TX: ${executionMaxPerTx} which is ${Web3Utils.fromWei(executionMaxPerTx)} in eth,
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
-    OWNER: ${owner}`)
+    LIMITS_MANAGER: ${limitsManager},
+    OWNER: ${owner}
+  `)
 
   return contract.methods
-    .initialize(
-      bridgeContract,
-      mediatorContract,
-      [dailyLimit.toString(), maxPerTx.toString(), minPerTx.toString()],
-      [executionDailyLimit.toString(), executionMaxPerTx.toString()],
-      requestGasLimit,
-      owner
-    )
+    .initialize(bridgeContract, mediatorContract, requestGasLimit, owner, limitsManager)
     .encodeABI()
 }
 
-async function initialize({ homeBridge, foreignBridge }) {
+async function initialize({ homeBridge, foreignBridge, limitsManager }) {
   let nonce = await web3Foreign.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
   const contract = new web3Home.eth.Contract(ForeignBridge.abi, foreignBridge)
 
@@ -76,11 +57,7 @@ async function initialize({ homeBridge, foreignBridge }) {
       mediatorContract: homeBridge,
       requestGasLimit: FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT,
       owner: FOREIGN_BRIDGE_OWNER,
-      dailyLimit: FOREIGN_DAILY_LIMIT,
-      maxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
-      minPerTx: FOREIGN_MIN_AMOUNT_PER_TX,
-      executionDailyLimit: HOME_DAILY_LIMIT,
-      executionMaxPerTx: HOME_MAX_AMOUNT_PER_TX,
+      limitsManager
     }
   })
 

@@ -232,18 +232,28 @@ async function deployMultiAMBErcToErc() {
   const initializeHome = require('./src/multi_amb_erc20_to_erc677/initializeHome')
   const initializeForeign = require('./src/multi_amb_erc20_to_erc677/initializeForeign')
   await preDeploy()
-  const { homeBridgeMediator, homeTokenImage } = await deployHome()
-  const { foreignBridgeMediator } = await deployForeign()
+  const {
+    homeBridgeMediator,
+    tokenFactory,
+    limitsManager: homeLimitsManager,
+    feeManager,
+    forwardingRulesManager
+  } = await deployHome()
+  const { foreignBridgeMediator, limitsManager: foreignLimitsManager } = await deployForeign()
 
   await initializeHome({
     homeBridge: homeBridgeMediator.address,
     foreignBridge: foreignBridgeMediator.address,
-    homeTokenImage: homeTokenImage.address
+    tokenFactory: tokenFactory.address,
+    limitsManager: homeLimitsManager.address,
+    feeManager: feeManager.address,
+    forwardingRulesManager: forwardingRulesManager.address
   })
 
   await initializeForeign({
     foreignBridge: foreignBridgeMediator.address,
-    homeBridge: homeBridgeMediator.address
+    homeBridge: homeBridgeMediator.address,
+    limitsManager: foreignLimitsManager.address
   })
 
   console.log('\nDeployment has been completed.\n\n')

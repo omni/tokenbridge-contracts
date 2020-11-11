@@ -174,7 +174,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         maxGasPerTx,
         owner,
         limitsManager.address,
-        tokenFactory.address
+        tokenFactory.address,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS
       ).should.be.rejected
 
       // maxGasPerTx > bridge maxGasPerTx
@@ -184,7 +186,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         twoEthers,
         owner,
         limitsManager.address,
-        tokenFactory.address
+        tokenFactory.address,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS
       ).should.be.rejected
 
       // not valid owner
@@ -194,7 +198,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         maxGasPerTx,
         ZERO_ADDRESS,
         limitsManager.address,
-        tokenFactory.address
+        tokenFactory.address,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS
       ).should.be.rejected
 
       // limits manager is not a contract
@@ -204,7 +210,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         maxGasPerTx,
         owner,
         owner,
-        tokenFactory.address
+        tokenFactory.address,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS
       ).should.be.rejected
 
       // token factory is not a contract
@@ -214,6 +222,32 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         maxGasPerTx,
         owner,
         limitsManager.address,
+        owner,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS
+      ).should.be.rejected
+
+      // fee manager is not a contract
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        maxGasPerTx,
+        owner,
+        limitsManager.address,
+        tokenFactory.address,
+        owner,
+        ZERO_ADDRESS
+      ).should.be.rejected
+
+      // forwarding rules manager is not a contract
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        maxGasPerTx,
+        owner,
+        limitsManager.address,
+        tokenFactory.address,
+        ZERO_ADDRESS,
         owner
       ).should.be.rejected
 
@@ -223,7 +257,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         maxGasPerTx,
         owner,
         limitsManager.address,
-        tokenFactory.address
+        tokenFactory.address,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS
       ).should.be.fulfilled
 
       // already initialized
@@ -276,9 +312,11 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         maxGasPerTx,
         owner,
         limitsManager.address,
-        tokenFactory.address
+        tokenFactory.address,
+        feeManager.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
-      await contract.setFeeManager(feeManager.address, { from: owner }).should.be.fulfilled
+      expect(await contract.feeManager()).to.be.equal(feeManager.address)
     })
 
     it('should only work with unknown token', async () => {
@@ -323,7 +361,9 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         maxGasPerTx,
         owner,
         limitsManager.address,
-        tokenFactory.address
+        tokenFactory.address,
+        ZERO_ADDRESS,
+        ZERO_ADDRESS
       ).should.be.fulfilled
 
       const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
@@ -976,15 +1016,17 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
   describe('fees management', () => {
     let feeManager
     beforeEach(async () => {
+      feeManager = await MultiTokenFeeManager.new(contract.address, owner, [owner], [ether('0.02'), ether('0.01')])
       await contract.initialize(
         ambBridgeContract.address,
         otherSideMediator.address,
         maxGasPerTx,
         owner,
         limitsManager.address,
-        tokenFactory.address
+        tokenFactory.address,
+        feeManager.address,
+        ZERO_ADDRESS
       ).should.be.fulfilled
-      feeManager = await MultiTokenFeeManager.new(contract.address, owner, [owner], [ether('0.02'), ether('0.01')])
 
       const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
       expect(initialEvents.length).to.be.equal(0)

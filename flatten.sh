@@ -75,3 +75,7 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc20_to_native/ForeignAMBErc20ToNative
 echo "Flattening contracts related to multi-erc-to-erc on top of AMB bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/modules/factory/TokenFactory.sol > flats/multi_amb_erc20_to_erc677/TokenFactory_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/modules/fee_manager/MultiTokenFeeManager.sol > flats/multi_amb_erc20_to_erc677/MultiTokenFeeManager_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/modules/forwarding_rules/MultiTokenForwardingRulesManager.sol > flats/multi_amb_erc20_to_erc677/MultiTokenForwardingRulesManager_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/modules/limits/MultiTokenBridgeLimitsManager.sol > flats/multi_amb_erc20_to_erc677/MultiTokenBridgeLimitsManager_flat.sol

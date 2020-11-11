@@ -16,8 +16,7 @@ contract MultiTokenForwardingRulesConnector is Ownable {
     * @param _manager address of forwarding rules manager contract.
     */
     function setForwardingRulesManager(address _manager) external onlyOwner {
-        require(_manager == address(0) || AddressUtils.isContract(_manager));
-        addressStorage[FORWARDING_RULES_MANAGER_CONTRACT] = _manager;
+        _setForwardingRulesManager(_manager);
     }
 
     /**
@@ -26,6 +25,15 @@ contract MultiTokenForwardingRulesConnector is Ownable {
     */
     function forwardingRulesManager() public view returns (MultiTokenForwardingRulesManager) {
         return MultiTokenForwardingRulesManager(addressStorage[FORWARDING_RULES_MANAGER_CONTRACT]);
+    }
+
+    /**
+    * @dev Internal function for updating an address of the used forwarding rules manager contract.
+    * @param _manager address of forwarding rules manager contract.
+    */
+    function _setForwardingRulesManager(address _manager) internal {
+        require(_manager == address(0) || AddressUtils.isContract(_manager));
+        addressStorage[FORWARDING_RULES_MANAGER_CONTRACT] = _manager;
     }
 
     /**

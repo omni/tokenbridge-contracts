@@ -34,9 +34,13 @@ contract HomeMultiAMBErc20ToErc677 is
         uint256 _requestGasLimit,
         address _owner,
         address _limitsManager,
-        address _tokenFactory
+        address _tokenFactory,
+        address _feeManager,
+        address _forwardingRulesManager
     ) external onlyRelevantSender returns (bool) {
         _setTokenFactory(_tokenFactory);
+        _setFeeManager(_feeManager);
+        _setForwardingRulesManager(_forwardingRulesManager);
 
         return _initialize(_bridgeContract, _mediatorContract, _requestGasLimit, _owner, _limitsManager);
     }

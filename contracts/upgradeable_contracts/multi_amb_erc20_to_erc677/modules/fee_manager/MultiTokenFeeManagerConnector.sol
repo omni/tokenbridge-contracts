@@ -21,8 +21,7 @@ contract MultiTokenFeeManagerConnector is Ownable {
     * @param _feeManager address of fee manager contract.
     */
     function setFeeManager(address _feeManager) external onlyOwner {
-        require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
-        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
+        _setFeeManager(_feeManager);
     }
 
     /**
@@ -31,6 +30,15 @@ contract MultiTokenFeeManagerConnector is Ownable {
     */
     function feeManager() public view returns (MultiTokenFeeManager) {
         return MultiTokenFeeManager(addressStorage[FEE_MANAGER_CONTRACT]);
+    }
+
+    /**
+    * @dev Internal function for updating an address of the used fee manager contract.
+    * @param _feeManager address of fee manager contract.
+    */
+    function _setFeeManager(address _feeManager) internal {
+        require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
+        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
     }
 
     /**

@@ -41,6 +41,10 @@ function getContracts() {
     HomeAMBErc20ToNative: require(`../../build/${buildPath}/HomeAMBErc20ToNative.json`),
     ForeignMultiAMBErc20ToErc677: require(`../../build/${buildPath}/ForeignMultiAMBErc20ToErc677.json`),
     HomeMultiAMBErc20ToErc677: require(`../../build/${buildPath}/HomeMultiAMBErc20ToErc677.json`),
+    TokenFactory: require(`../../build/${buildPath}/TokenFactory.json`),
+    MultiTokenFeeManager: require(`../../build/${buildPath}/MultiTokenFeeManager.json`),
+    MultiTokenForwardingRulesManager: require(`../../build/${buildPath}/MultiTokenForwardingRulesManager.json`),
+    MultiTokenBridgeLimitsManager: require(`../../build/${buildPath}/MultiTokenBridgeLimitsManager.json`),
   }
 }
 

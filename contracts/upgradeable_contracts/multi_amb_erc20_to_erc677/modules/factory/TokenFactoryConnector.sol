@@ -4,6 +4,10 @@ import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../../../Ownable.sol";
 import "./TokenFactory.sol";
 
+/**
+ * @title TokenFactoryConnector
+ * @dev Connectivity functionality for working with TokenFactory contract.
+ */
 contract TokenFactoryConnector is Ownable {
     bytes32 internal constant TOKEN_FACTORY_CONTRACT = 0x269c5905f777ee6391c7a361d17039a7d62f52ba9fffeb98c5ade342705731a3; // keccak256(abi.encodePacked("tokenFactoryContract"))
 

@@ -73,7 +73,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     )
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
     tokenImage = await PermittableToken.new('TEST', 'TST', 18, 1337)
-    tokenFactory = await TokenFactory.new(tokenImage.address)
+    tokenFactory = await TokenFactory.new(owner, tokenImage.address)
     currentDay = await limitsManager.getCurrentDay()
   })
 

@@ -7,7 +7,7 @@ const PermittableToken = artifacts.require('PermittableToken.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
 const TokenFactory = artifacts.require('TokenFactory.sol')
 const MultiTokenForwardingRulesManager = artifacts.require('MultiTokenForwardingRulesManager.sol')
-const HomeMultiAMBErc20ToErc677FeeManager = artifacts.require('HomeMultiAMBErc20ToErc677FeeManager.sol')
+const MultiTokenFeeManager = artifacts.require('MultiTokenFeeManager.sol')
 const BridgeLimitsManager = artifacts.require('BridgeLimitsManager.sol')
 
 const { expect } = require('chai')
@@ -144,7 +144,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     const feeManagerAddress = await contract.feeManager()
     let bridgedValue = value
     if (feeManagerAddress !== ZERO_ADDRESS) {
-      const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.at(feeManagerAddress)
+      const feeManager = await MultiTokenFeeManager.at(feeManagerAddress)
       const fee = await feeManager.getFee(await feeManager.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS)
       if ((await feeManager.rewardAddressCount()).toNumber() > 0) {
         bridgedValue = toBN(value)
@@ -263,7 +263,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       const storageProxy = await EternalStorageProxy.new()
       await storageProxy.upgradeTo('1', contract.address).should.be.fulfilled
       contract = await HomeMultiAMBErc20ToErc677.at(storageProxy.address)
-      const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(
+      const feeManager = await MultiTokenFeeManager.new(
         contract.address,
         owner,
         [user2],
@@ -450,7 +450,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should initialize fees', async () => {
-        const feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(
+        const feeManager = await MultiTokenFeeManager.new(
           contract.address,
           owner,
           [],
@@ -994,7 +994,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         limitsManager.address,
         tokenFactory.address
       ).should.be.fulfilled
-      feeManager = await HomeMultiAMBErc20ToErc677FeeManager.new(
+      feeManager = await MultiTokenFeeManager.new(
         contract.address,
         owner,
         [owner],

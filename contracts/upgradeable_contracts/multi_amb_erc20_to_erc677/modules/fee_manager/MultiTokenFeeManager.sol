@@ -5,11 +5,11 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../MediatorOwnableModule.sol";
 
 /**
- * @title HomeMultiAMBErc20ToErc677FeeManager
+ * @title MultiTokenFeeManager
  * @dev Implements the logic to distribute fees from the multi erc20 to erc677 mediator contract operations.
- * The fees are distributed in the form of ERC677 tokens to the list of reward addresses.
+ * The fees are distributed in the form of ERC20/ERC677 tokens to the list of reward addresses.
  */
-contract HomeMultiAMBErc20ToErc677FeeManager is MediatorOwnableModule {
+contract MultiTokenFeeManager is MediatorOwnableModule {
     using SafeMath for uint256;
 
     // This is not a real fee value but a relative value used to calculate the fee percentage.
@@ -52,6 +52,9 @@ contract HomeMultiAMBErc20ToErc677FeeManager is MediatorOwnableModule {
         rewardAddresses = _rewardAddresses;
     }
 
+    /**
+     * @dev Throws if given fee amount is invalid.
+     */
     modifier validFee(uint256 _fee) {
         require(_fee < MAX_FEE);
         /* solcov ignore next */

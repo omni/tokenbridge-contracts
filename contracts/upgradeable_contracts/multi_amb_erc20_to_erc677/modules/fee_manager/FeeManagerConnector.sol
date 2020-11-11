@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "openzeppelin-solidity/contracts/AddressUtils.sol";
 import "../../../../interfaces/IBurnableMintableERC677Token.sol";
 import "../../../Ownable.sol";
-import "./HomeMultiAMBErc20ToErc677FeeManager.sol";
+import "./MultiTokenFeeManager.sol";
 
 contract FeeManagerConnector is Ownable {
     bytes32 internal constant FEE_MANAGER_CONTRACT = 0x779a349c5bee7817f04c960f525ee3e2f2516078c38c68a3149787976ee837e5; // keccak256(abi.encodePacked("feeManagerContract"))
@@ -25,15 +25,15 @@ contract FeeManagerConnector is Ownable {
     * @dev Retrieves an address of the fee manager contract.
     * @return address of the fee manager contract.
     */
-    function feeManager() public view returns (HomeMultiAMBErc20ToErc677FeeManager) {
-        return HomeMultiAMBErc20ToErc677FeeManager(addressStorage[FEE_MANAGER_CONTRACT]);
+    function feeManager() public view returns (MultiTokenFeeManager) {
+        return MultiTokenFeeManager(addressStorage[FEE_MANAGER_CONTRACT]);
     }
 
     function _distributeFee(bytes32 _feeType, address _from, address _token, uint256 _value)
         internal
         returns (uint256)
     {
-        HomeMultiAMBErc20ToErc677FeeManager manager = feeManager();
+        MultiTokenFeeManager manager = feeManager();
         if (address(manager) != address(0)) {
             if (_feeType == HOME_TO_FOREIGN_FEE && manager.isRewardAddress(_from)) {
                 return 0;

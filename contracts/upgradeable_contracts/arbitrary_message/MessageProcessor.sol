@@ -4,10 +4,6 @@ import "../../upgradeability/EternalStorage.sol";
 import "../../libraries/Bytes.sol";
 
 contract MessageProcessor is EternalStorage {
-    bytes32 internal constant MESSAGE_SENDER = 0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b; // keccak256(abi.encodePacked("messageSender"))
-    bytes32 internal constant MESSAGE_ID = 0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304; // keccak256(abi.encodePacked("messageId"))
-    bytes32 internal constant MESSAGE_SOURCE_CHAIN_ID = 0x7f0fcd9e49860f055dd0c1682d635d309ecb5e3011654c716d9eb59a7ddec7d2; // keccak256(abi.encodePacked("messageSourceChainId"))
-
     /**
     * @dev Returns a status of the message that came from the other side.
     * @param _messageId id of the message from the other side that triggered a call.
@@ -89,8 +85,11 @@ contract MessageProcessor is EternalStorage {
     * Can be used by executors for getting other side caller address.
     * @return address of the sender on the other side.
     */
-    function messageSender() external view returns (address) {
-        return addressStorage[MESSAGE_SENDER];
+    function messageSender() external view returns (address sender) {
+        assembly {
+            // keccak256(abi.encodePacked("messageSender"))
+            sender := sload(0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b)
+        }
     }
 
     /**
@@ -98,15 +97,21 @@ contract MessageProcessor is EternalStorage {
     * @param _sender address of the sender on the other side.
     */
     function setMessageSender(address _sender) internal {
-        addressStorage[MESSAGE_SENDER] = _sender;
+        assembly {
+            // keccak256(abi.encodePacked("messageSender"))
+            sstore(0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b, _sender)
+        }
     }
 
     /**
     * @dev Returns an id of the currently processed message.
     * @return id of the message that originated on the other side.
     */
-    function messageId() public view returns (bytes32) {
-        return bytes32(uintStorage[MESSAGE_ID]);
+    function messageId() public view returns (bytes32 id) {
+        assembly {
+            // keccak256(abi.encodePacked("messageId"))
+            id := sload(0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304)
+        }
     }
 
     /**
@@ -124,23 +129,31 @@ contract MessageProcessor is EternalStorage {
     * @param _messageId id of the message that originated on the other side.
     */
     function setMessageId(bytes32 _messageId) internal {
-        uintStorage[MESSAGE_ID] = uint256(_messageId);
+        assembly {
+            // keccak256(abi.encodePacked("messageId"))
+            sstore(0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304, _messageId)
+        }
     }
 
     /**
     * @dev Returns an originating chain id of the currently processed message.
     * @return source chain id of the message that originated on the other side.
     */
-    function messageSourceChainId() external view returns (uint256) {
-        return uintStorage[MESSAGE_SOURCE_CHAIN_ID];
+    function messageSourceChainId() external view returns (uint256 id) {
+        assembly {
+            // keccak256(abi.encodePacked("messageSourceChainId"))
+            id := sload(0x7f0fcd9e49860f055dd0c1682d635d309ecb5e3011654c716d9eb59a7ddec7d2)
+        }
     }
 
     /**
-    * @dev Returns an originating chain id of the currently processed message.
-    * @return source chain id of the message that originated on the other side.
+    * @dev Sets an originating chain id of the currently processed message.
+    * @param _sourceChainId source chain id of the message that originated on the other side.
     */
-    function setMessageSourceChainId(uint256 _sourceChainId) internal returns (uint256) {
-        uintStorage[MESSAGE_SOURCE_CHAIN_ID] = _sourceChainId;
+    function setMessageSourceChainId(uint256 _sourceChainId) internal {
+        assembly {
+            sstore(0x7f0fcd9e49860f055dd0c1682d635d309ecb5e3011654c716d9eb59a7ddec7d2, _sourceChainId)
+        }
     }
 
     /**
@@ -195,7 +208,7 @@ contract MessageProcessor is EternalStorage {
         setMessageSourceChainId(_sourceChainId);
 
         // After EIP-150, max gas cost allowed to be passed to the internal call is equal to the 63/64 of total gas left.
-        // In reallity, min(gasLimit, 63/64 * gasleft()) will be used as the call gas limit.
+        // In reality, min(gasLimit, 63/64 * gasleft()) will be used as the call gas limit.
         // Imagine a situation, when message requires 10000000 gas to be executed successfully.
         // Also suppose, that at this point, gasleft() is equal to 10158000, so the callee will receive ~ 10158000 * 63 / 64 = 9999300 gas.
         // That amount of gas is not enough, so the call will fail. At the same time,
@@ -203,7 +216,7 @@ contract MessageProcessor is EternalStorage {
         // finish its execution and it will be enough. The internal call fails but
         // only because the oracle provides incorrect gas limit for the transaction
         // This check is needed here in order to force contract to pass exactly the requested amount of gas.
-        // Avoiding it may leed to the unwanted message failure in some extreme cases.
+        // Avoiding it may lead to the unwanted message failure in some extreme cases.
         require((gasleft() * 63) / 64 > _gas);
 
         bool status = _contract.call.gas(_gas)(_data);

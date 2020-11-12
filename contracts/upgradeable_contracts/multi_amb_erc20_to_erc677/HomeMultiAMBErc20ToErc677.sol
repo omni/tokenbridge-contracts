@@ -165,7 +165,6 @@ contract HomeMultiAMBErc20ToErc677 is
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
-        require(!lock());
         address to = address(this);
         // if msg.sender if not a valid token contract, this check will fail, since limits are zeros
         // so the following check is not needed

@@ -148,7 +148,7 @@ contract HomeMultiAMBErc20ToErc677 is
             // require(isTokenRegistered(token));
             require(withinLimit(token, _value));
             addTotalSpentPerDay(token, getCurrentDay(), _value);
-            bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
+            bridgeSpecificActionsOnTokenTransfer(token, _from, chooseReceiver(_from, _data), _value);
         }
         return true;
     }
@@ -176,7 +176,7 @@ contract HomeMultiAMBErc20ToErc677 is
         setLock(true);
         token.transferFrom(msg.sender, to, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
+        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _receiver, _value);
     }
 
     /**
@@ -247,26 +247,26 @@ contract HomeMultiAMBErc20ToErc677 is
      * @dev Executes action on withdrawal of bridged tokens
      * @param _token address of token contract
      * @param _from address of tokens sender
+     * @param _receiver address of tokens receiver on the other side
      * @param _value requested amount of bridged tokens
-     * @param _data alternative receiver, if specified
      */
-    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
-        if (!lock()) {
-            uint256 valueToBridge = _value;
-            uint256 fee = 0;
-            // Next line disables fee collection in case sender is one of the reward addresses.
-            // It is needed to allow a 100% withdrawal of tokens from the home side.
-            // If fees are not disabled for reward receivers, small fraction of tokens will always
-            // be redistributed between the same set of reward addresses, which is not the desired behaviour.
-            if (!isRewardAddress(_from)) {
-                fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);
-                valueToBridge = valueToBridge.sub(fee);
-            }
-            IBurnableMintableERC677Token(_token).burn(valueToBridge);
-            bytes32 _messageId = passMessage(_token, _from, chooseReceiver(_from, _data), valueToBridge);
-            if (fee > 0) {
-                emit FeeDistributed(fee, _token, _messageId);
-            }
+    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, address _receiver, uint256 _value)
+        internal
+    {
+        uint256 valueToBridge = _value;
+        uint256 fee = 0;
+        // Next line disables fee collection in case sender is one of the reward addresses.
+        // It is needed to allow a 100% withdrawal of tokens from the home side.
+        // If fees are not disabled for reward receivers, small fraction of tokens will always
+        // be redistributed between the same set of reward addresses, which is not the desired behaviour.
+        if (!isRewardAddress(_from)) {
+            fee = _distributeFee(HOME_TO_FOREIGN_FEE, _token, valueToBridge);
+            valueToBridge = valueToBridge.sub(fee);
+        }
+        IBurnableMintableERC677Token(_token).burn(valueToBridge);
+        bytes32 _messageId = passMessage(_token, _from, _receiver, valueToBridge);
+        if (fee > 0) {
+            emit FeeDistributed(fee, _token, _messageId);
         }
     }
 

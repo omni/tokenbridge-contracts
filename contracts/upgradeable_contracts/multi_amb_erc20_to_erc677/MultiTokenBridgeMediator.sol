@@ -17,6 +17,7 @@ contract MultiTokenBridgeMediator is
     ChooseReceiverHelper
 {
     event FailedMessageFixed(bytes32 indexed messageId, address token, address recipient, uint256 value);
+    event TokensDeposited(address indexed token, address indexed sender, uint256 value, bytes32 indexed messageId);
     event TokensBridged(address indexed token, address indexed recipient, uint256 value, bytes32 indexed messageId);
 
     /**

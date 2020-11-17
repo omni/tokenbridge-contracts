@@ -87,8 +87,10 @@ contract MessageProcessor is EternalStorage {
     */
     function messageSender() external view returns (address sender) {
         assembly {
-            // keccak256(abi.encodePacked("messageSender"))
-            sender := sload(0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b)
+            // Even though this is not the same as addressStorage[keccak256(abi.encodePacked("messageSender"))],
+            // since solidity mapping introduces another level of addressing, such slot change is safe
+            // for temporary variables which are cleared at the end of the call execution.
+            sender := sload(0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b) // keccak256(abi.encodePacked("messageSender"))
         }
     }
 
@@ -98,8 +100,10 @@ contract MessageProcessor is EternalStorage {
     */
     function setMessageSender(address _sender) internal {
         assembly {
-            // keccak256(abi.encodePacked("messageSender"))
-            sstore(0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b, _sender)
+            // Even though this is not the same as addressStorage[keccak256(abi.encodePacked("messageSender"))],
+            // since solidity mapping introduces another level of addressing, such slot change is safe
+            // for temporary variables which are cleared at the end of the call execution.
+            sstore(0x7b58b2a669d8e0992eae9eaef641092c0f686fd31070e7236865557fa1571b5b, _sender) // keccak256(abi.encodePacked("messageSender"))
         }
     }
 
@@ -109,8 +113,10 @@ contract MessageProcessor is EternalStorage {
     */
     function messageId() public view returns (bytes32 id) {
         assembly {
-            // keccak256(abi.encodePacked("messageId"))
-            id := sload(0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304)
+            // Even though this is not the same as uintStorage[keccak256(abi.encodePacked("messageId"))],
+            // since solidity mapping introduces another level of addressing, such slot change is safe
+            // for temporary variables which are cleared at the end of the call execution.
+            id := sload(0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304) // keccak256(abi.encodePacked("messageId"))
         }
     }
 
@@ -130,8 +136,10 @@ contract MessageProcessor is EternalStorage {
     */
     function setMessageId(bytes32 _messageId) internal {
         assembly {
-            // keccak256(abi.encodePacked("messageId"))
-            sstore(0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304, _messageId)
+            // Even though this is not the same as uintStorage[keccak256(abi.encodePacked("messageId"))],
+            // since solidity mapping introduces another level of addressing, such slot change is safe
+            // for temporary variables which are cleared at the end of the call execution.
+            sstore(0xe34bb2103dc34f2c144cc216c132d6ffb55dac57575c22e089161bbe65083304, _messageId) // keccak256(abi.encodePacked("messageId"))
         }
     }
 
@@ -141,8 +149,10 @@ contract MessageProcessor is EternalStorage {
     */
     function messageSourceChainId() external view returns (uint256 id) {
         assembly {
-            // keccak256(abi.encodePacked("messageSourceChainId"))
-            id := sload(0x7f0fcd9e49860f055dd0c1682d635d309ecb5e3011654c716d9eb59a7ddec7d2)
+            // Even though this is not the same as uintStorage[keccak256(abi.encodePacked("messageSourceChainId"))],
+            // since solidity mapping introduces another level of addressing, such slot change is safe
+            // for temporary variables which are cleared at the end of the call execution.
+            id := sload(0x7f0fcd9e49860f055dd0c1682d635d309ecb5e3011654c716d9eb59a7ddec7d2) // keccak256(abi.encodePacked("messageSourceChainId"))
         }
     }
 
@@ -152,7 +162,10 @@ contract MessageProcessor is EternalStorage {
     */
     function setMessageSourceChainId(uint256 _sourceChainId) internal {
         assembly {
-            sstore(0x7f0fcd9e49860f055dd0c1682d635d309ecb5e3011654c716d9eb59a7ddec7d2, _sourceChainId)
+            // Even though this is not the same as uintStorage[keccak256(abi.encodePacked("messageSourceChainId"))],
+            // since solidity mapping introduces another level of addressing, such slot change is safe
+            // for temporary variables which are cleared at the end of the call execution.
+            sstore(0x7f0fcd9e49860f055dd0c1682d635d309ecb5e3011654c716d9eb59a7ddec7d2, _sourceChainId) // keccak256(abi.encodePacked("messageSourceChainId"))
         }
     }
 

@@ -1,8 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../upgradeability/EternalStorage.sol";
-
-contract ReentrancyGuard is EternalStorage {
+contract ReentrancyGuard {
     function lock() internal returns (bool res) {
         assembly {
             // keccak256(abi.encodePacked("lock"))

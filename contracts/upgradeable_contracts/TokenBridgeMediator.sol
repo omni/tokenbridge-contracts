@@ -10,7 +10,7 @@ import "./TransferInfoStorage.sol";
 */
 contract TokenBridgeMediator is BasicAMBMediator, BasicTokenBridge, TransferInfoStorage {
     event FailedMessageFixed(bytes32 indexed messageId, address recipient, uint256 value);
-    event TokensDeposited(address indexed sender, uint256 value, bytes32 indexed messageId);
+    event TokensBridgingInitiated(address indexed sender, uint256 value, bytes32 indexed messageId);
     event TokensBridged(address indexed recipient, uint256 value, bytes32 indexed messageId);
 
     /**
@@ -34,7 +34,7 @@ contract TokenBridgeMediator is BasicAMBMediator, BasicTokenBridge, TransferInfo
         setMessageValue(_messageId, _value);
         setMessageRecipient(_messageId, _from);
 
-        emit TokensDeposited(_from, _value, _messageId);
+        emit TokensBridgingInitiated(_from, _value, _messageId);
     }
 
     /**

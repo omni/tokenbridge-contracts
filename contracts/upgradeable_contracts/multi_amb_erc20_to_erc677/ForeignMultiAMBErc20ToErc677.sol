@@ -164,7 +164,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
             _setTokenRegistrationMessageId(_token, _messageId);
         }
 
-        emit TokensDeposited(_token, _from, _value, _messageId);
+        emit TokensBridgingInitiated(_token, _from, _value, _messageId);
     }
 
     /**

@@ -608,7 +608,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(homeToken.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)
@@ -638,7 +638,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(homeToken.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)
@@ -671,7 +671,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(homeToken.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)
@@ -696,7 +696,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(homeToken.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)

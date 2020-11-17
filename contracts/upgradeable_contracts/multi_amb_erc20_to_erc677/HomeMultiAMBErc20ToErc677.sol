@@ -299,7 +299,7 @@ contract HomeMultiAMBErc20ToErc677 is
         setMessageValue(_messageId, _value);
         setMessageRecipient(_messageId, _from);
 
-        emit TokensDeposited(_token, _from, _value, _messageId);
+        emit TokensBridgingInitiated(_token, _from, _value, _messageId);
 
         return _messageId;
     }

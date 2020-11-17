@@ -368,7 +368,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.isTokenRegistered(token.address)).to.be.equal(true)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)
@@ -400,7 +400,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.isTokenRegistered(token.address)).to.be.equal(true)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)
@@ -431,7 +431,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)
@@ -455,7 +455,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)
@@ -478,7 +478,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
 
-        const depositEvents = await getEvents(contract, { event: 'TokensDeposited' })
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
         expect(depositEvents.length).to.be.equal(1)
         expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
         expect(depositEvents[0].returnValues.sender).to.be.equal(user)

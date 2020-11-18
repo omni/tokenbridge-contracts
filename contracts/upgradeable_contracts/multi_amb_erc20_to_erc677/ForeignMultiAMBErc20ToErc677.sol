@@ -99,6 +99,8 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
+        require(!lock());
+
         setLock(true);
         token.safeTransferFrom(msg.sender, _value);
         setLock(false);

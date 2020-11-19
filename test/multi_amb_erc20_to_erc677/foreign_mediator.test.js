@@ -4,7 +4,9 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 const ERC20Mock = artifacts.require('ERC20Mock.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
+const PermittableToken = artifacts.require('PermittableToken.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
+const TokenFactory = artifacts.require('TokenFactory.sol')
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
@@ -30,6 +32,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
   let ambBridgeContract
   let otherSideMediator
   let currentDay
+  let tokenFactory
   const owner = accounts[0]
   const user = accounts[1]
   const user2 = accounts[2]
@@ -41,6 +44,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
     otherSideMediator = await HomeMultiAMBErc20ToErc677.new()
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
     currentDay = await contract.getCurrentDay()
+    const tokenImage = await PermittableToken.new('TEST', 'TST', 18, 1337)
+    tokenFactory = await TokenFactory.new(owner, tokenImage.address)
   })
 
   const sendFunctions = [
@@ -88,6 +93,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.tokenFactory()).to.be.equal(ZERO_ADDRESS)
 
       // When
       // not valid bridge address
@@ -97,7 +103,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.rejected
 
       // dailyLimit > maxPerTx
@@ -107,7 +114,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [maxPerTx, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.rejected
 
       // maxPerTx > minPerTx
@@ -117,7 +125,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, minPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.rejected
 
       // executionDailyLimit > executionMaxPerTx
@@ -127,7 +136,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionDailyLimit],
         maxGasPerTx,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.rejected
 
       // maxGasPerTx > bridge maxGasPerTx
@@ -137,7 +147,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         twoEthers,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.rejected
 
       // not valid owner
@@ -147,6 +158,18 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
+        ZERO_ADDRESS,
+        tokenFactory.address
+      ).should.be.rejected
+
+      // not valid token factory
+      await contract.initialize(
+        ambBridgeContract.address,
+        otherSideMediator.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        owner,
         ZERO_ADDRESS
       ).should.be.rejected
 
@@ -156,7 +179,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.fulfilled
 
       // already initialized
@@ -180,6 +204,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(executionMaxPerTx)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.owner()).to.be.equal(owner)
+      expect(await contract.tokenFactory()).to.be.equal(tokenFactory.address)
 
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { token: ZERO_ADDRESS, newLimit: executionDailyLimit })
       expectEventInLogs(logs, 'DailyLimitChanged', { token: ZERO_ADDRESS, newLimit: dailyLimit })
@@ -209,7 +234,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.fulfilled
     })
 
@@ -262,7 +288,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.fulfilled
 
       const initialEvents = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
@@ -571,7 +598,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       })
     })
 
-    describe('handleBridgedTokens', () => {
+    describe('handleNativeTokens', () => {
       it('should unlock tokens on message from amb', async () => {
         await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
         await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
@@ -579,12 +606,12 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(twoEthers)
 
         // can't be called by user
-        await contract.handleBridgedTokens(token.address, user, value, { from: user }).should.be.rejected
+        await contract.handleNativeTokens(token.address, user, value, { from: user }).should.be.rejected
         // can't be called by owner
-        await contract.handleBridgedTokens(token.address, user, value, { from: owner }).should.be.rejected
+        await contract.handleNativeTokens(token.address, user, value, { from: owner }).should.be.rejected
 
         const data = await contract.contract.methods
-          .handleBridgedTokens(token.address, user, value.toString())
+          .handleNativeTokens(token.address, user, value.toString())
           .encodeABI()
 
         // message must be generated by mediator contract on the other network
@@ -621,7 +648,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         const otherToken = await ERC20Mock.new('Test', 'TST', 18)
         await otherToken.mint(contract.address, value)
         const data = await contract.contract.methods
-          .handleBridgedTokens(otherToken.address, user, value.toString())
+          .handleNativeTokens(otherToken.address, user, value.toString())
           .encodeABI()
 
         await ambBridgeContract.executeMessageCall(
@@ -640,7 +667,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
 
         const data = await contract.contract.methods
-          .handleBridgedTokens(token.address, user, value.toString())
+          .handleNativeTokens(token.address, user, value.toString())
           .encodeABI()
 
         await contract.setExecutionDailyLimit(ZERO_ADDRESS, ZERO).should.be.fulfilled
@@ -670,7 +697,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       it('should allow to request a failed message fix', async () => {
         // Given
         const data = await contract.contract.methods
-          .handleBridgedTokens(token.address, user, value.toString())
+          .handleNativeTokens(token.address, user, value.toString())
           .encodeABI()
 
         await ambBridgeContract.executeMessageCall(
@@ -696,7 +723,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         await token.transferAndCall(contract.address, value, '0x', { from: user }).should.be.fulfilled
         // Given
         const data = await contract.contract.methods
-          .handleBridgedTokens(token.address, user, value.toString())
+          .handleNativeTokens(token.address, user, value.toString())
           .encodeABI()
 
         await ambBridgeContract.executeMessageCall(
@@ -716,7 +743,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       it('should be the receiver of the failed transaction', async () => {
         // Given
         const data = await contract.contract.methods
-          .handleBridgedTokens(token.address, user, value.toString())
+          .handleNativeTokens(token.address, user, value.toString())
           .encodeABI()
 
         await ambBridgeContract.executeMessageCall(
@@ -736,7 +763,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       it('message sender should be mediator from other side', async () => {
         // Given
         const data = await contract.contract.methods
-          .handleBridgedTokens(token.address, user, value.toString())
+          .handleNativeTokens(token.address, user, value.toString())
           .encodeABI()
 
         await ambBridgeContract.executeMessageCall(contract.address, contract.address, data, failedMessageId, 100)
@@ -751,7 +778,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
       it('should allow to request a fix multiple times', async () => {
         // Given
         const data = await contract.contract.methods
-          .handleBridgedTokens(token.address, user, value.toString())
+          .handleNativeTokens(token.address, user, value.toString())
           .encodeABI()
 
         await ambBridgeContract.executeMessageCall(
@@ -876,7 +903,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
-        owner
+        owner,
+        tokenFactory.address
       ).should.be.fulfilled
 
       expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)

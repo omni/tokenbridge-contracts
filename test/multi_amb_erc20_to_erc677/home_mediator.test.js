@@ -5,6 +5,8 @@ const AMBMock = artifacts.require('AMBMock.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const PermittableToken = artifacts.require('PermittableToken.sol')
 const Sacrifice = artifacts.require('Sacrifice.sol')
+const TokenFactory = artifacts.require('TokenFactory.sol')
+const MultiTokenForwardingRulesManager = artifacts.require('MultiTokenForwardingRulesManager.sol')
 
 const { expect } = require('chai')
 const { getEvents, expectEventInLogs, ether, strip0x } = require('../helpers/helpers')
@@ -33,6 +35,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
   let otherSideMediator
   let currentDay
   let tokenImage
+  let tokenFactory
   let homeToken
   const owner = accounts[0]
   const user = accounts[1]
@@ -45,16 +48,19 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
     await otherSideAMBBridgeContract.setMaxGasPerTx(maxGasPerTx)
     otherSideMediator = await ForeignMultiAMBErc20ToErc677.new()
+    tokenImage = await PermittableToken.new('TEST', 'TST', 18, 1337)
+    const otherSideTokenFactory = await TokenFactory.new(owner, tokenImage.address)
     await otherSideMediator.initialize(
       otherSideAMBBridgeContract.address,
       contract.address,
       [dailyLimit, maxPerTx, minPerTx],
       [executionDailyLimit, executionMaxPerTx],
       maxGasPerTx,
-      owner
+      owner,
+      otherSideTokenFactory.address
     )
     token = await ERC677BridgeToken.new('TEST', 'TST', 18)
-    tokenImage = await PermittableToken.new('TEST', 'TST', 18, 1337)
+    tokenFactory = await TokenFactory.new(owner, tokenImage.address)
     currentDay = await contract.getCurrentDay()
   })
 
@@ -120,8 +126,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
     const events = await getEvents(contract, { event: 'NewTokenRegistered' })
     expect(events.length).to.be.equal(1)
-    expect(events[0].returnValues.foreignToken).to.be.equal(token.address)
-    const homeToken = await PermittableToken.at(events[0].returnValues.homeToken)
+    expect(events[0].returnValues.nativeToken).to.be.equal(token.address)
+    const homeToken = await PermittableToken.at(events[0].returnValues.bridgedToken)
     const fee = await contract.getFee(await contract.FOREIGN_TO_HOME_FEE(), ZERO_ADDRESS)
     const rewardAccounts = (await contract.rewardAddressCount()).toNumber()
     const bridgedValue =
@@ -147,7 +153,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(ZERO)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(ZERO)
       expect(await contract.owner()).to.be.equal(ZERO_ADDRESS)
-      expect(await contract.tokenImage()).to.be.equal(ZERO_ADDRESS)
+      expect(await contract.tokenFactory()).to.be.equal(ZERO_ADDRESS)
 
       // When
       // not valid bridge address
@@ -158,7 +164,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -171,7 +177,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -184,7 +190,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -197,7 +203,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionDailyLimit],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -210,7 +216,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         twoEthers,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -223,7 +229,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         ZERO_ADDRESS,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -248,7 +254,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.fulfilled
@@ -261,7 +267,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.rejected
@@ -277,7 +283,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       expect(await contract.executionMaxPerTx(ZERO_ADDRESS)).to.be.bignumber.equal(executionMaxPerTx)
       expect(await contract.requestGasLimit()).to.be.bignumber.equal(maxGasPerTx)
       expect(await contract.owner()).to.be.equal(owner)
-      expect(await contract.tokenImage()).to.be.equal(tokenImage.address)
+      expect(await contract.tokenFactory()).to.be.equal(tokenFactory.address)
 
       expectEventInLogs(logs, 'ExecutionDailyLimitChanged', { token: ZERO_ADDRESS, newLimit: executionDailyLimit })
       expectEventInLogs(logs, 'DailyLimitChanged', { token: ZERO_ADDRESS, newLimit: dailyLimit })
@@ -308,7 +314,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [user2],
         [ether('0.1'), ZERO]
       ).should.be.fulfilled
@@ -357,7 +363,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [],
         [ZERO, ZERO]
       ).should.be.fulfilled
@@ -397,8 +403,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(await homeToken.bridgeContract()).to.be.equal(contract.address)
         expect(await homeToken.totalSupply()).to.be.bignumber.equal(value)
         expect(await homeToken.balanceOf(user)).to.be.bignumber.equal(value)
-        expect(await contract.homeTokenAddress(token.address)).to.be.equal(homeToken.address)
-        expect(await contract.foreignTokenAddress(homeToken.address)).to.be.equal(token.address)
+        expect(await contract.bridgedTokenAddress(token.address)).to.be.equal(homeToken.address)
+        expect(await contract.nativeTokenAddress(homeToken.address)).to.be.equal(token.address)
       })
 
       it('should register new token with empty name', async () => {
@@ -572,13 +578,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         })
       })
 
-      describe('tokenImage', () => {
+      describe('tokenFactory', () => {
         it('should allow to change token image', async () => {
-          expect(await contract.tokenImage()).to.be.equal(tokenImage.address)
-          await contract.setTokenImage(token.address, { from: user }).should.be.rejected
-          await contract.setTokenImage(owner, { from: owner }).should.be.rejected
-          await contract.setTokenImage(token.address, { from: owner }).should.be.fulfilled
-          expect(await contract.tokenImage()).to.be.equal(token.address)
+          expect(await contract.tokenFactory()).to.be.equal(tokenFactory.address)
+          await contract.setTokenFactory(token.address, { from: user }).should.be.rejected
+          await contract.setTokenFactory(owner, { from: owner }).should.be.rejected
+          await contract.setTokenFactory(token.address, { from: owner }).should.be.fulfilled
+          expect(await contract.tokenFactory()).to.be.equal(token.address)
         })
       })
     })
@@ -1025,58 +1031,84 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
     })
 
     describe('oracle driven lane permissions', () => {
+      let manager
+      beforeEach(async () => {
+        manager = await MultiTokenForwardingRulesManager.new(owner)
+        expect(await manager.owner()).to.be.equal(owner)
+      })
+
+      it('should allow to update manager address', async () => {
+        await contract.setForwardingRulesManager(manager.address, { from: user }).should.be.rejected
+        await contract.setForwardingRulesManager(manager.address, { from: owner }).should.be.fulfilled
+
+        expect(await contract.forwardingRulesManager()).to.be.equal(manager.address)
+
+        const otherManager = await MultiTokenForwardingRulesManager.new(contract.address)
+        await contract.setForwardingRulesManager(otherManager.address).should.be.fulfilled
+
+        expect(await contract.forwardingRulesManager()).to.be.equal(otherManager.address)
+
+        await contract.setForwardingRulesManager(owner).should.be.rejected
+        await contract.setForwardingRulesManager(ZERO_ADDRESS).should.be.fulfilled
+
+        expect(await contract.forwardingRulesManager()).to.be.equal(ZERO_ADDRESS)
+      })
+
       it('should allow to set/update lane permissions', async () => {
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('0')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('0')
 
-        await contract.setTokenForwardingRule(token.address, true, { from: user }).should.be.rejected
-        await contract.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
+        await manager.setTokenForwardingRule(token.address, true, { from: user }).should.be.rejected
+        await manager.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
+        await manager.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
           .rejected
-        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
+        await manager.setSenderExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
           .fulfilled
 
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('1')
-        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('1')
+        expect(await manager.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setSenderExceptionForTokenForwardingRule(token.address, user, false, { from: owner }).should.be
+        await manager.setSenderExceptionForTokenForwardingRule(token.address, user, false, { from: owner }).should.be
           .fulfilled
-        await contract.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
+        await manager.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: user }).should.be
           .rejected
-        await contract.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
+        await manager.setReceiverExceptionForTokenForwardingRule(token.address, user, true, { from: owner }).should.be
           .fulfilled
 
-        expect(await contract.destinationLane(token.address, user, user)).to.be.bignumber.equal('1')
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user, user)).to.be.bignumber.equal('1')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setTokenForwardingRule(token.address, false, { from: owner }).should.be.fulfilled
+        await manager.setTokenForwardingRule(token.address, false, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('0')
+        expect(await manager.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('0')
 
-        await contract.setSenderForwardingRule(user2, true, { from: user }).should.be.rejected
-        await contract.setSenderForwardingRule(user2, true, { from: owner }).should.be.fulfilled
+        await manager.setSenderForwardingRule(user2, true, { from: user }).should.be.rejected
+        await manager.setSenderForwardingRule(user2, true, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user2, user2)).to.be.bignumber.equal('-1')
 
-        await contract.setReceiverForwardingRule(user2, true, { from: user }).should.be.rejected
-        await contract.setReceiverForwardingRule(user2, true, { from: owner }).should.be.fulfilled
+        await manager.setReceiverForwardingRule(user2, true, { from: user }).should.be.rejected
+        await manager.setReceiverForwardingRule(user2, true, { from: owner }).should.be.fulfilled
 
-        expect(await contract.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
+        expect(await manager.destinationLane(token.address, user, user2)).to.be.bignumber.equal('-1')
       })
 
       it('should send a message to the manual lane', async () => {
         homeToken = await bridgeToken(token)
 
         await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
-        await contract.setTokenForwardingRule(token.address, true, { from: owner }).should.be.fulfilled
+        await contract.setForwardingRulesManager(manager.address, { from: owner }).should.be.fulfilled
+        await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
+        await manager.setTokenForwardingRule(homeToken.address, true, { from: owner }).should.be.fulfilled
         await homeToken.transferAndCall(contract.address, ether('0.1'), '0x', { from: user }).should.be.fulfilled
 
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
-        expect(events.length).to.be.equal(2)
+        expect(events.length).to.be.equal(3)
         expect(strip0x(events[0].returnValues.encodedData).slice(156, 158)).to.be.equal('00')
-        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('f0')
+        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('00')
+        expect(strip0x(events[2].returnValues.encodedData).slice(156, 158)).to.be.equal('f0')
       })
     })
   })
@@ -1090,7 +1122,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         [executionDailyLimit, executionMaxPerTx],
         maxGasPerTx,
         owner,
-        tokenImage.address,
+        tokenFactory.address,
         [owner],
         [ether('0.02'), ether('0.01')]
       ).should.be.fulfilled

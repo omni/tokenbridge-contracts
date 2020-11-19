@@ -18,9 +18,16 @@ contract BasicAMBMediator is Ownable {
     * @dev Throws if caller on the other side is not an associated mediator.
     */
     modifier onlyMediator {
+        _onlyMediator();
+        _;
+    }
+
+    /**
+     * @dev Internal function for reducing onlyMediator modifier bytecode overhead.
+     */
+    function _onlyMediator() internal {
         require(msg.sender == address(bridgeContract()));
         require(messageSender() == mediatorContractOnOtherSide());
-        _;
     }
 
     /**

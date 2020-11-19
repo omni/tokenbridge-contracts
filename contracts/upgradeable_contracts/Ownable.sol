@@ -21,9 +21,16 @@ contract Ownable is EternalStorage {
     * @dev Throws if called by any account other than the owner.
     */
     modifier onlyOwner() {
-        require(msg.sender == owner());
+        _onlyOwner();
         /* solcov ignore next */
         _;
+    }
+
+    /**
+    * @dev Internal function for reducing onlyOwner modifier bytecode overhead.
+    */
+    function _onlyOwner() internal {
+        require(msg.sender == owner());
     }
 
     /**

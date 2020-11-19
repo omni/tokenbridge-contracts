@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "../../upgradeability/Proxy.sol";
+import "../../../../upgradeability/Proxy.sol";
 
 interface IPermittableTokenVersion {
     function version() external pure returns (string);
@@ -34,10 +34,16 @@ contract TokenProxy is Proxy {
     * @param _symbol token symbol.
     * @param _decimals token decimals.
     * @param _chainId chain id for current network.
+    * @param _owner address of the owner for this contract.
     */
-    constructor(address _tokenImage, string memory _name, string memory _symbol, uint8 _decimals, uint256 _chainId)
-        public
-    {
+    constructor(
+        address _tokenImage,
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals,
+        uint256 _chainId,
+        address _owner
+    ) public {
         string memory version = IPermittableTokenVersion(_tokenImage).version();
 
         assembly {
@@ -48,8 +54,8 @@ contract TokenProxy is Proxy {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
-        owner = msg.sender; // msg.sender == HomeMultiAMBErc20ToErc677 mediator
-        bridgeContractAddr = msg.sender;
+        owner = _owner; // _owner == MultiAMBErc20ToErc677 mediator
+        bridgeContractAddr = _owner;
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),

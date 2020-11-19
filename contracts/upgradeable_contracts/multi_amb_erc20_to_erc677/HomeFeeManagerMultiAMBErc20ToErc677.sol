@@ -5,6 +5,7 @@ import "../BaseRewardAddressList.sol";
 import "../Ownable.sol";
 import "../../interfaces/ERC677.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
+import "../../libraries/SafeERC20.sol";
 
 /**
 * @title HomeFeeManagerMultiAMBErc20ToErc677
@@ -13,6 +14,7 @@ import "../../interfaces/IBurnableMintableERC677Token.sol";
 */
 contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, BasicMultiTokenBridge {
     using SafeMath for uint256;
+    using SafeERC20 for address;
 
     event FeeUpdated(bytes32 feeType, address indexed token, uint256 fee);
     event FeeDistributed(uint256 fee, address indexed token, bytes32 indexed messageId);
@@ -115,11 +117,15 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
     /**
     * @dev Calculates and distributes the amount of fee proportionally between registered reward addresses.
     * @param _feeType type of the updated fee, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+    * @param _isNativeToken true, if given token is native to current side of the bridge.
     * @param _token address of the token contract for which fee should apply, 0x00..00 describes the initial fee for newly created tokens.
     * @param _value bridged value, for which fee should be evaluated.
     * @return total amount of fee subtracted from the transferred value and distributed between the reward accounts.
     */
-    function _distributeFee(bytes32 _feeType, address _token, uint256 _value) internal returns (uint256) {
+    function _distributeFee(bytes32 _feeType, bool _isNativeToken, address _token, uint256 _value)
+        internal
+        returns (uint256)
+    {
         uint256 numOfAccounts = rewardAddressCount();
         uint256 _fee = calculateFee(_feeType, _token, _value);
         if (numOfAccounts == 0 || _fee == 0) {
@@ -142,7 +148,9 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
                 feeToDistribute = feeToDistribute.add(diff);
             }
 
-            if (_feeType == HOME_TO_FOREIGN_FEE) {
+            if (_isNativeToken) {
+                _token.safeTransfer(nextAddr, feeToDistribute);
+            } else if (_feeType == HOME_TO_FOREIGN_FEE) {
                 ERC677(_token).transfer(nextAddr, feeToDistribute);
             } else {
                 IBurnableMintableERC677Token(_token).mint(nextAddr, feeToDistribute);

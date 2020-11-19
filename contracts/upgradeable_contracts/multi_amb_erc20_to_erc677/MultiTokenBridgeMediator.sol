@@ -43,22 +43,6 @@ contract MultiTokenBridgeMediator is
     }
 
     /**
-    * @dev Handles the bridged tokens. Checks that the value is inside the execution limits and invokes the method
-    * to execute the Mint or Unlock accordingly.
-    * @param _token bridged ERC20/ERC677 token
-    * @param _recipient address that will receive the tokens
-    * @param _value amount of tokens to be received
-    */
-    function _handleBridgedTokens(ERC677 _token, address _recipient, uint256 _value) internal {
-        if (withinExecutionLimit(_token, _value)) {
-            addTotalExecutedPerDay(_token, getCurrentDay(), _value);
-            executeActionOnBridgedTokens(_token, _recipient, _value);
-        } else {
-            executeActionOnBridgedTokensOutOfLimit(_token, _recipient, _value);
-        }
-    }
-
-    /**
     * @dev Method to be called when a bridged message execution failed. It will generate a new message requesting to
     * fix/roll back the transferred assets on the other network.
     * @param _messageId id of the message which execution failed.
@@ -85,20 +69,11 @@ contract MultiTokenBridgeMediator is
         address recipient = messageRecipient(_messageId);
         uint256 value = messageValue(_messageId);
         setMessageFixed(_messageId);
-        executeActionOnFixedTokens(token, recipient, value);
+        executeActionOnFixedTokens(_messageId, token, recipient, value);
         emit FailedMessageFixed(_messageId, token, recipient, value);
     }
 
-    /**
-    * @dev Execute the action to be performed when the bridge tokens are out of execution limits.
-    */
-    function executeActionOnBridgedTokensOutOfLimit(address, address, uint256) internal {
-        revert();
-    }
-
     /* solcov ignore next */
-    function executeActionOnBridgedTokens(address _token, address _recipient, uint256 _value) internal;
-
-    /* solcov ignore next */
-    function executeActionOnFixedTokens(address _token, address _recipient, uint256 _value) internal;
+    function executeActionOnFixedTokens(bytes32 _messageId, address _token, address _recipient, uint256 _value)
+        internal;
 }

@@ -70,7 +70,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
     function onTokenTransfer(address _from, uint256 _value, bytes _data) public returns (bool) {
         if (!lock()) {
             ERC677 token = ERC677(msg.sender);
-            bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
+            bridgeSpecificActionsOnTokenTransfer(token, _from, chooseReceiver(_from, _data), _value);
         }
         return true;
     }
@@ -104,19 +104,19 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         setLock(true);
         token.safeTransferFrom(msg.sender, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
+        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _receiver, _value);
     }
 
     /**
      * @dev Executes action on deposit of bridged tokens
      * @param _token address of the token contract
      * @param _from address of tokens sender
-     * @param _value requsted amount of bridged tokens
-     * @param _data alternative receiver, if specified
+     * @param _receiver address of tokens receiver on the other side
+     * @param _value requested amount of bridged tokens
      */
-    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, uint256 _value, bytes _data) internal {
-        if (lock()) return;
-
+    function bridgeSpecificActionsOnTokenTransfer(ERC677 _token, address _from, address _receiver, uint256 _value)
+        internal
+    {
         bool isKnownToken = isTokenRegistered(_token);
         if (!isKnownToken) {
             string memory name = TokenReader.readName(_token);
@@ -132,10 +132,9 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         addTotalSpentPerDay(_token, getCurrentDay(), _value);
 
         bytes memory data;
-        address receiver = chooseReceiver(_from, _data);
 
         if (isKnownToken) {
-            data = abi.encodeWithSelector(this.handleBridgedTokens.selector, _token, receiver, _value);
+            data = abi.encodeWithSelector(this.handleBridgedTokens.selector, _token, _receiver, _value);
         } else {
             data = abi.encodeWithSelector(
                 HomeMultiAMBErc20ToErc677(this).deployAndHandleBridgedTokens.selector,
@@ -143,7 +142,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
                 name,
                 symbol,
                 decimals,
-                receiver,
+                _receiver,
                 _value
             );
         }

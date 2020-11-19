@@ -31,12 +31,7 @@ const validateAddress = address => {
 
   throw new Error(`Invalid address: ${address}`)
 }
-const validateOptionalAddress = address => {
-  if (address !== "") {
-    return validateAddress(address)
-  }
-  return address
-}
+const validateOptionalAddress = address => (address ? validateAddress(address) : '')
 const addressValidator = envalid.makeValidator(validateAddress)
 const optionalAddressValidator = envalid.makeValidator(validateOptionalAddress)
 const addressesValidator = envalid.makeValidator(addresses => {
@@ -430,7 +425,10 @@ if (env.BRIDGE_MODE === 'MULTI_AMB_ERC_TO_ERC') {
     FOREIGN_AMB_BRIDGE: addressValidator(),
     HOME_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
     FOREIGN_MEDIATOR_REQUEST_GAS_LIMIT: bigNumValidator(),
-    HOME_ERC677_TOKEN_IMAGE: optionalAddressValidator()
+    HOME_ERC677_TOKEN_IMAGE: optionalAddressValidator(),
+    HOME_TOKEN_FACTORY: optionalAddressValidator(),
+    FOREIGN_ERC677_TOKEN_IMAGE: optionalAddressValidator(),
+    FOREIGN_TOKEN_FACTORY: optionalAddressValidator()
   }
 }
 

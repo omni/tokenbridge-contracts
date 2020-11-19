@@ -42,7 +42,7 @@ async function initializeMediator({
     executionMaxPerTx,
     requestGasLimit,
     owner,
-    tokenImage,
+    tokenFactory,
     rewardAddressList,
     homeToForeignFee,
     foreignToHomeFee
@@ -58,13 +58,13 @@ async function initializeMediator({
     EXECUTION_MAX_AMOUNT_PER_TX: ${executionMaxPerTx} which is ${Web3Utils.fromWei(executionMaxPerTx)} in eth,
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
     OWNER: ${owner},
-    TOKEN_IMAGE: ${tokenImage},
+    TOKEN_FACTORY: ${tokenFactory},
     REWARD_ADDRESS_LIST: [${rewardAddressList.join(', ')}]
   `)
   if (HOME_REWARDABLE === 'BOTH_DIRECTIONS') {
     console.log(`
     HOME_TO_FOREIGN_FEE: ${homeToForeignFee} which is ${HOME_TRANSACTIONS_FEE * 100}%
-    FOREIGN_TO_HOME_FEE: ${foreignToHomeFee} which is ${FOREIGN_TRANSACTIONS_FEE * 100}% 
+    FOREIGN_TO_HOME_FEE: ${foreignToHomeFee} which is ${FOREIGN_TRANSACTIONS_FEE * 100}%
     `)
   }
 
@@ -76,14 +76,14 @@ async function initializeMediator({
       [executionDailyLimit.toString(), executionMaxPerTx.toString()],
       requestGasLimit,
       owner,
-      tokenImage,
+      tokenFactory,
       rewardAddressList,
       [homeToForeignFee.toString(), foreignToHomeFee.toString()]
     )
     .encodeABI()
 }
 
-async function initialize({ homeBridge, foreignBridge, homeTokenImage }) {
+async function initialize({ homeBridge, foreignBridge, tokenFactory }) {
   let nonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
   const mediatorContract = new web3Home.eth.Contract(HomeBridge.abi, homeBridge)
 
@@ -108,7 +108,7 @@ async function initialize({ homeBridge, foreignBridge, homeTokenImage }) {
       minPerTx: HOME_MIN_AMOUNT_PER_TX,
       executionDailyLimit: FOREIGN_DAILY_LIMIT,
       executionMaxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
-      tokenImage: homeTokenImage,
+      tokenFactory,
       rewardAddressList: rewardList,
       homeToForeignFee: homeFeeInWei,
       foreignToHomeFee: foreignFeeInWei

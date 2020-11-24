@@ -33,7 +33,7 @@ contract ForeignMultiAMBErc20ToErc677 is BasicMultiAMBErc20ToErc677 {
         uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
         address _owner
-    ) external onlyRelevantSender returns (bool) {
+    ) public onlyRelevantSender returns (bool) {
         require(!isInitialized());
 
         _setBridgeContract(_bridgeContract);

@@ -3,16 +3,17 @@ pragma solidity 0.4.24;
 import "./BasicMultiTokenBridge.sol";
 import "../BaseRewardAddressList.sol";
 import "../Ownable.sol";
-import "../../interfaces/ERC677.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
+import "../../libraries/SafeERC20.sol";
 
 /**
-* @title HomeFeeManagerMultiAMBErc20ToErc677
+* @title FeeManagerMultiAMBErc20ToErc677
 * @dev Implements the logic to distribute fees from the multi erc20 to erc677 mediator contract operations.
 * The fees are distributed in the form of native tokens to the list of reward accounts.
 */
-contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, BasicMultiTokenBridge {
+contract FeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, BasicMultiTokenBridge {
     using SafeMath for uint256;
+    using SafeERC20 for address;
 
     event FeeUpdated(bytes32 feeType, address indexed token, uint256 fee);
     event FeeDistributed(uint256 fee, address indexed token, bytes32 indexed messageId);
@@ -66,6 +67,7 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
     * @param _fee new fee value, in percentage (1 ether == 10**18 == 100%).
     */
     function setFee(bytes32 _feeType, address _token, uint256 _fee) external onlyOwner {
+        require(isTokenRegistered(_token));
         _setFee(_feeType, _token, _fee);
     }
 
@@ -98,7 +100,6 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
     * @param _fee new fee value, in percentage (1 ether == 10**18 == 100%).
     */
     function _setFee(bytes32 _feeType, address _token, uint256 _fee) internal validFeeType(_feeType) validFee(_fee) {
-        require(isTokenRegistered(_token));
         uintStorage[keccak256(abi.encodePacked(_feeType, _token))] = _fee;
         emit FeeUpdated(_feeType, _token, _fee);
     }
@@ -115,11 +116,15 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
     /**
     * @dev Calculates and distributes the amount of fee proportionally between registered reward addresses.
     * @param _feeType type of the updated fee, can be one of [HOME_TO_FOREIGN_FEE, FOREIGN_TO_HOME_FEE].
+    * @param _transfer true, if transfer method should be used for fee distribution, mint is used otherwise.
     * @param _token address of the token contract for which fee should apply, 0x00..00 describes the initial fee for newly created tokens.
     * @param _value bridged value, for which fee should be evaluated.
     * @return total amount of fee subtracted from the transferred value and distributed between the reward accounts.
     */
-    function _distributeFee(bytes32 _feeType, address _token, uint256 _value) internal returns (uint256) {
+    function _distributeFee(bytes32 _feeType, bool _transfer, address _token, uint256 _value)
+        internal
+        returns (uint256)
+    {
         uint256 numOfAccounts = rewardAddressCount();
         uint256 _fee = calculateFee(_feeType, _token, _value);
         if (numOfAccounts == 0 || _fee == 0) {
@@ -142,8 +147,8 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
                 feeToDistribute = feeToDistribute.add(diff);
             }
 
-            if (_feeType == HOME_TO_FOREIGN_FEE) {
-                ERC677(_token).transfer(nextAddr, feeToDistribute);
+            if (_transfer) {
+                _token.safeTransfer(nextAddr, feeToDistribute);
             } else {
                 IBurnableMintableERC677Token(_token).mint(nextAddr, feeToDistribute);
             }

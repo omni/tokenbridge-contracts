@@ -260,6 +260,40 @@ async function deployMultiAMBErcToErc() {
   })
 }
 
+async function deployReverseMultiAMBErcToErc() {
+  const preDeploy = require('./src/reverse_multi_amb_erc20_to_erc677/preDeploy')
+  const deployHome = require('./src/reverse_multi_amb_erc20_to_erc677/home')
+  const deployForeign = require('./src/reverse_multi_amb_erc20_to_erc677/foreign')
+  const initializeHome = require('./src/reverse_multi_amb_erc20_to_erc677/initializeHome')
+  const initializeForeign = require('./src/reverse_multi_amb_erc20_to_erc677/initializeForeign')
+  await preDeploy()
+  const { homeBridgeMediator } = await deployHome()
+  const { foreignBridgeMediator, foreignTokenImage } = await deployForeign()
+
+  await initializeHome({
+    homeBridge: homeBridgeMediator.address,
+    foreignBridge: foreignBridgeMediator.address
+  })
+
+  await initializeForeign({
+    foreignBridge: foreignBridgeMediator.address,
+    homeBridge: homeBridgeMediator.address,
+    foreignTokenImage: foreignTokenImage.address
+  })
+
+  console.log('\nDeployment has been completed.\n\n')
+  console.log(`[   Home  ] Bridge Mediator: ${homeBridgeMediator.address}`)
+  console.log(`[ Foreign ] Bridge Mediator: ${foreignBridgeMediator.address}`)
+  writeDeploymentResults({
+    homeBridge: {
+      homeBridgeMediator
+    },
+    foreignBridge: {
+      foreignBridgeMediator
+    }
+  })
+}
+
 async function main() {
   console.log(`Bridge mode: ${BRIDGE_MODE}`)
   switch (BRIDGE_MODE) {
@@ -289,6 +323,9 @@ async function main() {
       break
     case 'MULTI_AMB_ERC_TO_ERC':
       await deployMultiAMBErcToErc()
+      break
+    case 'REVERSE_MULTI_AMB_ERC_TO_ERC':
+      await deployReverseMultiAMBErcToErc()
       break
     default:
       console.log(BRIDGE_MODE)

@@ -2,7 +2,7 @@ const Web3Utils = require('web3-utils')
 const assert = require('assert')
 const { web3Home, HOME_RPC_URL, deploymentPrivateKey } = require('../web3')
 const {
-  homeContracts: { EternalStorageProxy, HomeMultiAMBErc20ToErc677: HomeBridge }
+  homeContracts: { EternalStorageProxy, RewardableForeignMultiAMBErc20ToErc677: HomeBridge }
 } = require('../loadContracts')
 const {
   privateKeyToAddress,
@@ -42,7 +42,6 @@ async function initializeMediator({
     executionMaxPerTx,
     requestGasLimit,
     owner,
-    tokenImage,
     rewardAddressList,
     homeToForeignFee,
     foreignToHomeFee
@@ -58,7 +57,6 @@ async function initializeMediator({
     EXECUTION_MAX_AMOUNT_PER_TX: ${executionMaxPerTx} which is ${Web3Utils.fromWei(executionMaxPerTx)} in eth,
     MEDIATOR_REQUEST_GAS_LIMIT : ${requestGasLimit},
     OWNER: ${owner},
-    TOKEN_IMAGE: ${tokenImage},
     REWARD_ADDRESS_LIST: [${rewardAddressList.join(', ')}]
   `)
   if (HOME_REWARDABLE === 'BOTH_DIRECTIONS') {
@@ -76,14 +74,13 @@ async function initializeMediator({
       [executionDailyLimit.toString(), executionMaxPerTx.toString()],
       requestGasLimit,
       owner,
-      tokenImage,
       rewardAddressList,
       [homeToForeignFee.toString(), foreignToHomeFee.toString()]
     )
     .encodeABI()
 }
 
-async function initialize({ homeBridge, foreignBridge, homeTokenImage }) {
+async function initialize({ homeBridge, foreignBridge }) {
   let nonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
   const mediatorContract = new web3Home.eth.Contract(HomeBridge.abi, homeBridge)
 
@@ -108,7 +105,6 @@ async function initialize({ homeBridge, foreignBridge, homeTokenImage }) {
       minPerTx: HOME_MIN_AMOUNT_PER_TX,
       executionDailyLimit: FOREIGN_DAILY_LIMIT,
       executionMaxPerTx: FOREIGN_MAX_AMOUNT_PER_TX,
-      tokenImage: homeTokenImage,
       rewardAddressList: rewardList,
       homeToForeignFee: homeFeeInWei,
       foreignToHomeFee: foreignFeeInWei

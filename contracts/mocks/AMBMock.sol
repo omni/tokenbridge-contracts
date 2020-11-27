@@ -46,7 +46,7 @@ contract AMBMock {
     }
 
     function requireToConfirmMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32) {
-        return _sendMessage(_contract, _data, _gas, 0xf0);
+        return _sendMessage(_contract, _data, _gas, 0x80);
     }
 
     function _sendMessage(address _contract, bytes _data, uint256 _gas, uint256 _dataType) internal returns (bytes32) {

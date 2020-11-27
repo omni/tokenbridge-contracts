@@ -1076,7 +1076,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(2)
         expect(strip0x(events[0].returnValues.encodedData).slice(156, 158)).to.be.equal('00')
-        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('f0')
+        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('80')
       })
     })
   })

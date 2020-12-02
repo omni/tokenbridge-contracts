@@ -61,7 +61,7 @@ contract BasicAMBNativeToErc20 is
     * @return patch value of the version
     */
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 1, 0);
+        return (1, 2, 0);
     }
 
     /**

@@ -607,6 +607,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(homeToken.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(halfEther.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
 
       it('should respect global shutdown', async () => {
@@ -630,6 +637,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(halfEther)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(homeToken.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(halfEther.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
     })
 
@@ -656,6 +670,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(homeToken.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(value.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
 
       it('should allow to specify a different receiver without specifying sender', async () => {
@@ -674,6 +695,13 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(homeToken.address, currentDay)).to.be.bignumber.equal(value)
         expect(await homeToken.balanceOf(contract.address)).to.be.bignumber.equal(ZERO)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(homeToken.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(value.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
 
       it('should allow to specify no receiver and no sender', async () => {
@@ -1048,7 +1076,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         const events = await getEvents(ambBridgeContract, { event: 'MockedEvent' })
         expect(events.length).to.be.equal(2)
         expect(strip0x(events[0].returnValues.encodedData).slice(156, 158)).to.be.equal('00')
-        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('f0')
+        expect(strip0x(events[1].returnValues.encodedData).slice(156, 158)).to.be.equal('80')
       })
     })
   })

@@ -48,8 +48,8 @@ library ArbitraryMessage {
             gasLimit := and(shr(64, blob), 0xffffffff)
 
             dataType := byte(26, blob)
-            if gt(dataType, 0) {
-                // for now, only 0 datatype is supported - regular AMB calls
+            if gt(and(dataType, 0x7f), 0) {
+                // for now, only 0x00 and 0x80 datatypes are supported - regular AMB calls
                 // other dataType values are kept reserved for future use
                 revert(0, 0)
             }

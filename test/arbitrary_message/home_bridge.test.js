@@ -304,7 +304,7 @@ contract('HomeAMB', async accounts => {
       tx.receipt.logs.length.should.be.equal(1)
       const { messageId, encodedData } = tx.receipt.logs[0].args
       expect(messageId).to.include(`${bridgeId}0000000000000000`)
-      expect(encodedData.substr(2 + (32 + 20 + 20 + 4 + 1 + 1) * 2, 2)).to.be.equal('f0')
+      expect(encodedData.substr(2 + (32 + 20 + 20 + 4 + 1 + 1) * 2, 2)).to.be.equal('80')
     })
     it('call requireToPassMessage(address, bytes, uint256) should fail', async () => {
       // Should fail because gas < minimumGasUsage

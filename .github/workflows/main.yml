@@ -80,9 +80,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - if: startsWith(github.ref, 'refs/tags')
-        run: echo "::set-env name=DOCKER_TAGS::${GITHUB_REF#refs/tags/},latest"
+        run: echo "DOCKER_TAGS=${GITHUB_REF#refs/tags/},latest" >> $GITHUB_ENV
       - if: startsWith(github.ref, 'refs/heads')
-        run: echo "::set-env name=DOCKER_TAGS::${GITHUB_REF#refs/heads/}-${GITHUB_SHA::8}"
+        run: echo "DOCKER_TAGS=${GITHUB_REF#refs/heads/}-${GITHUB_SHA::8}" >> $GITHUB_ENV
       - uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}

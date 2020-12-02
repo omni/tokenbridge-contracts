@@ -367,6 +367,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(halfEther)
         expect(await contract.isTokenRegistered(token.address)).to.be.equal(true)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(halfEther.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
 
       it('should respect global shutdown', async () => {
@@ -392,6 +399,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(await contract.mediatorBalance(token.address)).to.be.bignumber.equal(halfEther)
         expect(await contract.isTokenRegistered(token.address)).to.be.equal(true)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(halfEther)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(halfEther.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
     })
 
@@ -416,6 +430,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(value.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
 
       it('should allow to specify a different receiver without specifying sender', async () => {
@@ -433,6 +454,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(events[0].returnValues.encodedData.includes(strip0x(user2).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(value.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
 
       it('should allow to specify no receiver and no sender', async () => {
@@ -449,6 +477,13 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
         expect(events[0].returnValues.encodedData.includes(strip0x(user).toLowerCase())).to.be.equal(true)
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(value)
         expect(await token.balanceOf(contract.address)).to.be.bignumber.equal(value)
+
+        const depositEvents = await getEvents(contract, { event: 'TokensBridgingInitiated' })
+        expect(depositEvents.length).to.be.equal(1)
+        expect(depositEvents[0].returnValues.token).to.be.equal(token.address)
+        expect(depositEvents[0].returnValues.sender).to.be.equal(user)
+        expect(depositEvents[0].returnValues.value).to.be.equal(value.toString())
+        expect(depositEvents[0].returnValues.messageId).to.include('0x11223344')
       })
 
       it('should fail if user did not approve the transfer', async () => {

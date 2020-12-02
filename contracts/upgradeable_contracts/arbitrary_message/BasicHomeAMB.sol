@@ -15,7 +15,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
         uint256 NumberOfCollectedSignatures
     );
 
-    uint256 internal constant SEND_TO_MANUAL_LANE = 0xf0;
+    uint256 internal constant SEND_TO_MANUAL_LANE = 0x80;
 
     function executeAffirmation(bytes message) external onlyValidator {
         bytes32 hashMsg = keccak256(abi.encodePacked(message));

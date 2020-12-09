@@ -314,7 +314,7 @@ contract HomeMultiAMBErc20ToErc677 is
     function _getMinterFor(address _token) internal view returns (IBurnableMintableERC677Token) {
         if (_token == address(0xb7D311E2Eb55F2f68a9440da38e7989210b9A05e)) {
             // hardcoded address of the TokenMinter address
-            return IBurnableMintableERC677Token(0x1111111111111111111111111111111111111111);
+            return IBurnableMintableERC677Token(0xb7D311E2Eb55F2f68a9440da38e7989210b9A05e);
         }
         return IBurnableMintableERC677Token(_token);
     }

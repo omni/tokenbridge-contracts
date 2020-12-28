@@ -12,6 +12,9 @@ interface IAMB {
     function failedMessageSender(bytes32 _messageId) external view returns (address);
     function requireToPassMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32);
     function requireToConfirmMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32);
+    function requireToGetInformation(address _contract, bytes _data, address _from, uint256 _gas, uint256 _callbackGas)
+        external
+        returns (bytes32);
     function sourceChainId() external view returns (uint256);
     function destinationChainId() external view returns (uint256);
 }

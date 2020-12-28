@@ -34,13 +34,7 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         require(messageId() == bytes32(0) || allowReentrantRequests());
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
 
-        bytes32 _messageId;
-        bytes memory header = _packHeader(_contract, _gas, _dataType);
-        _setNonce(_nonce() + 1);
-
-        assembly {
-            _messageId := mload(add(header, 32))
-        }
+        (bytes32 _messageId, bytes memory header) = _packHeader(_contract, _gas, _dataType);
 
         bytes memory eventData = abi.encodePacked(header, _data);
 
@@ -68,19 +62,15 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
     function _packHeader(address _contract, uint256 _gas, uint256 _dataType)
         internal
         view
-        returns (bytes memory header)
+        returns (bytes32 _messageId, bytes memory header)
     {
         uint256 srcChainId = sourceChainId();
         uint256 srcChainIdLength = _sourceChainIdLength();
         uint256 dstChainId = destinationChainId();
         uint256 dstChainIdLength = _destinationChainIdLength();
 
-        bytes32 mVer = MESSAGE_PACKING_VERSION;
-        uint256 nonce = _nonce();
+        _messageId = _getNewMessageId(srcChainId);
 
-        // Bridge id is recalculated every time again and again, since it is still cheaper than using SLOAD opcode (800 gas)
-        bytes32 bridgeId = keccak256(abi.encodePacked(srcChainId, address(this))) &
-            0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
         // 79 = 4 + 20 + 8 + 20 + 20 + 4 + 1 + 1 + 1
         header = new bytes(79 + srcChainIdLength + dstChainIdLength);
 
@@ -97,9 +87,25 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
             mstore(add(header, 76), _gas)
             mstore(add(header, 72), _contract)
             mstore(add(header, 52), caller)
-
-            mstore(add(header, 32), or(mVer, or(bridgeId, nonce)))
+            mstore(add(header, 32), _messageId)
         }
+    }
+
+    /**
+     * @dev Generates a new messageId for the passed request/message.
+     * Increments the nonce accordingly.
+     * @param _srcChainId source chain id of the newly created message. Should be a chain id of the current network.
+     * @return unique message id to use for the new request/message.
+     */
+    function _getNewMessageId(uint256 _srcChainId) internal returns (bytes32) {
+        uint64 nonce = _nonce();
+        _setNonce(nonce + 1);
+
+        // Bridge id is recalculated every time again and again, since it is still cheaper than using SLOAD opcode (800 gas)
+        bytes32 bridgeId = keccak256(abi.encodePacked(_srcChainId, address(this))) &
+            0x00000000ffffffffffffffffffffffffffffffffffffffff0000000000000000;
+
+        return MESSAGE_PACKING_VERSION | bridgeId | bytes32(nonce);
     }
 
     /* solcov ignore next */

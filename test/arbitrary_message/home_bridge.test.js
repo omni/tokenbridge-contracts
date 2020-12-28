@@ -6,7 +6,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { sign, ether, expectEventInLogs } = require('../helpers/helpers')
+const { sign, ether, expectEventInLogs, getEvents } = require('../helpers/helpers')
 
 const requiredBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -913,6 +913,115 @@ contract('HomeAMB', async accounts => {
 
     it('should not allow to set chain id if not an owner', async () => {
       await homeContract.setChainIds('0x112233', '0x4455', { from: accounts[1] }).should.be.rejected
+    })
+  })
+  describe('async information retrieval', () => {
+    let homeContract
+    let box
+
+    beforeEach(async () => {
+      homeContract = await HomeAMB.new()
+      await homeContract.initialize(
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
+      box = await Box.new()
+    })
+
+    it('should allow to request information from the other chain', async () => {
+      await homeContract.requireToGetInformation(homeContract.address, '0x11223344', accounts[1], 10000, 10000).should
+        .be.rejected
+      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
+
+      const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.executor).to.be.equal(accounts[1])
+      expect(events[0].returnValues.data).to.be.equal(box.contract.methods.value().encodeABI())
+      expect(events[0].returnValues.from).to.be.equal(accounts[0])
+      expect(events[0].returnValues.gas).to.be.equal('10000')
+    })
+
+    it('should accept confirmations from a single validator', async () => {
+      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
+      const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
+      expect(events.length).to.be.equal(1)
+      const { messageId } = events[0].returnValues
+      const result = '0x0000000000000000000000000000000000000000000000000000000000000005'
+
+      await homeContract.confirmInformation(messageId, true, result, { from: owner }).should.be.rejected
+      const { logs } = await homeContract.confirmInformation(messageId, true, result, { from: authorities[0] }).should
+        .be.fulfilled
+      await homeContract.confirmInformation(messageId, true, result, { from: authorities[0] }).should.be.rejected
+      await homeContract.confirmInformation(messageId, true, result, { from: authorities[1] }).should.be.rejected
+      logs[0].event.should.be.equal('SignedForInformation')
+      expectEventInLogs(logs, 'InformationRetrieved', {
+        sender: box.address,
+        executor: accounts[1],
+        messageId,
+        status: true,
+        callbackStatus: true
+      })
+
+      expect(await box.value()).to.be.bignumber.equal('5')
+      expect(await box.messageId()).to.be.equal(messageId)
+      expect(await box.status()).to.be.equal(true)
+    })
+    it('should accept confirmations from 2-of-3 validators', async () => {
+      await validatorContract.setRequiredSignatures(2).should.be.fulfilled
+
+      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
+      const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
+      expect(events.length).to.be.equal(1)
+      const { messageId } = events[0].returnValues
+      const result = '0x0000000000000000000000000000000000000000000000000000000000000005'
+
+      const { logs: logs1 } = await homeContract.confirmInformation(messageId, true, result, { from: authorities[0] })
+        .should.be.fulfilled
+      const { logs: logs2 } = await homeContract.confirmInformation(messageId, true, result, { from: authorities[1] })
+        .should.be.fulfilled
+      logs1[0].event.should.be.equal('SignedForInformation')
+      logs2[0].event.should.be.equal('SignedForInformation')
+
+      expectEventInLogs(logs2, 'InformationRetrieved', {
+        sender: box.address,
+        executor: accounts[1],
+        messageId,
+        status: true,
+        callbackStatus: true
+      })
+
+      expect(await box.value()).to.be.bignumber.equal('5')
+      expect(await box.messageId()).to.be.equal(messageId)
+      expect(await box.status()).to.be.equal(true)
+    })
+    it('should process failed calls', async () => {
+      await validatorContract.setRequiredSignatures(1).should.be.fulfilled
+
+      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
+      const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
+      expect(events.length).to.be.equal(1)
+      const { messageId } = events[0].returnValues
+      const result = '0x0000000000000000000000000000000000000000000000000000000000000005'
+
+      const { logs } = await homeContract.confirmInformation(messageId, false, result, { from: authorities[0] }).should
+        .be.fulfilled
+      logs[0].event.should.be.equal('SignedForInformation')
+      expectEventInLogs(logs, 'InformationRetrieved', {
+        sender: box.address,
+        executor: accounts[1],
+        messageId,
+        status: false,
+        callbackStatus: true
+      })
+
+      expect(await box.value()).to.be.bignumber.equal('5')
+      expect(await box.messageId()).to.be.equal(messageId)
+      expect(await box.status()).to.be.equal(false)
     })
   })
 })

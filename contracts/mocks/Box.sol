@@ -1,13 +1,15 @@
 pragma solidity 0.4.24;
 
 import "../interfaces/IAMB.sol";
+import "../interfaces/IAMBInformationReceiver.sol";
 
-contract Box {
+contract Box is IAMBInformationReceiver {
     uint256 public value;
     address public lastSender;
     bytes32 public messageId;
     bytes32 public txHash;
     uint256 public messageSourceChainId;
+    bool public status;
 
     function setValue(uint256 _value) public {
         value = _value;
@@ -50,5 +52,18 @@ contract Box {
         bytes4 methodSelector = this.setValue.selector;
         bytes memory encodedData = abi.encodeWithSelector(methodSelector, _i);
         IAMB(_bridge).requireToConfirmMessage(_executor, encodedData, 141647);
+    }
+
+    function getValueFromTheOtherNetwork(address _bridge, address _executor) external {
+        bytes memory encodedData = abi.encodeWithSelector(this.value.selector);
+        IAMB(_bridge).requireToGetInformation(_executor, encodedData, msg.sender, 10000, 100000);
+    }
+
+    function onInformationReceived(bytes32 _messageId, bool _status, bytes _result) external {
+        messageId = _messageId;
+        assembly {
+            sstore(0, calldataload(132))
+        }
+        status = _status;
     }
 }

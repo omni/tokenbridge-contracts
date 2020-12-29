@@ -943,7 +943,7 @@ contract('HomeAMB', async accounts => {
       expect(events[0].returnValues.executor).to.be.equal(accounts[1])
       expect(events[0].returnValues.data).to.be.equal(box.contract.methods.value().encodeABI())
       expect(events[0].returnValues.from).to.be.equal(accounts[0])
-      expect(events[0].returnValues.gas).to.be.equal('10000')
+      expect(events[0].returnValues.gas).to.be.equal('30000')
     })
 
     it('should accept confirmations from a single validator', async () => {

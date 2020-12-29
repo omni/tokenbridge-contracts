@@ -43,7 +43,7 @@ contract AsyncInformationProcessor is BasicHomeAMB {
         // only contracts are allowed to call this method, since EOA won't be able to receive a callback.
         require(AddressUtils.isContract(msg.sender));
 
-        require(_gas >= getMinimumGasUsage(_data) && _gas <= 10000000);
+        require(_gas >= 21000 + getMinimumGasUsage(_data) && _gas <= 10000000);
         require(_callbackGas >= 1000 && _callbackGas <= maxGasPerTx());
 
         bytes32 _messageId = _getNewMessageId(sourceChainId());

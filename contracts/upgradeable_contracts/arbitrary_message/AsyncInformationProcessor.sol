@@ -30,11 +30,10 @@ contract AsyncInformationProcessor is BasicHomeAMB {
      * Call result will be returned later to the callee, by using the onInformationReceived(bytes) callback function.
      * @param _contract executor address on the other side.
      * @param _data calldata passed to the executor on the other side.
-     * @param _from address on the other side to use in a from param of eth_call.
      * @param _gas gas limit used on the other network for making eth_call.
-     * @param _callbackGas gas limit used for making a callback with the call result.
+     * @param _from address on the other side to use in a from param of eth_call.
      */
-    function requireToGetInformation(address _contract, bytes _data, address _from, uint256 _gas, uint256 _callbackGas)
+    function requireToGetInformation(address _contract, bytes _data, uint256 _gas, address _from)
         external
         returns (bytes32)
     {
@@ -44,11 +43,10 @@ contract AsyncInformationProcessor is BasicHomeAMB {
         require(AddressUtils.isContract(msg.sender));
 
         require(_gas >= 21000 + getMinimumGasUsage(_data) && _gas <= 10000000);
-        require(_callbackGas >= 1000 && _callbackGas <= maxGasPerTx());
 
         bytes32 _messageId = _getNewMessageId(sourceChainId());
 
-        _saveCallbackInformation(_messageId, msg.sender, _contract, _callbackGas);
+        _saveAsyncRequestInformation(_messageId, msg.sender, _contract);
 
         emit UserRequestForInformation(_messageId, _contract, _data, now, _from, _gas);
         return _messageId;
@@ -80,13 +78,14 @@ contract AsyncInformationProcessor is BasicHomeAMB {
 
         if (signed >= requiredSignatures()) {
             setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-            (address sender, address executor, uint256 gas) = _restoreCallbackInformation(_messageId);
+            (address sender, address executor) = _restoreAsyncRequestInformation(_messageId);
             bytes memory data = abi.encodeWithSelector(
                 IAMBInformationReceiver(address(0)).onInformationReceived.selector,
                 _messageId,
                 _status,
                 _result
             );
+            uint256 gas = maxGasPerTx();
             require((gasleft() * 63) / 64 > gas);
 
             bool callbackStatus = sender.call.gas(gas)(data);
@@ -100,28 +99,27 @@ contract AsyncInformationProcessor is BasicHomeAMB {
      * @param _messageId id of the sent async request.
      * @param _sender address of the request sender, receiver of the callback.
      * @param _executor address of the executor on the other side.
-     * @param _gas amount of gas to use for the callback.
      */
-    function _saveCallbackInformation(bytes32 _messageId, address _sender, address _executor, uint256 _gas) internal {
-        bytes32 hash = keccak256(abi.encodePacked("callbackInfo", _messageId));
-        uintStorage[hash] = (_gas << 160) | uint256(_sender);
-        addressStorage[hash] = _executor;
+    function _saveAsyncRequestInformation(bytes32 _messageId, address _sender, address _executor) internal {
+        addressStorage[keccak256(abi.encodePacked("asyncSender", _messageId))] = _sender;
+        addressStorage[keccak256(abi.encodePacked("asyncExecutor", _messageId))] = _executor;
     }
 
     /**
      * Internal function for restoring callback information that was saved previously.
      * @param _messageId id of the sent async request.
-     * @return triple of request sender, executor, callback gas limit.
+     * @return addresses of async request sender, async request executor.
      */
-    function _restoreCallbackInformation(bytes32 _messageId) internal returns (address, address, uint256) {
-        bytes32 hash = keccak256(abi.encodePacked("callbackInfo", _messageId));
-        uint256 data = uintStorage[hash];
-        address executor = addressStorage[hash];
+    function _restoreAsyncRequestInformation(bytes32 _messageId) internal returns (address, address) {
+        bytes32 hash1 = keccak256(abi.encodePacked("asyncSender", _messageId));
+        bytes32 hash2 = keccak256(abi.encodePacked("asyncExecutor", _messageId));
+        address sender = addressStorage[hash1];
+        address executor = addressStorage[hash2];
 
-        require(data > 0 && executor != address(0));
+        require(sender != address(0) && executor != address(0));
 
-        delete uintStorage[hash];
-        delete addressStorage[hash];
-        return (address(data), executor, (data >> 160));
+        delete addressStorage[hash1];
+        delete addressStorage[hash2];
+        return (sender, executor);
     }
 }

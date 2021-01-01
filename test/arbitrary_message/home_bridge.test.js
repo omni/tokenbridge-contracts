@@ -925,7 +925,7 @@ contract('HomeAMB', async accounts => {
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
-        oneEther,
+        1000000,
         gasPrice,
         requiredBlockConfirmations,
         owner
@@ -934,8 +934,8 @@ contract('HomeAMB', async accounts => {
     })
 
     it('should allow to request information from the other chain', async () => {
-      await homeContract.requireToGetInformation(homeContract.address, '0x11223344', accounts[1], 10000, 10000).should
-        .be.rejected
+      await homeContract.requireToGetInformation(homeContract.address, '0x11223344', 30000, accounts[1]).should.be
+        .rejected
       await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
 
       const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })

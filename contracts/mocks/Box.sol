@@ -56,7 +56,7 @@ contract Box is IAMBInformationReceiver {
 
     function getValueFromTheOtherNetwork(address _bridge, address _executor) external {
         bytes memory encodedData = abi.encodeWithSelector(this.value.selector);
-        IAMB(_bridge).requireToGetInformation(_executor, encodedData, msg.sender, 30000, 100000);
+        IAMB(_bridge).requireToGetInformation(_executor, encodedData, 30000, msg.sender);
     }
 
     function onInformationReceived(bytes32 _messageId, bool _status, bytes _result) external {

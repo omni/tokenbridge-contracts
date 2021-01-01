@@ -10,6 +10,7 @@ import "./BasicHomeAMB.sol";
 contract AsyncInformationProcessor is BasicHomeAMB {
     event UserRequestForInformation(
         bytes32 indexed messageId,
+        address indexed sender,
         address indexed executor,
         bytes data,
         uint256 timestamp,
@@ -48,7 +49,7 @@ contract AsyncInformationProcessor is BasicHomeAMB {
 
         _saveAsyncRequestInformation(_messageId, msg.sender, _contract);
 
-        emit UserRequestForInformation(_messageId, _contract, _data, now, _from, _gas);
+        emit UserRequestForInformation(_messageId, msg.sender, _contract, _data, now, _from, _gas);
         return _messageId;
     }
 

@@ -940,6 +940,7 @@ contract('HomeAMB', async accounts => {
 
       const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
       expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.sender).to.be.equal(box.address)
       expect(events[0].returnValues.executor).to.be.equal(accounts[1])
       expect(events[0].returnValues.data).to.be.equal(box.contract.methods.value().encodeABI())
       expect(events[0].returnValues.from).to.be.equal(accounts[0])

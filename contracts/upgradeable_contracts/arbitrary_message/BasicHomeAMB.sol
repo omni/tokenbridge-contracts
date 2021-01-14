@@ -15,6 +15,8 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
         uint256 NumberOfCollectedSignatures
     );
 
+    uint256 internal constant SEND_TO_MANUAL_LANE = 0x80;
+
     function executeAffirmation(bytes message) external onlyValidator {
         bytes32 hashMsg = keccak256(abi.encodePacked(message));
         bytes32 hashSender = keccak256(abi.encodePacked(msg.sender, hashMsg));
@@ -38,6 +40,16 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
     }
 
     /**
+    * @dev Requests message relay to the opposite network, message is sent to the manual lane.
+    * @param _contract executor address on the other side.
+    * @param _data calldata passed to the executor on the other side.
+    * @param _gas gas limit used on the other network for executing a message.
+    */
+    function requireToConfirmMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32) {
+        return _sendMessage(_contract, _data, _gas, SEND_TO_MANUAL_LANE);
+    }
+
+    /**
      * Parses given message, processes a call inside it
      * @param _message relayed message
      */
@@ -46,16 +58,15 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
         address sender;
         address executor;
         uint32 gasLimit;
-        bytes1 dataType;
+        uint8 dataType;
         uint256[2] memory chainIds;
-        uint256 gasPrice;
         bytes memory data;
-        (messageId, sender, executor, gasLimit, dataType, chainIds, gasPrice, data) = ArbitraryMessage.unpackData(
-            _message
-        );
+
+        (messageId, sender, executor, gasLimit, dataType, chainIds, data) = ArbitraryMessage.unpackData(_message);
+
         require(_isMessageVersionValid(messageId));
         require(_isDestinationChainIdValid(chainIds[1]));
-        processMessage(sender, executor, messageId, gasLimit, dataType, gasPrice, chainIds[0], data);
+        processMessage(sender, executor, messageId, gasLimit, dataType, chainIds[0], data);
     }
 
     function submitSignature(bytes signature, bytes message) external onlyValidator {

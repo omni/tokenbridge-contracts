@@ -1,5 +1,6 @@
 const ForeignStakeTokenMediator = artifacts.require('ForeignStakeTokenMediator.sol')
 const HomeStakeTokenMediator = artifacts.require('HomeStakeTokenMediator.sol')
+const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const AMBMock = artifacts.require('AMBMock.sol')
 
@@ -261,6 +262,30 @@ contract('ForeignStakeTokenMediator', async accounts => {
       await token.transferAndCall(foreignMediator.address, halfEther, homeMediator.address, { from: user }).should.be
         .rejected
       await token.transferAndCall(foreignMediator.address, halfEther, user, { from: user }).should.be.fulfilled
+    })
+  })
+
+  describe('claimTokens', () => {
+    it('should not allow to claim bridged token', async () => {
+      const storageProxy = await EternalStorageProxy.new()
+      await storageProxy.upgradeTo('1', foreignMediator.address).should.be.fulfilled
+      foreignMediator = await ForeignStakeTokenMediator.at(storageProxy.address)
+      token = await ERC677BridgeToken.new('test', 'TST', 18)
+      await token.mint(foreignMediator.address, twoEthers, { from: owner }).should.be.fulfilled
+
+      await foreignMediator.initialize(
+        foreignBridge.address,
+        homeMediator.address,
+        token.address,
+        [dailyLimit, maxPerTx, minPerTx],
+        [executionDailyLimit, executionMaxPerTx],
+        maxGasPerTx,
+        decimalShiftZero,
+        owner
+      ).should.be.fulfilled
+
+      await foreignMediator.claimTokens(token.address, accounts[3], { from: accounts[3] }).should.be.rejected
+      await foreignMediator.claimTokens(token.address, accounts[3], { from: owner }).should.be.rejected
     })
   })
 })

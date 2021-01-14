@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "../interfaces/IBlockReward.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
-contract BlockReward {
+contract BlockRewardMock {
     using SafeMath for uint256;
 
     event BridgeTokenRewardAdded(uint256 amount, uint256 cumulativeAmount, address indexed bridge);

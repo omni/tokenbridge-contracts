@@ -56,11 +56,7 @@ if [ "$SOLIDITY_COVERAGE" != true ]; then
 fi
 
 if [ "$SOLIDITY_COVERAGE" = true ]; then
-  node --max-old-space-size=4096 node_modules/.bin/truffle test; istanbul report lcov
-
-  if [ "$CONTINUOUS_INTEGRATION" = true ]; then
-    cat coverage/lcov.info | node_modules/.bin/coveralls
-  fi
+  node --max-old-space-size=4096 node_modules/.bin/truffle test 2>/dev/null; istanbul report lcov
 else
   node_modules/.bin/truffle test --network ganache  "$@"
 fi

@@ -12,6 +12,8 @@ mkdir -p flats/arbitrary_message
 mkdir -p flats/amb_erc677_to_erc677
 mkdir -p flats/upgradeability
 mkdir -p flats/amb_native_to_erc20
+mkdir -p flats/amb_erc20_to_native
+mkdir -p flats/multi_amb_erc20_to_erc677
 
 FLATTENER=./node_modules/.bin/truffle-flattener
 BRIDGE_CONTRACTS_DIR=contracts/upgradeable_contracts
@@ -19,9 +21,9 @@ VALIDATOR_CONTRACTS_DIR=contracts/upgradeable_contracts
 
 echo "Flattening common bridge contracts"
 ${FLATTENER} contracts/upgradeability/EternalStorageProxy.sol > flats/upgradeability/EternalStorageProxy_flat.sol
-${FLATTENER} contracts/upgradeability/ClassicEternalStorageProxy.sol > flats/upgradeability/ClassicEternalStorageProxy_flat.sol
 ${FLATTENER} contracts/ERC677BridgeToken.sol > flats/ERC677BridgeToken_flat.sol
 ${FLATTENER} contracts/ERC677BridgeTokenRewardable.sol > flats/ERC677BridgeTokenRewardable_flat.sol
+${FLATTENER} contracts/PermittableToken.sol > flats/PermittableToken_flat.sol
 
 echo "Flattening bridge validators contracts"
 ${FLATTENER} ${VALIDATOR_CONTRACTS_DIR}/BridgeValidators.sol > flats/validators/BridgeValidators_flat.sol
@@ -30,7 +32,6 @@ ${FLATTENER} ${VALIDATOR_CONTRACTS_DIR}/RewardableValidators.sol > flats/validat
 echo "Flattening contracts related to native-to-erc bridge"
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/ForeignBridgeNativeToErc.sol > flats/native_to_erc20/ForeignBridgeNativeToErc_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/HomeBridgeNativeToErc.sol > flats/native_to_erc20/HomeBridgeNativeToErc_flat.sol
-${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/ClassicHomeBridgeNativeToErc.sol > flats/native_to_erc20/ClassicHomeBridgeNativeToErc_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/FeeManagerNativeToErc.sol > flats/native_to_erc20/FeeManagerNativeToErc_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/native_to_erc20/FeeManagerNativeToErcBothDirections.sol > flats/native_to_erc20/FeeManagerNativeToErcBothDirections_flat.sol
 
@@ -66,3 +67,11 @@ ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/HomeAMBNativeToErc20.so
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/ForeignAMBNativeToErc20.sol > flats/amb_native_to_erc20/ForeignAMBNativeToErc20_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/HomeFeeManagerAMBNativeToErc20.sol > flats/amb_native_to_erc20/HomeFeeManagerAMBNativeToErc20_flat.sol
 ${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_native_to_erc20/ForeignFeeManagerAMBNativeToErc20.sol > flats/amb_native_to_erc20/ForeignFeeManagerAMBNativeToErc20_flat.sol
+
+echo "Flattening contracts related to erc-to-native on top of AMB bridge"
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc20_to_native/HomeAMBErc20ToNative.sol > flats/amb_erc20_to_native/HomeAMBErc20ToNative_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/amb_erc20_to_native/ForeignAMBErc20ToNative.sol > flats/amb_erc20_to_native/ForeignAMBErc20ToNative_flat.sol
+
+echo "Flattening contracts related to multi-erc-to-erc on top of AMB bridge"
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/HomeMultiAMBErc20ToErc677_flat.sol
+${FLATTENER} ${BRIDGE_CONTRACTS_DIR}/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677.sol > flats/multi_amb_erc20_to_erc677/ForeignMultiAMBErc20ToErc677_flat.sol

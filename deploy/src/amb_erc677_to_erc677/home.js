@@ -24,7 +24,7 @@ const {
   homeContracts: {
     EternalStorageProxy,
     HomeAMBErc677ToErc677: HomeBridge,
-    ERC677BridgeToken,
+    ERC677BridgeTokenPermittable,
     ERC677BridgeTokenRewardable
   }
 } = require('../loadContracts')
@@ -61,13 +61,10 @@ async function deployHome() {
   nonce++
 
   console.log('\n[Home] deploying Bridgeable token')
-  const erc677Contract = DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeToken
-  let args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS]
-  if (DEPLOY_REWARDABLE_TOKEN) {
-    const chainId = await web3Home.eth.getChainId()
-    assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
-    args.push(chainId)
-  }
+  const erc677Contract = DEPLOY_REWARDABLE_TOKEN ? ERC677BridgeTokenRewardable : ERC677BridgeTokenPermittable
+  const chainId = await web3Home.eth.getChainId()
+  assert.strictEqual(chainId > 0, true, 'Invalid chain ID')
+  const args = [BRIDGEABLE_TOKEN_NAME, BRIDGEABLE_TOKEN_SYMBOL, BRIDGEABLE_TOKEN_DECIMALS, chainId]
   const erc677token = await deployContract(
     erc677Contract,
     args,

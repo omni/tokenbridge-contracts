@@ -67,6 +67,26 @@ contract PermittableToken is ERC677BridgeToken {
         return true;
     }
 
+    /// @dev Approve the passed address to spend the specified amount of tokens on behalf of msg.sender.
+    /// @param _to The address which will spend the funds.
+    /// @param _value The amount of tokens to be spent.
+    function approve(address _to, uint256 _value) public returns (bool result) {
+        result = super.approve(_to, _value);
+        if (_value == uint256(-1)) {
+            delete expirations[msg.sender][_to];
+        }
+    }
+
+    /// @dev Atomically increases the allowance granted to spender by the caller.
+    /// @param _to The address which will spend the funds.
+    /// @param _addedValue The amount of tokens to increase the allowance by.
+    function increaseAllowance(address _to, uint256 _addedValue) public returns (bool result) {
+        result = super.increaseAllowance(_to, _addedValue);
+        if (allowed[msg.sender][_to] == uint256(-1)) {
+            delete expirations[msg.sender][_to];
+        }
+    }
+
     /// @dev An alias for `transfer` function.
     /// @param _to The address of the recipient.
     /// @param _amount The value to transfer.
@@ -98,6 +118,8 @@ contract PermittableToken is ERC677BridgeToken {
     /// @param _nonce The nonce taken from `nonces(_holder)` public getter.
     /// @param _expiry The allowance expiration date (unix timestamp in UTC).
     /// Can be zero for no expiration. Forced to zero if `_allowed` is `false`.
+    /// Note that timestamps are not precise, malicious miner/validator can manipulate them to some extend.
+    /// Assume that there can be a 900 seconds time delta between the desired timestamp and the actual expiration.
     /// @param _allowed True to enable unlimited allowance for the spender by the holder. False to disable.
     /// @param _v A final byte of signature (ECDSA component).
     /// @param _r The first 32 bytes of signature (ECDSA component).
@@ -115,6 +137,9 @@ contract PermittableToken is ERC677BridgeToken {
         require(_holder != address(0));
         require(_spender != address(0));
         require(_expiry == 0 || _now() <= _expiry);
+
+        require(_v == 27 || _v == 28);
+        require(uint256(_s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0);
 
         bytes32 digest = keccak256(
             abi.encodePacked(

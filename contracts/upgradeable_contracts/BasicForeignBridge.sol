@@ -4,7 +4,6 @@ import "../upgradeability/EternalStorage.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "./Validatable.sol";
 import "../libraries/Message.sol";
-import "./BasicTokenBridge.sol";
 import "./MessageRelay.sol";
 import "./BasicBridge.sol";
 import "./BasicTokenBridge.sol";
@@ -37,6 +36,15 @@ contract BasicForeignBridge is EternalStorage, Validatable, BasicBridge, BasicTo
         } else {
             onFailedMessage(recipient, amount, txHash);
         }
+    }
+
+    /**
+    * @dev Internal function for updating fallback gas price value.
+    * @param _gasPrice new value for the gas price, zero gas price is not allowed.
+    */
+    function _setGasPrice(uint256 _gasPrice) internal {
+        require(_gasPrice > 0);
+        super._setGasPrice(_gasPrice);
     }
 
     /* solcov ignore next */

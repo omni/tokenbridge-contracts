@@ -21,17 +21,17 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
      * @param _dailyLimitMaxPerTxMinPerTxArray Home limits for outgoing transfers
      * @param _executionDailyLimitExecutionMaxPerTxArray Home execution limits for incoming transfers
      * @param _requestGasLimit gas limit used for AMB operations
-     * @param _decimalShift decimal shift for bridged TAKE token
+     * @param _decimalShift decimal shift for bridged STAKE token
      * @param _owner address of new bridge owner
      */
     function initialize(
         address _bridgeContract,
         address _mediatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner
     ) public returns (bool) {
         addressStorage[MINT_HANDLER] = _erc677token;
@@ -56,7 +56,7 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
      * @param _dailyLimitMaxPerTxMinPerTxArray Home limits for outgoing transfers
      * @param _executionDailyLimitExecutionMaxPerTxArray Home execution limits for incoming transfers
      * @param _requestGasLimit gas limit used for AMB operations
-     * @param _decimalShift decimal shift for bridged TAKE token
+     * @param _decimalShift decimal shift for bridged STAKE token
      * @param _owner address of new bridge owner
      * @param _blockReward address of block reward contract used for fee distribution
      * @param _fee initial home fee
@@ -65,10 +65,10 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
         address _bridgeContract,
         address _mediatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner,
         address _blockReward,
         uint256 _fee
@@ -122,7 +122,7 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
      * @param _value amount of bridged tokens
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
-        uint256 value = _value.mul(10**decimalShift());
+        uint256 value = _shiftValue(_value);
         bytes32 _messageId = messageId();
         getMintHandler().mint(_recipient, value);
         emit TokensBridged(_recipient, value, _messageId);
@@ -152,6 +152,17 @@ contract HomeStakeTokenMediator is BasicStakeTokenMediator, HomeStakeTokenFeeMan
                 passMessage(_from, chooseReceiver(_from, _data), _value);
             }
         }
+    }
+
+    /**
+     * @dev Withdraws the erc20 tokens or native coins from this contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        // For home side of the bridge, tokens are not locked at the contract, they are minted and burned instead.
+        // So, its is safe to allow claiming of any tokens. Native coins are allowed as well.
+        claimValues(_token, _to);
     }
 
     /**

@@ -2,11 +2,13 @@ const POA20 = artifacts.require('ERC677BridgeToken.sol')
 const NoReturnTransferTokenMock = artifacts.require('NoReturnTransferTokenMock.sol')
 const POA20RewardableMock = artifacts.require('ERC677BridgeTokenRewardableMock')
 const ERC677ReceiverTest = artifacts.require('ERC677ReceiverTest.sol')
-const BlockRewardTest = artifacts.require('BlockReward.sol')
+const BlockRewardTest = artifacts.require('BlockRewardMock.sol')
 const StakingTest = artifacts.require('Staking.sol')
 const HomeErcToErcBridge = artifacts.require('HomeBridgeErcToErc.sol')
 const ForeignNativeToErcBridge = artifacts.require('ForeignBridgeNativeToErc.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
+const TokenProxy = artifacts.require('TokenProxy.sol')
+const PermittableTokenMock = artifacts.require('PermittableTokenMock.sol')
 
 const { expect } = require('chai')
 const ethUtil = require('ethereumjs-util')
@@ -25,11 +27,10 @@ const executionMaxPerTx = halfEther
 const ZERO = new BN(0)
 const decimalShiftZero = 0
 
-async function testERC677BridgeToken(accounts, rewardable) {
+function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
   let token
   const owner = accounts[0]
   const user = accounts[1]
-  const tokenContract = rewardable ? POA20RewardableMock : POA20
 
   async function addBridge(token, bridge, options = { from: owner }) {
     if (rewardable) {
@@ -47,10 +48,10 @@ async function testERC677BridgeToken(accounts, rewardable) {
 
   beforeEach(async () => {
     const args = ['POA ERC20 Foundation', 'POA20', 18]
-    if (rewardable) {
+    if (permittable) {
       args.push(100)
     }
-    token = await tokenContract.new(...args)
+    token = await createToken(args)
   })
   it('default values', async () => {
     expect(await token.symbol()).to.be.equal('POA20')
@@ -308,23 +309,6 @@ async function testERC677BridgeToken(accounts, rewardable) {
       })
     })
 
-    it('sends tokens to contract that does not contains onTokenTransfer method', async () => {
-      await addBridge(token, homeErcToErcContract.address).should.be.fulfilled
-      await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
-
-      const result = await token.transfer(validatorContract.address, minPerTx, { from: user }).should.be.fulfilled
-      expectEventInLogs(result.logs, 'Transfer', {
-        from: user,
-        to: validatorContract.address,
-        value: minPerTx
-      })
-      expectEventInLogs(result.logs, 'ContractFallbackCallFailed', {
-        from: user,
-        to: validatorContract.address,
-        value: minPerTx
-      })
-    })
-
     it('fail to send tokens to bridge contract out of limits', async () => {
       const lessThanMin = ether('0.0001')
       await token.mint(user, oneEther, { from: owner }).should.be.fulfilled
@@ -554,10 +538,10 @@ async function testERC677BridgeToken(accounts, rewardable) {
       const halfEther = ether('0.5')
 
       const args = ['Roman Token', 'RST', 18]
-      if (rewardable) {
+      if (permittable) {
         args.push(100)
       }
-      const tokenSecond = await tokenContract.new(...args)
+      const tokenSecond = await createToken(args)
 
       await tokenSecond.mint(accounts[0], halfEther).should.be.fulfilled
       halfEther.should.be.bignumber.equal(await tokenSecond.balanceOf(accounts[0]))
@@ -587,7 +571,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
     })
   })
   describe('#transfer', async () => {
-    it('if transfer called on contract, onTokenTransfer is also invoked', async () => {
+    it('if transfer called on contract, onTokenTransfer is not invoked', async () => {
       const receiver = await ERC677ReceiverTest.new()
       expect(await receiver.from()).to.be.equal(ZERO_ADDRESS)
       expect(await receiver.value()).to.be.bignumber.equal(ZERO)
@@ -599,17 +583,17 @@ async function testERC677BridgeToken(accounts, rewardable) {
 
       expect(await token.balanceOf(receiver.address)).to.be.bignumber.equal('1')
       expect(await token.balanceOf(user)).to.be.bignumber.equal(ZERO)
-      expect(await receiver.from()).to.be.equal(user)
-      expect(await receiver.value()).to.be.bignumber.equal('1')
+      expect(await receiver.from()).to.be.equal(ZERO_ADDRESS)
+      expect(await receiver.value()).to.be.bignumber.equal(ZERO)
       expect(await receiver.data()).to.be.equal(null)
       expect(logs[0].event).to.be.equal('Transfer')
     })
     it('if transfer called on contract, still works even if onTokenTransfer doesnot exist', async () => {
       const args = ['Some', 'Token', 18]
-      if (rewardable) {
+      if (permittable) {
         args.push(100)
       }
-      const someContract = await tokenContract.new(...args)
+      const someContract = await createToken(args)
       await token.mint(user, '2', { from: owner }).should.be.fulfilled
       const tokenTransfer = await token.transfer(someContract.address, '1', { from: user }).should.be.fulfilled
       const tokenTransfer2 = await token.transfer(accounts[0], '1', { from: user }).should.be.fulfilled
@@ -625,7 +609,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
       await token.renounceOwnership().should.be.rejectedWith(ERROR_MSG)
     })
   })
-  if (rewardable) {
+  if (permittable) {
     describe('permit', () => {
       const privateKey = '0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501210'
       const infinite = new BN('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)
@@ -647,6 +631,8 @@ async function testERC677BridgeToken(accounts, rewardable) {
         // Mint some extra tokens for the `holder`
         await token.mint(holder, '10000', { from: owner }).should.be.fulfilled
         ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
+        web3.eth.accounts.wallet.add(privateKey)
+        await web3.eth.sendTransaction({ from: owner, to: holder, value: oneEther })
       })
       it('should permit', async () => {
         // Holder signs the `permit` params with their privateKey
@@ -690,7 +676,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(infinite)
 
         // The caller of `permit` can't spend holder's funds
-        await token.transferFrom(holder, accounts[9], '10000').should.be.rejectedWith(ERROR_MSG_OPCODE)
+        await token.transferFrom(holder, accounts[9], '10000').should.be.rejected
         ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
 
         // Spender can transfer all holder's funds
@@ -766,6 +752,61 @@ async function testERC677BridgeToken(accounts, rewardable) {
         await token.setNow(901).should.be.fulfilled
         await token.transferFrom(holder, accounts[9], '4000', { from: spender }).should.be.rejectedWith(ERROR_MSG)
       })
+      it('should reset expiration on subsequent approve', async () => {
+        expiry = 900
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+        await token.setNow(800).should.be.fulfilled
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        const data = await token.contract.methods.approve(spender, -1).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
+      })
+      it('should reset expiration on subsequent increaseAllowance', async () => {
+        expiry = 900
+        const signature = permitSign(
+          {
+            name: await token.name.call(),
+            version: await token.version.call(),
+            chainId: '100',
+            verifyingContract: token.address
+          },
+          {
+            holder,
+            spender,
+            nonce,
+            expiry,
+            allowed
+          },
+          privateKey
+        )
+        await token.setNow(800).should.be.fulfilled
+        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
+          .fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        let data = await token.contract.methods.approve(spender, -2).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
+        data = await token.contract.methods.increaseAllowance(spender, 1).encodeABI()
+        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
+        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
+      })
       it('should disallow unlimited allowance', async () => {
         expiry = 900
         await token.setNow(800).should.be.fulfilled
@@ -823,9 +864,7 @@ async function testERC677BridgeToken(accounts, rewardable) {
         ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN('0'))
 
         // Spender can't transfer the remaining holder's funds because of zero allowance
-        await token
-          .transferFrom(holder, accounts[9], '4000', { from: spender })
-          .should.be.rejectedWith(ERROR_MSG_OPCODE)
+        await token.transferFrom(holder, accounts[9], '4000', { from: spender }).should.be.rejected
       })
       it('should fail when invalid signature or parameters', async () => {
         let signature = permitSign(
@@ -911,10 +950,37 @@ async function testERC677BridgeToken(accounts, rewardable) {
   }
 }
 
-contract('ERC677BridgeToken', async accounts => {
-  await testERC677BridgeToken(accounts, false)
+contract('ERC677BridgeToken', accounts => {
+  testERC677BridgeToken(accounts, false, false, args => POA20.new(...args))
 })
 
-contract('ERC677BridgeTokenRewardable', async accounts => {
-  await testERC677BridgeToken(accounts, true)
+contract('ERC677BridgeTokenRewardable', accounts => {
+  testERC677BridgeToken(accounts, true, true, args => POA20RewardableMock.new(...args))
+})
+
+contract('TokenProxy', accounts => {
+  const createToken = async args => {
+    const impl = await PermittableTokenMock.new(...args)
+    const proxy = await TokenProxy.new(impl.address, ...args)
+    return PermittableTokenMock.at(proxy.address)
+  }
+
+  testERC677BridgeToken(accounts, false, true, createToken)
+
+  describe('constants', () => {
+    let token
+    beforeEach(async () => {
+      token = await createToken(['POA ERC20 Foundation', 'POA20', 18, 100])
+    })
+
+    it('should return version', async () => {
+      expect(await token.version()).to.be.equal('1')
+    })
+
+    it('should return PERMIT_TYPEHASH', async () => {
+      expect(await token.PERMIT_TYPEHASH()).to.be.equal(
+        '0xea2aa0a1be11a07ed86d755c93467f4f82362b452371d1ba94d1715123511acb'
+      )
+    })
+  })
 })

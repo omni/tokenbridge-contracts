@@ -29,49 +29,46 @@ contract BasicAMBErc677ToErc677 is
         address _bridgeContract,
         address _mediatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray, // [ 0 = _executionDailyLimit, 1 = _executionMaxPerTx ]
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner
     ) public onlyRelevantSender returns (bool) {
         require(!isInitialized());
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // _executionMaxPerTx < _executionDailyLimit
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
         setErc677token(_erc677token);
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
+        _setExecutionLimits(_executionDailyLimitExecutionMaxPerTxArray);
         _setRequestGasLimit(_requestGasLimit);
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        setOwner(_owner);
+        _setDecimalShift(_decimalShift);
+        _setOwner(_owner);
         setInitialize();
 
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxArray[0]);
-
         return isInitialized();
+    }
+
+    /**
+    * @dev Public getter for token contract.
+    * @return address of the used token contract
+    */
+    function erc677token() public view returns (ERC677) {
+        return _erc677token();
     }
 
     function bridgeContractOnOtherSide() internal view returns (address) {
         return mediatorContractOnOtherSide();
     }
 
-    function relayTokens(address _from, address _receiver, uint256 _value) external {
-        require(_from == msg.sender || _from == _receiver);
-        _relayTokens(_from, _receiver, _value);
-    }
-
-    function _relayTokens(address _from, address _receiver, uint256 _value) internal {
+    /**
+    * @dev Initiates the bridge operation that will lock the amount of tokens transferred and mint the tokens on
+    * the other network. The user should first call Approve method of the ERC677 token.
+    * @param _receiver address that will receive the minted tokens on the other network.
+    * @param _value amount of tokens to be transferred to the other network.
+    */
+    function relayTokens(address _receiver, uint256 _value) external {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
@@ -79,16 +76,12 @@ contract BasicAMBErc677ToErc677 is
         ERC677 token = erc677token();
         address to = address(this);
         require(withinLimit(_value));
-        setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+        addTotalSpentPerDay(getCurrentDay(), _value);
 
         setLock(true);
-        token.transferFrom(_from, to, _value);
+        token.transferFrom(msg.sender, to, _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, _from, _value, abi.encodePacked(_receiver));
-    }
-
-    function relayTokens(address _receiver, uint256 _value) external {
-        _relayTokens(msg.sender, _receiver, _value);
+        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
@@ -96,14 +89,14 @@ contract BasicAMBErc677ToErc677 is
         require(msg.sender == address(token));
         if (!lock()) {
             require(withinLimit(_value));
-            setTotalSpentPerDay(getCurrentDay(), totalSpentPerDay(getCurrentDay()).add(_value));
+            addTotalSpentPerDay(getCurrentDay(), _value);
         }
         bridgeSpecificActionsOnTokenTransfer(token, _from, _value, _data);
         return true;
     }
 
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 1, 0);
+        return (1, 4, 0);
     }
 
     function getBridgeMode() external pure returns (bytes4 _data) {
@@ -123,38 +116,29 @@ contract BasicAMBErc677ToErc677 is
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
         setTxAboveLimits(_recipient, _value, _messageId);
-        emit AmountLimitExceeded(_recipient, _value, _messageId);
+        emit MediatorAmountLimitExceeded(_recipient, _value, _messageId);
     }
 
     /**
     * @dev Fixes locked tokens, that were out of execution limits during the call to handleBridgedTokens
     * @param messageId reference for bridge operation that was out of execution limits
-    * @param unlockOnForeign true if fixed tokens should be unlocked to the other side of the bridge
-    * @param valueToUnlock unlocked amount of tokens, should be less than maxPerTx() and saved txAboveLimitsValue
+    * @param unlockOnOtherSide true if fixed tokens should be unlocked to the other side of the bridge
+    * @param valueToUnlock unlocked amount of tokens, should be less than saved txAboveLimitsValue.
+    * Should be less than maxPerTx(), if tokens need to be unlocked on the other side.
     */
-    function fixAssetsAboveLimits(bytes32 messageId, bool unlockOnForeign, uint256 valueToUnlock)
+    function fixAssetsAboveLimits(bytes32 messageId, bool unlockOnOtherSide, uint256 valueToUnlock)
         external
         onlyIfUpgradeabilityOwner
     {
-        require(!fixedAssets(messageId));
-        require(valueToUnlock <= maxPerTx());
-        address recipient;
-        uint256 value;
-        (recipient, value) = txAboveLimits(messageId);
+        (address recipient, uint256 value) = txAboveLimits(messageId);
         require(recipient != address(0) && value > 0 && value >= valueToUnlock);
         setOutOfLimitAmount(outOfLimitAmount().sub(valueToUnlock));
         uint256 pendingValue = value.sub(valueToUnlock);
         setTxAboveLimitsValue(pendingValue, messageId);
         emit AssetAboveLimitsFixed(messageId, valueToUnlock, pendingValue);
-        if (pendingValue == 0) {
-            setFixedAssets(messageId);
-        }
-        if (unlockOnForeign) {
+        if (unlockOnOtherSide) {
+            require(valueToUnlock <= maxPerTx());
             passMessage(recipient, recipient, valueToUnlock);
         }
-    }
-
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
-        claimValues(_token, _to);
     }
 }

@@ -1,5 +1,5 @@
 [![Join the chat at https://gitter.im/poanetwork/poa-bridge](https://badges.gitter.im/poanetwork/poa-bridge.svg)](https://gitter.im/poanetwork/poa-bridge?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://api.travis-ci.org/poanetwork/tokenbridge-contracts.svg?branch=master)](https://travis-ci.org/poanetwork/tokenbridge-contracts)
+[![Build Status](https://github.com/poanetwork/tokenbridge-contracts/workflows/tokenbridge-contracts/badge.svg?branch=master)](https://github.com/poanetwork/tokenbridge-contracts/workflows/tokenbridge-contracts/badge.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/poanetwork/tokenbridge-contracts/badge.svg?branch=master)](https://coveralls.io/github/poanetwork/tokenbridge-contracts?branch=master)
 
 # POA Bridge Smart Contracts
@@ -65,6 +65,8 @@ Responsibilities and roles of the bridge:
     - in `ARBITRARY-MESSAGE` mode: Invoke Home/Foreign Bridge to send a message that will be executed on the other Network as an arbitrary contract method invocation;
     - in `AMB-ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Mediator which will interact with Foreign AMB Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Mediator which will interact with Home AMB Bridge to unlock ERC20 tokens on Foreign network.
     - in `AMB-NATIVE-TO-ERC` mode: send native coins to the Home Mediator which will interact with Home AMB Bridge to mint ERC20 tokens on the Foreign Network, transfer ERC20 tokens to the Foreign Mediator which will interact with Foreign AMB Bridge to unlock native coins from Home network.
+    - in `AMB-ERC-TO-NATIVE` mode: send ERC20 tokens to the Foreign Mediator which will interact with Foreign AMB Bridge to receive native coins from the Home Mediator on the Home Network, send native coins to the Home Mediator which will interact with Home AMB Bridge to unlock ERC20 tokens from the Foreign Mediator.
+    - in `MULTI-AMB-ERC-TO-ERC` mode: transfer any ERC20/ERC677 tokens to the Foreign Mediator which will interact with Foreign AMB Bridge to mint ERC677 tokens on the Home Network, transfer ERC677 tokens to the Home Mediator which will interact with Home AMB Bridge to unlock associated ERC20/ERC677 tokens on the Foreign network.
 
 ## Usage
 

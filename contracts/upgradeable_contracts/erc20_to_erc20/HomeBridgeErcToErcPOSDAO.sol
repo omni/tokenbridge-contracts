@@ -8,16 +8,16 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
 
     function rewardableInitialize(
         address _validatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
+        uint256[2] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
         address _feeManager,
-        uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
+        uint256[2] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
         address _blockReward,
-        uint256 _decimalShift
+        int256 _decimalShift
     ) external onlyRelevantSender returns (bool) {
         _rewardableInitialize(
             _validatorContract,
@@ -37,22 +37,17 @@ contract HomeBridgeErcToErcPOSDAO is HomeBridgeErcToErc {
         return isInitialized();
     }
 
-    function blockRewardContract() public view returns (address) {
-        address blockReward;
+    function blockRewardContract() public view returns (address blockReward) {
         address feeManager = feeManagerContract();
         bytes memory callData = abi.encodeWithSelector(BLOCK_REWARD_CONTRACT_SELECTOR);
 
         assembly {
             let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
-            blockReward := mload(0)
 
-            switch result
-                case 0 {
-                    revert(0, 0)
-                }
+            if and(eq(returndatasize, 32), result) {
+                blockReward := mload(0)
+            }
         }
-
-        return blockReward;
     }
 
     function setBlockRewardContract(address _blockReward) external onlyOwner {

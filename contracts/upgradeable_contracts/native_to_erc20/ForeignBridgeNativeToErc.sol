@@ -14,12 +14,12 @@ contract ForeignBridgeNativeToErc is
     function initialize(
         address _validatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[2] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _bridgeOnOtherSide
     ) external onlyRelevantSender returns (bool) {
         _initialize(
@@ -40,14 +40,14 @@ contract ForeignBridgeNativeToErc is
     function rewardableInitialize(
         address _validatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[2] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
         address _feeManager,
         uint256 _homeFee,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _bridgeOnOtherSide
     ) external onlyRelevantSender returns (bool) {
         _initialize(
@@ -72,60 +72,59 @@ contract ForeignBridgeNativeToErc is
         return 0x92a8d7fe; // bytes4(keccak256(abi.encodePacked("native-to-erc-core")))
     }
 
+    /**
+     * @dev Withdraws erc20 tokens or native coins from the token contract. It is required since the bridge contract is the owner of the token contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
         IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
+    }
+
+    /**
+     * @dev Withdraws the erc20 tokens or native coins from this contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        // For foreign side of the bridge, tokens are not locked at the contract, they are minted and burned instead.
+        // So, its is safe to allow claiming of any tokens. Native coins are allowed as well.
+        claimValues(_token, _to);
     }
 
     function _initialize(
         address _validatorContract,
         address _erc677token,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _foreignGasPrice,
         uint256 _requiredBlockConfirmations,
-        uint256[] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
+        uint256[2] _homeDailyLimitHomeMaxPerTxArray, // [ 0 = _homeDailyLimit, 1 = _homeMaxPerTx ]
         address _owner,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _bridgeOnOtherSide
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(_requiredBlockConfirmations > 0);
-        require(_foreignGasPrice > 0);
-        require(_homeDailyLimitHomeMaxPerTxArray[1] < _homeDailyLimitHomeMaxPerTxArray[0]); // _homeMaxPerTx < _homeDailyLimit
-        require(_owner != address(0));
 
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         setErc677token(_erc677token);
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[GAS_PRICE] = _foreignGasPrice;
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        uintStorage[EXECUTION_DAILY_LIMIT] = _homeDailyLimitHomeMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _homeDailyLimitHomeMaxPerTxArray[1];
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        setOwner(_owner);
+        _setGasPrice(_foreignGasPrice);
+        _setRequiredBlockConfirmations(_requiredBlockConfirmations);
+        _setExecutionLimits(_homeDailyLimitHomeMaxPerTxArray);
+        _setDecimalShift(_decimalShift);
+        _setOwner(_owner);
         _setBridgeContractOnOtherSide(_bridgeOnOtherSide);
-
-        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit GasPriceChanged(_foreignGasPrice);
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_homeDailyLimitHomeMaxPerTxArray[0]);
     }
 
     function onExecuteMessage(address _recipient, uint256 _amount, bytes32 _txHash) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_amount));
-        uint256 valueToMint = _amount.div(10**decimalShift());
+        addTotalExecutedPerDay(getCurrentDay(), _amount);
+        uint256 valueToMint = _unshiftValue(_amount);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, HOME_FEE);
-            if (fee != 0) {
+            if (fee > 0) {
                 distributeFeeFromSignatures(fee, feeManager, _txHash);
                 valueToMint = valueToMint.sub(fee);
             }

@@ -10,6 +10,6 @@ insert_final_newline = true
 [*.ts]
 indent_style = tab
 
-[{package.json,.travis.yml}]
+[{package.json}]
 indent_style = space
 indent_size = 4

@@ -49,26 +49,22 @@ BasicForeignAMB::executeSignatures
 >>Mediator
 ........TokenBridgeMediator::handleBridgedTokens
 ..........ForeignAMBNativeToErc20::executeActionOnBridgedTokens
-............ForeignAMBNativeToErc20::distributeFee
-..............MediatorMessagesGuard::enableMessagesRestriction
-..............RewardableMediator::distributeFee
-................ForeignAMBNativeToErc20::onFeeDistribution
+............RewardableMediator::distributeFee
+..............ForeignAMBNativeToErc20::onFeeDistribution
 >>Token
-..................MintableToken::mint
+................MintableToken::mint
 >>Fee Manager
-................BaseMediatorFeeManager::onTokenTransfer
-..................BaseMediatorFeeManager::distributeFee
-....................ForeignFeeManagerAMBNativeToErc20::onFeeDistribution
+..............BaseMediatorFeeManager::onTokenTransfer
+................BaseMediatorFeeManager::distributeFee
+..................ForeignFeeManagerAMBNativeToErc20::onFeeDistribution
 >>Token
-......................ERC677BridgeToken::transfer
-........................ERC677BridgeToken::superTransfer
-..........................BasicToken::transfer
-........................ERC677BridgeToken::callAfterTransfer
-..........................ERC677BridgeToken::contractFallback
-............................<TOKENRECEIVER>::onTokenTransfer
-..............................<######>
->>Mediator
-..............MediatorMessagesGuard::disableMessagesRestriction
+....................ERC677BridgeToken::transfer
+......................ERC677BridgeToken::superTransfer
+........................BasicToken::transfer
+......................ERC677BridgeToken::callAfterTransfer
+........................ERC677BridgeToken::contractFallback
+..........................<TOKENRECEIVER>::onTokenTransfer
+............................<######>
 >>Token
 ............MintableToken::mint
 >>Mediator
@@ -97,7 +93,6 @@ ERC677BridgeToken::transferAndCall
 ..ERC677BridgeToken::contractFallback
 >>Mediator
 ....ForeignAMBNativeToErc20::onTokenTransfer
-......MediatorMessagesGuard::bridgeMessageAllowed
 ......ForeignAMBNativeToErc20::bridgeSpecificActionsOnTokenTransfer
 >>Token
 ........BurnableToken::burn
@@ -128,6 +123,7 @@ BasicHomeAMB::executeAffirmation
 >>Mediator
 ........TokenBridgeMediator::handleBridgedTokens
 ..........HomeAMBNativeToErc20::executeActionOnBridgedTokens
+............MediatorBalanceStorage::_setMediatorBalance
 ............RewardableMediator::distributeFee
 ..............HomeAMBNativeToErc20::onFeeDistribution
 ................Address::safeSendValue
@@ -219,6 +215,7 @@ BasicHomeAMB::executeAffirmation
 ..........TokenBridgeMediator::messageHashRecipient
 ..........TokenBridgeMediator::messageHashValue
 ..........HomeAMBNativeToErc20::executeActionOnFixedTokens
+............MediatorBalanceStorage::_setMediatorBalance
 ............Address::safeSendValue
 ..........emit FailedMessageFixed
 >>Bridge
@@ -313,6 +310,7 @@ The mediator on the Home side has the `relayTokens` method which is payable. The
 >>Mediator
 HomeAMBNativeToErc20::relayTokens
 ..HomeAMBNativeToErc20::nativeTransfer
+....MediatorBalanceStorage::_setMediatorBalance
 ....TokenBridgeMediator::passMessage
 ......TokenBridgeMediator::setMessageHashValue
 ......TokenBridgeMediator::setMessageHashRecipient
@@ -339,28 +337,26 @@ This will allow to the mediator contract to call the `transferFrom` method from 
 ```=
 >>Mediator
 ForeignAMBNativeToErc20::relayTokens
-..ForeignAMBNativeToErc20::_relayTokens
 >>Token
-....ERC677BridgeToken::transferFrom
-......StandardToken::transferFrom
-........emit Transfer
-......ERC677BridgeToken::callAfterTransfer
-........ERC677BridgeToken::contractFallback
+..ERC677BridgeToken::transferFrom
+....StandardToken::transferFrom
+......emit Transfer
+....ERC677BridgeToken::callAfterTransfer
+......ERC677BridgeToken::contractFallback
 >>Mediator
-..........ForeignAMBNativeToErc20::onTokenTransfer
-............MediatorMessagesGuard::bridgeMessageAllowed
-............ForeignAMBNativeToErc20::bridgeSpecificActionsOnTokenTransfer
+........ForeignAMBNativeToErc20::onTokenTransfer
+..........ForeignAMBNativeToErc20::bridgeSpecificActionsOnTokenTransfer
 >>Token
-..............BurnableToken::burn
-................BurnableToken::_burn
+............BurnableToken::burn
+..............BurnableToken::_burn
 >>Mediator
-..............TokenBridgeMediator::passMessage
-................TokenBridgeMediator::setMessageHashValue
-................TokenBridgeMediator::setMessageHashRecipient
+............TokenBridgeMediator::passMessage
+..............TokenBridgeMediator::setMessageHashValue
+..............TokenBridgeMediator::setMessageHashRecipient
 >>Bridge
-................MessageDelivery::requireToPassMessage
-..................ForeignAMB::emitEventOnMessageRequest
-....................emit UserRequestForAffirmation
+..............MessageDelivery::requireToPassMessage
+................ForeignAMB::emitEventOnMessageRequest
+..................emit UserRequestForAffirmation
 ```
 
 #### Execution

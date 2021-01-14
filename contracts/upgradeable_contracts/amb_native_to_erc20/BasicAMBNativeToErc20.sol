@@ -35,37 +35,23 @@ contract BasicAMBNativeToErc20 is
     function _initialize(
         address _bridgeContract,
         address _mediatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray,
-        uint256[] _executionDailyLimitExecutionMaxPerTxArray,
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray,
+        uint256[2] _executionDailyLimitExecutionMaxPerTxArray,
         uint256 _requestGasLimit,
-        uint256 _decimalShift,
+        int256 _decimalShift,
         address _owner,
         address _feeManager
     ) internal {
         require(!isInitialized());
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // maxPerTx > minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // dailyLimit > maxPerTx
-        );
-        require(_executionDailyLimitExecutionMaxPerTxArray[1] < _executionDailyLimitExecutionMaxPerTxArray[0]); // foreignMaxPerTx < foreignDailyLimit
-        require(_owner != address(0));
-        require(_feeManager == address(0) || AddressUtils.isContract(_feeManager));
 
         _setBridgeContract(_bridgeContract);
         _setMediatorContractOnOtherSide(_mediatorContract);
         _setRequestGasLimit(_requestGasLimit);
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[EXECUTION_DAILY_LIMIT] = _executionDailyLimitExecutionMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _executionDailyLimitExecutionMaxPerTxArray[1];
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        addressStorage[FEE_MANAGER_CONTRACT] = _feeManager;
-        setOwner(_owner);
-
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_executionDailyLimitExecutionMaxPerTxArray[0]);
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
+        _setExecutionLimits(_executionDailyLimitExecutionMaxPerTxArray);
+        _setDecimalShift(_decimalShift);
+        _setFeeManagerContract(_feeManager);
+        _setOwner(_owner);
     }
 
     /**
@@ -75,7 +61,7 @@ contract BasicAMBNativeToErc20 is
     * @return patch value of the version
     */
     function getBridgeInterfacesVersion() external pure returns (uint64 major, uint64 minor, uint64 patch) {
-        return (1, 0, 1);
+        return (1, 2, 0);
     }
 
     /**
@@ -94,14 +80,5 @@ contract BasicAMBNativeToErc20 is
         uint256 /* _value */
     ) internal {
         revert();
-    }
-
-    /**
-    * @dev Allows to transfer any locked token on this contract that is not part of the bridge operations.
-    * @param _token address of the token, if it is not provided, native tokens will be transferred.
-    * @param _to address that will receive the locked tokens on this contract.
-    */
-    function claimTokens(address _token, address _to) public onlyIfUpgradeabilityOwner validAddress(_to) {
-        claimValues(_token, _to);
     }
 }

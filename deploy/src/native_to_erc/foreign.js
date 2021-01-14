@@ -102,10 +102,10 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
       .rewardableInitialize(
         validatorsBridge.options.address,
         erc677bridgeToken.options.address,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
+        [FOREIGN_DAILY_LIMIT.toString(), FOREIGN_MAX_AMOUNT_PER_TX.toString(), FOREIGN_MIN_AMOUNT_PER_TX.toString()],
         FOREIGN_GAS_PRICE,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
+        [HOME_DAILY_LIMIT.toString(), HOME_MAX_AMOUNT_PER_TX.toString()],
         FOREIGN_BRIDGE_OWNER,
         feeManager.options.address,
         homeFeeInWei,
@@ -135,10 +135,10 @@ async function initializeBridge({ validatorsBridge, bridge, erc677bridgeToken, i
       .initialize(
         validatorsBridge.options.address,
         erc677bridgeToken.options.address,
-        [FOREIGN_DAILY_LIMIT, FOREIGN_MAX_AMOUNT_PER_TX, FOREIGN_MIN_AMOUNT_PER_TX],
+        [FOREIGN_DAILY_LIMIT.toString(), FOREIGN_MAX_AMOUNT_PER_TX.toString(), FOREIGN_MIN_AMOUNT_PER_TX.toString()],
         FOREIGN_GAS_PRICE,
         FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS,
-        [HOME_DAILY_LIMIT, HOME_MAX_AMOUNT_PER_TX],
+        [HOME_DAILY_LIMIT.toString(), HOME_MAX_AMOUNT_PER_TX.toString()],
         FOREIGN_BRIDGE_OWNER,
         foreignToHomeDecimalShift,
         homeBridgeAddress

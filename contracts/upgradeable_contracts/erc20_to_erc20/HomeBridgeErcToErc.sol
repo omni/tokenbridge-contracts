@@ -4,26 +4,31 @@ import "../../libraries/Message.sol";
 import "../../upgradeability/EternalStorage.sol";
 import "../../interfaces/IBurnableMintableERC677Token.sol";
 import "../BasicHomeBridge.sol";
-import "../OverdrawManagement.sol";
+import "../HomeOverdrawManagement.sol";
 import "./RewardableHomeBridgeErcToErc.sol";
 import "../ERC677BridgeForBurnableMintableToken.sol";
 
+/**
+ * @title HomeBridgeErcToErc
+ * @dev This contract Home side logic for the erc-to-erc vanilla bridge mode.
+ * It is designed to be used as an implementation contract of EternalStorageProxy contract.
+ */
 contract HomeBridgeErcToErc is
     EternalStorage,
     BasicHomeBridge,
     ERC677BridgeForBurnableMintableToken,
-    OverdrawManagement,
+    HomeOverdrawManagement,
     RewardableHomeBridgeErcToErc
 {
     function initialize(
         address _validatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
+        uint256[2] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
-        uint256 _decimalShift
+        int256 _decimalShift
     ) external onlyRelevantSender returns (bool) {
         _initialize(
             _validatorContract,
@@ -42,15 +47,15 @@ contract HomeBridgeErcToErc is
 
     function rewardableInitialize(
         address _validatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
+        uint256[2] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
         address _feeManager,
-        uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        uint256 _decimalShift
+        uint256[2] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
+        int256 _decimalShift
     ) external onlyRelevantSender returns (bool) {
         _rewardableInitialize(
             _validatorContract,
@@ -71,15 +76,15 @@ contract HomeBridgeErcToErc is
 
     function _rewardableInitialize(
         address _validatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
+        uint256[2] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
         address _feeManager,
-        uint256[] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
-        uint256 _decimalShift
+        uint256[2] _homeFeeForeignFeeArray, // [ 0 = _homeFee, 1 = _foreignFee ]
+        int256 _decimalShift
     ) internal {
         _initialize(
             _validatorContract,
@@ -99,43 +104,33 @@ contract HomeBridgeErcToErc is
 
     function _initialize(
         address _validatorContract,
-        uint256[] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
+        uint256[3] _dailyLimitMaxPerTxMinPerTxArray, // [ 0 = _dailyLimit, 1 = _maxPerTx, 2 = _minPerTx ]
         uint256 _homeGasPrice,
         uint256 _requiredBlockConfirmations,
         address _erc677token,
-        uint256[] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
+        uint256[2] _foreignDailyLimitForeignMaxPerTxArray, // [ 0 = _foreignDailyLimit, 1 = _foreignMaxPerTx ]
         address _owner,
-        uint256 _decimalShift
+        int256 _decimalShift
     ) internal {
         require(!isInitialized());
         require(AddressUtils.isContract(_validatorContract));
-        require(_requiredBlockConfirmations > 0);
-        require(
-            _dailyLimitMaxPerTxMinPerTxArray[2] > 0 && // _minPerTx > 0
-                _dailyLimitMaxPerTxMinPerTxArray[1] > _dailyLimitMaxPerTxMinPerTxArray[2] && // _maxPerTx > _minPerTx
-                _dailyLimitMaxPerTxMinPerTxArray[0] > _dailyLimitMaxPerTxMinPerTxArray[1] // _dailyLimit > _maxPerTx
-        );
-        require(_foreignDailyLimitForeignMaxPerTxArray[1] < _foreignDailyLimitForeignMaxPerTxArray[0]); // _foreignMaxPerTx < _foreignDailyLimit
-        require(_owner != address(0));
+
         addressStorage[VALIDATOR_CONTRACT] = _validatorContract;
         uintStorage[DEPLOYED_AT_BLOCK] = block.number;
-        uintStorage[DAILY_LIMIT] = _dailyLimitMaxPerTxMinPerTxArray[0];
-        uintStorage[MAX_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[1];
-        uintStorage[MIN_PER_TX] = _dailyLimitMaxPerTxMinPerTxArray[2];
-        uintStorage[GAS_PRICE] = _homeGasPrice;
-        uintStorage[REQUIRED_BLOCK_CONFIRMATIONS] = _requiredBlockConfirmations;
-        uintStorage[EXECUTION_DAILY_LIMIT] = _foreignDailyLimitForeignMaxPerTxArray[0];
-        uintStorage[EXECUTION_MAX_PER_TX] = _foreignDailyLimitForeignMaxPerTxArray[1];
-        uintStorage[DECIMAL_SHIFT] = _decimalShift;
-        setOwner(_owner);
+        _setLimits(_dailyLimitMaxPerTxMinPerTxArray);
+        _setGasPrice(_homeGasPrice);
+        _setRequiredBlockConfirmations(_requiredBlockConfirmations);
+        _setExecutionLimits(_foreignDailyLimitForeignMaxPerTxArray);
+        _setDecimalShift(_decimalShift);
+        _setOwner(_owner);
         setErc677token(_erc677token);
-
-        emit RequiredBlockConfirmationChanged(_requiredBlockConfirmations);
-        emit GasPriceChanged(_homeGasPrice);
-        emit DailyLimitChanged(_dailyLimitMaxPerTxMinPerTxArray[0]);
-        emit ExecutionDailyLimitChanged(_foreignDailyLimitForeignMaxPerTxArray[0]);
     }
 
+    /**
+     * @dev Withdraws erc20 tokens or native coins from the token contract. It is required since the bridge contract is the owner of the token contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
     function claimTokensFromErc677(address _token, address _to) external onlyIfUpgradeabilityOwner {
         IBurnableMintableERC677Token(erc677token()).claimTokens(_token, _to);
     }
@@ -144,13 +139,26 @@ contract HomeBridgeErcToErc is
         return 0xba4690f5; // bytes4(keccak256(abi.encodePacked("erc-to-erc-core")))
     }
 
-    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 txHash) internal returns (bool) {
-        setTotalExecutedPerDay(getCurrentDay(), totalExecutedPerDay(getCurrentDay()).add(_value));
-        uint256 valueToMint = _value.mul(10**decimalShift());
+    /**
+     * @dev Internal callback to be called on successfull message execution.
+     * Should be called only after enough affirmations from the validators are already collected.
+     * @param _recipient address of the receiver where the new tokens should be minted.
+     * @param _value amount of tokens to mint.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     * @return true, if execution completed successfully.
+     */
+    function onExecuteAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg)
+        internal
+        returns (bool)
+    {
+        _clearAboveLimitsMarker(_hashMsg, _value);
+        addTotalExecutedPerDay(getCurrentDay(), _value);
+        uint256 valueToMint = _shiftValue(_value);
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
             uint256 fee = calculateFee(valueToMint, false, feeManager, FOREIGN_FEE);
-            distributeFeeFromAffirmation(fee, feeManager, txHash);
+            distributeFeeFromAffirmation(fee, feeManager, _txHash);
             valueToMint = valueToMint.sub(fee);
         }
         return IBurnableMintableERC677Token(erc677token()).mint(_recipient, valueToMint);
@@ -166,26 +174,33 @@ contract HomeBridgeErcToErc is
         emit UserRequestForSignature(_from, valueToTransfer);
     }
 
+    /**
+     * @dev Internal function to be called when enough signatures are collected.
+     * Distributed the fee for collecting signatures.
+     * @param _message encoded message signed by the validators.
+     */
     function onSignaturesCollected(bytes _message) internal {
         address feeManager = feeManagerContract();
         if (feeManager != address(0)) {
-            address recipient;
-            uint256 amount;
-            bytes32 txHash;
-            address contractAddress;
-            (recipient, amount, txHash, contractAddress) = Message.parseMessage(_message);
+            (, uint256 amount, bytes32 txHash, ) = Message.parseMessage(_message);
             uint256 fee = calculateFee(amount, true, feeManager, HOME_FEE);
             distributeFeeFromSignatures(fee, feeManager, txHash);
         }
     }
 
-    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash) internal {
-        address recipient;
-        uint256 value;
-        (recipient, value) = txAboveLimits(_txHash);
+    /**
+     * @dev Internal callback to be called on failed message execution due to the out-of-limits error.
+     * This function saves the bridge operation information for further processing.
+     * @param _recipient address of the receiver where the new tokens should be minted.
+     * @param _value amount of tokens to mint.
+     * @param _txHash reference transaction hash on the Foreign side of the bridge which cause this operation.
+     * @param _hashMsg unique identifier of the particular bridge operation.
+     */
+    function onFailedAffirmation(address _recipient, uint256 _value, bytes32 _txHash, bytes32 _hashMsg) internal {
+        (address recipient, uint256 value) = txAboveLimits(_hashMsg);
         require(recipient == address(0) && value == 0);
         setOutOfLimitAmount(outOfLimitAmount().add(_value));
-        setTxAboveLimits(_recipient, _value, _txHash);
-        emit AmountLimitExceeded(_recipient, _value, _txHash);
+        setTxAboveLimits(_recipient, _value, _hashMsg);
+        emit AmountLimitExceeded(_recipient, _value, _txHash, _hashMsg);
     }
 }

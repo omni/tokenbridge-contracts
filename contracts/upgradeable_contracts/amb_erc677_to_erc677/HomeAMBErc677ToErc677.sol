@@ -15,7 +15,7 @@ contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
      * @param _value amount of bridged tokens
      */
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
-        uint256 value = _value.mul(10**decimalShift());
+        uint256 value = _shiftValue(_value);
         bytes32 _messageId = messageId();
         IBurnableMintableERC677Token(erc677token()).mint(_recipient, value);
         emit TokensBridged(_recipient, value, _messageId);
@@ -33,6 +33,17 @@ contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
             IBurnableMintableERC677Token(_token).burn(_value);
             passMessage(_from, chooseReceiver(_from, _data), _value);
         }
+    }
+
+    /**
+     * @dev Withdraws the erc20 tokens or native coins from this contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
+    function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
+        // For home side of the bridge, tokens are not locked at the contract, they are minted and burned instead.
+        // So, its is safe to allow claiming of any tokens. Native coins are allowed as well.
+        claimValues(_token, _to);
     }
 
     function executeActionOnFixedTokens(address _recipient, uint256 _value) internal {

@@ -220,6 +220,18 @@ contract('HomeBridge', async accounts => {
           decimalShiftZero
         )
         .should.be.rejectedWith(ERROR_MSG)
+
+      // not valid decimal shift
+      await homeContract.initialize(
+        validatorContract.address,
+        ['3', '2', '1'],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        '100'
+      ).should.be.rejected
+
       await homeContract.initialize(
         validatorContract.address,
         ['3', '2', '1'],
@@ -1071,7 +1083,7 @@ contract('HomeBridge', async accounts => {
       expect(await tokenMock.balanceOf(homeBridge.address)).to.be.bignumber.equal(ZERO)
       expect(await tokenMock.balanceOf(accounts[3])).to.be.bignumber.equal(halfEther)
     })
-    it('should work for native coins', async () => {
+    it('should not work for native coins', async () => {
       const storageProxy = await EternalStorageProxy.new()
       const data = homeContract.contract.methods
         .initialize(
@@ -1087,14 +1099,11 @@ contract('HomeBridge', async accounts => {
       await storageProxy.upgradeToAndCall('1', homeContract.address, data).should.be.fulfilled
       const homeBridge = await HomeBridge.at(storageProxy.address)
 
-      const balanceBefore = toBN(await web3.eth.getBalance(accounts[3]))
-
       await homeBridge.sendTransaction({ from: accounts[2], value: halfEther }).should.be.fulfilled
       expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(halfEther)
 
-      await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.fulfilled
-      expect(toBN(await web3.eth.getBalance(homeBridge.address))).to.be.bignumber.equal(ZERO)
-      expect(toBN(await web3.eth.getBalance(accounts[3]))).to.be.bignumber.equal(balanceBefore.add(halfEther))
+      await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: accounts[3] }).should.be.rejected
+      await homeBridge.claimTokens(ZERO_ADDRESS, accounts[3], { from: owner }).should.be.rejected
     })
   })
 
@@ -1280,6 +1289,23 @@ contract('HomeBridge', async accounts => {
 
       // Then
       expect(await homeBridge.getForeignFee()).to.be.bignumber.equals(newForeignFee)
+    })
+    it('should return zero parameters for zero fee manager', async () => {
+      // When
+      await homeBridge.initialize(
+        validatorContract.address,
+        [oneEther, halfEther, minPerTx],
+        gasPrice,
+        requireBlockConfirmations,
+        [foreignDailyLimit, foreignMaxPerTx],
+        owner,
+        decimalShiftZero
+      ).should.be.fulfilled
+
+      // Then
+      expect(await homeBridge.getFeeManagerMode()).to.be.equal('0x00000000')
+      expect(await homeBridge.getHomeFee()).to.be.bignumber.equal(ZERO)
+      expect(await homeBridge.getForeignFee()).to.be.bignumber.equal(ZERO)
     })
     it('should be able to get fee manager mode', async () => {
       // Given
@@ -2495,99 +2521,100 @@ contract('HomeBridge', async accounts => {
     })
   })
   describe('#decimalShift', async () => {
-    const decimalShiftTwo = 2
-    it('Foreign to Home: works with 5 validators and 3 required signatures with decimal shift 2', async () => {
-      const recipient = accounts[8]
-      const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
-      const ownerOfValidators = accounts[0]
-      const validatorContractWith3Signatures = await BridgeValidators.new()
-      await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
+    for (const decimalShift of [2, -1]) {
+      it(`Foreign to Home: works with 5 validators and 3 required signatures with decimal shift ${decimalShift}`, async () => {
+        const recipient = accounts[8]
+        const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
+        const ownerOfValidators = accounts[0]
+        const validatorContractWith3Signatures = await BridgeValidators.new()
+        await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
 
-      const homeBridgeWithThreeSigs = await HomeBridge.new()
-      await homeBridgeWithThreeSigs.initialize(
-        validatorContractWith3Signatures.address,
-        [oneEther, halfEther, minPerTx],
-        gasPrice,
-        requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
-        owner,
-        decimalShiftTwo
-      )
+        const homeBridgeWithThreeSigs = await HomeBridge.new()
+        await homeBridgeWithThreeSigs.initialize(
+          validatorContractWith3Signatures.address,
+          [oneEther, halfEther, minPerTx],
+          gasPrice,
+          requireBlockConfirmations,
+          [foreignDailyLimit, foreignMaxPerTx],
+          owner,
+          decimalShift
+        )
 
-      const valueOnForeign = toBN('1000')
-      const valueOnHome = toBN(valueOnForeign * 10 ** decimalShiftTwo)
-      const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
+        const valueOnForeign = toBN('1000')
+        const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
+        const transactionHash = '0x806335163828a8eda675cff9c84fa6e6c7cf06bb44cc6ec832e42fe789d01415'
 
-      await homeBridgeWithThreeSigs.sendTransaction({
-        from: recipient,
-        value: halfEther
-      }).should.be.fulfilled
+        await homeBridgeWithThreeSigs.sendTransaction({
+          from: recipient,
+          value: halfEther
+        }).should.be.fulfilled
 
-      const balanceBeforeRecipient = toBN(await web3.eth.getBalance(recipient))
+        const balanceBeforeRecipient = toBN(await web3.eth.getBalance(recipient))
 
-      const { logs } = await homeBridgeWithThreeSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
-        from: authoritiesFiveAccs[0]
-      }).should.be.fulfilled
-      expectEventInLogs(logs, 'SignedForAffirmation', {
-        signer: authorities[0],
-        transactionHash
-      })
-
-      await homeBridgeWithThreeSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
-        from: authoritiesFiveAccs[1]
-      }).should.be.fulfilled
-      const thirdSignature = await homeBridgeWithThreeSigs.executeAffirmation(
-        recipient,
-        valueOnForeign,
-        transactionHash,
-        { from: authoritiesFiveAccs[2] }
-      ).should.be.fulfilled
-
-      expectEventInLogs(thirdSignature.logs, 'AffirmationCompleted', {
-        recipient,
-        value: valueOnForeign,
-        transactionHash
-      })
-
-      const balanceAfterRecipient = toBN(await web3.eth.getBalance(recipient))
-      balanceAfterRecipient.should.be.bignumber.equal(balanceBeforeRecipient.add(valueOnHome))
-    })
-    it('Foreign to Home: test decimal shift 2, no impact on UserRequestForSignature value', async () => {
-      homeContract = await HomeBridge.new()
-      await homeContract.initialize(
-        validatorContract.address,
-        ['3', '2', '1'],
-        gasPrice,
-        requireBlockConfirmations,
-        [foreignDailyLimit, foreignMaxPerTx],
-        owner,
-        decimalShiftTwo
-      )
-      const currentDay = await homeContract.getCurrentDay()
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
-
-      const { logs } = await homeContract.sendTransaction({
-        from: accounts[1],
-        value: 1
-      }).should.be.fulfilled
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
-
-      expectEventInLogs(logs, 'UserRequestForSignature', { recipient: accounts[1], value: toBN(1) })
-
-      await homeContract
-        .sendTransaction({
-          from: accounts[1],
-          value: 3
+        const { logs } = await homeBridgeWithThreeSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
+          from: authoritiesFiveAccs[0]
+        }).should.be.fulfilled
+        expectEventInLogs(logs, 'SignedForAffirmation', {
+          signer: authorities[0],
+          transactionHash
         })
-        .should.be.rejectedWith(ERROR_MSG)
 
-      await homeContract.setDailyLimit(4).should.be.fulfilled
-      await homeContract.sendTransaction({
-        from: accounts[1],
-        value: 1
-      }).should.be.fulfilled
+        await homeBridgeWithThreeSigs.executeAffirmation(recipient, valueOnForeign, transactionHash, {
+          from: authoritiesFiveAccs[1]
+        }).should.be.fulfilled
+        const thirdSignature = await homeBridgeWithThreeSigs.executeAffirmation(
+          recipient,
+          valueOnForeign,
+          transactionHash,
+          { from: authoritiesFiveAccs[2] }
+        ).should.be.fulfilled
 
-      expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
-    })
+        expectEventInLogs(thirdSignature.logs, 'AffirmationCompleted', {
+          recipient,
+          value: valueOnForeign,
+          transactionHash
+        })
+
+        const balanceAfterRecipient = toBN(await web3.eth.getBalance(recipient))
+        balanceAfterRecipient.should.be.bignumber.equal(balanceBeforeRecipient.add(valueOnHome))
+      })
+      it(`Foreign to Home: test decimal shift ${decimalShift}, no impact on UserRequestForSignature value`, async () => {
+        homeContract = await HomeBridge.new()
+        await homeContract.initialize(
+          validatorContract.address,
+          ['3', '2', '1'],
+          gasPrice,
+          requireBlockConfirmations,
+          [foreignDailyLimit, foreignMaxPerTx],
+          owner,
+          decimalShift
+        )
+        const currentDay = await homeContract.getCurrentDay()
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal(ZERO)
+
+        const { logs } = await homeContract.sendTransaction({
+          from: accounts[1],
+          value: 1
+        }).should.be.fulfilled
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('1')
+
+        expectEventInLogs(logs, 'UserRequestForSignature', { recipient: accounts[1], value: toBN(1) })
+
+        await homeContract
+          .sendTransaction({
+            from: accounts[1],
+            value: 3
+          })
+          .should.be.rejectedWith(ERROR_MSG)
+
+        await homeContract.setDailyLimit(4).should.be.fulfilled
+        await homeContract.sendTransaction({
+          from: accounts[1],
+          value: 1
+        }).should.be.fulfilled
+
+        expect(await homeContract.totalSpentPerDay(currentDay)).to.be.bignumber.equal('2')
+      })
+    }
   })
 })

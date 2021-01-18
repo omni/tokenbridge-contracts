@@ -647,25 +647,6 @@ contract('HomeAMB', async accounts => {
 
       await homeBridge.executeAffirmation(message, { from: authorities[0], gasPrice }).should.be.rejected
     })
-    it('should not allow to pass message back through the bridge', async () => {
-      const user = accounts[8]
-
-      const data = await homeBridge.contract.methods.requireToPassMessage(box.address, setValueData, 100000).encodeABI()
-      // Use these calls to simulate home bridge on home network
-      const resultPassMessageTx = await foreignBridge.requireToPassMessage(homeBridge.address, data, 821254, {
-        from: user
-      })
-
-      const { encodedData: message, messageId } = resultPassMessageTx.logs[0].args
-
-      await homeBridge.executeAffirmation(message, {
-        from: authorities[0],
-        gasPrice
-      }).should.be.fulfilled
-
-      // means that call to requireToPassMessage inside MessageProcessor reverted, since messageId flag was set up
-      expect(await homeBridge.messageCallStatus(messageId)).to.be.equal(false)
-    })
   })
   describe('submitSignature', () => {
     let homeBridge

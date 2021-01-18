@@ -29,9 +29,6 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
     * @param _dataType AMB message dataType to be included as a part of the header
     */
     function _sendMessage(address _contract, bytes _data, uint256 _gas, uint256 _dataType) public returns (bytes32) {
-        // it is not allowed to pass messages while other messages are processed
-        require(messageId() == bytes32(0));
-
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
 
         bytes32 _messageId;

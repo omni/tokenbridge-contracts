@@ -9,15 +9,6 @@ import "./interfaces/IRelayRecipient.sol";
  * A subclass must use "_msgSender()" instead of "msg.sender"
  */
 contract BaseRelayRecipient is IRelayRecipient {
-    /*
-     * Forwarder singleton we accept calls from
-     */
-    address public trustedForwarder;
-
-    function isTrustedForwarder(address forwarder) public view returns (bool) {
-        return forwarder == trustedForwarder;
-    }
-
     /**
      * return the sender of this call.
      * if the call came through our trusted forwarder, return the original sender.

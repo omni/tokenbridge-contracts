@@ -1,9 +1,9 @@
 pragma solidity 0.4.24;
 
 import "./BasicForeignBridgeErcToErc.sol";
-import "./GSNForeignBridgeErcToErc.sol";
+import "../GSNForeignERC20Bridge.sol";
 
-contract ForeignBridgeErcToErc is GSNForeignBridgeErcToErc {
+contract ForeignBridgeErcToErc is BasicForeignBridgeErcToErc, GSNForeignERC20Bridge {
     function initialize(
         address _validatorContract,
         address _erc20token,

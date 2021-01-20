@@ -25,7 +25,11 @@ contract UniswapRouterMock {
 
         ERC20(path[0]).transferFrom(msg.sender, address(this), tokensToTake);
 
-        TokenPaymaster(msg.sender).deposit.value(ethToSend)();
+        require(msg.sender.call.value(ethToSend)());
+
+        amounts = new uint256[](2);
+        amounts[0] = tokensToTake;
+        amounts[1] = ethToSend;
     }
 
     function() external payable {}

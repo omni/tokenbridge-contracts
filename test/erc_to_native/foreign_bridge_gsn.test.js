@@ -1,7 +1,8 @@
 // Required for opengsn proper work
 require('array-flat-polyfill')
 
-const ForeignBridge = artifacts.require('ForeignBridgeErcToErc.sol')
+const ForeignBridge = artifacts.require('ForeignBridgeErcToNative.sol')
+const ForeignBridgeErcToNativeMock = artifacts.require('ForeignBridgeErcToNativeMock.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 
@@ -12,8 +13,8 @@ const TokenPaymaster = artifacts.require('TokenPaymaster.sol')
 const { RelayProvider } = require('@opengsn/gsn')
 const ethers = require('ethers')
 
-const { toBN } = require('../../setup')
-const { createMessage, sign, signatureToVRS, ether, packSignatures } = require('../../helpers/helpers')
+const { toBN } = require('../setup')
+const { createMessage, sign, signatureToVRS, ether, packSignatures, evalMetrics } = require('../helpers/helpers')
 
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -24,16 +25,21 @@ const minPerTx = ether('0.01')
 const dailyLimit = homeDailyLimit
 const ZERO = toBN(0)
 const decimalShiftZero = 0
+const FIVE_ETHER = ether('5')
 
 // Result of deploying gsn via `npx gsn start`
-const RelayHubAddress = '0x254dffcd3277C0b1660F6d42EFbB754edaBAbC2B'
-const ForwarderAddress = '0xCfEB869F69431e42cdB54A4F4f105C19C080A601'
+const RelayHubAddress = '0x7cC4B1851c35959D34e635A470F6b5C43bA3C9c9'
+const ForwarderAddress = '0x85a84691547b7ccF19D7c31977A7F8c0aF1FB25A'
 
-async function evalMetrics(target, ...metrics) {
-  const before = await Promise.all(metrics.map(metric => metric()))
-  await target()
-  const after = await Promise.all(metrics.map(metric => metric()))
-  return [...before, ...after]
+function createEmptyAccount(relayer) {
+  const GSNUser = ethers.Wallet.createRandom()
+  relayer.addAccount(GSNUser.privateKey)
+  return GSNUser.address
+}
+
+function getEthersGSNContract(truffleContract, address, relayer, from) {
+  const pr = new ethers.providers.Web3Provider(relayer)
+  return new ethers.Contract(address, truffleContract.abi, pr.getSigner(from))
 }
 
 contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
@@ -41,6 +47,7 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
   let authorities
   let owner
   let token
+  let otherSideBridge
 
   let router
   let MPRelayer
@@ -51,20 +58,23 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
+    otherSideBridge = await ForeignBridge.new()
   })
   describe('#executeSignaturesGSN', async () => {
     const BRIDGE_TOKENS = ether('300')
+    const REQUESTED_TOKENS = BRIDGE_TOKENS
+
     let foreignBridge
+    let GSNForeignBridge
+    let GSNSigner
     beforeEach(async () => {
       const web3provider = web3.currentProvider
 
       // Deploy
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       router = await UniswapRouterMock.new()
-      paymaster = await TokenPaymaster.new(RelayHubAddress, ForwarderAddress)
-
-      await paymaster.setToken(token.address)
-      await paymaster.setRouter(router.address)
+      paymaster = await TokenPaymaster.new(RelayHubAddress, ForwarderAddress, token.address, router.address)
+      await paymaster.setPostGasUsage(250000)
 
       const ethersProvider = new ethers.providers.Web3Provider(web3provider)
       const signer = ethersProvider.getSigner()
@@ -92,8 +102,10 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
         config: MPConfig
       })
       await MPRelayer.init()
+      GSNSigner = createEmptyAccount(MPRelayer)
 
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+      GSNForeignBridge = getEthersGSNContract(ForeignBridgeErcToNativeMock, foreignBridge.address, MPRelayer, GSNSigner)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -102,7 +114,8 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
         [dailyLimit, maxPerTx, minPerTx],
         [homeDailyLimit, homeMaxPerTx],
         owner,
-        decimalShiftZero
+        decimalShiftZero,
+        otherSideBridge.address
       )
       await foreignBridge.setTrustedForwarder(ForwarderAddress)
       await foreignBridge.setPayMaster(paymaster.address)
@@ -110,16 +123,10 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
       await token.mint(foreignBridge.address, BRIDGE_TOKENS)
     })
     it('should allow to executeSignaturesGSN', async () => {
-      const GSNUser = ethers.Wallet.createRandom()
-      MPRelayer.addAccount(GSNUser.privateKey)
-      ForeignBridge.setProvider(MPRelayer)
-
-      const recipientAccount = GSNUser.address
+      const recipientAccount = GSNSigner
       const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
 
-      const REQUESTED_TOKENS = ether('100')
-      // 5% of `REQUESTED_TOKENS`
-      const MAX_COMMISSION = REQUESTED_TOKENS.div(toBN('20'))
+      const MAX_COMMISSION = FIVE_ETHER
       const [
         userTokenBalanceBefore,
         userEthBalanceBefore,
@@ -138,14 +145,12 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
           const signature = await sign(authorities[0], message)
           const oneSignature = packSignatures([signatureToVRS(signature)])
 
-          const pr = new ethers.providers.Web3Provider(MPRelayer)
-          const fb = new ethers.Contract(foreignBridge.address, ForeignBridge.abi, pr.getSigner(GSNUser.address))
-          const res = await fb.executeSignaturesGSN(
+          const res = await GSNForeignBridge.executeSignaturesGSN(
             message,
             oneSignature,
             ethers.BigNumber.from(MAX_COMMISSION.toString()),
             {
-              gasLimit: 500000
+              from: recipientAccount
             }
           )
 
@@ -159,7 +164,6 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
       )
 
       userEthBalanceBefore.should.be.bignumber.equal(ZERO)
-
       userTokenBalanceBefore.should.be.bignumber.equal(ZERO)
       userTokenBalanceAfter.should.be.bignumber.gte(REQUESTED_TOKENS.sub(MAX_COMMISSION))
 
@@ -170,6 +174,43 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
 
       bridgeTokenBalanceAfter.should.be.bignumber.equal(BRIDGE_TOKENS.sub(REQUESTED_TOKENS))
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+    })
+    it('should reject insufficient fee', async () => {
+      const from = createEmptyAccount(MPRelayer)
+
+      const recipientAccount = from
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+
+      const message = createMessage(recipientAccount, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const oneSignature = packSignatures([signatureToVRS(signature)])
+
+      await GSNForeignBridge.executeSignaturesGSN(message, oneSignature, 0, { gasLimit: 500000 }).should.be.rejected
+
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+    })
+    it('should not allow second withdraw (replay attack) with same transactionHash but different recipient', async () => {
+      const ethersCommission = ethers.BigNumber.from(FIVE_ETHER.toString())
+      // tx 1
+      const transactionHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
+      const message = createMessage(GSNSigner, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const oneSignature = packSignatures([signatureToVRS(signature)])
+      false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      await GSNForeignBridge.executeSignaturesGSN(message, oneSignature, ethersCommission).should.be.fulfilled
+
+      // tx 2
+      await token.mint(foreignBridge.address, BRIDGE_TOKENS)
+      const message2 = createMessage(accounts[4], REQUESTED_TOKENS, transactionHash, foreignBridge.address)
+      const signature2 = await sign(authorities[0], message2)
+      const oneSignature2 = packSignatures([signatureToVRS(signature2)])
+      true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
+
+      const pmDepositBefore = await paymaster.getRelayHubDeposit()
+      await GSNForeignBridge.executeSignaturesGSN(message2, oneSignature2, ethersCommission).should.be.rejected
+      const pmDepositAfter = await paymaster.getRelayHubDeposit()
+      pmDepositAfter.should.be.bignumber.equal(pmDepositBefore)
     })
   })
 })

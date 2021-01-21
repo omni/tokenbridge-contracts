@@ -668,9 +668,9 @@ contract('HomeAMB', async accounts => {
     })
     it('should allow to pass message back through the bridge if configured', async () => {
       const user = accounts[8]
-      await foreignBridge.setAllowReentrantRequests(true, { from: user }).should.be.rejected
-      await foreignBridge.setAllowReentrantRequests(true, { from: owner }).should.be.fulfilled
-      expect(await foreignBridge.allowReentrantRequests()).to.be.equal(true)
+      await homeBridge.setAllowReentrantRequests(true, { from: user }).should.be.rejected
+      await homeBridge.setAllowReentrantRequests(true, { from: owner }).should.be.fulfilled
+      expect(await homeBridge.allowReentrantRequests()).to.be.equal(true)
 
       const data = await homeBridge.contract.methods.requireToPassMessage(box.address, setValueData, 100000).encodeABI()
       // Use these calls to simulate home bridge on home network
@@ -685,7 +685,7 @@ contract('HomeAMB', async accounts => {
         gasPrice
       }).should.be.fulfilled
 
-      expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
+      expect(await homeBridge.messageCallStatus(messageId)).to.be.equal(true)
     })
   })
   describe('submitSignature', () => {

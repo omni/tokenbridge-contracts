@@ -2,8 +2,6 @@
 pragma solidity 0.4.24;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-
 contract IStakeManager {
     /// Emitted when a stake or unstakeDelay are initialized or increased
     event StakeAdded(address indexed relayManager, address indexed owner, uint256 stake, uint256 unstakeDelay);

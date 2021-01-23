@@ -2,7 +2,7 @@
 pragma solidity 0.4.24;
 pragma experimental ABIEncoderV2;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../upgradeable_contracts/Ownable.sol";
 
 import "./interfaces/GsnTypes.sol";
 import "./interfaces/IPaymaster.sol";

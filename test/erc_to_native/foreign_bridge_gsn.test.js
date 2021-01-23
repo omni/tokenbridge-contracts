@@ -42,7 +42,7 @@ function getEthersGSNContract(truffleContract, address, relayer, from) {
   return new ethers.Contract(address, truffleContract.abi, pr.getSigner(from))
 }
 
-contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
+contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
   let validatorContract
   let authorities
   let owner
@@ -68,14 +68,36 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
     let GSNForeignBridge
     let GSNSigner
     beforeEach(async () => {
-      const web3provider = web3.currentProvider
-
-      // Deploy
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+      await foreignBridge.initialize(
+        validatorContract.address,
+        token.address,
+        requireBlockConfirmations,
+        gasPrice,
+        [dailyLimit, maxPerTx, minPerTx],
+        [homeDailyLimit, homeMaxPerTx],
+        owner,
+        decimalShiftZero,
+        otherSideBridge.address
+      )
+
       router = await UniswapRouterMock.new()
-      paymaster = await TokenPaymaster.new(RelayHubAddress, ForwarderAddress, token.address, router.address)
+      paymaster = await TokenPaymaster.new(
+        RelayHubAddress,
+        ForwarderAddress,
+        token.address,
+        router.address,
+        foreignBridge.address
+      )
       await paymaster.setPostGasUsage(250000)
 
+      await foreignBridge.setTrustedForwarder(ForwarderAddress)
+      await foreignBridge.setPayMaster(paymaster.address)
+
+      await token.mint(foreignBridge.address, BRIDGE_TOKENS)
+
+      const web3provider = web3.currentProvider
       const ethersProvider = new ethers.providers.Web3Provider(web3provider)
       const signer = ethersProvider.getSigner()
 
@@ -103,24 +125,7 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
       })
       await MPRelayer.init()
       GSNSigner = createEmptyAccount(MPRelayer)
-
-      foreignBridge = await ForeignBridgeErcToNativeMock.new()
       GSNForeignBridge = getEthersGSNContract(ForeignBridgeErcToNativeMock, foreignBridge.address, MPRelayer, GSNSigner)
-      await foreignBridge.initialize(
-        validatorContract.address,
-        token.address,
-        requireBlockConfirmations,
-        gasPrice,
-        [dailyLimit, maxPerTx, minPerTx],
-        [homeDailyLimit, homeMaxPerTx],
-        owner,
-        decimalShiftZero,
-        otherSideBridge.address
-      )
-      await foreignBridge.setTrustedForwarder(ForwarderAddress)
-      await foreignBridge.setPayMaster(paymaster.address)
-
-      await token.mint(foreignBridge.address, BRIDGE_TOKENS)
     })
     it('should allow to executeSignaturesGSN', async () => {
       const recipientAccount = GSNSigner
@@ -211,6 +216,19 @@ contract('ForeignBridge_ERC20_to_ERC20_GSN', async accounts => {
       await GSNForeignBridge.executeSignaturesGSN(message2, oneSignature2, ethersCommission).should.be.rejected
       const pmDepositAfter = await paymaster.getRelayHubDeposit()
       pmDepositAfter.should.be.bignumber.equal(pmDepositBefore)
+    })
+    it('should not allow calls to other functions', async () => {
+      const from = createEmptyAccount(MPRelayer)
+
+      const recipientAccount = from
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+
+      const message = createMessage(recipientAccount, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const oneSignature = packSignatures([signatureToVRS(signature)])
+
+      const err = await GSNForeignBridge.executeSignatures(message, oneSignature).catch(e => e.message)
+      true.should.be.equal(err.includes('not allowed target'))
     })
   })
 })

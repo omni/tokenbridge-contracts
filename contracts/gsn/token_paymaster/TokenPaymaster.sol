@@ -5,32 +5,39 @@ pragma experimental ABIEncoderV2;
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "../BasePaymaster.sol";
 import "./IUniswapRouter02.sol";
+import "../../upgradeable_contracts/GSNForeignERC20Bridge.sol";
 
 contract TokenPaymaster is BasePaymaster {
     address private token;
-
     IUniswapV2Router02 private router;
-    address[] private TokenWethPair = new address[](2);
+    address private bridge;
 
+    address[] private tokenWethPair = new address[](2);
     uint256 public postGasUsage = 300000;
 
-    constructor(address rh, address fw, address _token, IUniswapV2Router02 _router) public {
-        setRelayHub(IRelayHub(rh));
-        setTrustedForwarder(IForwarder(fw));
+    constructor(address _relayHub, address _forwarder, address _token, address _router, address _bridge) public {
+        _setOwner(msg.sender);
+        relayHub = IRelayHub(_relayHub);
+        trustedForwarder = IForwarder(_forwarder);
 
         token = _token;
-        router = _router;
+        router = IUniswapV2Router02(_router);
+        bridge = _bridge;
 
-        TokenWethPair[0] = token;
-        TokenWethPair[1] = router.WETH();
+        tokenWethPair[0] = token;
+        tokenWethPair[1] = router.WETH();
     }
 
-    function setRouter(IUniswapV2Router02 r) public onlyOwner {
+    function setToken(address t) external onlyOwner {
+        token = t;
+    }
+
+    function setRouter(IUniswapV2Router02 r) external onlyOwner {
         router = r;
     }
 
-    function setToken(address t) public onlyOwner {
-        token = t;
+    function setBridge(address b) external onlyOwner {
+        bridge = b;
     }
 
     function versionPaymaster() external view returns (string memory) {
@@ -75,15 +82,24 @@ contract TokenPaymaster is BasePaymaster {
     ) public returns (bytes memory context, bool revertOnRecipientRevert) {
         (signature, approvalData);
         _verifyForwarder(relayRequest);
+        bytes memory reqData = relayRequest.request.data;
+        // Verify that `executeSignaturesGSN` is called
+        bytes4 functionSelector;
+        assembly {
+            functionSelector := mload(add(reqData, 32))
+        }
+        require(bridge == relayRequest.request.to, "accepets only bridge calls");
+        require(functionSelector == GSNForeignERC20Bridge(bridge).executeSignaturesGSN.selector, "not allowed target");
+
         // Get 3rd argument of executeSignaturesGSN, i.e. maxTokensFee
-        uint256 maxTokensFee = uint256(readBytes32(relayRequest.request.data, 4 + 32 + 32));
-        uint256 potentialWeiIncome = router.getAmountsOut(maxTokensFee, TokenWethPair)[1];
+        uint256 maxTokensFee = uint256(readBytes32(reqData, 4 + 32 + 32));
+        uint256 potentialWeiIncome = router.getAmountsOut(maxTokensFee, tokenWethPair)[1];
         uint256 maxFee = relayHub.calculateCharge(maxPossibleGas, relayRequest.relayData);
         require(potentialWeiIncome >= maxFee, "tokens fee can't cover expenses");
 
         // Recipient should match the sender
-        uint256 msgIdx = uint256(readBytes32(relayRequest.request.data, 4));
-        address recipient = address(readBytes32(relayRequest.request.data, 4 + msgIdx + 20));
+        uint256 msgIdx = uint256(readBytes32(reqData, 4));
+        address recipient = address(readBytes32(reqData, 4 + msgIdx + 20));
         require(recipient == relayRequest.request.from, "sender does not match recipient");
         return (abi.encodePacked(relayRequest.request.from, maxPossibleGas, maxTokensFee), true);
     }
@@ -126,7 +142,7 @@ contract TokenPaymaster is BasePaymaster {
         uint256 spentTokens = router.swapTokensForExactETH(
             chargeWei,
             maxTokensFee,
-            TokenWethPair,
+            tokenWethPair,
             address(this),
             block.timestamp
         )[0];

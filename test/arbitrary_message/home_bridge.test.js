@@ -919,6 +919,8 @@ contract('HomeAMB', async accounts => {
     let homeContract
     let box
 
+    const ethCallSelector = web3.utils.soliditySha3('eth_call(address,bytes)')
+
     beforeEach(async () => {
       homeContract = await HomeAMB.new()
       await homeContract.initialize(
@@ -933,21 +935,32 @@ contract('HomeAMB', async accounts => {
       box = await Box.new()
     })
 
+    it('should enable new selector', async () => {
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true, { from: accounts[1] }).should.be.rejected
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true, { from: owner }).should.be.fulfilled
+
+      expect(await homeContract.isAsyncRequestSelectorEnabled(ethCallSelector)).to.be.equal(true)
+    })
+
     it('should allow to request information from the other chain', async () => {
-      await homeContract.requireToGetInformation(homeContract.address, '0x11223344', 30000, accounts[1]).should.be
-        .rejected
+      await homeContract.requireToGetInformation(ethCallSelector, '0x11223344').should.be.rejected
+      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.rejected
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
       await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
 
       const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
       expect(events.length).to.be.equal(1)
       expect(events[0].returnValues.sender).to.be.equal(box.address)
-      expect(events[0].returnValues.executor).to.be.equal(accounts[1])
-      expect(events[0].returnValues.data).to.be.equal(box.contract.methods.value().encodeABI())
-      expect(events[0].returnValues.from).to.be.equal(accounts[0])
-      expect(events[0].returnValues.gas).to.be.equal('30000')
+      expect(events[0].returnValues.requestSelector).to.be.equal(ethCallSelector)
+      const data = web3.eth.abi.encodeParameters(
+        ['address', 'bytes'],
+        [accounts[1], box.contract.methods.value().encodeABI()]
+      )
+      expect(events[0].returnValues.data).to.be.equal(data)
     })
 
     it('should accept confirmations from a single validator', async () => {
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
       await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
       const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
       expect(events.length).to.be.equal(1)
@@ -961,8 +974,6 @@ contract('HomeAMB', async accounts => {
       await homeContract.confirmInformation(messageId, true, result, { from: authorities[1] }).should.be.rejected
       logs[0].event.should.be.equal('SignedForInformation')
       expectEventInLogs(logs, 'InformationRetrieved', {
-        sender: box.address,
-        executor: accounts[1],
         messageId,
         status: true,
         callbackStatus: true
@@ -973,6 +984,7 @@ contract('HomeAMB', async accounts => {
       expect(await box.status()).to.be.equal(true)
     })
     it('should accept confirmations from 2-of-3 validators', async () => {
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
       await validatorContract.setRequiredSignatures(2).should.be.fulfilled
 
       await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
@@ -989,8 +1001,6 @@ contract('HomeAMB', async accounts => {
       logs2[0].event.should.be.equal('SignedForInformation')
 
       expectEventInLogs(logs2, 'InformationRetrieved', {
-        sender: box.address,
-        executor: accounts[1],
         messageId,
         status: true,
         callbackStatus: true
@@ -1001,6 +1011,7 @@ contract('HomeAMB', async accounts => {
       expect(await box.status()).to.be.equal(true)
     })
     it('should process failed calls', async () => {
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
       await validatorContract.setRequiredSignatures(1).should.be.fulfilled
 
       await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
@@ -1013,8 +1024,6 @@ contract('HomeAMB', async accounts => {
         .be.fulfilled
       logs[0].event.should.be.equal('SignedForInformation')
       expectEventInLogs(logs, 'InformationRetrieved', {
-        sender: box.address,
-        executor: accounts[1],
         messageId,
         status: false,
         callbackStatus: true

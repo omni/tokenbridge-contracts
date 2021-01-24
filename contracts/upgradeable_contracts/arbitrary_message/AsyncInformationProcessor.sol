@@ -10,47 +10,54 @@ import "./BasicHomeAMB.sol";
 contract AsyncInformationProcessor is BasicHomeAMB {
     event UserRequestForInformation(
         bytes32 indexed messageId,
+        bytes32 indexed requestSelector,
         address indexed sender,
-        address indexed executor,
-        bytes data,
-        uint256 timestamp,
-        address from,
-        uint256 gas
+        bytes data
     );
     event SignedForInformation(address indexed signer, bytes32 indexed messageId);
-    event InformationRetrieved(
-        bytes32 indexed messageId,
-        address indexed sender,
-        address indexed executor,
-        bool status,
-        bool callbackStatus
-    );
+    event InformationRetrieved(bytes32 indexed messageId, bool status, bool callbackStatus);
+    event EnabledAsyncRequestSelector(bytes32 indexed requestSelector, bool enable);
 
     /**
      * @dev Makes an asynchronous request to get information from the opposite network.
      * Call result will be returned later to the callee, by using the onInformationReceived(bytes) callback function.
-     * @param _contract executor address on the other side.
-     * @param _data calldata passed to the executor on the other side.
-     * @param _gas gas limit used on the other network for making eth_call.
-     * @param _from address on the other side to use in a from param of eth_call.
      */
-    function requireToGetInformation(address _contract, bytes _data, uint256 _gas, address _from)
-        external
-        returns (bytes32)
-    {
+    function requireToGetInformation(bytes32 _requestSelector, bytes _data) external returns (bytes32) {
         // it is not allowed to pass messages while other messages are processed
-        require(messageId() == bytes32(0));
+        // if other is not explicitly configured
+        require(messageId() == bytes32(0) || allowReentrantRequests());
         // only contracts are allowed to call this method, since EOA won't be able to receive a callback.
         require(AddressUtils.isContract(msg.sender));
 
-        require(_gas >= 21000 + getMinimumGasUsage(_data) && _gas <= 10000000);
+        require(isAsyncRequestSelectorEnabled(_requestSelector));
 
         bytes32 _messageId = _getNewMessageId(sourceChainId());
 
-        _saveAsyncRequestInformation(_messageId, msg.sender, _contract);
+        _setAsyncRequestSender(_messageId, msg.sender);
 
-        emit UserRequestForInformation(_messageId, msg.sender, _contract, _data, now, _from, _gas);
+        emit UserRequestForInformation(_messageId, _requestSelector, msg.sender, _data);
         return _messageId;
+    }
+
+    /**
+     * Tells if the specific async request selector is allowed to be used and supported by the bridge oracles.
+     * @param _requestSelector selector for the async request.
+     * @return true, if selector is allowed to be used.
+     */
+    function isAsyncRequestSelectorEnabled(bytes32 _requestSelector) public view returns (bool) {
+        return boolStorage[keccak256(abi.encodePacked("enableRequestSelector", _requestSelector))];
+    }
+
+    /**
+     * Enables or disables the specific async request selector.
+     * Only owner can call this method.
+     * @param _requestSelector selector for the async request.
+     * @param _enable true, if the selector should be allowed.
+     */
+    function enableAsyncRequestSelector(bytes32 _requestSelector, bool _enable) external onlyOwner {
+        boolStorage[keccak256(abi.encodePacked("enableRequestSelector", _requestSelector))] = _enable;
+
+        emit EnabledAsyncRequestSelector(_requestSelector, _enable);
     }
 
     /**
@@ -58,7 +65,7 @@ contract AsyncInformationProcessor is BasicHomeAMB {
      * Only validators are allowed to call this method.
      * Once enough confirmations are collected, callback function is called.
      * @param _messageId unique id of the request that was previously made.
-     * @param _status true, if eth_call succeeded, false otherwise.
+     * @param _status true, if JSON-RPC request succeeded, false otherwise.
      * @param _result call result returned by the other side of the bridge.
      */
     function confirmInformation(bytes32 _messageId, bool _status, bytes _result) external onlyValidator {
@@ -79,7 +86,7 @@ contract AsyncInformationProcessor is BasicHomeAMB {
 
         if (signed >= requiredSignatures()) {
             setNumAffirmationsSigned(hashMsg, markAsProcessed(signed));
-            (address sender, address executor) = _restoreAsyncRequestInformation(_messageId);
+            address sender = _restoreAsyncRequestSender(_messageId);
             bytes memory data = abi.encodeWithSelector(
                 IAMBInformationReceiver(address(0)).onInformationReceived.selector,
                 _messageId,
@@ -91,36 +98,31 @@ contract AsyncInformationProcessor is BasicHomeAMB {
 
             bool callbackStatus = sender.call.gas(gas)(data);
 
-            emit InformationRetrieved(_messageId, sender, executor, _status, callbackStatus);
+            emit InformationRetrieved(_messageId, _status, callbackStatus);
         }
     }
 
     /**
-     * Internal function for saving callback information for future use.
+     * Internal function for saving async request sender for future use.
      * @param _messageId id of the sent async request.
      * @param _sender address of the request sender, receiver of the callback.
-     * @param _executor address of the executor on the other side.
      */
-    function _saveAsyncRequestInformation(bytes32 _messageId, address _sender, address _executor) internal {
+    function _setAsyncRequestSender(bytes32 _messageId, address _sender) internal {
         addressStorage[keccak256(abi.encodePacked("asyncSender", _messageId))] = _sender;
-        addressStorage[keccak256(abi.encodePacked("asyncExecutor", _messageId))] = _executor;
     }
 
     /**
-     * Internal function for restoring callback information that was saved previously.
+     * Internal function for restoring async request sender information.
      * @param _messageId id of the sent async request.
-     * @return addresses of async request sender, async request executor.
+     * @return address of async request sender and callback receiver.
      */
-    function _restoreAsyncRequestInformation(bytes32 _messageId) internal returns (address, address) {
-        bytes32 hash1 = keccak256(abi.encodePacked("asyncSender", _messageId));
-        bytes32 hash2 = keccak256(abi.encodePacked("asyncExecutor", _messageId));
-        address sender = addressStorage[hash1];
-        address executor = addressStorage[hash2];
+    function _restoreAsyncRequestSender(bytes32 _messageId) internal returns (address) {
+        bytes32 hash = keccak256(abi.encodePacked("asyncSender", _messageId));
+        address sender = addressStorage[hash];
 
-        require(sender != address(0) && executor != address(0));
+        require(sender != address(0));
 
-        delete addressStorage[hash1];
-        delete addressStorage[hash2];
-        return (sender, executor);
+        delete addressStorage[hash];
+        return sender;
     }
 }

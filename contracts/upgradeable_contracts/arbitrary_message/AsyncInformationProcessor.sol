@@ -61,7 +61,7 @@ contract AsyncInformationProcessor is BasicHomeAMB {
     }
 
     /**
-     * @dev Submits async eth_call result on behalf of bridge validator.
+     * @dev Submits result of the async call.
      * Only validators are allowed to call this method.
      * Once enough confirmations are collected, callback function is called.
      * @param _messageId unique id of the request that was previously made.

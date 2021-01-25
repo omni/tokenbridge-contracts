@@ -918,6 +918,7 @@ contract('HomeAMB', async accounts => {
   describe('async information retrieval', () => {
     let homeContract
     let box
+    let data
 
     const ethCallSelector = web3.utils.soliditySha3('eth_call(address,bytes)')
 
@@ -933,6 +934,10 @@ contract('HomeAMB', async accounts => {
         owner
       ).should.be.fulfilled
       box = await Box.new()
+      data = web3.eth.abi.encodeParameters(
+        ['address', 'bytes'],
+        [accounts[1], box.contract.methods.value().encodeABI()]
+      )
     })
 
     it('should enable new selector', async () => {
@@ -943,25 +948,21 @@ contract('HomeAMB', async accounts => {
     })
 
     it('should allow to request information from the other chain', async () => {
-      await homeContract.requireToGetInformation(ethCallSelector, '0x11223344').should.be.rejected
-      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.rejected
+      await homeContract.requireToGetInformation(ethCallSelector, data).should.be.rejected
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.rejected
       await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
-      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.fulfilled
 
       const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
       expect(events.length).to.be.equal(1)
       expect(events[0].returnValues.sender).to.be.equal(box.address)
       expect(events[0].returnValues.requestSelector).to.be.equal(ethCallSelector)
-      const data = web3.eth.abi.encodeParameters(
-        ['address', 'bytes'],
-        [accounts[1], box.contract.methods.value().encodeABI()]
-      )
       expect(events[0].returnValues.data).to.be.equal(data)
     })
 
     it('should accept confirmations from a single validator', async () => {
       await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
-      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.fulfilled
       const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
       expect(events.length).to.be.equal(1)
       const { messageId } = events[0].returnValues
@@ -979,7 +980,7 @@ contract('HomeAMB', async accounts => {
         callbackStatus: true
       })
 
-      expect(await box.value()).to.be.bignumber.equal('5')
+      expect(await box.data()).to.be.equal(result)
       expect(await box.messageId()).to.be.equal(messageId)
       expect(await box.status()).to.be.equal(true)
     })
@@ -987,7 +988,7 @@ contract('HomeAMB', async accounts => {
       await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
       await validatorContract.setRequiredSignatures(2).should.be.fulfilled
 
-      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.fulfilled
       const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
       expect(events.length).to.be.equal(1)
       const { messageId } = events[0].returnValues
@@ -1006,7 +1007,7 @@ contract('HomeAMB', async accounts => {
         callbackStatus: true
       })
 
-      expect(await box.value()).to.be.bignumber.equal('5')
+      expect(await box.data()).to.be.equal(result)
       expect(await box.messageId()).to.be.equal(messageId)
       expect(await box.status()).to.be.equal(true)
     })
@@ -1014,7 +1015,7 @@ contract('HomeAMB', async accounts => {
       await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
       await validatorContract.setRequiredSignatures(1).should.be.fulfilled
 
-      await box.getValueFromTheOtherNetwork(homeContract.address, accounts[1]).should.be.fulfilled
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.fulfilled
       const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
       expect(events.length).to.be.equal(1)
       const { messageId } = events[0].returnValues
@@ -1029,7 +1030,7 @@ contract('HomeAMB', async accounts => {
         callbackStatus: true
       })
 
-      expect(await box.value()).to.be.bignumber.equal('5')
+      expect(await box.data()).to.be.equal(result)
       expect(await box.messageId()).to.be.equal(messageId)
       expect(await box.status()).to.be.equal(false)
     })

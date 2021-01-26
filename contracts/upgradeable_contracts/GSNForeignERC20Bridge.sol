@@ -36,6 +36,7 @@ contract GSNForeignERC20Bridge is BasicForeignBridge, ERC20Bridge, BaseRelayReci
     * as a commission
     */
     function executeSignaturesGSN(bytes message, bytes signatures, uint256 maxTokensFee) external {
+        require(msg.sender == addressStorage[TRUSTED_FORWARDER], "invalid forwarder");
         Message.hasEnoughValidSignatures(message, signatures, validatorContract(), false);
 
         address recipient;

@@ -26,6 +26,7 @@ const dailyLimit = homeDailyLimit
 const ZERO = toBN(0)
 const decimalShiftZero = 0
 const FIVE_ETHER = ether('5')
+const GSNGasLimit = 500000
 
 // Result of deploying gsn via `npx gsn start`
 const RelayHubAddress = '0x7cC4B1851c35959D34e635A470F6b5C43bA3C9c9'
@@ -155,7 +156,8 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
             oneSignature,
             ethers.BigNumber.from(MAX_COMMISSION.toString()),
             {
-              from: recipientAccount
+              from: recipientAccount,
+              gasLimit: GSNGasLimit
             }
           )
 
@@ -203,7 +205,8 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       const oneSignature = packSignatures([signatureToVRS(signature)])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      await GSNForeignBridge.executeSignaturesGSN(message, oneSignature, ethersCommission).should.be.fulfilled
+      await GSNForeignBridge.executeSignaturesGSN(message, oneSignature, ethersCommission, { gasLimit: GSNGasLimit })
+        .should.be.fulfilled
 
       // tx 2
       await token.mint(foreignBridge.address, BRIDGE_TOKENS)
@@ -213,22 +216,32 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
       const pmDepositBefore = await paymaster.getRelayHubDeposit()
-      await GSNForeignBridge.executeSignaturesGSN(message2, oneSignature2, ethersCommission).should.be.rejected
+      await GSNForeignBridge.executeSignaturesGSN(message2, oneSignature2, ethersCommission, { gasLimit: GSNGasLimit })
+        .should.be.rejected
       const pmDepositAfter = await paymaster.getRelayHubDeposit()
       pmDepositAfter.should.be.bignumber.equal(pmDepositBefore)
     })
-    it('should not allow calls to other functions', async () => {
-      const from = createEmptyAccount(MPRelayer)
-
-      const recipientAccount = from
+    it('should reject calls to other functions', async () => {
+      const recipientAccount = createEmptyAccount(MPRelayer)
       const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
-
       const message = createMessage(recipientAccount, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const oneSignature = packSignatures([signatureToVRS(signature)])
 
       const err = await GSNForeignBridge.executeSignatures(message, oneSignature).catch(e => e.message)
       true.should.be.equal(err.includes('not allowed target'))
+    })
+    it('should reject not GSN calls', async () => {
+      const recipientAccount = createEmptyAccount(MPRelayer)
+      const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
+      const message = createMessage(recipientAccount, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
+      const signature = await sign(authorities[0], message)
+      const oneSignature = packSignatures([signatureToVRS(signature)])
+
+      const err = await foreignBridge
+        .executeSignaturesGSN(message, oneSignature, FIVE_ETHER, { from: recipientAccount })
+        .catch(e => e)
+      err.reason.should.be.equal('invalid forwarder')
     })
   })
 })

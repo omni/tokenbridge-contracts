@@ -17,7 +17,8 @@ contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
     function executeActionOnBridgedTokens(address _recipient, uint256 _value) internal {
         uint256 value = _shiftValue(_value);
         bytes32 _messageId = messageId();
-        IBurnableMintableERC677Token(erc677token()).mint(_recipient, value);
+        IBurnableMintableERC677Token(erc677token()).mint(address(this), value);
+        require(erc677token().transferAndCall(_recipient, value, new bytes(0)), "transfer_failed");
         emit TokensBridged(_recipient, value, _messageId);
     }
 

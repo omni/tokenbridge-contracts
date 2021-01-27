@@ -211,3 +211,9 @@ async function evalMetrics(target, ...metrics) {
 }
 
 module.exports.evalMetrics = evalMetrics
+
+function paymasterError(reason) {
+  return `paymaster rejected in local view call to 'relayCall()' : ${reason}`
+}
+
+module.exports.paymasterError = paymasterError

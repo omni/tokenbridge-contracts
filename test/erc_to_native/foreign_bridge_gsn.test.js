@@ -11,10 +11,17 @@ const TokenPaymaster = artifacts.require('TokenPaymaster.sol')
 
 // GSN
 const { RelayProvider } = require('@opengsn/gsn')
-const ethers = require('ethers')
 
-const { toBN } = require('../setup')
-const { createMessage, sign, signatureToVRS, ether, packSignatures, evalMetrics } = require('../helpers/helpers')
+const { toBN, ERROR_MSG } = require('../setup')
+const {
+  createMessage,
+  sign,
+  signatureToVRS,
+  ether,
+  packSignatures,
+  evalMetrics,
+  paymasterError
+} = require('../helpers/helpers')
 
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -33,14 +40,9 @@ const RelayHubAddress = '0x7cC4B1851c35959D34e635A470F6b5C43bA3C9c9'
 const ForwarderAddress = '0x85a84691547b7ccF19D7c31977A7F8c0aF1FB25A'
 
 function createEmptyAccount(relayer) {
-  const GSNUser = ethers.Wallet.createRandom()
+  const GSNUser = web3.eth.accounts.create()
   relayer.addAccount(GSNUser.privateKey)
   return GSNUser.address
-}
-
-function getEthersGSNContract(truffleContract, address, relayer, from) {
-  const pr = new ethers.providers.Web3Provider(relayer)
-  return new ethers.Contract(address, truffleContract.abi, pr.getSigner(from))
 }
 
 contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
@@ -51,7 +53,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
   let otherSideBridge
 
   let router
-  let MPRelayer
+  let GSNRelayer
   let paymaster
   before(async () => {
     validatorContract = await BridgeValidators.new()
@@ -66,10 +68,10 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
     const REQUESTED_TOKENS = BRIDGE_TOKENS
 
     let foreignBridge
-    let GSNForeignBridge
     let GSNSigner
     beforeEach(async () => {
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
+      ForeignBridgeErcToNativeMock.web3.setProvider(web3.currentProvider)
       foreignBridge = await ForeignBridgeErcToNativeMock.new()
       await foreignBridge.initialize(
         validatorContract.address,
@@ -98,35 +100,35 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
 
       await token.mint(foreignBridge.address, BRIDGE_TOKENS)
 
-      const web3provider = web3.currentProvider
-      const ethersProvider = new ethers.providers.Web3Provider(web3provider)
-      const signer = ethersProvider.getSigner()
-
       // Give Router 1 ether
-      await signer.sendTransaction({
+      await web3.eth.sendTransaction({
+        from: accounts[0],
         to: router.address,
-        value: ethers.utils.parseEther('1.0')
+        value: ether('1')
       })
       // Give Paymaster 1 ether
-      await signer.sendTransaction({
+      await web3.eth.sendTransaction({
+        from: accounts[0],
         to: paymaster.address,
-        value: ethers.utils.parseEther('1.0')
+        value: ether('1')
       })
 
       // GSN configuration
-      const MPConfig = {
-        loggerConfigration: {
-          logLevel: 'debug'
-        },
-        paymasterAddress: paymaster.address
-      }
-      MPRelayer = RelayProvider.newProvider({
-        provider: web3provider,
-        config: MPConfig
+      GSNRelayer = RelayProvider.newProvider({
+        provider: web3.currentProvider,
+        config: {
+          loggerConfigration: {
+            logLevel: 'debug'
+          },
+          paymasterAddress: paymaster.address
+        }
       })
-      await MPRelayer.init()
-      GSNSigner = createEmptyAccount(MPRelayer)
-      GSNForeignBridge = getEthersGSNContract(ForeignBridgeErcToNativeMock, foreignBridge.address, MPRelayer, GSNSigner)
+      await GSNRelayer.init()
+      GSNSigner = createEmptyAccount(GSNRelayer)
+      // From now on all calls will be relayed through GSN.
+      // If you want to omit GSN specify
+      // { useGSN: false } in transaction details
+      ForeignBridgeErcToNativeMock.web3.setProvider(GSNRelayer)
     })
     it('should allow to executeSignaturesGSN', async () => {
       const recipientAccount = GSNSigner
@@ -151,17 +153,10 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
           const signature = await sign(authorities[0], message)
           const oneSignature = packSignatures([signatureToVRS(signature)])
 
-          const res = await GSNForeignBridge.executeSignaturesGSN(
-            message,
-            oneSignature,
-            ethers.BigNumber.from(MAX_COMMISSION.toString()),
-            {
-              from: recipientAccount,
-              gasLimit: GSNGasLimit
-            }
-          )
-
-          await res.wait()
+          await foreignBridge.executeSignaturesGSN(message, oneSignature, MAX_COMMISSION, {
+            from: recipientAccount,
+            gas: GSNGasLimit
+          })
         },
         async () => token.balanceOf(recipientAccount),
         async () => toBN(await web3.eth.getBalance(recipientAccount)),
@@ -183,7 +178,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
     })
     it('should reject insufficient fee', async () => {
-      const from = createEmptyAccount(MPRelayer)
+      const from = createEmptyAccount(GSNRelayer)
 
       const recipientAccount = from
       const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
@@ -192,56 +187,69 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       const signature = await sign(authorities[0], message)
       const oneSignature = packSignatures([signatureToVRS(signature)])
 
-      await GSNForeignBridge.executeSignaturesGSN(message, oneSignature, 0, { gasLimit: 500000 }).should.be.rejected
+      const err = await foreignBridge.executeSignaturesGSN(message, oneSignature, ZERO, {
+        from: recipientAccount,
+        gas: GSNGasLimit
+      }).should.be.rejected
+      // NOTE: we don't use `err.reason` because after transaction failed
+      // truffle contract makes eth_call to get error reason and it makes this call
+      // not through GSN but directly with web3 provider.
+      // `err.reason` is always the same - 'invalid forwarder'
+      err.message.should.include(paymasterError("tokens fee can't cover expenses"))
 
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
     })
     it('should not allow second withdraw (replay attack) with same transactionHash but different recipient', async () => {
-      const ethersCommission = ethers.BigNumber.from(FIVE_ETHER.toString())
       // tx 1
+      const from = createEmptyAccount(GSNRelayer)
       const transactionHash = '0x35d3818e50234655f6aebb2a1cfbf30f59568d8a4ec72066fac5a25dbe7b8121'
-      const message = createMessage(GSNSigner, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
+      const message = createMessage(from, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const oneSignature = packSignatures([signatureToVRS(signature)])
       false.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
-      await GSNForeignBridge.executeSignaturesGSN(message, oneSignature, ethersCommission, { gasLimit: GSNGasLimit })
-        .should.be.fulfilled
+      // Check if from not equal tokens reciever
+      await foreignBridge.executeSignaturesGSN(message, oneSignature, FIVE_ETHER, { from, gas: GSNGasLimit }).should.be
+        .fulfilled
 
       // tx 2
       await token.mint(foreignBridge.address, BRIDGE_TOKENS)
-      const message2 = createMessage(accounts[4], REQUESTED_TOKENS, transactionHash, foreignBridge.address)
+      const from2 = createEmptyAccount(GSNRelayer)
+      const message2 = createMessage(from2, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)
       const oneSignature2 = packSignatures([signatureToVRS(signature2)])
       true.should.be.equal(await foreignBridge.relayedMessages(transactionHash))
 
       const pmDepositBefore = await paymaster.getRelayHubDeposit()
-      await GSNForeignBridge.executeSignaturesGSN(message2, oneSignature2, ethersCommission, { gasLimit: GSNGasLimit })
+      await foreignBridge.executeSignaturesGSN(message2, oneSignature2, FIVE_ETHER, { from: from2, gas: GSNGasLimit })
         .should.be.rejected
+
       const pmDepositAfter = await paymaster.getRelayHubDeposit()
       pmDepositAfter.should.be.bignumber.equal(pmDepositBefore)
     })
     it('should reject calls to other functions', async () => {
-      const recipientAccount = createEmptyAccount(MPRelayer)
+      const recipientAccount = createEmptyAccount(GSNRelayer)
       const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
       const message = createMessage(recipientAccount, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const oneSignature = packSignatures([signatureToVRS(signature)])
 
-      const err = await GSNForeignBridge.executeSignatures(message, oneSignature).catch(e => e.message)
-      true.should.be.equal(err.includes('not allowed target'))
+      const err = await foreignBridge.executeSignatures(message, oneSignature, {
+        from: recipientAccount,
+        gas: GSNGasLimit
+      }).should.be.rejected
+      err.message.should.include(paymasterError('not allowed target'))
     })
     it('should reject not GSN calls', async () => {
-      const recipientAccount = createEmptyAccount(MPRelayer)
+      const recipientAccount = accounts[0]
       const transactionHash = '0x1045bfe274b88120a6b1e5d01b5ec00ab5d01098346e90e7c7a3c9b8f0181c80'
       const message = createMessage(recipientAccount, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
       const signature = await sign(authorities[0], message)
       const oneSignature = packSignatures([signatureToVRS(signature)])
 
-      const err = await foreignBridge
-        .executeSignaturesGSN(message, oneSignature, FIVE_ETHER, { from: recipientAccount })
-        .catch(e => e)
-      err.reason.should.be.equal('invalid forwarder')
+      await foreignBridge
+        .executeSignaturesGSN(message, oneSignature, FIVE_ETHER, { from: recipientAccount, useGSN: false })
+        .should.be.rejectedWith(`${ERROR_MSG} invalid forwarder`)
     })
   })
 })

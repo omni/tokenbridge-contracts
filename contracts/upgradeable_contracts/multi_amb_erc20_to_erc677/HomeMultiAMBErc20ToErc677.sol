@@ -21,6 +21,23 @@ contract HomeMultiAMBErc20ToErc677 is
     event NewTokenRegistered(address indexed foreignToken, address indexed homeToken);
 
     /**
+     * @dev Throws if called by any account other than the owner.
+     * Overrides modifier from the Ownable contract in order to reduce bytecode size.
+     */
+    modifier onlyOwner() {
+        _onlyOwner();
+        /* solcov ignore next */
+        _;
+    }
+
+    /**
+     * @dev Internal function for reducing onlyOwner modifier bytecode size overhead.
+     */
+    function _onlyOwner() internal {
+        require(msg.sender == owner());
+    }
+
+    /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
     * @param _mediatorContract the address of the mediator contract on the other network.
@@ -320,14 +337,16 @@ contract HomeMultiAMBErc20ToErc677 is
     }
 
     /**
-     * @dev One-time upgrade function for transferring ownership of the STAKE token to the TokenMinter address.
-     * Should be called together with upgradeToAndCall function
+     * @dev Withdraws erc20 tokens or native coins from the bridged token contract.
+     * Only the proxy owner is allowed to call this method.
+     * @param _bridgedToken address of the bridged token contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
      */
-    function transferTokenOwnership() external {
-        require(msg.sender == address(this));
-
-        Ownable(0xb7D311E2Eb55F2f68a9440da38e7989210b9A05e).transferOwnership(
-            0x1111111111111111111111111111111111111111
-        );
+    function claimTokensFromTokenContract(address _bridgedToken, address _token, address _to)
+        external
+        onlyIfUpgradeabilityOwner
+    {
+        IBurnableMintableERC677Token(_bridgedToken).claimTokens(_token, _to);
     }
 }

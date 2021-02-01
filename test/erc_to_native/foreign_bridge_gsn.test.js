@@ -11,6 +11,7 @@ const TokenPaymaster = artifacts.require('TokenPaymaster.sol')
 
 // GSN
 const { RelayProvider } = require('@opengsn/gsn')
+const { GsnTestEnvironment } = require('@opengsn/gsn/dist/GsnTestEnvironment')
 
 const { toBN, ERROR_MSG } = require('../setup')
 const {
@@ -35,10 +36,6 @@ const decimalShiftZero = 0
 const FIVE_ETHER = ether('5')
 const GSNGasLimit = 500000
 
-// Result of deploying gsn via `npx gsn start`
-const RelayHubAddress = '0x7cC4B1851c35959D34e635A470F6b5C43bA3C9c9'
-const ForwarderAddress = '0x85a84691547b7ccF19D7c31977A7F8c0aF1FB25A'
-
 function createEmptyAccount(relayer) {
   const GSNUser = web3.eth.accounts.create()
   relayer.addAccount(GSNUser.privateKey)
@@ -53,9 +50,15 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
   let otherSideBridge
 
   let router
-  let GSNRelayer
   let paymaster
+  let RelayHubAddress
+  let ForwarderAddress
   before(async () => {
+    // Deploy GSN
+    const env = await GsnTestEnvironment.startGsn('localhost')
+    RelayHubAddress = env.contractsDeployment.relayHubAddress
+    ForwarderAddress = env.contractsDeployment.forwarderAddress
+
     validatorContract = await BridgeValidators.new()
 
     authorities = [accounts[1], accounts[2]]
@@ -63,11 +66,15 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
     await validatorContract.initialize(1, authorities, owner)
     otherSideBridge = await ForeignBridge.new()
   })
+  after(async () => {
+    await GsnTestEnvironment.stopGsn()
+  })
   describe('#executeSignaturesGSN', async () => {
     const BRIDGE_TOKENS = ether('300')
     const REQUESTED_TOKENS = BRIDGE_TOKENS
 
     let foreignBridge
+    let GSNRelayer
     let GSNSigner
     beforeEach(async () => {
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
@@ -114,7 +121,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       })
 
       // GSN configuration
-      GSNRelayer = RelayProvider.newProvider({
+      GSNRelayer = await RelayProvider.newProvider({
         provider: web3.currentProvider,
         config: {
           loggerConfigration: {
@@ -122,9 +129,9 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
           },
           paymasterAddress: paymaster.address
         }
-      })
-      await GSNRelayer.init()
+      }).init()
       GSNSigner = createEmptyAccount(GSNRelayer)
+
       // From now on all calls will be relayed through GSN.
       // If you want to omit GSN specify
       // { useGSN: false } in transaction details

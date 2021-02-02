@@ -145,7 +145,7 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
             if (_feeType == HOME_TO_FOREIGN_FEE) {
                 ERC677(_token).transfer(nextAddr, feeToDistribute);
             } else {
-                IBurnableMintableERC677Token(_token).mint(nextAddr, feeToDistribute);
+                _getMinterFor(_token).mint(nextAddr, feeToDistribute);
             }
 
             nextAddr = getNextRewardAddress(nextAddr);
@@ -154,4 +154,6 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
         }
         return _fee;
     }
+
+    function _getMinterFor(address _token) internal view returns (IBurnableMintableERC677Token);
 }

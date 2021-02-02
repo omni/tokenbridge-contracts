@@ -346,6 +346,20 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       expect(toBN(await web3.eth.getBalance(contract.address))).to.be.bignumber.equal(ZERO)
       expect(toBN(await web3.eth.getBalance(accounts[3]))).to.be.bignumber.equal(balanceBefore.add(oneEther))
     })
+
+    it('should allow owner to claim tokens from token contract', async () => {
+      const homeToken = await bridgeToken(token)
+
+      await token.mint(user, 1).should.be.fulfilled
+      await token.transfer(homeToken.address, 1, { from: user }).should.be.fulfilled
+
+      await contract.claimTokensFromTokenContract(homeToken.address, token.address, accounts[3], { from: user }).should
+        .be.rejected
+      await contract.claimTokensFromTokenContract(homeToken.address, token.address, accounts[3], { from: owner }).should
+        .be.fulfilled
+
+      expect(await token.balanceOf(accounts[3])).to.be.bignumber.equal('1')
+    })
   })
 
   describe('afterInitialization', () => {

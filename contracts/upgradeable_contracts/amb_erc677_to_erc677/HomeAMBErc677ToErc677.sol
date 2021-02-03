@@ -24,7 +24,7 @@ contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
     }
 
     //MOD: allow token ownership to be transferred to facilitate upgrade
-    function transferTokenOwnership(address newOwner) onlyOwner {
+    function transferTokenOwnership(address newOwner) public onlyOwner {
         Ownable(erc677token()).transferOwnership(newOwner);
     }
 

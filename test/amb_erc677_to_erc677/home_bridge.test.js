@@ -189,7 +189,7 @@ contract('HomeAMBErc677ToErc677', async accounts => {
       expect(await homeBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(oneEther)
       const events = await getEvents(erc677Token, { event: 'Mint' })
       expect(events.length).to.be.equal(1)
-      //MOD: minted to homeBridge not user
+      // MOD: minted to homeBridge not user
       expect(events[0].returnValues.to).to.be.equal(homeBridge.address)
       expect(events[0].returnValues.amount).to.be.equal(oneEther.toString())
       expect(await erc677Token.totalSupply()).to.be.bignumber.equal(oneEther)
@@ -250,7 +250,7 @@ contract('HomeAMBErc677ToErc677', async accounts => {
         expect(await homeBridge.totalExecutedPerDay(currentDay)).to.be.bignumber.equal(valueOnForeign)
         const events = await getEvents(erc677Token, { event: 'Mint' })
         expect(events.length).to.be.equal(1)
-        //MOD mint to homeBridge not user
+        // MOD mint to homeBridge not user
         expect(events[0].returnValues.to).to.be.equal(homeBridge.address)
         expect(events[0].returnValues.amount).to.be.equal(valueOnHome.toString())
         expect(await erc677Token.totalSupply()).to.be.bignumber.equal(valueOnHome)

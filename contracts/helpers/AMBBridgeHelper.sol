@@ -1,4 +1,4 @@
-pragma solidity 0.7.5;
+pragma solidity 0.4.24;
 
 interface IHomeBridge {
     function numMessagesSigned(bytes32 _message) external view returns (uint256);
@@ -7,12 +7,8 @@ interface IHomeBridge {
 }
 
 contract Helper {
-    function unpackSignature(bytes memory _signature) internal pure returns (bytes32, bytes32, uint8)
-    {
+    function unpackSignature(bytes memory _signature) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
         require(_signature.length == 65);
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
 
         assembly {
             r := mload(add(_signature, 0x20))
@@ -24,33 +20,33 @@ contract Helper {
 }
 
 contract AMBBridgeHelper is Helper {
-    address payable owner;
-    IHomeBridge public AMBcontract;
+    address public owner;
+    IHomeBridge public ambBridge;
 
-    constructor (address _homeBridge) {
+    constructor(address _homeBridge) public {
         owner = msg.sender;
-        AMBcontract = IHomeBridge(_homeBridge);
+        ambBridge = IHomeBridge(_homeBridge);
     }
-    
-    function getSignatures(bytes calldata _message) external view returns(bytes memory) {
-        bytes32 msgHash = keccak256(abi.encodePacked(_message));
-        uint256 signed = AMBcontract.numMessagesSigned(msgHash);
 
-        require(AMBcontract.isAlreadyProcessed(signed), "message hasn't been confirmed");
-        
+    function getSignatures(bytes _message) external view returns (bytes memory) {
+        bytes32 msgHash = keccak256(abi.encodePacked(_message));
+        uint256 signed = ambBridge.numMessagesSigned(msgHash);
+
+        require(ambBridge.isAlreadyProcessed(signed), "message hasn't been confirmed");
+
         // recover number of confirmations sent by oracles
         signed = signed & 0x8fffffffffffffffffffffffffffffffffffffffffff;
-        
+
         require(signed < 0x100);
-        
+
         bytes memory signatures = new bytes(1 + signed * 65);
-        
+
         assembly {
             mstore8(add(signatures, 32), signed)
         }
 
         for (uint256 i = 0; i < signed; i++) {
-            bytes memory sig = AMBcontract.signature(msgHash, i);
+            bytes memory sig = ambBridge.signature(msgHash, i);
             (bytes32 r, bytes32 s, uint8 v) = unpackSignature(sig);
             assembly {
                 mstore8(add(add(signatures, 33), i), v)
@@ -58,7 +54,7 @@ contract AMBBridgeHelper is Helper {
                 mstore(add(add(add(signatures, 33), mul(signed, 33)), mul(i, 32)), s)
             }
         }
-        
+
         return signatures;
     }
 

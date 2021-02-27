@@ -13,9 +13,15 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
     * @param _signatures bytes blob with signatures to be validated
     */
     function executeSignatures(bytes _data, bytes _signatures) external {
+        // this checks prevents execution of other messages, while some other message is being processed
+        // nested executeSignatures is considered to be unsafe,
+        // since it allows to change/reset the AMB context variables (messageId, messageSender, messageSourceChainId)
+        // while processing nested message
+        require(messageId() == bytes32(0));
+
         Message.hasEnoughValidSignatures(_data, _signatures, validatorContract(), true);
 
-        bytes32 messageId;
+        bytes32 msgId;
         address sender;
         address executor;
         uint32 gasLimit;
@@ -23,13 +29,13 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
         uint256[2] memory chainIds;
         bytes memory data;
 
-        (messageId, sender, executor, gasLimit, dataType, chainIds, data) = ArbitraryMessage.unpackData(_data);
+        (msgId, sender, executor, gasLimit, dataType, chainIds, data) = ArbitraryMessage.unpackData(_data);
 
-        require(_isMessageVersionValid(messageId));
+        require(_isMessageVersionValid(msgId));
         require(_isDestinationChainIdValid(chainIds[1]));
-        require(!relayedMessages(messageId));
-        setRelayedMessages(messageId, true);
-        processMessage(sender, executor, messageId, gasLimit, dataType, chainIds[0], data);
+        require(!relayedMessages(msgId));
+        setRelayedMessages(msgId, true);
+        processMessage(sender, executor, msgId, gasLimit, dataType, chainIds[0], data);
     }
 
     /**

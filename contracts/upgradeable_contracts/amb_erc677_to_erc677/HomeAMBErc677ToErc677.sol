@@ -23,11 +23,6 @@ contract HomeAMBErc677ToErc677 is BasicAMBErc677ToErc677 {
         emit TokensBridged(_recipient, value, _messageId);
     }
 
-    //MOD: allow token ownership to be transferred to facilitate upgrade
-    function transferTokenOwnership(address newOwner) public onlyOwner {
-        Ownable(erc677token()).transferOwnership(newOwner);
-    }
-
     /**
      * @dev Executes action on withdrawal of bridged tokens
      * @param _token address of token contract

@@ -192,7 +192,9 @@ contract HomeMultiAMBErc20ToErc677 is
             emit FeeDistributed(fee, _token, _messageId);
             valueToMint = valueToMint.sub(fee);
         }
-        IBurnableMintableERC677Token(_token).mint(_recipient, valueToMint);
+        //MOD use transferAndCall to _recipient instead of mint
+        IBurnableMintableERC677Token(_token).mint(address(this), valueToMint);
+        IBurnableMintableERC677Token(_token).transferAndCall(_recipient, valueToMint, new bytes(0));
         emit TokensBridged(_token, _recipient, valueToMint, _messageId);
     }
 

@@ -30,8 +30,8 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
     */
     function _sendMessage(address _contract, bytes _data, uint256 _gas, uint256 _dataType) public returns (bytes32) {
         // it is not allowed to pass messages while other messages are processed
-        require(messageId() == bytes32(0));
-
+        // if other is not explicitly configured
+        require(messageId() == bytes32(0) || allowReentrantRequests());
         require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
 
         bytes32 _messageId;

@@ -21,6 +21,23 @@ contract HomeMultiAMBErc20ToErc677 is
     event NewTokenRegistered(address indexed foreignToken, address indexed homeToken);
 
     /**
+     * @dev Throws if called by any account other than the owner.
+     * Overrides modifier from the Ownable contract in order to reduce bytecode size.
+     */
+    modifier onlyOwner() {
+        _onlyOwner();
+        /* solcov ignore next */
+        _;
+    }
+
+    /**
+     * @dev Internal function for reducing onlyOwner modifier bytecode size overhead.
+     */
+    function _onlyOwner() internal {
+        require(msg.sender == owner());
+    }
+
+    /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
     * @param _mediatorContract the address of the mediator contract on the other network.
@@ -193,7 +210,7 @@ contract HomeMultiAMBErc20ToErc677 is
             valueToMint = valueToMint.sub(fee);
         }
         //MOD use transferAndCall to _recipient instead of mint
-        IBurnableMintableERC677Token(_token).mint(address(this), valueToMint);
+        _getMinterFor(_token).mint(address(this), valueToMint);
         IBurnableMintableERC677Token(_token).transferAndCall(_recipient, valueToMint, new bytes(0));
         emit TokensBridged(_token, _recipient, valueToMint, _messageId);
     }
@@ -205,7 +222,7 @@ contract HomeMultiAMBErc20ToErc677 is
     * @param _value amount of tokens to be received.
     */
     function executeActionOnFixedTokens(address _token, address _recipient, uint256 _value) internal {
-        IBurnableMintableERC677Token(_token).mint(_recipient, _value);
+        _getMinterFor(_token).mint(_recipient, _value);
     }
 
     /**
@@ -304,5 +321,34 @@ contract HomeMultiAMBErc20ToErc677 is
         emit TokensBridgingInitiated(_token, _from, _value, _messageId);
 
         return _messageId;
+    }
+
+    /**
+     * @dev Internal function for getting minter proxy address.
+     * Returns the token address itself, expect for the case with bridged STAKE token.
+     * For bridged STAKE token, returns the hardcoded TokenMinter contract address.
+     * @param _token address of the token to mint.
+     * @return address of the minter contract that should be used for calling mint(address,uint256)
+     */
+    function _getMinterFor(address _token) internal view returns (IBurnableMintableERC677Token) {
+        if (_token == address(0xb7D311E2Eb55F2f68a9440da38e7989210b9A05e)) {
+            // hardcoded address of the TokenMinter address
+            return IBurnableMintableERC677Token(0xb7D311E2Eb55F2f68a9440da38e7989210b9A05e);
+        }
+        return IBurnableMintableERC677Token(_token);
+    }
+
+    /**
+     * @dev Withdraws erc20 tokens or native coins from the bridged token contract.
+     * Only the proxy owner is allowed to call this method.
+     * @param _bridgedToken address of the bridged token contract.
+     * @param _token address of the claimed token or address(0) for native coins.
+     * @param _to address of the tokens/coins receiver.
+     */
+    function claimTokensFromTokenContract(address _bridgedToken, address _token, address _to)
+        external
+        onlyIfUpgradeabilityOwner
+    {
+        IBurnableMintableERC677Token(_bridgedToken).claimTokens(_token, _to);
     }
 }

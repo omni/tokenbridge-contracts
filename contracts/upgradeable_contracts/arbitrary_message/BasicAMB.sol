@@ -10,6 +10,7 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     bytes32 internal constant SOURCE_CHAIN_ID_LENGTH = 0xe504ae1fd6471eea80f18b8532a61a9bb91fba4f5b837f80a1cfb6752350af44; // keccak256(abi.encodePacked("sourceChainIdLength"))
     bytes32 internal constant DESTINATION_CHAIN_ID = 0xbbd454018e72a3f6c02bbd785bacc49e46292744f3f6761276723823aa332320; // keccak256(abi.encodePacked("destinationChainId"))
     bytes32 internal constant DESTINATION_CHAIN_ID_LENGTH = 0xfb792ae4ad11102b93f26a51b3749c2b3667f8b561566a4806d4989692811594; // keccak256(abi.encodePacked("destinationChainIdLength"))
+    bytes32 internal constant ALLOW_REENTRANT_REQUESTS = 0xffa3a5a0e192028fc343362a39c5688e5a60819a4dc5ab3ee70c25bc25b78dd6; // keccak256(abi.encodePacked("allowReentrantRequests"))
 
     /**
      * Initializes AMB contract
@@ -80,6 +81,24 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      */
     function setChainIds(uint256 _sourceChainId, uint256 _destinationChainId) external onlyOwner {
         _setChainIds(_sourceChainId, _destinationChainId);
+    }
+
+    /**
+     * Sets the flag to allow passing new AMB requests in the opposite direction,
+     * while other AMB message is being processed.
+     * Only owner can call this method.
+     * @param _enable true, if reentrant requests are allowed.
+     */
+    function setAllowReentrantRequests(bool _enable) external onlyOwner {
+        boolStorage[ALLOW_REENTRANT_REQUESTS] = _enable;
+    }
+
+    /**
+     * Tells if passing reentrant requests is allowed.
+     * @return true, if reentrant requests are allowed.
+     */
+    function allowReentrantRequests() public view returns (bool) {
+        return boolStorage[ALLOW_REENTRANT_REQUESTS];
     }
 
     /**

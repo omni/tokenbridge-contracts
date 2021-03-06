@@ -33,7 +33,7 @@ contract ForeignAMBErc677ToErc677 is BasicAMBErc677ToErc677, MediatorBalanceStor
     * @param _receiver address that will receive the minted tokens on the other network.
     * @param _value amount of tokens to be transferred to the other network.
     */
-    function relayTokens(address _receiver, uint256 _value) external {
+    function relayTokens(address _receiver, uint256 _value) public {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.

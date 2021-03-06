@@ -68,7 +68,7 @@ contract BasicAMBErc677ToErc677 is
     * @param _receiver address that will receive the minted tokens on the other network.
     * @param _value amount of tokens to be transferred to the other network.
     */
-    function relayTokens(address _receiver, uint256 _value) external {
+    function relayTokens(address _receiver, uint256 _value) public {
         // This lock is to prevent calling passMessage twice if a ERC677 token is used.
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
@@ -83,6 +83,16 @@ contract BasicAMBErc677ToErc677 is
         setLock(false);
         bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _value, abi.encodePacked(_receiver));
     }
+
+    /*
+        MOD: add relayTokensAndCall for future DU compatibility with OmniBridge
+        this method just invokes relayTokens. data is ignored
+    */
+    function relayTokensAndCall(address token, address _receiver, uint256 _value, bytes calldata) public {
+        require(token == address(erc677token()), "wrong_token");
+        relayTokens(_receiver, _value);
+    }
+
 
     function onTokenTransfer(address _from, uint256 _value, bytes _data) external returns (bool) {
         ERC677 token = erc677token();

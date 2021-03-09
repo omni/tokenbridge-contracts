@@ -38,6 +38,35 @@ contract HomeMultiAMBErc20ToErc677 is
     }
 
     /**
+     * @dev Throws if caller on the other side is not an associated mediator.
+     */
+    modifier onlyMediator {
+        _onlyMediator();
+        _;
+    }
+
+    /**
+     * @dev Internal function for reducing onlyMediator modifier bytecode size overhead.
+     */
+    function _onlyMediator() internal {
+        require(msg.sender == address(bridgeContract()));
+        require(messageSender() == mediatorContractOnOtherSide());
+    }
+
+    modifier onlyIfUpgradeabilityOwner() {
+        _onlyIfUpgradeabilityOwner();
+        /* solcov ignore next */
+        _;
+    }
+
+    /**
+     * @dev Internal function for reducing onlyIfUpgradeabilityOwner modifier bytecode size overhead.
+     */
+    function _onlyIfUpgradeabilityOwner() internal {
+        require(msg.sender == IUpgradeabilityOwnerStorage(this).upgradeabilityOwner());
+    }
+
+    /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
     * @param _mediatorContract the address of the mediator contract on the other network.
@@ -183,17 +212,19 @@ contract HomeMultiAMBErc20ToErc677 is
         // When transferFrom is called, after the transfer, the ERC677 token will call onTokenTransfer from this contract
         // which will call passMessage.
         require(!lock());
-        address to = address(this);
         // if msg.sender if not a valid token contract, this check will fail, since limits are zeros
         // so the following check is not needed
         // require(isTokenRegistered(token));
         require(withinLimit(token, _value));
         addTotalSpentPerDay(token, getCurrentDay(), _value);
 
+        uint256 balanceBefore = token.balanceOf(address(this));
         setLock(true);
-        token.transferFrom(msg.sender, to, _value);
+        token.transferFrom(msg.sender, address(this), _value);
         setLock(false);
-        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _receiver, _value);
+        uint256 balanceDiff = token.balanceOf(address(this)).sub(balanceBefore);
+        require(balanceDiff <= _value);
+        bridgeSpecificActionsOnTokenTransfer(token, msg.sender, _receiver, balanceDiff);
     }
 
     /**

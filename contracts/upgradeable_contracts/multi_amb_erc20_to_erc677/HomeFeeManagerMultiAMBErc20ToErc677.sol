@@ -66,6 +66,7 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
     * @param _fee new fee value, in percentage (1 ether == 10**18 == 100%).
     */
     function setFee(bytes32 _feeType, address _token, uint256 _fee) external onlyOwner {
+        require(_token == address(0));
         _setFee(_feeType, _token, _fee);
     }
 
@@ -76,7 +77,7 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
     * @return fee value associated with the requested fee type.
     */
     function getFee(bytes32 _feeType, address _token) public view validFeeType(_feeType) returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked(_feeType, _token))];
+        return uintStorage[keccak256(abi.encodePacked(_feeType, address(0)))];
     }
 
     /**
@@ -98,7 +99,6 @@ contract HomeFeeManagerMultiAMBErc20ToErc677 is BaseRewardAddressList, Ownable, 
     * @param _fee new fee value, in percentage (1 ether == 10**18 == 100%).
     */
     function _setFee(bytes32 _feeType, address _token, uint256 _fee) internal validFeeType(_feeType) validFee(_fee) {
-        require(isTokenRegistered(_token));
         uintStorage[keccak256(abi.encodePacked(_feeType, _token))] = _fee;
         emit FeeUpdated(_feeType, _token, _fee);
     }

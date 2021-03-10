@@ -38,6 +38,23 @@ contract HomeMultiAMBErc20ToErc677 is
     }
 
     /**
+    * @dev Throws if caller on the other side is not an associated mediator.
+    */
+    modifier onlyMediator() {
+        _onlyMediator();
+        /* solcov ignore next */
+        _;
+    }
+
+    /**
+     * @dev Internal function for reducing onlyMediator modifier bytecode size overhead.
+     */
+    function _onlyMediator() internal {
+        require(msg.sender == address(bridgeContract()));
+        require(messageSender() == mediatorContractOnOtherSide());
+    }
+
+    /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
     * @param _mediatorContract the address of the mediator contract on the other network.
@@ -130,8 +147,8 @@ contract HomeMultiAMBErc20ToErc677 is
         address homeToken = new TokenProxy(tokenImage(), name, symbol, _decimals, bridgeContract().sourceChainId());
         _setTokenAddressPair(_token, homeToken);
         _initializeTokenBridgeLimits(homeToken, _decimals);
-        //_setFee(HOME_TO_FOREIGN_FEE, homeToken, getFee(HOME_TO_FOREIGN_FEE, address(0)));
-        //_setFee(FOREIGN_TO_HOME_FEE, homeToken, getFee(FOREIGN_TO_HOME_FEE, address(0)));
+        _setFee(HOME_TO_FOREIGN_FEE, homeToken, getFee(HOME_TO_FOREIGN_FEE, address(0)));
+        _setFee(FOREIGN_TO_HOME_FEE, homeToken, getFee(FOREIGN_TO_HOME_FEE, address(0)));
         _handleBridgedTokens(ERC677(homeToken), _recipient, _value);
 
         emit NewTokenRegistered(_token, homeToken);

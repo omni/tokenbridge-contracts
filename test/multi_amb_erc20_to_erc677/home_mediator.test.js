@@ -503,8 +503,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
         expect(await contract.getFee(HOME_TO_FOREIGN_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.01'))
         expect(await contract.getFee(FOREIGN_TO_HOME_FEE, ZERO_ADDRESS)).to.be.bignumber.equal(ether('0.02'))
-        expect(await contract.getFee(HOME_TO_FOREIGN_FEE, token.address)).to.be.bignumber.equal(ether('0.01'))
-        expect(await contract.getFee(FOREIGN_TO_HOME_FEE, token.address)).to.be.bignumber.equal(ether('0.02'))
+        expect(await contract.getFee(HOME_TO_FOREIGN_FEE, token.address)).to.be.bignumber.equal(ZERO)
+        expect(await contract.getFee(FOREIGN_TO_HOME_FEE, token.address)).to.be.bignumber.equal(ZERO)
 
         const homeToken = await bridgeToken(token)
 
@@ -1178,6 +1178,50 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           ether('0.02')
         )
       })
+
+      it('should update fee value for registered token', async () => {
+        const feeType = await contract.HOME_TO_FOREIGN_FEE()
+        await token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+
+        await contract.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
+        await contract.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
+        await contract.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be.rejected
+
+        token = await bridgeToken(token)
+
+        await contract.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
+        await contract.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
+        const { logs } = await contract.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be
+          .fulfilled
+
+        expectEventInLogs(logs, 'FeeUpdated')
+        // expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.02'))
+        expect(await contract.getFee(await contract.FOREIGN_TO_HOME_FEE(), token.address)).to.be.bignumber.equal(
+          ether('0.01')
+        )
+      })
+
+      it('should update opposite direction fee value for registered token', async () => {
+        const feeType = await contract.FOREIGN_TO_HOME_FEE()
+        await token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
+
+        await contract.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
+        await contract.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
+        await contract.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be.rejected
+        token = await bridgeToken(token)
+        await contract.setFee(feeType, token.address, ether('0.1'), { from: user }).should.be.rejected
+        await contract.setFee(feeType, token.address, ether('1.1'), { from: owner }).should.be.rejected
+        const { logs } = await contract.setFee(feeType, token.address, ether('0.1'), { from: owner }).should.be
+          .fulfilled
+
+        expectEventInLogs(logs, 'FeeUpdated')
+        // expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.01'))
+        expect(await contract.getFee(await contract.HOME_TO_FOREIGN_FEE(), token.address)).to.be.bignumber.equal(
+          ether('0.02')
+        )
+      })
     })
 
     describe('distribute fee for foreign => home direction', async () => {
@@ -1344,7 +1388,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
       })
 
       it('should collect and distribute 0% fee', async () => {
-        await contract.setFee(await contract.HOME_TO_FOREIGN_FEE(), ZERO_ADDRESS, ZERO).should.be.fulfilled
+        await contract.setFee(await contract.HOME_TO_FOREIGN_FEE(), token.address, ZERO).should.be.fulfilled
 
         expect(await contract.totalSpentPerDay(token.address, currentDay)).to.be.bignumber.equal(ZERO)
         await token.transfer(contract.address, value, { from: user })

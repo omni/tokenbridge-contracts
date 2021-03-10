@@ -82,7 +82,11 @@ contract BasicMultiTokenBridge is EternalStorage, Ownable {
     * @return minimum amount on tokens that can be sent through the bridge in one transfer.
     */
     function minPerTx(address _token) public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("minPerTx", _token))];
+        uint256 limit = uintStorage[keccak256(abi.encodePacked("minPerTx", _token))];
+        if (_token == address(0)) {
+            return limit;
+        }
+        return limit > 0 ? 1 : 0;
     }
 
     /**

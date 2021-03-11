@@ -1195,7 +1195,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           .fulfilled
 
         expectEventInLogs(logs, 'FeeUpdated')
-        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        // expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.02'))
         expect(await contract.getFee(await contract.FOREIGN_TO_HOME_FEE(), token.address)).to.be.bignumber.equal(
           ether('0.01')
         )
@@ -1215,7 +1216,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           .fulfilled
 
         expectEventInLogs(logs, 'FeeUpdated')
-        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        // expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.01'))
         expect(await contract.getFee(await contract.HOME_TO_FOREIGN_FEE(), token.address)).to.be.bignumber.equal(
           ether('0.02')
         )

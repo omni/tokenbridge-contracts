@@ -38,6 +38,23 @@ contract HomeMultiAMBErc20ToErc677 is
     }
 
     /**
+    * @dev Throws if caller on the other side is not an associated mediator.
+    */
+    modifier onlyMediator() {
+        _onlyMediator();
+        /* solcov ignore next */
+        _;
+    }
+
+    /**
+     * @dev Internal function for reducing onlyMediator modifier bytecode size overhead.
+     */
+    function _onlyMediator() internal {
+        require(msg.sender == address(bridgeContract()));
+        require(messageSender() == mediatorContractOnOtherSide());
+    }
+
+    /**
     * @dev Stores the initial parameters of the mediator.
     * @param _bridgeContract the address of the AMB bridge contract.
     * @param _mediatorContract the address of the mediator contract on the other network.

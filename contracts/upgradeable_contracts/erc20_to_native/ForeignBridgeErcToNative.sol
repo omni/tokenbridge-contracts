@@ -3,9 +3,9 @@ pragma solidity 0.4.24;
 import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 import "../OtherSideBridgeStorage.sol";
-import "../ChaiConnector.sol";
+import "./CompoundConnector.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, ChaiConnector {
+contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, CompoundConnector {
     function initialize(
         address _validatorContract,
         address _erc20token,
@@ -46,9 +46,10 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
      */
     function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
         // Since bridged tokens are locked at this contract, it is not allowed to claim them with the use of claimTokens function
-        require(_token != address(erc20token()));
-        // Chai token is not claimable if investing into Chai is enabled
-        require(_token != address(chaiToken()) || !isChaiTokenEnabled());
+        address bridgedToken = address(erc20token());
+        require(_token != address(bridgedToken));
+        require(_token != address(cDaiToken) || !isInterestEnabled(bridgedToken));
+        require(_token != address(compToken) || !isInterestEnabled(bridgedToken));
         claimValues(_token, _to);
     }
 
@@ -60,27 +61,19 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         addTotalExecutedPerDay(getCurrentDay(), _amount);
         uint256 amount = _unshiftValue(_amount);
 
-        uint256 currentBalance = tokenBalance(erc20token());
+        ERC20 token = erc20token();
+        uint256 currentBalance = token.balanceOf(address(this));
 
-        // Convert part of Chai tokens back to DAI, if DAI balance is insufficient.
-        // If Chai token is disabled, bridge will keep all funds directly in DAI token,
-        // so it will have enough funds to cover any xDai => Dai transfer,
-        // and currentBalance >= amount will always hold.
         if (currentBalance < amount) {
-            _convertChaiToDai(amount.sub(currentBalance).add(minDaiTokenBalance()));
+            uint256 withdrawAmount = (amount - currentBalance).add(minCashThreshold(address(token)));
+            _withdraw(address(token), withdrawAmount);
         }
 
-        bool res = erc20token().transfer(_recipient, amount);
-
-        return res;
+        return token.transfer(_recipient, amount);
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {
         revert();
-    }
-
-    function tokenBalance(ERC20 _token) internal view returns (uint256) {
-        return _token.balanceOf(address(this));
     }
 
     function relayTokens(address _receiver, uint256 _amount) external {
@@ -94,9 +87,5 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
 
         erc20token().transferFrom(msg.sender, address(this), _amount);
         emit UserRequestForAffirmation(_receiver, _amount);
-
-        if (isDaiNeedsToBeInvested()) {
-            convertDaiToChai();
-        }
     }
 }

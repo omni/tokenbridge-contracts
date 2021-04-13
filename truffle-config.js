@@ -24,7 +24,7 @@ const provider = new Web3ProviderEngine()
 if (process.env.SOLIDITY_COVERAGE === 'true') {
   global.coverageSubprovider = new CoverageSubprovider(artifactAdapter, defaultFromAddress, {
     isVerbose,
-    ignoreFilesGlobs: ['**/Migrations.sol', '**/node_modules/**', '**/mocks/**', '**/interfaces/**']
+    ignoreFilesGlobs: ['**/Migrations.sol', '**/node_modules/**', '**/mocks/**', '**/interfaces/**', '**/helpers/**']
   })
   provider.addProvider(global.coverageSubprovider)
   const ganacheSubprovider = new GanacheSubprovider({

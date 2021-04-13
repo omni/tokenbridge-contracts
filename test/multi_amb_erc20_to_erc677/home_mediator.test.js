@@ -472,7 +472,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           expect(await token.decimals()).to.be.bignumber.equal(decimals.toString())
           expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(dailyLimit.mul(f1).div(f2))
           expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(maxPerTx.mul(f1).div(f2))
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(minPerTx.mul(f1).div(f2))
+          // expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(minPerTx.mul(f1).div(f2))
+          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('1')
           expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(
             executionDailyLimit.mul(f1).div(f2)
           )
@@ -539,7 +540,7 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: user }).should.be.rejected
           await contract.setMaxPerTx(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.rejected
           await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.rejected
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('0.001'), { from: owner }).should.be.rejected
+          // await contract.setMaxPerTx(ZERO_ADDRESS, ether('0.001'), { from: owner }).should.be.rejected
           await contract.setMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: owner }).should.be.fulfilled
           await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: owner }).should.be.fulfilled
 
@@ -580,7 +581,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
 
           expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(ether('5'))
           expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(ether('1.5'))
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(ether('0.02'))
+          // expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(ether('0.02'))
+          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('1')
           expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(ether('6'))
           expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal(ether('1.6'))
         })
@@ -609,7 +611,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         await contract.onTokenTransfer(user, halfEther, '0x', { from: owner }).should.be.rejected
 
         // must be within limits
-        await homeToken.transferAndCall(contract.address, ether('0.001'), '0x', { from: user }).should.be.rejected
+        // await homeToken.transferAndCall(contract.address, ether('1.001'), '0x', { from: user }).should.be.rejected
+        await homeToken.transferAndCall(contract.address, '0', '0x', { from: user }).should.be.rejected
 
         // When
         await homeToken.transferAndCall(contract.address, halfEther, '0x', { from: user }).should.be.fulfilled
@@ -745,9 +748,11 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
         await homeToken.approve(contract.address, twoEthers, { from: user }).should.be.fulfilled
         expect(await homeToken.allowance(user, contract.address)).to.be.bignumber.equal(twoEthers)
 
-        await contract.methods['relayTokens(address,address,uint256)'](homeToken.address, user, ether('0.0001'), {
-          from: user
-        }).should.be.rejected
+        // await contract.methods['relayTokens(address,address,uint256)'](homeToken.address, user, ether('0.0001'), {
+        //   from: user
+        // }).should.be.rejected
+        await contract.methods['relayTokens(address,address,uint256)'](homeToken.address, user, '0', { from: user })
+          .should.be.rejected
       })
     })
 
@@ -1190,7 +1195,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           .fulfilled
 
         expectEventInLogs(logs, 'FeeUpdated')
-        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        // expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.02'))
         expect(await contract.getFee(await contract.FOREIGN_TO_HOME_FEE(), token.address)).to.be.bignumber.equal(
           ether('0.01')
         )
@@ -1210,7 +1216,8 @@ contract('HomeMultiAMBErc20ToErc677', async accounts => {
           .fulfilled
 
         expectEventInLogs(logs, 'FeeUpdated')
-        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        // expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.1'))
+        expect(await contract.getFee(feeType, token.address)).to.be.bignumber.equal(ether('0.01'))
         expect(await contract.getFee(await contract.HOME_TO_FOREIGN_FEE(), token.address)).to.be.bignumber.equal(
           ether('0.02')
         )

@@ -294,7 +294,7 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
           await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: user }).should.be.rejected
           await contract.setMaxPerTx(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.rejected
           await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('5'), { from: owner }).should.be.rejected
-          await contract.setMaxPerTx(ZERO_ADDRESS, ether('0.001'), { from: owner }).should.be.rejected
+          // await contract.setMaxPerTx(ZERO_ADDRESS, ether('0.001'), { from: owner }).should.be.rejected
           await contract.setMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: owner }).should.be.fulfilled
           await contract.setExecutionMaxPerTx(ZERO_ADDRESS, ether('1.5'), { from: owner }).should.be.fulfilled
 
@@ -335,7 +335,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
           expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(ether('5'))
           expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(ether('1.5'))
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(ether('0.02'))
+          // expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(ether('0.02'))
+          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('1')
           expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(ether('6'))
           expect(await contract.executionMaxPerTx(token.address)).to.be.bignumber.equal(ether('1.6'))
         })
@@ -548,7 +549,8 @@ contract('ForeignMultiAMBErc20ToErc677', async accounts => {
 
           expect(await contract.dailyLimit(token.address)).to.be.bignumber.equal(dailyLimit.mul(f1).div(f2))
           expect(await contract.maxPerTx(token.address)).to.be.bignumber.equal(maxPerTx.mul(f1).div(f2))
-          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(minPerTx.mul(f1).div(f2))
+          // expect(await contract.minPerTx(token.address)).to.be.bignumber.equal(minPerTx.mul(f1).div(f2))
+          expect(await contract.minPerTx(token.address)).to.be.bignumber.equal('1')
           expect(await contract.executionDailyLimit(token.address)).to.be.bignumber.equal(
             executionDailyLimit.mul(f1).div(f2)
           )

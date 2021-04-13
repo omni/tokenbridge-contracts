@@ -763,6 +763,82 @@ contract('ForeignAMB', async accounts => {
 
       expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
     })
+    it('safeExecuteSignatures', async () => {
+      const successMsg = box.contract.methods.setValue(11).encodeABI()
+      const failingMsg1 = box.contract.methods.methodWillFail().encodeABI()
+      const failingMsg2 = box.contract.methods.methodOutOfGas().encodeABI()
+
+      for (const msg of [successMsg, failingMsg1, failingMsg2]) {
+        const gas = msg === failingMsg2 ? 1000 : 200000
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, msg, gas)
+        const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
+
+        const signature = await sign(authorities[0], message)
+        const vrs = signatureToVRS(signature)
+        const signatures = packSignatures([vrs])
+
+        if (msg === successMsg) {
+          await foreignBridge.safeExecuteSignatures(message, signatures).should.be.fulfilled
+          await foreignBridge.executeSignatures(message, signatures).should.be.rejected
+
+          expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
+          expect(await box.value()).to.be.bignumber.equal('11')
+        } else {
+          await foreignBridge.safeExecuteSignatures(message, signatures).should.be.rejected
+          await foreignBridge.executeSignatures(message, signatures).should.be.fulfilled
+
+          expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(false)
+        }
+      }
+    })
+    it('safeExecuteSignaturesWithGasLimit', async () => {
+      const successMsg = box.contract.methods.setValue(11).encodeABI()
+      const failingMsg1 = box.contract.methods.methodWillFail().encodeABI()
+      const failingMsg2 = box.contract.methods.methodOutOfGas().encodeABI()
+
+      for (const msg of [successMsg, failingMsg1, failingMsg2]) {
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, msg, 1000)
+        const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
+
+        const signature = await sign(authorities[0], message)
+        const vrs = signatureToVRS(signature)
+        const signatures = packSignatures([vrs])
+
+        await foreignBridge.safeExecuteSignatures(message, signatures).should.be.rejected
+        await foreignBridge.safeExecuteSignaturesWithGasLimit(message, signatures, 1000).should.be.rejected
+        if (msg === failingMsg1) {
+          await foreignBridge.safeExecuteSignaturesWithGasLimit(message, signatures, 200000).should.be.rejected
+        } else {
+          await foreignBridge.safeExecuteSignaturesWithGasLimit(message, signatures, 200000).should.be.fulfilled
+          expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
+        }
+      }
+    })
+    it('safeExecuteSignaturesWithAutoGasLimit', async () => {
+      const successMsg = box.contract.methods.setValue(11).encodeABI()
+      const failingMsg1 = box.contract.methods.methodWillFail().encodeABI()
+      const failingMsg2 = box.contract.methods.methodOutOfGas().encodeABI()
+
+      for (const msg of [successMsg, failingMsg1, failingMsg2]) {
+        const resultPassMessageTx = await homeBridge.requireToPassMessage(box.address, msg, 1000)
+        const { messageId, encodedData: message } = resultPassMessageTx.logs[0].args
+
+        const signature = await sign(authorities[0], message)
+        const vrs = signatureToVRS(signature)
+        const signatures = packSignatures([vrs])
+
+        if (msg === failingMsg1) {
+          await foreignBridge.safeExecuteSignatures(message, signatures).should.be.rejected
+          await foreignBridge.safeExecuteSignaturesWithGasLimit(message, signatures, 200000).should.be.rejected
+          await foreignBridge.safeExecuteSignaturesWithAutoGasLimit(message, signatures).should.be.rejected
+        } else {
+          await foreignBridge.safeExecuteSignatures(message, signatures).should.be.rejected
+          await foreignBridge.safeExecuteSignaturesWithGasLimit(message, signatures, 1000).should.be.rejected
+          await foreignBridge.safeExecuteSignaturesWithAutoGasLimit(message, signatures).should.be.fulfilled
+          expect(await foreignBridge.messageCallStatus(messageId)).to.be.equal(true)
+        }
+      }
+    })
   })
 
   describe('gasToken functionality', async () => {

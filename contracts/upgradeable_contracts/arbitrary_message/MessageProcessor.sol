@@ -204,7 +204,7 @@ contract MessageProcessor is EternalStorage {
     * @param _sender sender address on the other side.
     * @param _contract address of an executor contract.
     * @param _data calldata for a call to executor.
-    * @param _gas gas limit for a call to executor.
+    * @param _gas gas limit for a call to executor. 2^32 - 1, if caller will pass all available gas for the execution.
     * @param _messageId id of the processed message.
     * @param _sourceChainId source chain id is of the received message.
     */
@@ -230,13 +230,22 @@ contract MessageProcessor is EternalStorage {
         // only because the oracle provides incorrect gas limit for the transaction
         // This check is needed here in order to force contract to pass exactly the requested amount of gas.
         // Avoiding it may lead to the unwanted message failure in some extreme cases.
-        require((gasleft() * 63) / 64 > _gas);
+        require(_gas == 0xffffffff || (gasleft() * 63) / 64 > _gas);
 
         bool status = _contract.call.gas(_gas)(_data);
+        _validateExecutionStatus(status);
         setMessageSender(address(0));
         setMessageId(bytes32(0));
         setMessageSourceChainId(0);
         return status;
+    }
+
+    /**
+    * @dev Validates message execution status. In simplest case, does nothing.
+    * @param _status message execution status.
+    */
+    function _validateExecutionStatus(bool _status) internal {
+        (_status);
     }
 
     /* solcov ignore next */

@@ -39,6 +39,24 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         return 0x18762d46; // bytes4(keccak256(abi.encodePacked("erc-to-native-core")))
     }
 
+    function upgradeTo530(address _interestReceiver) external {
+        require(msg.sender == address(this));
+
+        _setInterestEnabled(address(daiToken), true);
+        _setMinCashThreshold(address(daiToken), 1000000 ether);
+        _setPaidInterestLimits(address(daiToken), 1000 ether, 50000 ether);
+        _setInterestReceiver(address(daiToken), _interestReceiver);
+
+        _setPaidInterestLimits(address(compToken), 1 ether, 100 ether);
+        _setInterestReceiver(address(compToken), _interestReceiver);
+
+        invest(address(daiToken));
+    }
+
+    function investDai() external {
+        invest(address(daiToken));
+    }
+
     /**
      * @dev Withdraws the erc20 tokens or native coins from this contract.
      * @param _token address of the claimed token or address(0) for native coins.

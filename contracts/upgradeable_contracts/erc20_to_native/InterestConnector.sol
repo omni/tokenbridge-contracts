@@ -48,8 +48,7 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
         require(_isInterestSupported(_token));
         require(!isInterestEnabled(_token));
 
-        boolStorage[keccak256(abi.encodePacked("interestEnabled", _token))] = true;
-
+        _setInterestEnabled(_token, true);
         _setMinCashThreshold(_token, _minCashThreshold);
         _setPaidInterestLimits(_token, _minInterestPaid, _maxInterestPaid);
         _setInterestReceiver(_token, _interestReceiver);
@@ -113,7 +112,7 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
      */
     function disableInterest(address _token) external onlyOwner {
         _withdraw(_token, uint256(-1));
-        delete boolStorage[keccak256(abi.encodePacked("interestEnabled", _token))];
+        _setInterestEnabled(_token, false);
     }
 
     /**
@@ -143,8 +142,8 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
     function payInterest(address _token) external interestEnabled(_token) {
         uint256 interest = _clampInterest(_token, interestAmount(_token));
 
-        _withdrawTokens(_token, interest);
-        _transferInterest(_token, interest);
+        uint256 redeemed = _safeWithdrawTokens(_token, interest);
+        _transferInterest(_token, redeemed);
     }
 
     /**
@@ -154,6 +153,23 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
      */
     function investedAmount(address _token) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("investedAmount", _token))];
+    }
+
+    /**
+     * @dev Invests all excess tokens.
+     * Requires interest for the given token to be enabled.
+     * @param _token address of the token contract considered.
+     */
+    function invest(address _token) public interestEnabled(_token) {
+        uint256 balance = _selfBalance(_token);
+        uint256 minCash = minCashThreshold(_token);
+
+        require(balance > minCash);
+        uint256 amount = balance - minCash;
+
+        _setInvestedAmount(_token, investedAmount(_token).add(amount));
+
+        _invest(_token, amount);
     }
 
     /**
@@ -176,29 +192,21 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
     }
 
     /**
+     * @dev Internal function for setting interest enabled flag for some token.
+     * @param _token address of the token contract.
+     * @param _enabled true to enable interest earning, false to disable.
+     */
+    function _setInterestEnabled(address _token, bool _enabled) internal {
+        boolStorage[keccak256(abi.encodePacked("interestEnabled", _token))] = _enabled;
+    }
+
+    /**
      * @dev Internal function for setting the amount of underlying tokens that are currently invested.
      * @param _token address of the token contract.
      * @param _amount new amount of invested tokens.
      */
     function _setInvestedAmount(address _token, uint256 _amount) internal {
         uintStorage[keccak256(abi.encodePacked("investedAmount", _token))] = _amount;
-    }
-
-    /**
-     * @dev Invests all excess tokens.
-     * Requires interest for the given token to be enabled.
-     * @param _token address of the token contract considered.
-     */
-    function invest(address _token) public interestEnabled(_token) {
-        uint256 balance = _selfBalance(_token);
-        uint256 minCash = minCashThreshold(_token);
-
-        require(balance > minCash);
-        uint256 amount = balance - minCash;
-
-        _setInvestedAmount(_token, investedAmount(_token).add(amount));
-
-        _invest(_token, amount);
     }
 
     /**
@@ -211,17 +219,29 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
         if (_amount == 0) return;
 
         uint256 invested = investedAmount(_token);
-        uint256 balance = _selfBalance(_token);
         uint256 withdrawal = _amount > invested ? invested : _amount;
+        uint256 redeemed = _safeWithdrawTokens(_token, withdrawal);
 
-        _withdrawTokens(_token, withdrawal);
+        _setInvestedAmount(_token, invested > redeemed ? invested - redeemed : 0);
+    }
+
+    /**
+     * @dev Internal function for safe withdrawal of invested tokens.
+     * Reverts if given amount cannot be withdrawn.
+     * Additionally verifies that at least _amount of tokens were withdrawn.
+     * @param _token address of the token contract withdrawn.
+     * @param _amount amount of requested tokens to be withdrawn.
+     */
+    function _safeWithdrawTokens(address _token, uint256 _amount) private returns (uint256) {
+        uint256 balance = _selfBalance(_token);
+
+        _withdrawTokens(_token, _amount);
 
         uint256 redeemed = _selfBalance(_token) - balance;
 
-        // Make sure that at least withdrawal amount was indeed withdrawn
-        require(redeemed >= withdrawal);
+        require(redeemed >= _amount);
 
-        _setInvestedAmount(_token, invested > redeemed ? invested - redeemed : 0);
+        return redeemed;
     }
 
     /**

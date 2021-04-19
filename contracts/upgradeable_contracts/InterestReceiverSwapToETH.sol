@@ -7,7 +7,7 @@ import "../interfaces/IInterestReceiver.sol";
 import "../interfaces/IUniswapRouterV2.sol";
 import "./Claimable.sol";
 
-contract InterestReceiverSwapToWETH is IInterestReceiver, Ownable, Claimable {
+contract InterestReceiverSwapToETH is IInterestReceiver, Ownable, Claimable {
     ERC20 public constant daiToken = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     ERC20 public constant compToken = ERC20(0xc00e94Cb662C3520282E6f5717214004A7f26888);
     ERC20 public constant wethToken = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);

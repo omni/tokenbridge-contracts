@@ -12,7 +12,8 @@ const abi = [
 ]
 
 const { bytecode: implBytecode } = require('../build/contracts/ForeignBridgeErcToNative.json')
-const { bytecode: interestReceiverBytecode } = require('../build/contracts/InterestReceiverStakeBuyback.json')
+// const { bytecode: interestReceiverBytecode } = require('../build/contracts/InterestReceiverStakeBuyback.json')
+const { bytecode: interestReceiverBytecode } = require('../build/contracts/InterestReceiverSwapToETH.json')
 const { abi: tokenAbi } = require('../build/contracts/ERC20.json')
 const { abi: routerAbi } = require('../build/contracts/IUniswapRouterV2.json')
 
@@ -26,7 +27,7 @@ const usdtTokenAddress = '0xdac17f958d2ee523a2206206994597c13d831ec7'
 const compTokenAddress = '0xc00e94Cb662C3520282E6f5717214004A7f26888'
 const burnAddress = '0x000000000000000000000000000000000000dead'
 
-const bridge = new web3.eth.Contract(abi, bridgeAddress)
+const bridge = new web3.eth.Contract(abi, bridgeAddress, { gas: 500000 })
 
 async function main() {
   console.log('Starting test case...')
@@ -50,29 +51,31 @@ async function main() {
     gas: 12500000
   })
   console.log('Call upgradeTo')
-  await bridge.methods.upgradeTo(version + 1, bridgeImpl).send({ from: upgradeabilityOwner })
-  console.log('Call initializeInterest for DAI')
-  await bridge.methods.initializeInterest(
-    daiTokenAddress,
-    web3.utils.toWei('1000000'),
-    web3.utils.toWei('1000'),
-    web3.utils.toWei('1000000000'),
-    interestReceiverAddr
-  ).send({ from: owner, gas: 500000 })
-  console.log('Call setPaidInterestLimits for COMP')
-  await bridge.methods.setPaidInterestLimits(
-    compTokenAddress,
-    web3.utils.toWei('1'),
-    web3.utils.toWei('1000000000')
-  ).send({ from: owner, gas: 500000 })
-  console.log('Call setInterestReceiver for COMP')
-  await bridge.methods.setInterestReceiver(
-    compTokenAddress,
-    interestReceiverAddr
-  ).send({ from: owner, gas: 500000 })
+  const upgradeData = bridge.methods.upgradeTo530(interestReceiverAddr).encodeABI()
+  await bridge.methods.upgradeToAndCall(version + 1, bridgeImpl, upgradeData).send({ from: upgradeabilityOwner })
 
-  console.log('Call invest for DAI')
-  await bridge.methods.invest(daiTokenAddress).send({ from: sender, gas: 500000 })
+  // console.log('Call initializeInterest for DAI')
+  // await bridge.methods.initializeInterest(
+  //   daiTokenAddress,
+  //   web3.utils.toWei('1000000'),
+  //   web3.utils.toWei('1000'),
+  //   web3.utils.toWei('1000000000'),
+  //   interestReceiverAddr
+  // ).send({ from: owner })
+  // console.log('Call setPaidInterestLimits for COMP')
+  // await bridge.methods.setPaidInterestLimits(
+  //   compTokenAddress,
+  //   web3.utils.toWei('1'),
+  //   web3.utils.toWei('1000000000')
+  // ).send({ from: owner })
+  // console.log('Call setInterestReceiver for COMP')
+  // await bridge.methods.setInterestReceiver(
+  //   compTokenAddress,
+  //   interestReceiverAddr
+  // ).send({ from: owner })
+  //
+  // console.log('Call invest for DAI')
+  // await bridge.methods.invest(daiTokenAddress).send({ from: sender })
 
   const stake = new web3.eth.Contract(tokenAbi, stakeTokenAddress)
   const router = new web3.eth.Contract(routerAbi, routerAddress)
@@ -100,7 +103,7 @@ async function main() {
   await printRates('Check params after some time')
 
   console.log('Call payInterest')
-  const { gasUsed } = await bridge.methods.payInterest(daiTokenAddress).send({ from: sender, gas: 5000000 })
+  const { gasUsed } = await bridge.methods.payInterest(daiTokenAddress).send({ from: sender })
   console.log(`Used gas: ${gasUsed}`)
   const gasPrice = web3.utils.toWei('100', 'gwei')
   const costUSD = 2000 * web3.utils.fromWei(web3.utils.toBN(gasPrice).muln(gasUsed))
@@ -109,7 +112,7 @@ async function main() {
   await printRates('Check params after STAKE buyback')
 
   console.log('Call claimCompAndPay')
-  const { gasUsed: gasUsed2 } = await bridge.methods.claimCompAndPay().send({ from: sender, gas: 5000000 })
+  const { gasUsed: gasUsed2 } = await bridge.methods.claimCompAndPay().send({ from: sender })
   console.log(`Used gas: ${gasUsed2}`)
   const costUSD2 = 2000 * web3.utils.fromWei(web3.utils.toBN(gasPrice).muln(gasUsed2))
   console.log(`Estimate cost of calling payInterest: ${costUSD2} USD`)
@@ -121,14 +124,16 @@ async function main() {
     await web3.evm.mine()
   }
 
+  console.log('Call payInterest')
+  await bridge.methods.payInterest(daiTokenAddress).send({ from: sender })
   console.log('Call disableInterest')
-  const { gasUsed: gasUsed3 } = await bridge.methods.disableInterest(daiTokenAddress).send({ from: owner, gas: 5000000 })
+  const { gasUsed: gasUsed3 } = await bridge.methods.disableInterest(daiTokenAddress).send({ from: owner })
   console.log(`Used gas: ${gasUsed3}`)
 
   await printRates('Check params disableInterest')
 
   console.log('Call claimCompAndPay')
-  const { gasUsed: gasUsed4 } = await bridge.methods.claimCompAndPay().send({ from: sender, gas: 5000000 })
+  const { gasUsed: gasUsed4 } = await bridge.methods.claimCompAndPay().send({ from: sender })
   console.log(`Used gas: ${gasUsed4}`)
   const costUSD3 = 2000 * web3.utils.fromWei(web3.utils.toBN(gasPrice).muln(gasUsed4))
   console.log(`Estimate cost of calling payInterest: ${costUSD3} USD`)

@@ -1,6 +1,5 @@
 const { CoverageSubprovider, Web3ProviderEngine } = require('@0x/sol-coverage')
 const { TruffleArtifactAdapter } = require('@0x/sol-trace')
-const { DebugSubprovider } = require('@0x/subproviders')
 const RPCSubprovider = require('web3-provider-engine/subproviders/rpc')
 
 const contractsBuildDirectory = './build/contracts'

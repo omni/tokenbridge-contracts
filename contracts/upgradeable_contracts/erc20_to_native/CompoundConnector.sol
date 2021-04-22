@@ -11,10 +11,33 @@ import "../../interfaces/IComptroller.sol";
 contract CompoundConnector is InterestConnector {
     uint256 internal constant SUCCESS = 0;
 
-    ERC20 public constant daiToken = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-    ICToken public constant cDaiToken = ICToken(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
-    IComptroller public constant comptroller = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
-    ERC20 public constant compToken = ERC20(0xc00e94Cb662C3520282E6f5717214004A7f26888);
+    /**
+     * @dev Tells the address of the DAI token in the Ethereum Mainnet.
+     */
+    function daiToken() public pure returns (ERC20) {
+        return ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+    }
+
+    /**
+     * @dev Tells the address of the cDAI token in the Ethereum Mainnet.
+     */
+    function cDaiToken() public pure returns (ICToken) {
+        return ICToken(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643);
+    }
+
+    /**
+     * @dev Tells the address of the Comptroller contract in the Ethereum Mainnet.
+     */
+    function comptroller() public pure returns (IComptroller) {
+        return IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+    }
+
+    /**
+     * @dev Tells the address of the COMP token in the Ethereum Mainnet.
+     */
+    function compToken() public pure returns (ERC20) {
+        return ERC20(0xc00e94Cb662C3520282E6f5717214004A7f26888);
+    }
 
     /**
      * @dev Tells the current earned interest amount.
@@ -22,7 +45,7 @@ contract CompoundConnector is InterestConnector {
      * @return total amount of interest that can be withdrawn now.
      */
     function interestAmount(address _token) public view returns (uint256) {
-        uint256 underlyingBalance = cDaiToken.balanceOfUnderlying(address(this));
+        uint256 underlyingBalance = cDaiToken().balanceOfUnderlying(address(this));
         // 1 DAI is reserved for possible truncation/round errors
         uint256 invested = investedAmount(_token) + 1 ether;
         return underlyingBalance > invested ? underlyingBalance - invested : 0;
@@ -34,7 +57,7 @@ contract CompoundConnector is InterestConnector {
      * @return true, if interest earning is supported.
      */
     function _isInterestSupported(address _token) internal pure returns (bool) {
-        return _token == address(daiToken);
+        return _token == address(daiToken());
     }
 
     /**
@@ -45,8 +68,8 @@ contract CompoundConnector is InterestConnector {
      */
     function _invest(address _token, uint256 _amount) internal {
         (_token);
-        daiToken.approve(address(cDaiToken), _amount);
-        require(cDaiToken.mint(_amount) == SUCCESS);
+        daiToken().approve(address(cDaiToken()), _amount);
+        require(cDaiToken().mint(_amount) == SUCCESS);
     }
 
     /**
@@ -57,7 +80,7 @@ contract CompoundConnector is InterestConnector {
      */
     function _withdrawTokens(address _token, uint256 _amount) internal {
         (_token);
-        require(cDaiToken.redeemUnderlying(_amount) == SUCCESS);
+        require(cDaiToken().redeemUnderlying(_amount) == SUCCESS);
     }
 
     /**
@@ -67,10 +90,10 @@ contract CompoundConnector is InterestConnector {
         address[] memory holders = new address[](1);
         holders[0] = address(this);
         address[] memory markets = new address[](1);
-        markets[0] = address(cDaiToken);
-        comptroller.claimComp(holders, markets, false, true);
+        markets[0] = address(cDaiToken());
+        comptroller().claimComp(holders, markets, false, true);
 
-        uint256 interest = _clampInterest(address(compToken), _selfBalance(address(compToken)));
-        _transferInterest(address(compToken), interest);
+        uint256 interest = _clampInterest(address(compToken()), _selfBalance(address(compToken())));
+        _transferInterest(address(compToken()), interest);
     }
 }

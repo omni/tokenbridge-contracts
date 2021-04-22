@@ -42,19 +42,21 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
     function upgradeTo530(address _interestReceiver) external {
         require(msg.sender == address(this));
 
-        _setInterestEnabled(address(daiToken), true);
-        _setMinCashThreshold(address(daiToken), 1000000 ether);
-        _setPaidInterestLimits(address(daiToken), 1000 ether, 50000 ether);
-        _setInterestReceiver(address(daiToken), _interestReceiver);
+        address dai = address(daiToken());
+        address comp = address(compToken());
+        _setInterestEnabled(dai, true);
+        _setMinCashThreshold(dai, 1000000 ether);
+        _setPaidInterestLimits(dai, 1000 ether, 50000 ether);
+        _setInterestReceiver(dai, _interestReceiver);
 
-        _setPaidInterestLimits(address(compToken), 1 ether, 100 ether);
-        _setInterestReceiver(address(compToken), _interestReceiver);
+        _setPaidInterestLimits(comp, 1 ether, 100 ether);
+        _setInterestReceiver(comp, _interestReceiver);
 
-        invest(address(daiToken));
+        invest(dai);
     }
 
     function investDai() external {
-        invest(address(daiToken));
+        invest(address(daiToken()));
     }
 
     /**
@@ -66,8 +68,8 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         // Since bridged tokens are locked at this contract, it is not allowed to claim them with the use of claimTokens function
         address bridgedToken = address(erc20token());
         require(_token != address(bridgedToken));
-        require(_token != address(cDaiToken) || !isInterestEnabled(bridgedToken));
-        require(_token != address(compToken) || !isInterestEnabled(bridgedToken));
+        require(_token != address(cDaiToken()) || !isInterestEnabled(bridgedToken));
+        require(_token != address(compToken()) || !isInterestEnabled(bridgedToken));
         claimValues(_token, _to);
     }
 

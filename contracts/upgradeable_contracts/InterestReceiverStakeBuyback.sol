@@ -16,6 +16,8 @@ contract InterestReceiverStakeBuyback is IInterestReceiver, Ownable, Claimable {
 
     address public constant burnAddress = 0x000000000000000000000000000000000000dEaD;
 
+    uint256 public minReceivedFraction = 0;
+
     constructor() public {
         daiToken.approve(address(uniswapRouterV2), uint256(-1));
         compToken.approve(address(uniswapRouterV2), uint256(-1));
@@ -27,7 +29,16 @@ contract InterestReceiverStakeBuyback is IInterestReceiver, Ownable, Claimable {
         path[1] = wethToken;
         path[2] = address(stakeToken);
         uint256 amount = ERC20(_token).balanceOf(address(this));
-        uniswapRouterV2.swapExactTokensForTokens(amount, 0, path, burnAddress, now);
+
+        // (min received %) * (amount / 1 DAI) * (STAKE per 1 DAI)
+        uint256 minAmount = (minReceivedFraction * amount * uniswapRouterV2.getAmountsOut(1 ether, path)[2]) / 10**36;
+
+        uniswapRouterV2.swapExactTokensForTokens(amount, minAmount, path, burnAddress, now);
+    }
+
+    function setMinFractionReceived(uint256 _minFraction) external onlyOwner {
+        require(_minFraction < 1 ether);
+        minReceivedFraction = _minFraction;
     }
 
     function claimTokens(address _token, address _to) external onlyOwner {

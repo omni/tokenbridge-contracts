@@ -36,13 +36,11 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
      * @param _token address of the token for interest earning.
      * @param _minCashThreshold minimum amount of underlying tokens that are not invested.
      * @param _minInterestPaid minimum amount of interest that can be paid in a single call.
-     * @param _maxInterestPaid maximum amount of interest that can be paid in a single call.
      */
     function initializeInterest(
         address _token,
         uint256 _minCashThreshold,
         uint256 _minInterestPaid,
-        uint256 _maxInterestPaid,
         address _interestReceiver
     ) external onlyOwner {
         require(_isInterestSupported(_token));
@@ -50,7 +48,7 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
 
         _setInterestEnabled(_token, true);
         _setMinCashThreshold(_token, _minCashThreshold);
-        _setPaidInterestLimits(_token, _minInterestPaid, _maxInterestPaid);
+        _setMinInterestPaid(_token, _minInterestPaid);
         _setInterestReceiver(_token, _interestReceiver);
     }
 
@@ -74,17 +72,13 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
     }
 
     /**
-     * @dev Sets limits for paid interest amount in a single call.
+     * @dev Sets lower limit for the paid interest amount.
      * Only owner can call this method.
      * @param _token address of the token contract.
      * @param _minInterestPaid minimum amount of interest paid in a single call.
-     * @param _maxInterestPaid maximum amount of interest paid in a single call.
      */
-    function setPaidInterestLimits(address _token, uint256 _minInterestPaid, uint256 _maxInterestPaid)
-        external
-        onlyOwner
-    {
-        _setPaidInterestLimits(_token, _minInterestPaid, _maxInterestPaid);
+    function setMinInterestPaid(address _token, uint256 _minInterestPaid) external onlyOwner {
+        _setMinInterestPaid(_token, _minInterestPaid);
     }
 
     /**
@@ -94,15 +88,6 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
      */
     function minInterestPaid(address _token) public view returns (uint256) {
         return uintStorage[keccak256(abi.encodePacked("minInterestPaid", _token))];
-    }
-
-    /**
-     * @dev Tells maximum amount of paid interest in a single call.
-     * @param _token address of the invested token contract.
-     * @return paid interest maximum limit.
-     */
-    function maxInterestPaid(address _token) public view returns (uint256) {
-        return uintStorage[keccak256(abi.encodePacked("maxInterestPaid", _token))];
     }
 
     /**
@@ -140,7 +125,8 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
      * @param _token address of the token contract.
      */
     function payInterest(address _token) external interestEnabled(_token) {
-        uint256 interest = _clampInterest(_token, interestAmount(_token));
+        uint256 interest = interestAmount(_token);
+        require(interest >= minInterestPaid(_token));
 
         uint256 redeemed = _safeWithdrawTokens(_token, interest);
         _transferInterest(_token, redeemed);
@@ -254,15 +240,12 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
     }
 
     /**
-     * @dev Internal function for setting limits for paid interest amount in a single call.
+     * @dev Internal function for setting lower limit for paid interest amount.
      * @param _token address of the token contract.
      * @param _minInterestPaid minimum amount of interest paid in a single call.
-     * @param _maxInterestPaid maximum amount of interest paid in a single call.
      */
-    function _setPaidInterestLimits(address _token, uint256 _minInterestPaid, uint256 _maxInterestPaid) internal {
-        require(_minInterestPaid < _maxInterestPaid);
+    function _setMinInterestPaid(address _token, uint256 _minInterestPaid) internal {
         uintStorage[keccak256(abi.encodePacked("minInterestPaid", _token))] = _minInterestPaid;
-        uintStorage[keccak256(abi.encodePacked("maxInterestPaid", _token))] = _maxInterestPaid;
     }
 
     /**
@@ -273,18 +256,6 @@ contract InterestConnector is Ownable, ERC20Bridge, TokenSwapper {
     function _setInterestReceiver(address _token, address _receiver) internal {
         require(_receiver != address(this));
         addressStorage[keccak256(abi.encodePacked("interestReceiver", _token))] = _receiver;
-    }
-
-    /**
-     * @dev Internal function for clamping the available interest amount.
-     * @param _token address of the invested token contract.
-     * @param _amount amount of underlying tokens available to withdrawal.
-     * @return amount in minInterestPaid...maxInterestPaid range.
-     */
-    function _clampInterest(address _token, uint256 _amount) internal view returns (uint256) {
-        require(_amount >= minInterestPaid(_token));
-        uint256 maxInterest = maxInterestPaid(_token);
-        return _amount > maxInterest ? maxInterest : _amount;
     }
 
     /**

@@ -93,7 +93,9 @@ contract CompoundConnector is InterestConnector {
         markets[0] = address(cDaiToken());
         comptroller().claimComp(holders, markets, false, true);
 
-        uint256 interest = _clampInterest(address(compToken()), _selfBalance(address(compToken())));
-        _transferInterest(address(compToken()), interest);
+        address comp = address(compToken());
+        uint256 interest = _selfBalance(comp);
+        require(interest >= minInterestPaid(comp));
+        _transferInterest(comp, interest);
     }
 }

@@ -46,10 +46,10 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         address comp = address(compToken());
         _setInterestEnabled(dai, true);
         _setMinCashThreshold(dai, 1000000 ether);
-        _setPaidInterestLimits(dai, 1000 ether, 50000 ether);
+        _setMinInterestPaid(dai, 1000 ether);
         _setInterestReceiver(dai, _interestReceiver);
 
-        _setPaidInterestLimits(comp, 1 ether, 100 ether);
+        _setMinInterestPaid(comp, 1 ether);
         _setInterestReceiver(comp, _interestReceiver);
 
         invest(dai);

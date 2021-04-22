@@ -7,6 +7,6 @@ services:
     - 8545:8545
   compound:
     image: kirillfedoseev/compound-test-deploy
-    build: compound
+    # build: compound
     stdin_open: true
     tty: true

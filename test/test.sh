@@ -9,6 +9,7 @@ cleanup() {
     docker-compose -f test/docker-compose.yml down
   fi
 }
+cleanup
 
 ganache_running() {
   nc -z localhost 8545

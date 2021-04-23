@@ -10,6 +10,9 @@
     "bracket-align": "off",
     "no-complex-fallback": "off",
     "no-simple-event-func-name": "off",
+    "const-name-snakecase": "off",
+    "no-empty-blocks": "off",
+    "not-rely-on-time": "off",
     "compiler-version": ["error", "0.4.24"]
   }
 }

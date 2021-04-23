@@ -18,16 +18,12 @@ contract HomeFeeManagerAMBNativeToErc20 is BaseMediatorFeeManager {
     constructor(address _owner, uint256 _fee, address[] _rewardAccountList, address _mediatorContract)
         public
         BaseMediatorFeeManager(_owner, _fee, _rewardAccountList, _mediatorContract)
-    {
-        // solhint-disable-previous-line no-empty-blocks
-    }
+    {}
 
     /**
     * @dev Fallback method to receive the fees.
     */
-    function() public payable {
-        // solhint-disable-previous-line no-empty-blocks
-    }
+    function() public payable {}
 
     /**
     * @dev Transfer the fee as native tokens to the reward account.

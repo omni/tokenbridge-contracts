@@ -13,7 +13,7 @@ const PermittableTokenMock = artifacts.require('PermittableTokenMock.sol')
 const { expect } = require('chai')
 const ethUtil = require('ethereumjs-util')
 
-const { ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS, BN } = require('./setup')
+const { ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS, BN, toBN } = require('./setup')
 const { ether, expectEventInLogs } = require('./helpers/helpers')
 const permitSign = require('./helpers/eip712.sign.permit')
 
@@ -774,7 +774,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
         await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
           .fulfilled
         ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
-        const data = await token.contract.methods.approve(spender, -1).encodeABI()
+        const data = await token.contract.methods.approve(spender, infinite).encodeABI()
         await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
         ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
       })
@@ -800,7 +800,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
         await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
           .fulfilled
         ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
-        let data = await token.contract.methods.approve(spender, -2).encodeABI()
+        let data = await token.contract.methods.approve(spender, infinite.sub(toBN(1))).encodeABI()
         await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
         ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
         data = await token.contract.methods.increaseAllowance(spender, 1).encodeABI()

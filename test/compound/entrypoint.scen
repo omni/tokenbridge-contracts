@@ -1,0 +1,33 @@
+MyAddress 0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9
+
+-- Deploy contract
+NewComptroller
+ListedEtherToken cETH
+ListedCToken DAI cDAI
+Erc20 Deploy Standard COMP "COMP Token" 18
+
+-- Set contracts params
+Comptroller SetCollateralFactor cETH 0.9
+Comptroller SetCompSpeed cDAI 1
+Comptroller Send "setCompAddress(address)" (Address COMP)
+Give (Address Comptroller) 5000000e18 COMP
+
+-- Put ETH collateral
+SendMintEth Me 20e18 cETH
+EnterMarkets Me cETH
+
+-- Mint some DAI
+Give Me 500000e18 DAI
+
+-- Mint some cDAI
+Allow Me cDAI
+Mint Me 10e18 cDAI
+
+-- Print addresses
+Read Comptroller Address
+Read ERC20 DAI Address
+Read ERC20 Comp Address
+Read CToken cETH Address
+Read CToken cDAI Address
+
+Exit

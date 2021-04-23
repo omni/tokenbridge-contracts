@@ -7,6 +7,11 @@ import "../interfaces/IInterestReceiver.sol";
 import "../interfaces/IUniswapRouterV2.sol";
 import "./Claimable.sol";
 
+/**
+ * @title InterestReceiverStakeBuyback
+ * @dev This contract is intended to be used together with InterestConnector module of the erc-to-native bridge.
+ * Contract receives DAI and COMP tokens. All received tokens are swapped to STAKE token and burnt.
+ */
 contract InterestReceiverStakeBuyback is IInterestReceiver, Ownable, Claimable {
     ERC20 public constant daiToken = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     ERC20 public constant compToken = ERC20(0xc00e94Cb662C3520282E6f5717214004A7f26888);
@@ -23,6 +28,10 @@ contract InterestReceiverStakeBuyback is IInterestReceiver, Ownable, Claimable {
         compToken.approve(address(uniswapRouterV2), uint256(-1));
     }
 
+    /**
+     * @dev Callback function for notifying this contract about received interest.
+     * @param _token address of the token contract. Should be COMP or DAI token address.
+     */
     function onInterestReceived(address _token) external {
         address[] memory path = new address[](3);
         path[0] = _token;
@@ -44,11 +53,23 @@ contract InterestReceiverStakeBuyback is IInterestReceiver, Ownable, Claimable {
         address(uniswapRouterV2).call(data);
     }
 
+    /**
+     * @dev Updates the slippage parameter for the Uniswap operations.
+     * Only owner can call this method.
+     * @param _minFraction minimum percentage allowed to be received w.r.t. 1 ether (0.9 ether = 90%),
+     * slippage = 1 ether - minReceivedFraction.
+     */
     function setMinFractionReceived(uint256 _minFraction) external onlyOwner {
         require(_minFraction < 1 ether);
         minReceivedFraction = _minFraction;
     }
 
+    /**
+    * @dev Allows to transfer any locked token from this contract.
+    * Only owner can call this method.
+    * @param _token address of the token, if it is not provided (0x00..00), native coins will be transferred.
+    * @param _to address that will receive the locked tokens on this contract.
+    */
     function claimTokens(address _token, address _to) external onlyOwner {
         claimValues(_token, _to);
     }

@@ -244,8 +244,10 @@ async function transferOwnership({ contract, newOwner, nonce, url }) {
   }
 }
 
-async function setBridgeContract({ contract, bridgeAddress, nonce, url }) {
-  const data = await contract.methods.setBridgeContract(bridgeAddress).encodeABI()
+async function setBridgeContract({ contract, bridgeAddress, nonce, url, isRewardable }) {
+  const data = isRewardable
+    ? await contract.methods.addBridge(bridgeAddress).encodeABI()
+    : await contract.methods.setBridgeContract(bridgeAddress).encodeABI()
   const sendTx = getSendTxMethod(url)
   const result = await sendTx({
     data,

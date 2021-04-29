@@ -250,7 +250,8 @@ async function deployHome() {
     contract: erc677token,
     bridgeAddress: homeBridgeStorage.options.address,
     nonce,
-    url: HOME_RPC_URL
+    url: HOME_RPC_URL,
+    isRewardable: rewardable
   })
   nonce++
 

@@ -1,5 +1,4 @@
 const ForeignBridge = artifacts.require('ForeignBridgeErcToNative.sol')
-const ForeignBridgeV2 = artifacts.require('ForeignBridgeV2.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
@@ -543,7 +542,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       )
 
       // Deploy V2
-      const foreignImplV2 = await ForeignBridgeV2.new()
+      const foreignImplV2 = await ForeignBridge.new()
       const foreignBridgeProxyUpgrade = await EternalStorageProxy.at(foreignBridgeProxy.address)
       await foreignBridgeProxyUpgrade.upgradeTo('2', foreignImplV2.address).should.be.fulfilled
       foreignImplV2.address.should.be.equal(await foreignBridgeProxyUpgrade.implementation())

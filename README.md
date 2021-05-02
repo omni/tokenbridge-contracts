@@ -35,9 +35,6 @@ The POA bridge contracts consist of several components:
 * The **Home Bridge** smart contract. This is currently deployed in POA.Network.
 * The **Foreign Bridge** smart contract. This is deployed in the Ethereum Mainnet.
 * Depending on the type of relay operations the following components are also used:
-  * in `NATIVE-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Foreign network;
-  * in `AMB-NATIVE-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Foreign network;
-  * in `ERC-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Home network;
   * in `AMB-ERC-TO-ERC` mode: the ERC20 token (in fact, the ERC677 extension is used) is deployed on the Home network;
   * in `ERC-TO-NATIVE` mode: The home network nodes must support consensus engine that allows using a smart contract for block reward calculation;
 * The **Validators** smart contract is deployed in both the POA.Network and the Ethereum Mainnet.
@@ -59,14 +56,9 @@ Responsibilities and roles of the bridge:
   - listen for `UserRequestForAffirmation` or `Transfer` (depending on the bridge mode) events on the Foreign Bridge and send approval to Home Bridge to relay assets from Foreign Network to Home
 - **User** role:
   - sends assets to Bridge contracts:
-    - in `NATIVE-TO-ERC` mode: send native coins to the Home Bridge to receive ERC20 tokens from the Foreign Bridge, send ERC20 tokens to the Foreign Bridge to unlock native coins from the Home Bridge;
-    - in `ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Bridge to unlock ERC20 tokens on Foreign networks;
     - in `ERC-TO-NATIVE` mode: send ERC20 tokens to the Foreign Bridge to receive native coins from the Home Bridge, send native coins to the Home Bridge to unlock ERC20 tokens from the Foreign Bridge;
     - in `ARBITRARY-MESSAGE` mode: Invoke Home/Foreign Bridge to send a message that will be executed on the other Network as an arbitrary contract method invocation;
     - in `AMB-ERC-TO-ERC` mode: transfer ERC20 tokens to the Foreign Mediator which will interact with Foreign AMB Bridge to mint ERC20 tokens on the Home Network, transfer ERC20 tokens to the Home Mediator which will interact with Home AMB Bridge to unlock ERC20 tokens on Foreign network.
-    - in `AMB-NATIVE-TO-ERC` mode: send native coins to the Home Mediator which will interact with Home AMB Bridge to mint ERC20 tokens on the Foreign Network, transfer ERC20 tokens to the Foreign Mediator which will interact with Foreign AMB Bridge to unlock native coins from Home network.
-    - in `AMB-ERC-TO-NATIVE` mode: send ERC20 tokens to the Foreign Mediator which will interact with Foreign AMB Bridge to receive native coins from the Home Mediator on the Home Network, send native coins to the Home Mediator which will interact with Home AMB Bridge to unlock ERC20 tokens from the Foreign Mediator.
-    - in `MULTI-AMB-ERC-TO-ERC` mode: transfer any ERC20/ERC677 tokens to the Foreign Mediator which will interact with Foreign AMB Bridge to mint ERC677 tokens on the Home Network, transfer ERC677 tokens to the Home Mediator which will interact with Home AMB Bridge to unlock associated ERC20/ERC677 tokens on the Foreign network.
 
 ## Usage
 

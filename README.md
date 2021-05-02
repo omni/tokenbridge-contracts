@@ -158,17 +158,6 @@ or with Docker:
 ./deploy.sh token
 ```
 
-For testing bridge scripts in ERC20-to-NATIVE mode, you can deploy an interest receiver to the foreign network.
-This can be done by running the following command:
-```bash
-cd deploy
-node testenv-deploy.js interestReceiver
-```
-or with Docker:
-```bash
-./deploy.sh interestReceiver
-```
-
 ## Contributing
 
 See the [CONTRIBUTING](CONTRIBUTING.md) document for contribution, testing and pull request protocol.

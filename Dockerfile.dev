@@ -18,8 +18,6 @@ COPY ./upgrade/package.json ./upgrade/
 COPY ./upgrade/package-lock.json ./upgrade/
 RUN cd ./upgrade; npm install; cd ..
 
-COPY ./scripts ./scripts
-
 COPY truffle-config.js truffle-config.js
 COPY ./contracts ./contracts
 RUN npm run compile

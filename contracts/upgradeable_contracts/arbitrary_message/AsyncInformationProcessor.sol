@@ -21,6 +21,8 @@ contract AsyncInformationProcessor is BasicHomeAMB {
     /**
      * @dev Makes an asynchronous request to get information from the opposite network.
      * Call result will be returned later to the callee, by using the onInformationReceived(bytes) callback function.
+     * @param _requestSelector selector for the async request.
+     * @param _data payload for the given selector
      */
     function requireToGetInformation(bytes32 _requestSelector, bytes _data) external returns (bytes32) {
         // it is not allowed to pass messages while other messages are processed

@@ -88,7 +88,7 @@ contract TokenPaymaster is BasePaymaster {
         assembly {
             functionSelector := mload(add(reqData, 32))
         }
-        require(bridge == relayRequest.request.to, "accepets only bridge calls");
+        require(bridge == relayRequest.request.to, "accepts only bridge calls");
         require(functionSelector == GSNForeignERC20Bridge(bridge).executeSignaturesGSN.selector, "not allowed target");
 
         // Get 3rd argument of executeSignaturesGSN, i.e. maxTokensFee

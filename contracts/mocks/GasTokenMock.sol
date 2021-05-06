@@ -7,9 +7,9 @@ contract Rlp {
     uint256 constant MAX_NONCE = 256**9 - 1;
 
     // count number of bytes required to represent an unsigned integer
-    function count_bytes(uint256 n) pure internal returns (uint256 c) {
-        uint i = 0;
-        uint mask = 1;
+    function count_bytes(uint256 n) internal pure returns (uint256 c) {
+        uint256 i = 0;
+        uint256 mask = 1;
         while (n >= mask) {
             i += 1;
             mask *= 256;
@@ -18,7 +18,7 @@ contract Rlp {
         return i;
     }
 
-    function mk_contract_address(address a, uint256 n) pure internal returns (address rlp) {
+    function mk_contract_address(address a, uint256 n) internal pure returns (address rlp) {
         /*
          * make sure the RLP encoding fits in one word:
          * total_length      1 byte
@@ -116,7 +116,7 @@ contract GasTokenMock is Rlp {
     // Spec: Send `value` amount of tokens from address `from` to address `to`
     function transferFrom(address from, address to, uint256 value) public returns (bool success) {
         address spender = msg.sender;
-        if(value <= s_allowances[from][spender] && internalTransfer(from, to, value)) {
+        if (value <= s_allowances[from][spender] && internalTransfer(from, to, value)) {
             s_allowances[from][spender] -= value;
             return true;
         } else {
@@ -150,9 +150,9 @@ contract GasTokenMock is Rlp {
     // GasToken specifics
     //////////////////////////////////////////////////////////////////////////
 
-    uint8 constant public decimals = 2;
-    string constant public name = "Gastoken.io";
-    string constant public symbol = "GST2";
+    uint8 public constant decimals = 2;
+    string public constant name = "Gastoken.io";
+    string public constant symbol = "GST2";
 
     // We build a queue of nonces at which child contracts are stored. s_head is
     // the nonce at the head of the queue, s_tail is the nonce behind the tail

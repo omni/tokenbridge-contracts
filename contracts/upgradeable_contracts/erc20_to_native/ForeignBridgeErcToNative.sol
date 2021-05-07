@@ -6,7 +6,13 @@ import "../OtherSideBridgeStorage.sol";
 import "./CompoundConnector.sol";
 import "../GSNForeignERC20Bridge.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, CompoundConnector, GSNForeignERC20Bridge {
+contract ForeignBridgeErcToNative is
+    BasicForeignBridge,
+    ERC20Bridge,
+    OtherSideBridgeStorage,
+    CompoundConnector,
+    GSNForeignERC20Bridge
+{
     function initialize(
         address _validatorContract,
         address _erc20token,

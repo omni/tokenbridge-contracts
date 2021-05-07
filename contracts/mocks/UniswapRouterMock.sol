@@ -10,6 +10,7 @@ contract UniswapRouterMock {
     }
 
     function getAmountsOut(uint256 amountIn, address[] path) external pure returns (uint256[] memory amounts) {
+        (path);
         amounts = new uint256[](2);
         amounts[0] = amountIn;
         amounts[1] = amountIn / 100;
@@ -20,6 +21,7 @@ contract UniswapRouterMock {
         external
         returns (uint256[] memory amounts)
     {
+        (amountInMax, path, to, deadline);
         uint256 ethToSend = amountOut;
         uint256 tokensToTake = ethToSend * 100;
 

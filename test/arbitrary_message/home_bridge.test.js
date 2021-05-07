@@ -6,7 +6,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { sign, ether, expectEventInLogs } = require('../helpers/helpers')
+const { sign, ether, expectEventInLogs, getEvents } = require('../helpers/helpers')
 
 const requiredBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -281,7 +281,9 @@ contract('HomeAMB', async accounts => {
       bridgeId = web3.utils.soliditySha3(paddedChainId + homeBridge.address.slice(2)).slice(10, 50)
     })
     it('call requireToPassMessage(address, bytes, uint256)', async () => {
-      const tx = await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      const tx = await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         1535604485,
@@ -308,7 +310,9 @@ contract('HomeAMB', async accounts => {
     })
     it('call requireToPassMessage(address, bytes, uint256) should fail', async () => {
       // Should fail because gas < minimumGasUsage
-      await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         10,
@@ -316,7 +320,9 @@ contract('HomeAMB', async accounts => {
       ).should.be.rejectedWith(ERROR_MSG)
 
       // Should fail because gas > maxGasPerTx
-      await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         twoEther,
@@ -327,7 +333,9 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridge.maxGasPerTx()).to.be.bignumber.equal(ZERO)
 
       // Should fail because maxGasPerTx = 0 so gas > maxGasPerTx
-      await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         oneEther,
@@ -337,7 +345,9 @@ contract('HomeAMB', async accounts => {
       await homeBridge.setMaxGasPerTx(oneEther).should.be.fulfilled
       expect(await homeBridge.maxGasPerTx()).to.be.bignumber.equal(oneEther)
 
-      await homeBridge.methods['requireToPassMessage(address,bytes,uint256)'](
+      await homeBridge.methods[
+        'requireToPassMessage(address,bytes,uint256)'
+      ](
         '0xf4BEF13F9f4f2B203FAF0C3cBbaAbe1afE056955',
         '0xb1591967aed668a4b27645ff40c444892d91bf5951b382995d4d4f6ee3a2ce03',
         oneEther,
@@ -913,6 +923,126 @@ contract('HomeAMB', async accounts => {
 
     it('should not allow to set chain id if not an owner', async () => {
       await homeContract.setChainIds('0x112233', '0x4455', { from: accounts[1] }).should.be.rejected
+    })
+  })
+  describe('async information retrieval', () => {
+    let homeContract
+    let box
+    let data
+
+    const ethCallSelector = web3.utils.soliditySha3('eth_call(address,bytes)')
+
+    beforeEach(async () => {
+      homeContract = await HomeAMB.new()
+      await homeContract.initialize(
+        HOME_CHAIN_ID_HEX,
+        FOREIGN_CHAIN_ID_HEX,
+        validatorContract.address,
+        1000000,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      ).should.be.fulfilled
+      box = await Box.new()
+      data = web3.eth.abi.encodeParameters(
+        ['address', 'bytes'],
+        [accounts[1], box.contract.methods.value().encodeABI()]
+      )
+    })
+
+    it('should enable new selector', async () => {
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true, { from: accounts[1] }).should.be.rejected
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true, { from: owner }).should.be.fulfilled
+
+      expect(await homeContract.isAsyncRequestSelectorEnabled(ethCallSelector)).to.be.equal(true)
+    })
+
+    it('should allow to request information from the other chain', async () => {
+      await homeContract.requireToGetInformation(ethCallSelector, data).should.be.rejected
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.rejected
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.fulfilled
+
+      const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
+      expect(events.length).to.be.equal(1)
+      expect(events[0].returnValues.sender).to.be.equal(box.address)
+      expect(events[0].returnValues.requestSelector).to.be.equal(ethCallSelector)
+      expect(events[0].returnValues.data).to.be.equal(data)
+    })
+
+    it('should accept confirmations from a single validator', async () => {
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.fulfilled
+      const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
+      expect(events.length).to.be.equal(1)
+      const { messageId } = events[0].returnValues
+      const result = '0x0000000000000000000000000000000000000000000000000000000000000005'
+
+      await homeContract.confirmInformation(messageId, true, result, { from: owner }).should.be.rejected
+      const { logs } = await homeContract.confirmInformation(messageId, true, result, { from: authorities[0] }).should
+        .be.fulfilled
+      await homeContract.confirmInformation(messageId, true, result, { from: authorities[0] }).should.be.rejected
+      await homeContract.confirmInformation(messageId, true, result, { from: authorities[1] }).should.be.rejected
+      logs[0].event.should.be.equal('SignedForInformation')
+      expectEventInLogs(logs, 'InformationRetrieved', {
+        messageId,
+        status: true,
+        callbackStatus: true
+      })
+
+      expect(await box.data()).to.be.equal(result)
+      expect(await box.messageId()).to.be.equal(messageId)
+      expect(await box.status()).to.be.equal(true)
+    })
+    it('should accept confirmations from 2-of-3 validators', async () => {
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
+      await validatorContract.setRequiredSignatures(2).should.be.fulfilled
+
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.fulfilled
+      const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
+      expect(events.length).to.be.equal(1)
+      const { messageId } = events[0].returnValues
+      const result = '0x0000000000000000000000000000000000000000000000000000000000000005'
+
+      const { logs: logs1 } = await homeContract.confirmInformation(messageId, true, result, { from: authorities[0] })
+        .should.be.fulfilled
+      const { logs: logs2 } = await homeContract.confirmInformation(messageId, true, result, { from: authorities[1] })
+        .should.be.fulfilled
+      logs1[0].event.should.be.equal('SignedForInformation')
+      logs2[0].event.should.be.equal('SignedForInformation')
+
+      expectEventInLogs(logs2, 'InformationRetrieved', {
+        messageId,
+        status: true,
+        callbackStatus: true
+      })
+
+      expect(await box.data()).to.be.equal(result)
+      expect(await box.messageId()).to.be.equal(messageId)
+      expect(await box.status()).to.be.equal(true)
+    })
+    it('should process failed calls', async () => {
+      await homeContract.enableAsyncRequestSelector(ethCallSelector, true).should.be.fulfilled
+      await validatorContract.setRequiredSignatures(1).should.be.fulfilled
+
+      await box.makeAsyncCall(homeContract.address, ethCallSelector, data).should.be.fulfilled
+      const events = await getEvents(homeContract, { event: 'UserRequestForInformation' })
+      expect(events.length).to.be.equal(1)
+      const { messageId } = events[0].returnValues
+      const result = '0x0000000000000000000000000000000000000000000000000000000000000005'
+
+      const { logs } = await homeContract.confirmInformation(messageId, false, result, { from: authorities[0] }).should
+        .be.fulfilled
+      logs[0].event.should.be.equal('SignedForInformation')
+      expectEventInLogs(logs, 'InformationRetrieved', {
+        messageId,
+        status: false,
+        callbackStatus: true
+      })
+
+      expect(await box.data()).to.be.equal(result)
+      expect(await box.messageId()).to.be.equal(messageId)
+      expect(await box.status()).to.be.equal(false)
     })
   })
 })

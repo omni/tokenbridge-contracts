@@ -1,6 +1,6 @@
 {
   "name": "tokenbridge-contracts",
-  "version": "5.7.0-rc1",
+  "version": "6.0.0-rc0",
   "description": "Bridge",
   "main": "index.js",
   "scripts": {
@@ -22,6 +22,8 @@
   "dependencies": {
     "@0x/sol-coverage": "^4.0.10",
     "@0x/sol-trace": "^3.0.10",
+    "@opengsn/gsn": "^2.1.0",
+    "array-flat-polyfill": "^1.0.1",
     "openzeppelin-solidity": "1.12.0",
     "truffle": "^5.3.2",
     "truffle-flattener": "^1.4.2",
@@ -44,8 +46,8 @@
     "istanbul": "^0.4.5",
     "nodemon": "^1.17.3",
     "prettier": "^1.18.2",
-    "prettier-plugin-solidity": "^1.0.0-alpha.32",
-    "solhint": "^2.2.0",
+    "prettier-plugin-solidity": "1.0.0-alpha.32",
+    "solhint": "2.2.0",
     "solhint-plugin-prettier": "0.0.3"
   }
 }

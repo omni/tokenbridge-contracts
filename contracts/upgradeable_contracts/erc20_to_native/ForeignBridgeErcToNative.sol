@@ -4,8 +4,15 @@ import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 import "../OtherSideBridgeStorage.sol";
 import "./CompoundConnector.sol";
+import "../GSNForeignERC20Bridge.sol";
 
-contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideBridgeStorage, CompoundConnector {
+contract ForeignBridgeErcToNative is
+    BasicForeignBridge,
+    ERC20Bridge,
+    OtherSideBridgeStorage,
+    CompoundConnector,
+    GSNForeignERC20Bridge
+{
     function initialize(
         address _validatorContract,
         address _erc20token,
@@ -73,6 +80,23 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         claimValues(_token, _to);
     }
 
+    function onExecuteMessageGSN(address recipient, uint256 amount, uint256 fee) internal returns (bool) {
+        addTotalExecutedPerDay(getCurrentDay(), amount);
+        uint256 unshiftMaxFee = _unshiftValue(fee);
+        uint256 unshiftLeft = _unshiftValue(amount - fee);
+
+        ERC20 token = erc20token();
+        ensureEnoughTokens(token, unshiftMaxFee + unshiftLeft);
+
+        // Send maxTokensFee to paymaster
+        bool first = token.transfer(addressStorage[PAYMASTER], unshiftMaxFee);
+
+        // Send rest of tokens to user
+        bool second = token.transfer(recipient, unshiftLeft);
+
+        return first && second;
+    }
+
     function onExecuteMessage(
         address _recipient,
         uint256 _amount,
@@ -82,14 +106,18 @@ contract ForeignBridgeErcToNative is BasicForeignBridge, ERC20Bridge, OtherSideB
         uint256 amount = _unshiftValue(_amount);
 
         ERC20 token = erc20token();
+        ensureEnoughTokens(token, amount);
+
+        return token.transfer(_recipient, amount);
+    }
+
+    function ensureEnoughTokens(ERC20 token, uint256 amount) internal {
         uint256 currentBalance = token.balanceOf(address(this));
 
         if (currentBalance < amount) {
             uint256 withdrawAmount = (amount - currentBalance).add(minCashThreshold(address(token)));
             _withdraw(address(token), withdrawAmount);
         }
-
-        return token.transfer(_recipient, amount);
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {

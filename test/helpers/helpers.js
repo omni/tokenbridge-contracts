@@ -202,3 +202,18 @@ async function delay(ms) {
 }
 
 module.exports.delay = delay
+
+async function evalMetrics(target, ...metrics) {
+  const before = await Promise.all(metrics.map(metric => metric()))
+  await target()
+  const after = await Promise.all(metrics.map(metric => metric()))
+  return [...before, ...after]
+}
+
+module.exports.evalMetrics = evalMetrics
+
+function paymasterError(reason) {
+  return `paymaster rejected in local view call to 'relayCall()' : ${reason}`
+}
+
+module.exports.paymasterError = paymasterError

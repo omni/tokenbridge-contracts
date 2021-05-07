@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 
-import "./BasicHomeAMB.sol";
+import "./AsyncInformationProcessor.sol";
 
-contract HomeAMB is BasicHomeAMB {
+contract HomeAMB is AsyncInformationProcessor {
     event UserRequestForSignature(bytes32 indexed messageId, bytes encodedData);
     event AffirmationCompleted(
         address indexed sender,

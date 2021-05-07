@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "../BasePaymaster.sol";
-import "./IUniswapRouter02.sol";
+import "./IUniswapV2Router02.sol";
 import "../../upgradeable_contracts/GSNForeignERC20Bridge.sol";
 
 contract TokenPaymaster is BasePaymaster {

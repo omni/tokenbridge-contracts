@@ -38,7 +38,7 @@ contract('ForeignAMB', async accounts => {
 
   before(async () => {
     validatorContract = await BridgeValidators.new()
-    gasTokenContract = await GasToken.new()
+    gasTokenContract = await GasToken.new({ from: accounts[7] })
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)

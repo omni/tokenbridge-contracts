@@ -9,7 +9,7 @@ import "../upgradeable_contracts/arbitrary_message/ForeignAMBWithGasToken.sol";
 contract ForeignAMBWithGasTokenMock is ForeignAMBWithGasToken {
     function gasToken() public pure returns (IGasToken) {
         // Address generated in unit test, also hardcoded in GasTokenMock
-        return IGasToken(0x5b1869D9A4C187F2EAa108f3062412ecf0526b24);
+        return IGasToken(0x64830eD3d58194d5b3Bc1BEa19F1ce9666AC0602);
     }
 
     function collectGasTokens() external {

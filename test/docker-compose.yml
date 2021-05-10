@@ -2,7 +2,13 @@ version: '3.8'
 services:
   ganache:
     image: trufflesuite/ganache-cli
-    command: --deterministic --gasLimit 20000000 --allowUnlimitedContractSize --chainId 1337
+    entrypoint: node /app/ganache-core.docker.cli.js $ACCOUNTS
+    command: >
+      --deterministic
+      --gasLimit 20000000
+      --allowUnlimitedContractSize
+      --networkId 1337
+      --chainId 1337
     ports:
     - 8545:8545
   compound:
@@ -10,3 +16,7 @@ services:
     # build: compound
     stdin_open: true
     tty: true
+    environment:
+      - PROVIDER=${PROVIDER}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

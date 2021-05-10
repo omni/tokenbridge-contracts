@@ -55,7 +55,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
   let ForwarderAddress
   before(async () => {
     // Deploy GSN
-    const env = await GsnTestEnvironment.startGsn('localhost')
+    const env = await GsnTestEnvironment.startGsn(web3.currentProvider.host)
     RelayHubAddress = env.contractsDeployment.relayHubAddress
     ForwarderAddress = env.contractsDeployment.forwarderAddress
 

@@ -49,6 +49,10 @@ contract TokenPaymaster is BasePaymaster {
         relayHub.depositFor.value(msg.value)(address(this));
     }
 
+    function getBalance() external view returns (uint256) {
+        return relayHub.balanceOf(address(this));
+    }
+
     function deposit() external payable {
         require(address(relayHub) != address(0), "relay hub address not set");
         relayHub.depositFor.value(msg.value)(address(this));

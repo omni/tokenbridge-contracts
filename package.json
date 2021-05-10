@@ -20,8 +20,6 @@
   "author": "POA network",
   "license": "GPLv3",
   "dependencies": {
-    "@0x/sol-coverage": "^4.0.10",
-    "@0x/sol-trace": "^3.0.10",
     "@opengsn/gsn": "^2.1.0",
     "array-flat-polyfill": "^1.0.1",
     "openzeppelin-solidity": "1.12.0",
@@ -48,6 +46,7 @@
     "prettier": "^1.18.2",
     "prettier-plugin-solidity": "1.0.0-alpha.32",
     "solhint": "2.2.0",
-    "solhint-plugin-prettier": "0.0.3"
+    "solhint-plugin-prettier": "0.0.3",
+    "solidity-coverage": "0.7.16"
   }
 }

@@ -1,30 +1,23 @@
-const { spawn } = require('child_process');
+const Web3 = require('web3')
 
-const accounts = process.env.ACCOUNTS
-  .trim()
-  .split(/\s*(?:--account=)/)
-  .slice(1)
-  .map((pair) => {
-    const [secretKey, balance] = pair.split(',')
-    return {secretKey, balance}
-  })
-
-async function deployCompound() {
-  return new Promise((resolve) => {
-    const deploy = spawn('docker-compose', [
-      '-f', 'test/docker-compose.yml',
-      '--env-file', 'test/.env',
-      'up', 'compound'
-    ]);
-
-    deploy.stdout.on('data', data => {
-      console.log(`${data}`);
-    });
-    
-    deploy.on('close', code => {
-      resolve(code)
-    });
-  })
+async function waitCompoundDeploy(config) {
+  const web3 = new Web3(config.provider)
+  const abi = [{
+    inputs: [{ name: "", type: "address"}],
+    outputs: [{ name: "", type: "uint256" }],
+    name: "balanceOf",
+    stateMutability: "view",
+    type: "function"
+  }]
+  const cDai = new web3.eth.Contract(abi, '0x615cba17EE82De39162BB87dBA9BcfD6E8BcF298')
+  const faucet = (await web3.eth.getAccounts())[6]
+  while (true) {
+    try {
+      if (await cDai.methods.balanceOf(faucet).call() !== '0') break
+    } catch (e) {
+      await new Promise(res => setTimeout(res, 1000))
+    }
+  }
 }
 
 module.exports = {
@@ -35,11 +28,12 @@ module.exports = {
     'helpers'
   ],
   providerOptions: {
+    port: 8545,
     _chainId: 1337,
     network_id: 1337,
-    allowUnlimitedContractSize: true,
-    accounts
+    seed: 'TestRPC is awesome!',
+    default_balance_ether: 1000000
   },
-  onServerReady: deployCompound,
+  onServerReady: waitCompoundDeploy,
   istanbulReporter: ['lcov']
 }

@@ -2,7 +2,6 @@ version: '3.8'
 services:
   ganache:
     image: trufflesuite/ganache-cli
-    entrypoint: node /app/ganache-core.docker.cli.js $ACCOUNTS
     command: >
       --deterministic
       --gasLimit 20000000
@@ -17,6 +16,6 @@ services:
     stdin_open: true
     tty: true
     environment:
-      - PROVIDER=${PROVIDER}
+      - PROVIDER
     extra_hosts:
       - "host.docker.internal:host-gateway"

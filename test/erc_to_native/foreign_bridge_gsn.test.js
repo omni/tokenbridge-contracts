@@ -13,7 +13,7 @@ const TokenPaymaster = artifacts.require('TokenPaymaster.sol')
 const { RelayProvider } = require('@opengsn/gsn')
 const { GsnTestEnvironment } = require('@opengsn/gsn/dist/GsnTestEnvironment')
 
-const { toBN, ERROR_MSG } = require('../setup')
+const { toBN, ERROR_MSG, ZERO_ADDRESS } = require('../setup')
 const {
   createMessage,
   sign,
@@ -47,6 +47,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
   let authorities
   let owner
   let token
+  let foreignBridge
   let otherSideBridge
 
   let router
@@ -69,11 +70,33 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
   after(async () => {
     await GsnTestEnvironment.stopGsn()
   })
+  describe('#initialize', async () => {
+    it('should initialize', async () => {
+      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
+      router = await UniswapRouterMock.new()
+      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+
+      paymaster = await TokenPaymaster.new(
+        RelayHubAddress,
+        ForwarderAddress,
+        ZERO_ADDRESS,
+        router.address,
+        ZERO_ADDRESS,
+        { from: owner }
+      )
+
+      await paymaster.setToken(token.address, { from: accounts[1] }).should.be.rejected
+
+      await paymaster.setToken(token.address, { from: owner }).should.be.fulfilled
+      await paymaster.setRouter(router.address, { from: owner }).should.be.fulfilled
+      await paymaster.setBridge(foreignBridge.address, { from: owner }).should.be.fulfilled
+    })
+  })
+
   describe('#executeSignaturesGSN', async () => {
     const BRIDGE_TOKENS = ether('300')
     const REQUESTED_TOKENS = BRIDGE_TOKENS
 
-    let foreignBridge
     let GSNRelayer
     let GSNSigner
     beforeEach(async () => {
@@ -165,11 +188,11 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
             gas: GSNGasLimit
           })
         },
-        async () => token.balanceOf(recipientAccount),
-        async () => toBN(await web3.eth.getBalance(recipientAccount)),
-        async () => token.balanceOf(foreignBridge.address),
-        async () => token.balanceOf(paymaster.address),
-        async () => paymaster.getRelayHubDeposit()
+        () => token.balanceOf(recipientAccount),
+        () => web3.eth.getBalance(recipientAccount).then(toBN),
+        () => token.balanceOf(foreignBridge.address),
+        () => token.balanceOf(paymaster.address),
+        () => paymaster.getRelayHubDeposit()
       )
 
       userEthBalanceBefore.should.be.bignumber.equal(ZERO)

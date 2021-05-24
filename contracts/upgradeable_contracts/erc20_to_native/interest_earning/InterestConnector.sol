@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 
-import "../Ownable.sol";
-import "../ERC20Bridge.sol";
-import "../../interfaces/IInterestReceiver.sol";
+import "../../Ownable.sol";
+import "../../ERC20Bridge.sol";
+import "../../../interfaces/IInterestReceiver.sol";
 
 /**
  * @title InterestConnector
@@ -49,6 +49,8 @@ contract InterestConnector is Ownable, ERC20Bridge {
         _setMinCashThreshold(_token, _minCashThreshold);
         _setMinInterestPaid(_token, _minInterestPaid);
         _setInterestReceiver(_token, _interestReceiver);
+
+        _initializeInterest(_token);
     }
 
     /**
@@ -97,6 +99,8 @@ contract InterestConnector is Ownable, ERC20Bridge {
     function disableInterest(address _token) external onlyOwner {
         _withdraw(_token, uint256(-1));
         _setInterestEnabled(_token, false);
+
+        _disableInterest(_token);
     }
 
     /**
@@ -271,6 +275,10 @@ contract InterestConnector is Ownable, ERC20Bridge {
     function _invest(address _token, uint256 _amount) internal;
 
     function _withdrawTokens(address _token, uint256 _amount) internal;
+
+    function _initializeInterest(address _token) internal;
+
+    function _disableInterest(address _token) internal;
 
     function interestAmount(address _token) public view returns (uint256);
 }

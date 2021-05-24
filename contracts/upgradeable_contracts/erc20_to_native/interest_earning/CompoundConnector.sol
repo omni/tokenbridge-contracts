@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 
 import "./InterestConnector.sol";
-import "../../interfaces/ICToken.sol";
-import "../../interfaces/IComptroller.sol";
+import "../../../interfaces/ICToken.sol";
+import "../../../interfaces/IComptroller.sol";
 
 /**
  * @title CompoundConnector
@@ -61,6 +61,24 @@ contract CompoundConnector is InterestConnector {
     }
 
     /**
+     * @dev Function for making internal initialization of the interest-earning protocols.
+     * e.g. making required ERC20 approvals.
+     */
+    function _initializeInterest(address _token) internal {
+        (_token);
+        daiToken().approve(address(cDaiToken()), uint256(-1));
+    }
+
+    /**
+     * @dev Function for making internal disabling of the interest-earning protocols.
+     * e.g. making required ERC20 zero approvals.
+     */
+    function _disableInterest(address _token) internal {
+        (_token);
+        daiToken().approve(address(cDaiToken()), 0);
+    }
+
+    /**
      * @dev Invests the given amount of tokens to the Compound protocol.
      * Converts _amount of TOKENs into X cTOKENs.
      * @param _token address of the token contract.
@@ -68,7 +86,6 @@ contract CompoundConnector is InterestConnector {
      */
     function _invest(address _token, uint256 _amount) internal {
         (_token);
-        daiToken().approve(address(cDaiToken()), _amount);
         require(cDaiToken().mint(_amount) == SUCCESS);
     }
 

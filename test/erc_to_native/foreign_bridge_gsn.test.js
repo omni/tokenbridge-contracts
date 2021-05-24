@@ -2,7 +2,6 @@
 require('array-flat-polyfill')
 
 const ForeignBridge = artifacts.require('ForeignBridgeErcToNative.sol')
-const ForeignBridgeErcToNativeMock = artifacts.require('ForeignBridgeErcToNativeMock.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 
@@ -78,8 +77,8 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
     let GSNSigner
     beforeEach(async () => {
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      ForeignBridgeErcToNativeMock.web3.setProvider(web3.currentProvider)
-      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+      ForeignBridge.web3.setProvider(web3.currentProvider)
+      foreignBridge = await ForeignBridge.new()
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -135,7 +134,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       // From now on all calls will be relayed through GSN.
       // If you want to omit GSN specify
       // { useGSN: false } in transaction details
-      ForeignBridgeErcToNativeMock.web3.setProvider(GSNRelayer)
+      ForeignBridge.web3.setProvider(GSNRelayer)
     })
     it('should allow to executeSignaturesGSN', async () => {
       const recipientAccount = GSNSigner

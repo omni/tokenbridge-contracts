@@ -4,6 +4,7 @@ flats
 .node*
 .idea
 coverage
+coverage.json
 *.sublime-*
 .0x-artifacts
 deploy/*.config

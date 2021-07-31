@@ -11,6 +11,4 @@ Dockerfile
 flats
 contracts.sublime-project
 contracts.sublime-workspace
-upgrade/*.env*
-!upgrade/.env.example
 build/

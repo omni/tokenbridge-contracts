@@ -10,6 +10,4 @@ coverage.json
 deploy/*.config
 deploy/*.env*
 !deploy/.env.example
-upgrade/*.env*
-!upgrade/.env.example
 .vscode

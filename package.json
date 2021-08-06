@@ -1,6 +1,6 @@
 {
   "name": "tokenbridge-contracts",
-  "version": "6.0.0-rc0",
+  "version": "6.0.0-rc1",
   "description": "Bridge",
   "main": "index.js",
   "scripts": {

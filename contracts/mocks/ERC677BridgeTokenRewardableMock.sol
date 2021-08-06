@@ -19,13 +19,4 @@ contract ERC677BridgeTokenRewardableMock is ERC677BridgeTokenRewardable {
     function setStakingContractMock(address _stakingContract) public {
         stakingContract = _stakingContract;
     }
-
-    function setNow(uint256 _timestamp) public {
-        _blockTimestamp = _timestamp;
-    }
-
-    function _now() internal view returns (uint256) {
-        return _blockTimestamp != 0 ? _blockTimestamp : now;
-    }
-
 }

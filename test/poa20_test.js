@@ -8,14 +8,33 @@ const ForeignBridge = artifacts.require('ForeignBridgeErcToNative.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 
 const { expect } = require('chai')
-const ethUtil = require('ethereumjs-util')
+const { fromRpcSig } = require('ethereumjs-util')
 
 const { ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS, BN, toBN } = require('./setup')
 const { ether, expectEventInLogs } = require('./helpers/helpers')
-const permitSign = require('./helpers/eip712.sign.permit')
+
+async function ethSignTypedData(from, data) {
+  const result = await new Promise((res, rej) =>
+    web3.currentProvider.send(
+      { jsonrpc: '2.0', method: 'eth_signTypedData', params: [from, data], id: 1 },
+      (err, sig) => (err ? rej(err) : res(sig))
+    )
+  )
+  const sig = fromRpcSig(result.result)
+  return [sig.v, sig.r, sig.s]
+}
+
+async function evmIncreaseTime(delta) {
+  return new Promise((res, rej) =>
+    web3.currentProvider.send({ jsonrpc: '2.0', method: 'evm_increaseTime', params: [delta], id: 1 }, (err, sig) =>
+      err ? rej(err) : res(sig)
+    )
+  )
+}
 
 const minPerTx = ether('0.01')
 const oneEther = ether('1')
+const twoEthers = ether('2')
 const ZERO = new BN(0)
 
 function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
@@ -40,7 +59,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
   beforeEach(async () => {
     const args = ['POA ERC20 Foundation', 'POA20', 18]
     if (permittable) {
-      args.push(100)
+      args.push(1337)
     }
     token = await createToken(args)
   })
@@ -507,340 +526,243 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
   })
   if (permittable) {
     describe('permit', () => {
-      const privateKey = '0x2bdd21761a483f71054e14f5b827213567971c676928d9a1808cbfa4b7501210'
-      const infinite = new BN('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)
-      let holder
-      let spender
-      let nonce
-      let expiry
-      let allowed
+      const EIP712Domain = [
+        { name: 'name', type: 'string' },
+        { name: 'version', type: 'string' },
+        { name: 'chainId', type: 'uint256' },
+        { name: 'verifyingContract', type: 'address' }
+      ]
+      let domain
+      let permit
+      let permitLegacy
 
-      beforeEach(async () => {
-        holder = '0x040b798028e9abded00Bfc65e7CF01484013db17'
-        spender = accounts[9]
-        nonce = await token.nonces.call(holder)
-        expiry = 0
-        allowed = true
-
-        holder.toLowerCase().should.be.equal(ethUtil.bufferToHex(ethUtil.privateToAddress(privateKey)).toLowerCase()) // make sure privateKey is holder's key
-
-        // Mint some extra tokens for the `holder`
-        await token.mint(holder, '10000', { from: owner }).should.be.fulfilled
-        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
-        web3.eth.accounts.wallet.add(privateKey)
-        await web3.eth.sendTransaction({ from: owner, to: holder, value: oneEther })
-      })
-      it('should permit', async () => {
-        // Holder signs the `permit` params with their privateKey
-        const signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-
-        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(new BN('0'))
-
-        // An arbitrary address calls the `permit` function
-        const { logs } = await token.permit(
-          holder,
-          spender,
+      const makeLegacyMsg = (nonce, expiry, allowed) => ({
+        types: {
+          EIP712Domain,
+          Permit: [
+            { name: 'holder', type: 'address' },
+            { name: 'spender', type: 'address' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'expiry', type: 'uint256' },
+            { name: 'allowed', type: 'bool' }
+          ]
+        },
+        primaryType: 'Permit',
+        domain,
+        message: {
+          holder: owner,
+          spender: user,
           nonce,
           expiry,
-          allowed,
-          signature.v,
-          signature.r,
-          signature.s
-        ).should.be.fulfilled
-
-        logs[0].event.should.be.equal('Approval')
-        logs[0].args.owner.should.be.equal(holder)
-        logs[0].args.spender.should.be.equal(spender)
-        logs[0].args.value.should.be.bignumber.equal(infinite)
-
-        // Now allowance is infinite
-        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(infinite)
-
-        // The caller of `permit` can't spend holder's funds
-        await token.transferFrom(holder, accounts[9], '10000').should.be.rejected
-        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('10000'))
-
-        // Spender can transfer all holder's funds
-        await token.transferFrom(holder, accounts[9], '10000', { from: spender }).should.be.fulfilled
-        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('0'))
-        ;(await token.balanceOf.call(accounts[9])).should.be.bignumber.equal(new BN('10000'))
-        ;(await token.nonces.call(holder)).should.be.bignumber.equal(nonce.add(new BN('1')))
-
-        // The allowance is still infinite after transfer
-        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(infinite)
+          allowed
+        }
       })
-      it('should fail when invalid expiry', async () => {
-        expiry = 900
-
-        const signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-
-        await token.setNow(1000).should.be.fulfilled
-        await token
-          .permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s)
-          .should.be.rejectedWith(ERROR_MSG)
-
-        await token.setNow(800).should.be.fulfilled
-        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
-          .fulfilled
+      const makeMsg = (nonce, deadline, value) => ({
+        types: {
+          EIP712Domain,
+          Permit: [
+            { name: 'owner', type: 'address' },
+            { name: 'spender', type: 'address' },
+            { name: 'value', type: 'uint256' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'deadline', type: 'uint256' }
+          ]
+        },
+        primaryType: 'Permit',
+        domain,
+        message: {
+          owner,
+          spender: user,
+          value: value || oneEther.toString(),
+          nonce,
+          deadline
+        }
       })
-      it('should consider expiry', async () => {
-        expiry = 900
 
-        const signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-
-        await token.setNow(800).should.be.fulfilled
-        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
-          .fulfilled
-        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
-
-        // Spender can transfer holder's funds
-        await token.setNow(899).should.be.fulfilled
-        await token.transferFrom(holder, accounts[9], '6000', { from: spender }).should.be.fulfilled
-        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('4000'))
-        ;(await token.balanceOf.call(accounts[9])).should.be.bignumber.equal(new BN('6000'))
-
-        // Spender can't transfer the remaining holder's funds because of expiry
-        await token.setNow(901).should.be.fulfilled
-        await token.transferFrom(holder, accounts[9], '4000', { from: spender }).should.be.rejectedWith(ERROR_MSG)
+      beforeEach(() => {
+        domain = {
+          name: 'POA ERC20 Foundation',
+          version: '1',
+          chainId: 1337,
+          verifyingContract: token.address
+        }
+        permit = token.methods['permit(address,address,uint256,uint256,uint8,bytes32,bytes32)']
+        permitLegacy = token.methods['permit(address,address,uint256,uint256,bool,uint8,bytes32,bytes32)']
       })
-      it('should reset expiration on subsequent approve', async () => {
-        expiry = 900
-        const signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-        await token.setNow(800).should.be.fulfilled
-        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
-          .fulfilled
-        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
-        const data = await token.contract.methods.approve(spender, infinite).encodeABI()
-        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
-        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
+
+      describe('legacy permit', () => {
+        const INFINITY = new BN('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)
+
+        it('should accept signed message', async () => {
+          const expiry = 10000000000
+          const sig1 = await ethSignTypedData(owner, makeLegacyMsg(0, 100, true))
+          const sig2 = await ethSignTypedData(owner, makeLegacyMsg(1, expiry, true))
+          const sig3 = await ethSignTypedData(owner, makeLegacyMsg(0, expiry, true))
+
+          await permitLegacy(owner, user, 0, 100, true, ...sig1).should.be.rejected // too small deadline
+          await permitLegacy(owner, user, 0, expiry, true, ...sig2).should.be.rejected // invalid nonce
+          await permitLegacy(owner, user, 1, expiry, true, ...sig2).should.be.rejected // not current nonce
+          await permitLegacy(owner, user, 0, expiry, true, ...sig3).should.be.fulfilled // valid for nonce == 0
+          await permitLegacy(owner, user, 0, expiry, true, ...sig3).should.be.rejected // invalid duplicate, invalid nonce
+          await permitLegacy(owner, user, 1, expiry, true, ...sig3).should.be.rejected // invalid nonce
+          await permitLegacy(user, user, 1, expiry, true, ...sig2).should.be.rejected // invalid sender
+          await permitLegacy(owner, owner, 1, expiry, true, ...sig2).should.be.rejected // invalid receiver
+          await permitLegacy(owner, user, 1, expiry + 1, true, ...sig2).should.be.rejected // invalid expiry
+          await permitLegacy(owner, user, 1, expiry, false, ...sig2).should.be.rejected // invalid allowed
+          await permitLegacy(owner, user, 1, expiry, true, ...sig2).should.be.fulfilled // valid for nonce == 1
+          await permitLegacy(owner, user, 1, expiry, true, ...sig2).should.be.rejected // invalid duplicate, invalid nonce
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.nonces(owner)).to.be.bignumber.equal('2')
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+        })
+
+        it('should cancel expirations on infinite approval from approve()', async () => {
+          const expiry = 10000000000
+          const sig = await ethSignTypedData(owner, makeLegacyMsg(0, expiry, true))
+          await permitLegacy(owner, user, 0, expiry, true, ...sig).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+
+          await token.approve(user, 1).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal('1')
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+
+          await token.approve(user, INFINITY).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(ZERO)
+        })
+
+        it('should cancel expirations on infinite approval from increaseAllowance()', async () => {
+          const expiry = 10000000000
+          const sig = await ethSignTypedData(owner, makeLegacyMsg(0, expiry, true))
+          await permitLegacy(owner, user, 0, expiry, true, ...sig).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+
+          await token.approve(user, 1).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal('1')
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+
+          await token.increaseAllowance(user, 1).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal('2')
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+
+          await token.increaseAllowance(user, INFINITY.subn(2)).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(ZERO)
+        })
+
+        it('should cancel expirations on infinite approval from permit()', async () => {
+          const expiry = 10000000000
+          const sig1 = await ethSignTypedData(owner, makeLegacyMsg(0, expiry, true))
+          const sig2 = await ethSignTypedData(owner, makeMsg(1, expiry))
+          const sig3 = await ethSignTypedData(owner, makeMsg(2, expiry, INFINITY.toString()))
+          await permitLegacy(owner, user, 0, expiry, true, ...sig1).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+
+          await permit(owner, user, oneEther, expiry, ...sig2).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(oneEther)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+
+          await permit(owner, user, INFINITY, expiry, ...sig3).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(ZERO)
+        })
+
+        it('should cancel approval when allowed is false', async () => {
+          const expiry = 10000000000
+          const sig1 = await ethSignTypedData(owner, makeLegacyMsg(0, expiry, true))
+          const sig2 = await ethSignTypedData(owner, makeLegacyMsg(1, expiry, false))
+          await permitLegacy(owner, user, 0, expiry, true, ...sig1).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(toBN(expiry))
+
+          await permitLegacy(owner, user, 1, expiry, false, ...sig2).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(ZERO)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(ZERO)
+        })
+
+        it('should accept infinite approval without deadline', async () => {
+          const sig1 = await ethSignTypedData(owner, makeLegacyMsg(0, 0, true))
+          const sig2 = await ethSignTypedData(owner, makeLegacyMsg(1, 0, false))
+          await permitLegacy(owner, user, 0, 0, true, ...sig1).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(ZERO)
+
+          await permitLegacy(owner, user, 1, 0, false, ...sig2).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(ZERO)
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(ZERO)
+        })
+
+        it('should allow to use allowance without deadline', async () => {
+          await token.mint(owner, ether('10')).should.be.fulfilled
+          const sig = await ethSignTypedData(owner, makeLegacyMsg(0, 0, true))
+          await permitLegacy(owner, user, 0, 0, true, ...sig).should.be.fulfilled
+
+          await token.transferFrom(owner, user, oneEther, { from: user }).should.be.fulfilled
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+          expect(await token.balanceOf(owner)).to.be.bignumber.equal(ether('9'))
+        })
+
+        it('should not allow to use approval after deadline', async () => {
+          await token.mint(owner, ether('10')).should.be.fulfilled
+          const expiry = 10000000000
+          const sig = await ethSignTypedData(owner, makeLegacyMsg(0, expiry, true))
+          await permitLegacy(owner, user, 0, expiry, true, ...sig).should.be.fulfilled
+
+          await token.transferFrom(owner, user, oneEther, { from: user }).should.be.fulfilled
+
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+          expect(await token.balanceOf(owner)).to.be.bignumber.equal(ether('9'))
+
+          await evmIncreaseTime(expiry)
+
+          await token.transferFrom(owner, user, oneEther, { from: user }).should.be.rejected
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(INFINITY)
+          expect(await token.balanceOf(user)).to.be.bignumber.equal(oneEther)
+          expect(await token.balanceOf(owner)).to.be.bignumber.equal(ether('9'))
+        })
       })
-      it('should reset expiration on subsequent increaseAllowance', async () => {
-        expiry = 900
-        const signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-        await token.setNow(800).should.be.fulfilled
-        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
-          .fulfilled
-        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
-        let data = await token.contract.methods.approve(spender, infinite.sub(toBN(1))).encodeABI()
-        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
-        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
-        data = await token.contract.methods.increaseAllowance(spender, 1).encodeABI()
-        await web3.eth.sendTransaction({ from: holder, to: token.address, data, gas: 100000 }).should.be.fulfilled
-        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(ZERO)
-      })
-      it('should disallow unlimited allowance', async () => {
-        expiry = 900
-        await token.setNow(800).should.be.fulfilled
 
-        let signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
+      describe('ERC2612', () => {
+        it('should accept signed message', async () => {
+          const deadline = 100000000000
+          const sig1 = await ethSignTypedData(owner, makeMsg(0, 100))
+          const sig2 = await ethSignTypedData(owner, makeMsg(1, deadline))
+          const sig3 = await ethSignTypedData(owner, makeMsg(0, deadline))
 
-        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
-          .fulfilled
-        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(infinite)
-        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN(expiry))
-
-        // Spender can transfer holder's funds
-        await token.transferFrom(holder, accounts[9], '6000', { from: spender }).should.be.fulfilled
-        ;(await token.balanceOf.call(holder)).should.be.bignumber.equal(new BN('4000'))
-        ;(await token.balanceOf.call(accounts[9])).should.be.bignumber.equal(new BN('6000'))
-
-        nonce = nonce - 0 + 1
-        allowed = false
-
-        signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-
-        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
-          .fulfilled
-        ;(await token.allowance.call(holder, spender)).should.be.bignumber.equal(new BN('0'))
-        ;(await token.expirations.call(holder, spender)).should.be.bignumber.equal(new BN('0'))
-
-        // Spender can't transfer the remaining holder's funds because of zero allowance
-        await token.transferFrom(holder, accounts[9], '4000', { from: spender }).should.be.rejected
-      })
-      it('should fail when invalid signature or parameters', async () => {
-        let signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-
-        allowed = !allowed
-
-        await token
-          .permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s)
-          .should.be.rejectedWith(ERROR_MSG)
-
-        allowed = !allowed
-
-        await token
-          .permit(
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed,
-            signature.v,
-            signature.s, // here should be `signature.r` in a correct case
-            signature.r // here should be `signature.s` in a correct case
-          )
-          .should.be.rejectedWith(ERROR_MSG)
-
-        signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce: nonce - 0 + 1,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-
-        await token
-          .permit(holder, spender, nonce - 0 + 1, expiry, allowed, signature.v, signature.r, signature.s)
-          .should.be.rejectedWith(ERROR_MSG)
-
-        signature = permitSign(
-          {
-            name: await token.name.call(),
-            version: await token.version.call(),
-            chainId: '100',
-            verifyingContract: token.address
-          },
-          {
-            holder,
-            spender,
-            nonce,
-            expiry,
-            allowed
-          },
-          privateKey
-        )
-
-        await token.permit(holder, spender, nonce, expiry, allowed, signature.v, signature.r, signature.s).should.be
-          .fulfilled
+          await permit(owner, user, oneEther, 100, ...sig1).should.be.rejected // too small deadline
+          await permit(owner, user, oneEther, deadline, ...sig2).should.be.rejected // invalid nonce
+          await permit(owner, user, oneEther, deadline, ...sig3).should.be.fulfilled // valid for nonce == 0
+          await permit(owner, user, oneEther, deadline, ...sig3).should.be.rejected // invalid duplicate, invalid nonce
+          await permit(user, user, oneEther, deadline, ...sig2).should.be.rejected // invalid sender
+          await permit(owner, owner, oneEther, deadline, ...sig2).should.be.rejected // invalid receiver
+          await permit(owner, user, twoEthers, deadline, ...sig2).should.be.rejected // invalud value
+          await permit(owner, user, oneEther, deadline + 1, ...sig2).should.be.rejected // invalid deadline
+          await permit(owner, user, oneEther, deadline, ...sig2).should.be.fulfilled // valid for nonce == 1
+          await permit(owner, user, oneEther, deadline, ...sig2).should.be.rejected // invalid duplicate, invalid nonce
+          expect(await token.allowance(owner, user)).to.be.bignumber.equal(oneEther)
+          expect(await token.nonces(owner)).to.be.bignumber.equal('2')
+          expect(await token.expirations(owner, user)).to.be.bignumber.equal(ZERO)
+        })
       })
     })
   }

@@ -1,6 +1,6 @@
 {
   "name": "tokenbridge-contracts",
-  "version": "6.0.0-rc0",
+  "version": "6.0.0-rc1",
   "description": "Bridge",
   "main": "index.js",
   "scripts": {
@@ -20,8 +20,6 @@
   "author": "POA network",
   "license": "GPLv3",
   "dependencies": {
-    "@0x/sol-coverage": "^4.0.10",
-    "@0x/sol-trace": "^3.0.10",
     "@opengsn/gsn": "^2.1.0",
     "array-flat-polyfill": "^1.0.1",
     "openzeppelin-solidity": "1.12.0",
@@ -41,13 +39,12 @@
     "eslint-plugin-node": "^10.0.0",
     "eslint-plugin-prettier": "^3.0.1",
     "eth-gas-reporter": "^0.2.11",
-    "ethereumjs-abi": "0.6.8",
     "ethereumjs-util": "5.2.0",
-    "istanbul": "^0.4.5",
     "nodemon": "^1.17.3",
     "prettier": "^1.18.2",
     "prettier-plugin-solidity": "1.0.0-alpha.32",
     "solhint": "2.2.0",
-    "solhint-plugin-prettier": "0.0.3"
+    "solhint-plugin-prettier": "0.0.3",
+    "solidity-coverage": "0.7.16"
   }
 }

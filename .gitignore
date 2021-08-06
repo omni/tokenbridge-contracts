@@ -4,11 +4,10 @@ flats
 .node*
 .idea
 coverage
+coverage.json
 *.sublime-*
 .0x-artifacts
 deploy/*.config
 deploy/*.env*
 !deploy/.env.example
-upgrade/*.env*
-!upgrade/.env.example
 .vscode

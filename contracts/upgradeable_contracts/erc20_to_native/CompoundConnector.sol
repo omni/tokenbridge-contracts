@@ -86,7 +86,7 @@ contract CompoundConnector is InterestConnector {
     /**
      * @dev Claims Comp token and transfers it to the associated interest receiver.
      */
-    function claimCompAndPay() external {
+    function claimCompAndPay() external onlyEOA {
         address[] memory holders = new address[](1);
         holders[0] = address(this);
         address[] memory markets = new address[](1);

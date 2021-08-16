@@ -2,9 +2,8 @@
 require('array-flat-polyfill')
 
 const ForeignBridge = artifacts.require('ForeignBridgeErcToNative.sol')
-const ForeignBridgeErcToNativeMock = artifacts.require('ForeignBridgeErcToNativeMock.sol')
+const XDaiForeignBridgeMock = artifacts.require('XDaiForeignBridgeMock.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
-const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 
 const UniswapRouterMock = artifacts.require('UniswapRouterMock.sol')
 const TokenPaymaster = artifacts.require('TokenPaymaster.sol')
@@ -23,6 +22,7 @@ const {
   evalMetrics,
   paymasterError
 } = require('../helpers/helpers')
+const getCompoundContracts = require('../compound/contracts')
 
 const requireBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -43,6 +43,8 @@ function createEmptyAccount(relayer) {
 }
 
 contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
+  const faucet = accounts[6] // account where all Compound-related DAIs where minted
+
   let validatorContract
   let authorities
   let owner
@@ -66,15 +68,17 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
     otherSideBridge = await ForeignBridge.new()
+
+    const contracts = await getCompoundContracts()
+    token = contracts.dai
   })
   after(async () => {
     await GsnTestEnvironment.stopGsn()
   })
   describe('#initialize', async () => {
     it('should initialize', async () => {
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       router = await UniswapRouterMock.new()
-      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+      foreignBridge = await XDaiForeignBridgeMock.new()
 
       paymaster = await TokenPaymaster.new(
         RelayHubAddress,
@@ -100,9 +104,8 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
     let GSNRelayer
     let GSNSigner
     beforeEach(async () => {
-      token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      ForeignBridgeErcToNativeMock.web3.setProvider(web3.currentProvider)
-      foreignBridge = await ForeignBridgeErcToNativeMock.new()
+      XDaiForeignBridgeMock.web3.setProvider(web3.currentProvider)
+      foreignBridge = await XDaiForeignBridgeMock.new()
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -128,7 +131,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       await foreignBridge.setTrustedForwarder(ForwarderAddress)
       await foreignBridge.setPayMaster(paymaster.address)
 
-      await token.mint(foreignBridge.address, BRIDGE_TOKENS)
+      await token.transfer(foreignBridge.address, BRIDGE_TOKENS, { from: faucet })
 
       // Give Router 1 ether
       await web3.eth.sendTransaction({
@@ -158,7 +161,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       // From now on all calls will be relayed through GSN.
       // If you want to omit GSN specify
       // { useGSN: false } in transaction details
-      ForeignBridgeErcToNativeMock.web3.setProvider(GSNRelayer)
+      XDaiForeignBridgeMock.web3.setProvider(GSNRelayer)
     })
     it('should allow to executeSignaturesGSN', async () => {
       const recipientAccount = GSNSigner
@@ -243,7 +246,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
         .fulfilled
 
       // tx 2
-      await token.mint(foreignBridge.address, BRIDGE_TOKENS)
+      await token.transfer(foreignBridge.address, BRIDGE_TOKENS, { from: faucet })
       const from2 = createEmptyAccount(GSNRelayer)
       const message2 = createMessage(from2, REQUESTED_TOKENS, transactionHash, foreignBridge.address)
       const signature2 = await sign(authorities[0], message2)

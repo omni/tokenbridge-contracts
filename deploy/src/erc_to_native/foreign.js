@@ -13,7 +13,7 @@ const {
 } = require('../deploymentUtils')
 const { web3Foreign, deploymentPrivateKey, FOREIGN_RPC_URL } = require('../web3')
 const {
-  foreignContracts: { EternalStorageProxy, BridgeValidators, ForeignBridgeErcToNative: ForeignBridge }
+  foreignContracts: { EternalStorageProxy, BridgeValidators, XDaiForeignBridge: ForeignBridge }
 } = require('../loadContracts')
 
 const VALIDATORS = env.VALIDATORS.split(' ')

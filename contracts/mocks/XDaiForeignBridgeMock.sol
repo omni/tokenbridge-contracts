@@ -1,8 +1,8 @@
 pragma solidity 0.4.24;
 
-import "../upgradeable_contracts/erc20_to_native/ForeignBridgeErcToNative.sol";
+import "../upgradeable_contracts/erc20_to_native/XDaiForeignBridge.sol";
 
-contract ForeignBridgeErcToNativeMock is ForeignBridgeErcToNative {
+contract XDaiForeignBridgeMock is XDaiForeignBridge {
     /**
      * @dev Tells the address of the DAI token in the Ganache Testchain.
      */

@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "./ERC677BridgeToken.sol";
 
 contract PermittableToken is ERC677BridgeToken {
-    string public constant version = "1";
+    string public constant version = "2";
 
     // EIP712 niceties
     bytes32 public DOMAIN_SEPARATOR;

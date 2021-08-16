@@ -582,7 +582,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
       beforeEach(() => {
         domain = {
           name: 'POA ERC20 Foundation',
-          version: '1',
+          version: '2',
           chainId: 1337,
           verifyingContract: token.address
         }

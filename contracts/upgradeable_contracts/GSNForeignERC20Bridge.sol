@@ -59,12 +59,9 @@ contract GSNForeignERC20Bridge is BasicForeignBridge, ERC20Bridge, BaseRelayReci
     function onExecuteMessageGSN(address recipient, uint256 amount, uint256 fee) internal returns (bool) {
         addTotalExecutedPerDay(getCurrentDay(), amount);
         // Send maxTokensFee to paymaster
-        uint256 unshiftMaxFee = _unshiftValue(fee);
-        bool first = erc20token().transfer(addressStorage[PAYMASTER], unshiftMaxFee);
-
-        // Send rest of tokens to user
-        uint256 unshiftLeft = _unshiftValue(amount - fee);
-        bool second = erc20token().transfer(recipient, unshiftLeft);
+        ERC20 token = erc20token();
+        bool first = token.transfer(addressStorage[PAYMASTER], fee);
+        bool second = token.transfer(recipient, amount - fee);
 
         return first && second;
     }

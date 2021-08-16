@@ -22,6 +22,17 @@ contract InterestConnector is Ownable, ERC20Bridge {
     }
 
     /**
+     * @dev Ensures that caller is an EOA.
+     * Functions with such modifier cannot be called from other contract (as well as from GSN-like approaches)
+     */
+    modifier onlyEOA {
+        // solhint-disable-next-line avoid-tx-origin
+        require(msg.sender == tx.origin);
+        /* solcov ignore next */
+        _;
+    }
+
+    /**
      * @dev Tells if interest earning was enabled for particular token.
      * @return true, if interest bearing  is enabled.
      */
@@ -123,7 +134,7 @@ contract InterestConnector is Ownable, ERC20Bridge {
      * Requires interest for the given token to be enabled.
      * @param _token address of the token contract.
      */
-    function payInterest(address _token) external interestEnabled(_token) {
+    function payInterest(address _token) external onlyEOA interestEnabled(_token) {
         uint256 interest = interestAmount(_token);
         require(interest >= minInterestPaid(_token));
 

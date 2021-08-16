@@ -22,15 +22,7 @@ contract InterestReceiverSwapToETH is InterestReceiverBase {
         // (min received %) * (amount / 1 DAI) * (ETH per 1 DAI)
         uint256 minAmount = (minReceivedFraction * amount * uniswapRouterV2.getAmountsOut(1 ether, path)[1]) / 10**36;
 
-        bytes memory data = abi.encodeWithSelector(
-            uniswapRouterV2.swapExactTokensForETH.selector,
-            amount,
-            minAmount,
-            path,
-            address(this),
-            now
-        );
-        address(uniswapRouterV2).call(data);
+        uniswapRouterV2.swapExactTokensForETH(amount, minAmount, path, address(this), now);
     }
 
     /**

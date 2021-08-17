@@ -10,6 +10,8 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
     using SafeMath for uint256;
 
     uint256 internal constant SEND_TO_ORACLE_DRIVEN_LANE = 0x00;
+    // after EIP2929, call to warmed contract address costs 100 instead of 2600
+    uint256 internal constant MIN_GAS_PER_CALL = 100;
 
     /**
     * @dev Requests message relay to the opposite network
@@ -32,7 +34,7 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         // it is not allowed to pass messages while other messages are processed
         // if other is not explicitly configured
         require(messageId() == bytes32(0) || allowReentrantRequests());
-        require(_gas >= getMinimumGasUsage(_data) && _gas <= maxGasPerTx());
+        require(_gas >= MIN_GAS_PER_CALL && _gas <= maxGasPerTx());
 
         (bytes32 _messageId, bytes memory header) = _packHeader(_contract, _gas, _dataType);
 
@@ -40,17 +42,6 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
 
         emitEventOnMessageRequest(_messageId, eventData);
         return _messageId;
-    }
-
-    /**
-    * @dev Returns a lower limit on gas limit for the particular message data
-    * @param _data calldata passed to the executor on the other side
-    */
-    function getMinimumGasUsage(bytes _data) public pure returns (uint256 gas) {
-        // From Ethereum Yellow Paper
-        // 68 gas is paid for every non-zero byte of data or code for a transaction
-        // Starting from Istanbul hardfork, 16 gas is paid (EIP-2028)
-        return _data.length.mul(16);
     }
 
     /**

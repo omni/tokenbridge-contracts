@@ -6,21 +6,23 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "../BasePaymaster.sol";
 import "./IUniswapV2Router02.sol";
 import "../../upgradeable_contracts/GSNForeignERC20Bridge.sol";
+import "../../upgradeable_contracts/Claimable.sol";
 
-contract TokenPaymaster is BasePaymaster {
-    address private token;
+contract TokenPaymaster is BasePaymaster, Claimable {
+    ERC20 private token;
     IUniswapV2Router02 private router;
     address private bridge;
 
     address[] private tokenWethPair = new address[](2);
     uint256 public postGasUsage = 300000;
+    uint256 public calldataSizeLimit = 1348;
 
     constructor(address _relayHub, address _forwarder, address _token, address _router, address _bridge) public {
         _setOwner(msg.sender);
-        relayHub = IRelayHub(_relayHub);
-        trustedForwarder = IForwarder(_forwarder);
+        setRelayHub(IRelayHub(_relayHub));
+        setTrustedForwarder(_forwarder);
 
-        token = _token;
+        token = ERC20(_token);
         router = IUniswapV2Router02(_router);
         bridge = _bridge;
 
@@ -29,7 +31,7 @@ contract TokenPaymaster is BasePaymaster {
     }
 
     function setToken(address t) external onlyOwner {
-        token = t;
+        token = ERC20(t);
     }
 
     function setRouter(IUniswapV2Router02 r) external onlyOwner {
@@ -40,13 +42,16 @@ contract TokenPaymaster is BasePaymaster {
         bridge = b;
     }
 
-    function versionPaymaster() external view returns (string memory) {
-        return "2.0.0+opengsn.tokengsn.ipaymaster";
+    function setPostGasUsage(uint256 gasUsage) external onlyOwner {
+        postGasUsage = gasUsage;
     }
 
-    function() external payable {
-        require(address(relayHub) != address(0), "relay hub address not set");
-        relayHub.depositFor.value(msg.value)(address(this));
+    function setCalldataSizeLimit(uint256 sizeLimit) external onlyOwner {
+        calldataSizeLimit = sizeLimit;
+    }
+
+    function versionPaymaster() external view returns (string memory) {
+        return "2.2.0+opengsn.bridgetokengsn.ipaymaster";
     }
 
     function deposit() external payable {
@@ -54,17 +59,14 @@ contract TokenPaymaster is BasePaymaster {
         relayHub.depositFor.value(msg.value)(address(this));
     }
 
-    function getGasLimits() external view returns (IPaymaster.GasLimits memory limits) {
+    function getGasAndDataLimits() external view returns (IPaymaster.GasAndDataLimits memory limits) {
         return
-            IPaymaster.GasLimits(
+            IPaymaster.GasAndDataLimits(
                 PAYMASTER_ACCEPTANCE_BUDGET,
                 PRE_RELAYED_CALL_GAS_LIMIT,
-                postGasUsage // maximum postRelayedCall gasLimit
+                postGasUsage, // maximum postRelayedCall gasLimit
+                calldataSizeLimit
             );
-    }
-
-    function erc20() internal view returns (ERC20) {
-        return ERC20(token);
     }
 
     function readBytes32(bytes memory b, uint256 index) internal pure returns (bytes32 res) {
@@ -79,7 +81,7 @@ contract TokenPaymaster is BasePaymaster {
         bytes signature,
         bytes approvalData,
         uint256 maxPossibleGas
-    ) public returns (bytes memory context, bool revertOnRecipientRevert) {
+    ) public relayHubOnly returns (bytes memory context, bool revertOnRecipientRevert) {
         (signature, approvalData);
         _verifyForwarder(relayRequest);
         bytes memory reqData = relayRequest.request.data;
@@ -108,12 +110,9 @@ contract TokenPaymaster is BasePaymaster {
         return a < b ? a : b;
     }
 
-    function setPostGasUsage(uint256 gasUsage) external onlyOwner {
-        postGasUsage = gasUsage;
-    }
-
     function postRelayedCall(bytes context, bool success, uint256 gasUseWithoutPost, GsnTypes.RelayData relayData)
         public
+        relayHubOnly
     {
         (success);
         // Extract data from context
@@ -137,7 +136,7 @@ contract TokenPaymaster is BasePaymaster {
         uint256 chargeWei = relayHub.calculateCharge(min(gasUseWithoutPost + postGasUsage, maxPossibleGas), relayData);
 
         // Uniswap
-        require(erc20().approve(address(router), maxTokensFee), "approve failed");
+        require(token.approve(address(router), maxTokensFee), "approve failed");
         // NOTE: Received eth automatically converts to relayhub deposit
         uint256 spentTokens = router.swapTokensForExactETH(
             chargeWei,
@@ -149,7 +148,11 @@ contract TokenPaymaster is BasePaymaster {
 
         // Send rest of tokens to user
         if (spentTokens < maxTokensFee) {
-            require(erc20().transfer(to, maxTokensFee - spentTokens));
+            require(token.transfer(to, maxTokensFee - spentTokens));
         }
+    }
+
+    function claimTokens(address _token, address _to) external onlyOwner {
+        claimValues(_token, _to);
     }
 }

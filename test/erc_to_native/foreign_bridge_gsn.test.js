@@ -3,13 +3,14 @@ require('array-flat-polyfill')
 
 const XDaiForeignBridgeMock = artifacts.require('XDaiForeignBridgeMock.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
+const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 
 const UniswapRouterMock = artifacts.require('UniswapRouterMock.sol')
 const TokenPaymaster = artifacts.require('TokenPaymaster.sol')
 
 // GSN
-const { RelayProvider } = require('@opengsn/gsn')
-const { GsnTestEnvironment } = require('@opengsn/gsn/dist/GsnTestEnvironment')
+const { RelayProvider } = require('@opengsn/provider')
+const { GsnTestEnvironment } = require('@opengsn/cli/dist/GsnTestEnvironment')
 
 const { toBN, ERROR_MSG, ZERO_ADDRESS } = require('../setup')
 const {
@@ -32,6 +33,7 @@ const minPerTx = ether('0.01')
 const dailyLimit = homeDailyLimit
 const ZERO = toBN(0)
 const decimalShiftZero = 0
+const HALF_ETHER = ether('0.5')
 const FIVE_ETHER = ether('5')
 const GSNGasLimit = 500000
 
@@ -75,7 +77,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
     await GsnTestEnvironment.stopGsn()
   })
   describe('#initialize', async () => {
-    it('should initialize', async () => {
+    it('should initialize paymaster', async () => {
       router = await UniswapRouterMock.new()
       foreignBridge = await XDaiForeignBridgeMock.new()
 
@@ -282,6 +284,31 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
       await foreignBridge
         .executeSignaturesGSN(message, oneSignature, FIVE_ETHER, { from: recipientAccount, useGSN: false })
         .should.be.rejectedWith(`${ERROR_MSG} invalid forwarder`)
+    })
+  })
+
+  describe('#claimTokens', async () => {
+    it('can send erc20', async () => {
+      router = await UniswapRouterMock.new()
+      paymaster = await TokenPaymaster.new(
+        RelayHubAddress,
+        ForwarderAddress,
+        ZERO_ADDRESS,
+        router.address,
+        ZERO_ADDRESS,
+        { from: owner }
+      )
+
+      const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
+      await token.mint(accounts[1], HALF_ETHER).should.be.fulfilled
+      await token.transfer(paymaster.address, HALF_ETHER, { from: accounts[1] })
+
+      await paymaster.claimTokens(token.address, accounts[3], { from: accounts[3] }).should.be.rejectedWith(ERROR_MSG)
+      await paymaster.claimTokens(token.address, accounts[3], { from: owner })
+      const pmBalance = await token.balanceOf(paymaster.address)
+      const accBalance = await token.balanceOf(accounts[3])
+      pmBalance.should.be.bignumber.equal(ZERO)
+      accBalance.should.be.bignumber.equal(HALF_ETHER)
     })
   })
 })

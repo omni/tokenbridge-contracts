@@ -15,7 +15,9 @@ contract TokenPaymaster is BasePaymaster, Claimable {
 
     address[] private tokenWethPair = new address[](2);
     uint256 public postGasUsage = 300000;
-    uint256 public calldataSizeLimit = 1348;
+    // Default value from BasePaymaster, may be changed later
+    // if we need to increase number of signatures for bridge contract
+    uint256 public calldataSizeLimit = 10500;
 
     constructor(address _relayHub, address _forwarder, address _token, address _router, address _bridge) public {
         _setOwner(msg.sender);

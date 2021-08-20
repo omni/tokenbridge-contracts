@@ -10,7 +10,12 @@ contract IForwarder {
         uint256 gas;
         uint256 nonce;
         bytes data;
+        uint256 validUntil;
     }
+
+    event DomainRegistered(bytes32 indexed domainSeparator, bytes domainValue);
+
+    event RequestTypeRegistered(bytes32 indexed typeHash, string typeStr);
 
     function getNonce(address from) external view returns (uint256);
 
@@ -18,6 +23,7 @@ contract IForwarder {
      * verify the transaction would execute.
      * validate the signature and the nonce of the request.
      * revert if either signature or nonce are incorrect.
+     * also revert if domainSeparator or requestTypeHash are not registered.
      */
     function verify(
         ForwardRequest forwardRequest,
@@ -51,8 +57,8 @@ contract IForwarder {
     /**
      * Register a new Request typehash.
      * @param typeName - the name of the request type.
-     * @param typeSuffix - anything after the generic params can be empty string (if no extra fields are needed)
-     *        if it does contain a value, then a comma is added first.
+     * @param typeSuffix - any extra data after the generic params.
+     *  (must add at least one param. The generic ForwardRequest type is always registered by the constructor)
      */
     function registerRequestType(string typeName, string typeSuffix) external;
 

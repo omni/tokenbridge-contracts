@@ -334,6 +334,19 @@ contract('ForeignAMB', async accounts => {
       expect(messageId2).to.include(`${bridgeId}0000000000000001`)
       expect(messageId3).to.include(`${bridgeId}0000000000000002`)
     })
+    it('should fail to send message with blocked signatures', async () => {
+      const blockedFunctions = [
+        'transfer(address,uint256)',
+        'approve(address,uint256)',
+        'transferFrom(address,address,uint256)',
+        'approveAndCall(address,uint256,bytes)',
+        'transferAndCall(address,uint256,bytes)'
+      ].map(web3.eth.abi.encodeFunctionSignature)
+      for (const signature of blockedFunctions) {
+        await foreignBridge.requireToPassMessage(accounts[7], signature, 10000).should.be.rejected
+      }
+      await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 10000).should.be.fulfilled
+    })
   })
   describe('executeSignatures', () => {
     let foreignBridge

@@ -36,6 +36,25 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         require(messageId() == bytes32(0) || allowReentrantRequests());
         require(_gas >= MIN_GAS_PER_CALL && _gas <= maxGasPerTx());
 
+        uint256 selector;
+        assembly {
+            selector := and(calldataload(104), 0xffffffff)
+        }
+        // In order to prevent possible unauthorized ERC20 withdrawals, the following function signatures are prohibited:
+        // * transfer(address,uint256)
+        // * approve(address,uint256)
+        // * transferFrom(address,address,uint256)
+        // * approveAndCall(address,uint256,bytes)
+        // * transferAndCall(address,uint256,bytes)
+        // See https://medium.com/immunefi/xdai-stake-arbitrary-call-method-bug-postmortem-f80a90ac56e3 for more details
+        require(
+            selector != 0xa9059cbb &&
+                selector != 0x095ea7b3 &&
+                selector != 0x23b872dd &&
+                selector != 0x4000aea0 &&
+                selector != 0xcae9ca51
+        );
+
         (bytes32 _messageId, bytes memory header) = _packHeader(_contract, _gas, _dataType);
 
         bytes memory eventData = abi.encodePacked(header, _data);

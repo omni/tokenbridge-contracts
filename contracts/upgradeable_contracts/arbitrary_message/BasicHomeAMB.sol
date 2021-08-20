@@ -45,7 +45,7 @@ contract BasicHomeAMB is BasicAMB, MessageDelivery {
     * @param _data calldata passed to the executor on the other side.
     * @param _gas gas limit used on the other network for executing a message.
     */
-    function requireToConfirmMessage(address _contract, bytes _data, uint256 _gas) external returns (bytes32) {
+    function requireToConfirmMessage(address _contract, bytes memory _data, uint256 _gas) public returns (bytes32) {
         return _sendMessage(_contract, _data, _gas, SEND_TO_MANUAL_LANE);
     }
 

@@ -3,6 +3,7 @@ const HomeBridge = artifacts.require('HomeAMB.sol')
 const GasToken = artifacts.require('GasTokenMock.sol')
 const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const Box = artifacts.require('Box.sol')
+const ERC20Mock = artifacts.require('ERC20Mock.sol')
 const ERC677ReceiverTest = artifacts.require('ERC677ReceiverTest.sol')
 const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
@@ -346,6 +347,36 @@ contract('ForeignAMB', async accounts => {
         await foreignBridge.requireToPassMessage(accounts[7], signature, 10000).should.be.rejected
       }
       await foreignBridge.requireToPassMessage(accounts[7], '0x11223344', 10000).should.be.fulfilled
+    })
+  })
+  describe('claimTokens', () => {
+    let foreignBridge
+    let token
+    beforeEach(async () => {
+      const foreignBridgeV1 = await ForeignBridge.new()
+      token = await ERC20Mock.new('Test', 'TST', 18)
+
+      // create proxy
+      const proxy = await EternalStorageProxy.new()
+      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled
+
+      foreignBridge = await ForeignBridge.at(proxy.address)
+      await foreignBridge.initialize(
+        FOREIGN_CHAIN_ID_HEX,
+        HOME_CHAIN_ID_HEX,
+        validatorContract.address,
+        oneEther,
+        gasPrice,
+        requiredBlockConfirmations,
+        owner
+      )
+    })
+    it('should claim mistakenly locked tokens', async () => {
+      await token.mint(foreignBridge.address, oneEther)
+      await foreignBridge.claimTokens(token.address, owner, { from: accounts[2] }).should.be.rejected
+      await foreignBridge.claimTokens(token.address, owner, { from: owner }).should.be.fulfilled
+
+      expect(await token.balanceOf(owner)).to.be.bignumber.equal(oneEther)
     })
   })
   describe('executeSignatures', () => {

@@ -15,7 +15,7 @@ library Message {
     // offset 32: 20 bytes :: address - recipient address
     // offset 52: 32 bytes :: uint256 - value
     // offset 84: 32 bytes :: bytes32 - transaction hash
-    // offset 104: 20 bytes :: address - contract address to prevent double spending
+    // offset 116: 20 bytes :: address - contract address to prevent double spending
 
     // mload always reads 32 bytes.
     // so we can and have to start reading recipient at offset 20 instead of 32.

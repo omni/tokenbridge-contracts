@@ -26,14 +26,6 @@ contract InterestReceiverStakeBuyback is InterestReceiverBase {
         // (min received %) * (amount / 1 DAI) * (STAKE per 1 DAI)
         uint256 minAmount = (minReceivedFraction * amount * uniswapRouterV2.getAmountsOut(1 ether, path)[2]) / 10**36;
 
-        bytes memory data = abi.encodeWithSelector(
-            uniswapRouterV2.swapExactTokensForTokens.selector,
-            amount,
-            minAmount,
-            path,
-            burnAddress,
-            now
-        );
-        address(uniswapRouterV2).call(data);
+        uniswapRouterV2.swapExactTokensForTokens(amount, minAmount, path, burnAddress, now);
     }
 }

@@ -29,16 +29,19 @@ contract IPaymaster {
      *      note that an OOG will revert the transaction, but the paymaster already committed to pay,
      *      so the relay will get compensated, at the expense of the paymaster
      */
-    struct GasLimits {
+    struct GasAndDataLimits {
         uint256 acceptanceBudget;
         uint256 preRelayedCallGasLimit;
         uint256 postRelayedCallGasLimit;
+        uint256 calldataSizeLimit;
     }
 
     /**
-     * Return the GasLimits constants used by the Paymaster.
+     * Return the Gas Limits and msg.data max size constants used by the Paymaster.
      */
-    function getGasLimits() external view returns (GasLimits memory limits);
+    function getGasAndDataLimits() external view returns (GasAndDataLimits memory limits);
+
+    function trustedForwarder() external view returns (address);
 
     /**
      * return the relayHub of this contract.
@@ -49,7 +52,7 @@ contract IPaymaster {
      * Can be used to determine if the contract can pay for incoming calls before making any.
      * @return the paymaster's deposit in the RelayHub.
      */
-    function getRelayHubDeposit() public view returns (uint256);
+    function getRelayHubDeposit() external view returns (uint256);
 
     /**
      * Called by Relay (and RelayHub), to validate if the paymaster agrees to pay for this call.
@@ -74,7 +77,7 @@ contract IPaymaster {
      *              Note that in most cases the paymaster shouldn't try use it at all. It is always checked
      *              by the forwarder immediately after preRelayedCall returns.
      *  @param approvalData - extra dapp-specific data (e.g. signature from trusted party)
-     *  @param maxPossibleGas - based on values returned from {@link getGasLimits},
+     *  @param maxPossibleGas - based on values returned from {@link getGasAndDataLimits},
      *         the RelayHub will calculate the maximum possible amount of gas the user may be charged for.
      *         In order to convert this value to wei, the Paymaster has to call "relayHub.calculateCharge()"
      *  return:

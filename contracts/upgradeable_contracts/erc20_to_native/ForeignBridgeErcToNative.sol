@@ -1,18 +1,9 @@
 pragma solidity 0.4.24;
 
-import "../BasicForeignBridge.sol";
 import "../ERC20Bridge.sol";
 import "../OtherSideBridgeStorage.sol";
-import "./CompoundConnector.sol";
-import "../GSNForeignERC20Bridge.sol";
 
-contract ForeignBridgeErcToNative is
-    BasicForeignBridge,
-    ERC20Bridge,
-    OtherSideBridgeStorage,
-    CompoundConnector,
-    GSNForeignERC20Bridge
-{
+contract ForeignBridgeErcToNative is ERC20Bridge, OtherSideBridgeStorage {
     function initialize(
         address _validatorContract,
         address _erc20token,
@@ -46,26 +37,6 @@ contract ForeignBridgeErcToNative is
         return 0x18762d46; // bytes4(keccak256(abi.encodePacked("erc-to-native-core")))
     }
 
-    function upgradeTo530(address _interestReceiver) external {
-        require(msg.sender == address(this));
-
-        address dai = address(daiToken());
-        address comp = address(compToken());
-        _setInterestEnabled(dai, true);
-        _setMinCashThreshold(dai, 1000000 ether);
-        _setMinInterestPaid(dai, 1000 ether);
-        _setInterestReceiver(dai, _interestReceiver);
-
-        _setMinInterestPaid(comp, 1 ether);
-        _setInterestReceiver(comp, _interestReceiver);
-
-        invest(dai);
-    }
-
-    function investDai() external {
-        invest(address(daiToken()));
-    }
-
     /**
      * @dev Withdraws the erc20 tokens or native coins from this contract.
      * @param _token address of the claimed token or address(0) for native coins.
@@ -73,28 +44,8 @@ contract ForeignBridgeErcToNative is
      */
     function claimTokens(address _token, address _to) external onlyIfUpgradeabilityOwner {
         // Since bridged tokens are locked at this contract, it is not allowed to claim them with the use of claimTokens function
-        address bridgedToken = address(erc20token());
-        require(_token != address(bridgedToken));
-        require(_token != address(cDaiToken()) || !isInterestEnabled(bridgedToken));
-        require(_token != address(compToken()) || !isInterestEnabled(bridgedToken));
+        require(_token != address(erc20token()));
         claimValues(_token, _to);
-    }
-
-    function onExecuteMessageGSN(address recipient, uint256 amount, uint256 fee) internal returns (bool) {
-        addTotalExecutedPerDay(getCurrentDay(), amount);
-        uint256 unshiftMaxFee = _unshiftValue(fee);
-        uint256 unshiftLeft = _unshiftValue(amount - fee);
-
-        ERC20 token = erc20token();
-        ensureEnoughTokens(token, unshiftMaxFee + unshiftLeft);
-
-        // Send maxTokensFee to paymaster
-        bool first = token.transfer(addressStorage[PAYMASTER], unshiftMaxFee);
-
-        // Send rest of tokens to user
-        bool second = token.transfer(recipient, unshiftLeft);
-
-        return first && second;
     }
 
     function onExecuteMessage(
@@ -103,21 +54,7 @@ contract ForeignBridgeErcToNative is
         bytes32 /*_txHash*/
     ) internal returns (bool) {
         addTotalExecutedPerDay(getCurrentDay(), _amount);
-        uint256 amount = _unshiftValue(_amount);
-
-        ERC20 token = erc20token();
-        ensureEnoughTokens(token, amount);
-
-        return token.transfer(_recipient, amount);
-    }
-
-    function ensureEnoughTokens(ERC20 token, uint256 amount) internal {
-        uint256 currentBalance = token.balanceOf(address(this));
-
-        if (currentBalance < amount) {
-            uint256 withdrawAmount = (amount - currentBalance).add(minCashThreshold(address(token)));
-            _withdraw(address(token), withdrawAmount);
-        }
+        return erc20token().transfer(_recipient, _unshiftValue(_amount));
     }
 
     function onFailedMessage(address, uint256, bytes32) internal {

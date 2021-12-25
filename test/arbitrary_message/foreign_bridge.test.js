@@ -14,7 +14,8 @@ const {
   expectEventInLogs,
   signatureToVRS,
   packSignatures,
-  createFullAccounts
+  createFullAccounts,
+  deployProxy
 } = require('../helpers/helpers')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
 
@@ -38,7 +39,7 @@ contract('ForeignAMB', async accounts => {
   let gasTokenContract
 
   before(async () => {
-    validatorContract = await BridgeValidators.new()
+    validatorContract = await deployProxy(BridgeValidators)
     gasTokenContract = await GasToken.new({ from: accounts[7] })
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
@@ -47,7 +48,7 @@ contract('ForeignAMB', async accounts => {
 
   describe('getBridgeMode', () => {
     it('should return arbitrary message bridging mode', async () => {
-      const foreignContract = await ForeignBridge.new()
+      const foreignContract = await deployProxy(ForeignBridge)
       const bridgeModeHash = '0x2544fbb9' // 4 bytes of keccak256('arbitrary-message-bridge-core')
       const bridgeMode = await foreignContract.getBridgeMode()
       bridgeMode.should.be.equal(bridgeModeHash)
@@ -55,7 +56,7 @@ contract('ForeignAMB', async accounts => {
   })
   describe('initialize', () => {
     it('sets variables', async () => {
-      const foreignBridge = await ForeignBridge.new()
+      const foreignBridge = await deployProxy(ForeignBridge)
 
       expect(await foreignBridge.deployedAtBlock()).to.be.bignumber.equal(ZERO)
       expect(await foreignBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
@@ -89,7 +90,7 @@ contract('ForeignAMB', async accounts => {
       expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
     })
     it('should fail with invalid arguments', async () => {
-      const foreignBridge = await ForeignBridge.new()
+      const foreignBridge = await deployProxy(ForeignBridge)
 
       expect(await foreignBridge.isInitialized()).to.be.equal(false)
 
@@ -177,7 +178,7 @@ contract('ForeignAMB', async accounts => {
     it('can update variables', async () => {
       const alternativeGasPrice = web3.utils.toWei('2', 'gwei')
       const alternativeBlockConfirmations = 1
-      const foreignBridge = await ForeignBridge.new()
+      const foreignBridge = await deployProxy(ForeignBridge)
 
       await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
@@ -211,15 +212,8 @@ contract('ForeignAMB', async accounts => {
   })
   describe('upgradeable', async () => {
     it('can be upgraded', async () => {
-      // foreignBridge V1 Contract
-      const foreignBridgeV1 = await ForeignBridge.new()
-
-      // create proxy
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled
-
-      const foreignBridgeProxy = await ForeignBridge.at(proxy.address)
-      await foreignBridgeProxy.initialize(
+      const foreignBridge = await deployProxy(ForeignBridge)
+      await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,
         validatorContract.address,
@@ -231,6 +225,7 @@ contract('ForeignAMB', async accounts => {
 
       // Deploy V2
       const foreignBridgeV2 = await ForeignBridge.new()
+      const proxy = await EternalStorageProxy.at(foreignBridge.address)
       await proxy.upgradeTo('2', foreignBridgeV2.address).should.be.fulfilled
 
       foreignBridgeV2.address.should.be.equal(await proxy.implementation())
@@ -257,15 +252,8 @@ contract('ForeignAMB', async accounts => {
       expect(await foreignBridgeProxy.isInitialized()).to.be.equal(true)
     })
     it('can transfer ownership', async () => {
-      // foreignBridge V1 Contract
-      const foreignBridgeV1 = await ForeignBridge.new()
-
-      // create proxy
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled
-
-      const foreignBridgeProxy = await ForeignBridge.at(proxy.address)
-      await foreignBridgeProxy.initialize(
+      const foreignBridge = await deployProxy(ForeignBridge)
+      await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,
         validatorContract.address,
@@ -274,6 +262,7 @@ contract('ForeignAMB', async accounts => {
         requiredBlockConfirmations,
         owner
       ).should.be.fulfilled
+      const proxy = await EternalStorageProxy.at(foreignBridge.address)
       expect(await proxy.upgradeabilityOwner()).to.be.equal(owner)
 
       const newOwner = accounts[1]
@@ -285,13 +274,7 @@ contract('ForeignAMB', async accounts => {
     let foreignBridge
     let bridgeId
     beforeEach(async () => {
-      const foreignBridgeV1 = await ForeignBridge.new()
-
-      // create proxy
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled
-
-      foreignBridge = await ForeignBridge.at(proxy.address)
+      foreignBridge = await deployProxy(ForeignBridge)
       await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,
@@ -353,14 +336,8 @@ contract('ForeignAMB', async accounts => {
     let foreignBridge
     let token
     beforeEach(async () => {
-      const foreignBridgeV1 = await ForeignBridge.new()
       token = await ERC20Mock.new('Test', 'TST', 18)
-
-      // create proxy
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled
-
-      foreignBridge = await ForeignBridge.at(proxy.address)
+      foreignBridge = await deployProxy(ForeignBridge)
       await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,
@@ -385,14 +362,8 @@ contract('ForeignAMB', async accounts => {
     let setValueData
     let box
     beforeEach(async () => {
-      const foreignBridgeV1 = await ForeignBridge.new()
-      homeBridge = await HomeBridge.new()
-
-      // create proxy
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', foreignBridgeV1.address).should.be.fulfilled
-
-      foreignBridge = await ForeignBridge.at(proxy.address)
+      homeBridge = await deployProxy(HomeBridge)
+      foreignBridge = await deployProxy(ForeignBridge)
       await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,
@@ -456,13 +427,13 @@ contract('ForeignAMB', async accounts => {
     })
     it('test with 3 signatures required', async () => {
       // set validator
-      const validatorContractWith3Signatures = await BridgeValidators.new()
+      const validatorContractWith3Signatures = await deployProxy(BridgeValidators)
       const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
       const ownerOfValidators = accounts[0]
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
 
       // set bridge
-      const foreignBridgeWithThreeSigs = await ForeignBridge.new()
+      const foreignBridgeWithThreeSigs = await deployProxy(ForeignBridge)
       await foreignBridgeWithThreeSigs.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,
@@ -528,14 +499,14 @@ contract('ForeignAMB', async accounts => {
     })
     it('test with max allowed number of signatures required', async () => {
       // set validator
-      const validatorContract = await BridgeValidators.new()
+      const validatorContract = await deployProxy(BridgeValidators)
       const authorities = createFullAccounts(web3, MAX_VALIDATORS)
       const addresses = authorities.map(account => account.address)
       const ownerOfValidators = accounts[0]
       await validatorContract.initialize(MAX_SIGNATURES, addresses, ownerOfValidators)
 
       // set bridge
-      const foreignBridgeWithMaxSigs = await ForeignBridge.new()
+      const foreignBridgeWithMaxSigs = await deployProxy(ForeignBridge)
       await foreignBridgeWithMaxSigs.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,
@@ -890,7 +861,7 @@ contract('ForeignAMB', async accounts => {
     let foreignBridge
 
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await deployProxy(ForeignBridge)
       await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,
@@ -1137,7 +1108,7 @@ contract('ForeignAMB', async accounts => {
         '0000000000000000000000000000000000000000000000000000000000000000'
     )
     beforeEach(async () => {
-      foreignContract = await ForeignBridge.new()
+      foreignContract = await deployProxy(ForeignBridge)
       await foreignContract.initialize(
         FOREIGN_CHAIN_ID_HEX,
         HOME_CHAIN_ID_HEX,

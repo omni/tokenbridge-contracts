@@ -11,7 +11,7 @@ const { expect } = require('chai')
 const { fromRpcSig } = require('ethereumjs-util')
 
 const { ERROR_MSG, ERROR_MSG_OPCODE, ZERO_ADDRESS, BN, toBN } = require('./setup')
-const { ether, expectEventInLogs } = require('./helpers/helpers')
+const { ether, expectEventInLogs, deployProxy } = require('./helpers/helpers')
 
 async function ethSignTypedData(from, data) {
   const result = await new Promise((res, rej) =>
@@ -78,7 +78,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
 
   describe('#bridgeContract', async () => {
     it('can set bridge contract', async () => {
-      const bridge = await ForeignBridge.new()
+      const bridge = await deployProxy(ForeignBridge)
       expect(await isBridge(token, bridge.address)).to.be.equal(false)
 
       await addBridge(token, bridge.address).should.be.fulfilled
@@ -86,7 +86,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
     })
 
     it('only owner can set bridge contract', async () => {
-      const bridge = await ForeignBridge.new()
+      const bridge = await deployProxy(ForeignBridge)
       expect(await isBridge(token, bridge.address)).to.be.equal(false)
 
       await addBridge(token, bridge.address, { from: user }).should.be.rejectedWith(ERROR_MSG)
@@ -255,7 +255,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
   describe('#transfer', async () => {
     let validatorContract
     beforeEach(async () => {
-      validatorContract = await BridgeValidators.new()
+      validatorContract = await deployProxy(BridgeValidators)
       const authorities = [accounts[2]]
       await validatorContract.initialize(1, authorities, owner)
     })
@@ -397,7 +397,7 @@ function testERC677BridgeToken(accounts, rewardable, permittable, createToken) {
   describe('#transferAndCall', () => {
     let validatorContract
     beforeEach(async () => {
-      validatorContract = await BridgeValidators.new()
+      validatorContract = await deployProxy(BridgeValidators)
       const authorities = [accounts[2]]
       await validatorContract.initialize(1, authorities, owner)
     })

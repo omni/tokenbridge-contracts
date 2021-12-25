@@ -1,6 +1,8 @@
 const { expect } = require('chai')
 const { BN } = require('../setup')
 
+const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
+
 // returns a Promise that resolves with a hex string that is the signature of
 // `data` signed with the key of `address`
 function sign(address, data) {
@@ -217,3 +219,12 @@ function paymasterError(reason) {
 }
 
 module.exports.paymasterError = paymasterError
+
+async function deployProxy(contract) {
+  const proxy = await EternalStorageProxy.new()
+  const impl = await contract.new()
+  await proxy.upgradeTo('1', impl.address)
+  return contract.at(proxy.address)
+}
+
+module.exports.deployProxy = deployProxy

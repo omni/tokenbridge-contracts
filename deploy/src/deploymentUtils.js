@@ -3,7 +3,7 @@ const BigNumber = require('bignumber.js')
 const Web3 = require('web3')
 const Tx = require('ethereumjs-tx')
 const Web3Utils = require('web3-utils')
-const fetch = require('node-fetch')
+const axios = require('axios')
 const assert = require('assert')
 const promiseRetry = require('promise-retry')
 const {
@@ -139,26 +139,25 @@ async function sendNodeRequest(url, method, signedData) {
   if (!Array.isArray(signedData)) {
     signedData = [signedData]
   }
-  const request = await fetch(url, {
-    headers: {
-      'Content-type': 'application/json'
-    },
-    method: 'POST',
-    body: JSON.stringify({
+  const { data } = await axios.post(
+    url,
+    {
       jsonrpc: '2.0',
       method,
       params: signedData,
       id: 1
-    })
-  })
-  const json = await request.json()
-  if (typeof json.error === 'undefined' || json.error === null) {
-    if (method === 'eth_sendRawTransaction') {
-      assert.strictEqual(json.result.length, 66, `Tx wasn't sent ${json}`)
+    },
+    {
+      headers: { 'Content-type': 'application/json' }
     }
-    return json.result
+  )
+  if (typeof data.error === 'undefined' || data.error === null) {
+    if (method === 'eth_sendRawTransaction') {
+      assert.strictEqual(data.result.length, 66, `Tx wasn't sent ${data}`)
+    }
+    return data.result
   }
-  throw new Error(`web3 RPC failed: ${JSON.stringify(json.error)}`)
+  throw new Error(`web3 RPC failed: ${JSON.stringify(data.error)}`)
 }
 
 function timeout(ms) {

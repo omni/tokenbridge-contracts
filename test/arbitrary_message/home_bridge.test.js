@@ -6,7 +6,7 @@ const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 
 const { expect } = require('chai')
 const { ERROR_MSG, ZERO_ADDRESS, toBN } = require('../setup')
-const { sign, ether, expectEventInLogs, getEvents } = require('../helpers/helpers')
+const { sign, ether, expectEventInLogs, getEvents, deployProxy } = require('../helpers/helpers')
 
 const requiredBlockConfirmations = 8
 const gasPrice = web3.utils.toWei('1', 'gwei')
@@ -24,7 +24,7 @@ contract('HomeAMB', async accounts => {
   let owner
   let validatorsRequiredSignatures
   before(async () => {
-    validatorContract = await BridgeValidators.new()
+    validatorContract = await deployProxy(BridgeValidators)
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     validatorsRequiredSignatures = 1
@@ -32,7 +32,7 @@ contract('HomeAMB', async accounts => {
   })
   describe('getBridgeMode', () => {
     it('should return arbitrary message bridging mode and interface', async () => {
-      const homeContract = await HomeAMB.new()
+      const homeContract = await deployProxy(HomeAMB)
       const bridgeModeHash = '0x2544fbb9' // 4 bytes of keccak256('arbitrary-message-bridge-core')
       const bridgeMode = await homeContract.getBridgeMode()
       bridgeMode.should.be.equal(bridgeModeHash)
@@ -45,7 +45,7 @@ contract('HomeAMB', async accounts => {
   })
   describe('initialize', () => {
     it('sets variables', async () => {
-      const homeBridge = await HomeAMB.new()
+      const homeBridge = await deployProxy(HomeAMB)
 
       expect(await homeBridge.deployedAtBlock()).to.be.bignumber.equal(ZERO)
       expect(await homeBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
@@ -79,7 +79,7 @@ contract('HomeAMB', async accounts => {
       expectEventInLogs(logs, 'GasPriceChanged', { gasPrice })
     })
     it('should fail with invalid arguments', async () => {
-      const homeBridge = await HomeAMB.new()
+      const homeBridge = await deployProxy(HomeAMB)
 
       expect(await homeBridge.isInitialized()).to.be.equal(false)
 
@@ -156,7 +156,7 @@ contract('HomeAMB', async accounts => {
     it('can update variables', async () => {
       const alternativeGasPrice = web3.utils.toWei('2', 'gwei')
       const alternativeBlockConfirmations = 1
-      const homeBridge = await HomeAMB.new()
+      const homeBridge = await deployProxy(HomeAMB)
 
       await homeBridge.initialize(
         HOME_CHAIN_ID_HEX,
@@ -189,15 +189,8 @@ contract('HomeAMB', async accounts => {
   })
   describe('upgradeable', async () => {
     it('can be upgraded', async () => {
-      // homeBridge V1 Contract
-      const homeBridgeV1 = await HomeAMB.new()
-
-      // create proxy
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
-
-      const homeBridgeProxy = await HomeAMB.at(proxy.address)
-      await homeBridgeProxy.initialize(
+      const homeBridge = await deployProxy(HomeAMB)
+      await homeBridge.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
@@ -209,6 +202,7 @@ contract('HomeAMB', async accounts => {
 
       // Deploy V2
       const homeBridgeV2 = await HomeAMB.new()
+      const proxy = await EternalStorageProxy.at(homeBridge.address)
       await proxy.upgradeTo('2', homeBridgeV2.address).should.be.fulfilled
 
       homeBridgeV2.address.should.be.equal(await proxy.implementation())
@@ -234,15 +228,8 @@ contract('HomeAMB', async accounts => {
       expect(await homeBridgeProxy.isInitialized()).to.be.equal(true)
     })
     it('can transfer ownership', async () => {
-      // homeBridge V1 Contract
-      const homeBridgeV1 = await HomeAMB.new()
-
-      // create proxy
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
-
-      const homeBridgeProxy = await HomeAMB.at(proxy.address)
-      await homeBridgeProxy.initialize(
+      const homeBridge = await deployProxy(HomeAMB)
+      await homeBridge.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
         validatorContract.address,
@@ -251,6 +238,7 @@ contract('HomeAMB', async accounts => {
         requiredBlockConfirmations,
         owner
       ).should.be.fulfilled
+      const proxy = await EternalStorageProxy.at(homeBridge.address)
       expect(await proxy.upgradeabilityOwner()).to.be.equal(owner)
 
       const newOwner = accounts[1]
@@ -262,12 +250,7 @@ contract('HomeAMB', async accounts => {
     let homeBridge
     let bridgeId
     beforeEach(async () => {
-      // create proxy
-      const homeBridgeV1 = await HomeAMB.new()
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
-
-      homeBridge = await HomeAMB.at(proxy.address)
+      homeBridge = await deployProxy(HomeAMB)
       await homeBridge.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
@@ -371,12 +354,7 @@ contract('HomeAMB', async accounts => {
     let setValueData
     let box
     beforeEach(async () => {
-      // create proxy
-      const homeBridgeV1 = await HomeAMB.new()
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
-
-      homeBridge = await HomeAMB.at(proxy.address)
+      homeBridge = await deployProxy(HomeAMB)
       await homeBridge.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
@@ -387,7 +365,7 @@ contract('HomeAMB', async accounts => {
         owner
       )
 
-      foreignBridge = await ForeignAMB.new()
+      foreignBridge = await deployProxy(ForeignAMB)
 
       await foreignBridge.initialize(
         FOREIGN_CHAIN_ID_HEX,
@@ -436,13 +414,13 @@ contract('HomeAMB', async accounts => {
     })
     it('test with 3 signatures required', async () => {
       // set validator
-      const validatorContractWith3Signatures = await BridgeValidators.new()
+      const validatorContractWith3Signatures = await deployProxy(BridgeValidators)
       const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
       const ownerOfValidators = accounts[0]
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
 
       // set bridge
-      const homeBridgeWithThreeSigs = await HomeAMB.new()
+      const homeBridgeWithThreeSigs = await deployProxy(HomeAMB)
       await homeBridgeWithThreeSigs.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
@@ -693,12 +671,7 @@ contract('HomeAMB', async accounts => {
     let setValueData
     let box
     beforeEach(async () => {
-      // create proxy
-      const homeBridgeV1 = await HomeAMB.new()
-      const proxy = await EternalStorageProxy.new()
-      await proxy.upgradeTo('1', homeBridgeV1.address).should.be.fulfilled
-
-      homeBridge = await HomeAMB.at(proxy.address)
+      homeBridge = await deployProxy(HomeAMB)
       await homeBridge.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
@@ -747,13 +720,13 @@ contract('HomeAMB', async accounts => {
     })
     it('test with 3 signatures required', async () => {
       // set validator
-      const validatorContractWith3Signatures = await BridgeValidators.new()
+      const validatorContractWith3Signatures = await deployProxy(BridgeValidators)
       const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
       const ownerOfValidators = accounts[0]
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
 
       // set bridge
-      const homeBridgeWithThreeSigs = await HomeAMB.new()
+      const homeBridgeWithThreeSigs = await deployProxy(HomeAMB)
       await homeBridgeWithThreeSigs.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
@@ -876,7 +849,7 @@ contract('HomeAMB', async accounts => {
         '0000000000000000000000000000000000000000000000000000000000000000'
     )
     beforeEach(async () => {
-      homeContract = await HomeAMB.new()
+      homeContract = await deployProxy(HomeAMB)
       await homeContract.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
@@ -923,7 +896,7 @@ contract('HomeAMB', async accounts => {
     const ethCallSelector = web3.utils.soliditySha3('eth_call(address,bytes)')
 
     beforeEach(async () => {
-      homeContract = await HomeAMB.new()
+      homeContract = await deployProxy(HomeAMB)
       await homeContract.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,

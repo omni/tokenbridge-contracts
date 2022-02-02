@@ -33,7 +33,7 @@ contract RewardableBridge is Ownable, FeeTypes {
         bytes memory callData = abi.encodeWithSelector(method);
 
         assembly {
-            let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 32)
+            let result := delegatecall(gas, feeManager, add(callData, 0x20), mload(callData), 0, 32)
 
             if and(eq(returndatasize, 32), result) {
                 fee := mload(0)
@@ -49,7 +49,7 @@ contract RewardableBridge is Ownable, FeeTypes {
         bytes memory callData = abi.encodeWithSelector(GET_FEE_MANAGER_MODE);
         address feeManager = feeManagerContract();
         assembly {
-            let result := callcode(gas, feeManager, 0x0, add(callData, 0x20), mload(callData), 0, 4)
+            let result := delegatecall(gas, feeManager, add(callData, 0x20), mload(callData), 0, 4)
 
             if and(eq(returndatasize, 32), result) {
                 mode := mload(0)

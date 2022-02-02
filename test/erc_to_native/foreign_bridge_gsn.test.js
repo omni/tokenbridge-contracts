@@ -20,7 +20,8 @@ const {
   ether,
   packSignatures,
   evalMetrics,
-  paymasterError
+  paymasterError,
+  deployProxy
 } = require('../helpers/helpers')
 const getCompoundContracts = require('../compound/contracts')
 
@@ -63,12 +64,12 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
     RelayHubAddress = env.contractsDeployment.relayHubAddress
     ForwarderAddress = env.contractsDeployment.forwarderAddress
 
-    validatorContract = await BridgeValidators.new()
+    validatorContract = await deployProxy(BridgeValidators)
 
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
-    otherSideBridge = await XDaiForeignBridgeMock.new()
+    otherSideBridge = '0x1234567812345678123456781234567812345678'
 
     const contracts = await getCompoundContracts()
     token = contracts.dai
@@ -79,7 +80,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
   describe('#initialize', async () => {
     it('should initialize paymaster', async () => {
       router = await UniswapRouterMock.new()
-      foreignBridge = await XDaiForeignBridgeMock.new()
+      foreignBridge = await deployProxy(XDaiForeignBridgeMock)
 
       paymaster = await TokenPaymaster.new(
         RelayHubAddress,
@@ -106,7 +107,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
     let GSNSigner
     beforeEach(async () => {
       XDaiForeignBridgeMock.web3.setProvider(web3.currentProvider)
-      foreignBridge = await XDaiForeignBridgeMock.new()
+      foreignBridge = await deployProxy(XDaiForeignBridgeMock)
       await foreignBridge.initialize(
         validatorContract.address,
         token.address,
@@ -116,7 +117,7 @@ contract('ForeignBridge_ERC20_to_Native_GSN', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       )
 
       router = await UniswapRouterMock.new()

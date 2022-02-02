@@ -14,7 +14,8 @@ const {
   ether,
   expectEventInLogs,
   createFullAccounts,
-  packSignatures
+  packSignatures,
+  deployProxy
 } = require('../helpers/helpers')
 const getCompoundContracts = require('../compound/contracts')
 
@@ -32,21 +33,20 @@ const MAX_VALIDATORS = 50
 const MAX_SIGNATURES = MAX_VALIDATORS
 const MAX_GAS = 8000000
 const decimalShiftZero = 0
+const otherSideBridge = '0x1234567812345678123456781234567812345678'
 
 contract('ForeignBridge_ERC20_to_Native', async accounts => {
   let validatorContract
   let authorities
   let owner
   let token
-  let otherSideBridge
   let dai
   const user = accounts[7]
   before(async () => {
-    validatorContract = await BridgeValidators.new()
+    validatorContract = await deployProxy(BridgeValidators)
     authorities = [accounts[1], accounts[2]]
     owner = accounts[0]
     await validatorContract.initialize(1, authorities, owner)
-    otherSideBridge = await ForeignBridge.new()
 
     dai = await ERC20Mock.new('dai', 'DAI', 18)
 
@@ -55,7 +55,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   describe('#initialize', async () => {
     it('should initialize', async () => {
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      const foreignBridge = await ForeignBridge.new()
+      const foreignBridge = await deployProxy(ForeignBridge)
 
       expect(await foreignBridge.erc20token()).to.be.equal(ZERO_ADDRESS)
       expect(await foreignBridge.validatorContract()).to.be.equal(ZERO_ADDRESS)
@@ -73,7 +73,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       ).should.be.rejected
       await foreignBridge.initialize(
         validatorContract.address,
@@ -84,7 +84,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       ).should.be.rejected
       await foreignBridge.initialize(
         validatorContract.address,
@@ -95,7 +95,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       ).should.be.rejected
       await foreignBridge.initialize(
         validatorContract.address,
@@ -106,7 +106,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       ).should.be.rejected
       await foreignBridge.initialize(
         validatorContract.address,
@@ -117,7 +117,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       ).should.be.rejected
       await foreignBridge.initialize(
         owner,
@@ -128,7 +128,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       ).should.be.rejected
       await foreignBridge.initialize(
         validatorContract.address,
@@ -139,7 +139,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeMaxPerTx, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       ).should.be.rejected
 
       await foreignBridge.initialize(
@@ -164,7 +164,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         '100',
-        otherSideBridge.address
+        otherSideBridge
       ).should.be.rejected
 
       const { logs } = await foreignBridge.initialize(
@@ -176,7 +176,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         '9',
-        otherSideBridge.address
+        otherSideBridge
       )
 
       expect(await foreignBridge.erc20token()).to.be.equal(token.address)
@@ -212,7 +212,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     const value = ether('0.25')
     let foreignBridge
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await deployProxy(ForeignBridge)
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
@@ -223,7 +223,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       )
       await token.mint(foreignBridge.address, value)
     })
@@ -356,18 +356,15 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
   describe('#withdraw with 2 minimum signatures', async () => {
     let multisigValidatorContract
     let twoAuthorities
-    let ownerOfValidatorContract
     let foreignBridgeWithMultiSignatures
     const value = halfEther
     beforeEach(async () => {
-      multisigValidatorContract = await BridgeValidators.new()
+      multisigValidatorContract = await deployProxy(BridgeValidators)
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       twoAuthorities = [accounts[0], accounts[1]]
-      ownerOfValidatorContract = accounts[3]
-      await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
-        from: ownerOfValidatorContract
-      })
-      foreignBridgeWithMultiSignatures = await ForeignBridge.new()
+      const ownerOfValidatorContract = accounts[3]
+      await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract)
+      foreignBridgeWithMultiSignatures = await deployProxy(ForeignBridge)
       await foreignBridgeWithMultiSignatures.initialize(
         multisigValidatorContract.address,
         token.address,
@@ -377,8 +374,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address,
-        { from: ownerOfValidatorContract }
+        otherSideBridge
       )
       await token.mint(foreignBridgeWithMultiSignatures.address, value)
     })
@@ -425,11 +421,11 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const recipient = accounts[8]
       const authoritiesFiveAccs = [accounts[1], accounts[2], accounts[3], accounts[4], accounts[5]]
       const ownerOfValidators = accounts[0]
-      const validatorContractWith3Signatures = await BridgeValidators.new()
+      const validatorContractWith3Signatures = await deployProxy(BridgeValidators)
       await validatorContractWith3Signatures.initialize(3, authoritiesFiveAccs, ownerOfValidators)
       const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       const value = halfEther
-      const foreignBridgeWithThreeSigs = await ForeignBridge.new()
+      const foreignBridgeWithThreeSigs = await deployProxy(ForeignBridge)
 
       await foreignBridgeWithThreeSigs.initialize(
         validatorContractWith3Signatures.address,
@@ -440,7 +436,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       )
       await erc20Token.mint(foreignBridgeWithThreeSigs.address, value)
 
@@ -470,14 +466,14 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     it('works with max allowed number of signatures required', async () => {
       const recipient = accounts[8]
       const value = halfEther
-      const validatorContract = await BridgeValidators.new()
+      const validatorContract = await deployProxy(BridgeValidators)
       const authorities = createFullAccounts(web3, MAX_VALIDATORS)
       const addresses = authorities.map(account => account.address)
       const ownerOfValidators = accounts[0]
 
       await validatorContract.initialize(MAX_SIGNATURES, addresses, ownerOfValidators)
       const erc20Token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      const foreignBridgeWithMaxSigs = await ForeignBridge.new()
+      const foreignBridgeWithMaxSigs = await deployProxy(ForeignBridge)
 
       await foreignBridgeWithMaxSigs.initialize(
         validatorContract.address,
@@ -488,7 +484,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       )
       await erc20Token.mint(foreignBridgeWithMaxSigs.address, value)
 
@@ -513,24 +509,15 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       const VALIDATORS = [accounts[1]]
       const PROXY_OWNER = accounts[0]
       // Validators Contract
-      let validatorsProxy = await EternalStorageProxy.new().should.be.fulfilled
-      const validatorsContractImpl = await BridgeValidators.new().should.be.fulfilled
-      await validatorsProxy.upgradeTo('1', validatorsContractImpl.address).should.be.fulfilled
-      validatorsContractImpl.address.should.be.equal(await validatorsProxy.implementation())
-
-      validatorsProxy = await BridgeValidators.at(validatorsProxy.address)
-      await validatorsProxy.initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER).should.be.fulfilled
+      const validatorContract = await deployProxy(BridgeValidators)
+      await validatorContract.initialize(REQUIRED_NUMBER_OF_VALIDATORS, VALIDATORS, PROXY_OWNER).should.be.fulfilled
       const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
 
       // ForeignBridge V1 Contract
 
-      let foreignBridgeProxy = await EternalStorageProxy.new().should.be.fulfilled
-      const foreignBridgeImpl = await ForeignBridge.new().should.be.fulfilled
-      await foreignBridgeProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
-
-      foreignBridgeProxy = await ForeignBridge.at(foreignBridgeProxy.address)
-      await foreignBridgeProxy.initialize(
-        validatorsProxy.address,
+      const foreignBridge = await deployProxy(ForeignBridge)
+      await foreignBridge.initialize(
+        validatorContract.address,
         token.address,
         requireBlockConfirmations,
         gasPrice,
@@ -538,12 +525,12 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       )
 
       // Deploy V2
       const foreignImplV2 = await ForeignBridge.new()
-      const foreignBridgeProxyUpgrade = await EternalStorageProxy.at(foreignBridgeProxy.address)
+      const foreignBridgeProxyUpgrade = await EternalStorageProxy.at(foreignBridge.address)
       await foreignBridgeProxyUpgrade.upgradeTo('2', foreignImplV2.address).should.be.fulfilled
       foreignImplV2.address.should.be.equal(await foreignBridgeProxyUpgrade.implementation())
     })
@@ -564,7 +551,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           ['3', '2'],
           owner,
           decimalShiftZero,
-          otherSideBridge.address
+          otherSideBridge
         )
         .encodeABI()
 
@@ -579,10 +566,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     it('can send erc20', async () => {
       const owner = accounts[0]
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
-      const foreignBridgeImpl = await ForeignBridge.new()
-      const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-      await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
-      const foreignBridge = await ForeignBridge.at(storageProxy.address)
+      const foreignBridge = await deployProxy(ForeignBridge)
 
       await foreignBridge.initialize(
         validatorContract.address,
@@ -593,7 +577,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       )
       const tokenSecond = await ERC677BridgeToken.new('Roman Token', 'RST', 18)
 
@@ -622,10 +606,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
 
         const owner = accounts[0]
-        const foreignBridgeImpl = await ForeignBridge.new()
-        const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-        await storageProxy.upgradeTo('1', foreignBridgeImpl.address).should.be.fulfilled
-        const foreignBridge = await ForeignBridge.at(storageProxy.address)
+        const foreignBridge = await deployProxy(ForeignBridge)
 
         await foreignBridge.initialize(
           validatorContract.address,
@@ -636,7 +617,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShift,
-          otherSideBridge.address
+          otherSideBridge
         )
         await token.mint(foreignBridge.address, valueOnForeign)
 
@@ -663,17 +644,15 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
       })
 
       it(`Home to Foreign: withdraw with 2 minimum signatures with a decimalShift of ${decimalShift}`, async () => {
-        const multisigValidatorContract = await BridgeValidators.new()
+        const multisigValidatorContract = await deployProxy(BridgeValidators)
         const valueOnForeign = toBN('1000')
         const valueOnHome = toBN(valueOnForeign * 10 ** decimalShift)
         const token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 16)
         const twoAuthorities = [accounts[0], accounts[1]]
         const ownerOfValidatorContract = accounts[3]
         const recipient = accounts[8]
-        await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract, {
-          from: ownerOfValidatorContract
-        })
-        const foreignBridgeWithMultiSignatures = await ForeignBridge.new()
+        await multisigValidatorContract.initialize(2, twoAuthorities, ownerOfValidatorContract)
+        const foreignBridgeWithMultiSignatures = await deployProxy(ForeignBridge)
         await foreignBridgeWithMultiSignatures.initialize(
           multisigValidatorContract.address,
           token.address,
@@ -683,8 +662,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
           [homeDailyLimit, homeMaxPerTx],
           owner,
           decimalShift,
-          otherSideBridge.address,
-          { from: ownerOfValidatorContract }
+          otherSideBridge
         )
         await token.mint(foreignBridgeWithMultiSignatures.address, valueOnForeign)
 
@@ -722,7 +700,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     const recipient = accounts[8]
     let foreignBridge
     beforeEach(async () => {
-      foreignBridge = await ForeignBridge.new()
+      foreignBridge = await deployProxy(ForeignBridge)
       token = await ERC677BridgeToken.new('Some ERC20', 'RSZT', 18)
       await foreignBridge.initialize(
         validatorContract.address,
@@ -733,7 +711,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       )
       await token.mint(user, ether('2'))
     })
@@ -862,7 +840,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
     })
 
     beforeEach(async () => {
-      foreignBridge = await XDaiForeignBridgeMock.new()
+      foreignBridge = await deployProxy(XDaiForeignBridgeMock)
       await foreignBridge.initialize(
         validatorContract.address,
         dai.address,
@@ -872,7 +850,7 @@ contract('ForeignBridge_ERC20_to_Native', async accounts => {
         [homeDailyLimit, homeMaxPerTx],
         owner,
         decimalShiftZero,
-        otherSideBridge.address
+        otherSideBridge
       )
       await dai.approve(foreignBridge.address, ether('100'), { from: faucet })
       await foreignBridge.relayTokens(faucet, ether('10'), { from: faucet })

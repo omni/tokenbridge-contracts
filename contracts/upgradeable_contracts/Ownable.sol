@@ -8,8 +8,6 @@ import "../interfaces/IUpgradeabilityOwnerStorage.sol";
  * @dev This contract has an owner address providing basic authorization control
  */
 contract Ownable is EternalStorage {
-    bytes4 internal constant UPGRADEABILITY_OWNER = 0x6fde8202; // upgradeabilityOwner()
-
     /**
     * @dev Event to show ownership has been transferred
     * @param previousOwner representing the address of the previous owner
@@ -30,10 +28,8 @@ contract Ownable is EternalStorage {
     * @dev Throws if called by any account other than contract itself or owner.
     */
     modifier onlyRelevantSender() {
-        // proxy owner if used through proxy, address(0) otherwise
         require(
-            !address(this).call(abi.encodeWithSelector(UPGRADEABILITY_OWNER)) || // covers usage without calling through storage proxy
-                msg.sender == IUpgradeabilityOwnerStorage(this).upgradeabilityOwner() || // covers usage through regular proxy calls
+            msg.sender == IUpgradeabilityOwnerStorage(this).upgradeabilityOwner() || // covers calls from the proxy owner
                 msg.sender == address(this) // covers calls through upgradeAndCall proxy method
         );
         /* solcov ignore next */

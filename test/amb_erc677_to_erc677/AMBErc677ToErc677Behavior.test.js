@@ -366,7 +366,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       mediatorContract = await otherSideMediatorContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
 
-      contract = this.proxyContract
+      contract = this.bridge
 
       await contract.initialize(
         bridgeContract.address,
@@ -698,7 +698,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
       mediatorContract = await otherSideMediatorContract.new()
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
 
-      contract = this.proxyContract
+      contract = this.bridge
 
       await contract.initialize(
         bridgeContract.address,
@@ -978,7 +978,7 @@ function shouldBehaveLikeBasicAMBErc677ToErc677(otherSideMediatorContract, accou
   })
   describe('#claimTokens', () => {
     it('should be able to claim tokens', async function() {
-      const contract = this.proxyContract
+      const contract = this.bridge
 
       await contract.initialize(
         bridgeContract.address,

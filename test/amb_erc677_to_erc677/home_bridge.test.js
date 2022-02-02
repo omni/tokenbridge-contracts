@@ -1,5 +1,4 @@
 const HomeAMBErc677ToErc677 = artifacts.require('HomeAMBErc677ToErc677.sol')
-const EternalStorageProxy = artifacts.require('EternalStorageProxy.sol')
 const ForeignAMBErc677ToErc677 = artifacts.require('ForeignAMBErc677ToErc677.sol')
 const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const HomeAMB = artifacts.require('HomeAMB.sol')
@@ -9,7 +8,7 @@ const BridgeValidators = artifacts.require('BridgeValidators.sol')
 const { expect } = require('chai')
 const { shouldBehaveLikeBasicAMBErc677ToErc677 } = require('./AMBErc677ToErc677Behavior.test')
 
-const { ether } = require('../helpers/helpers')
+const { ether, deployProxy } = require('../helpers/helpers')
 const { getEvents, expectEventInLogs, strip0x } = require('../helpers/helpers')
 const { ERROR_MSG, toBN } = require('../setup')
 
@@ -38,18 +37,15 @@ contract('HomeAMBErc677ToErc677', async accounts => {
   let erc677Token
   let homeBridge
   beforeEach(async function() {
-    this.bridge = await HomeAMBErc677ToErc677.new()
-    const storageProxy = await EternalStorageProxy.new().should.be.fulfilled
-    await storageProxy.upgradeTo('1', this.bridge.address).should.be.fulfilled
-    this.proxyContract = await HomeAMBErc677ToErc677.at(storageProxy.address)
+    this.bridge = await deployProxy(HomeAMBErc677ToErc677)
   })
   shouldBehaveLikeBasicAMBErc677ToErc677(ForeignAMBErc677ToErc677, accounts)
   describe('onTokenTransfer', () => {
     beforeEach(async () => {
-      const validatorContract = await BridgeValidators.new()
+      const validatorContract = await deployProxy(BridgeValidators)
       const authorities = [accounts[1], accounts[2]]
       await validatorContract.initialize(1, authorities, owner)
-      ambBridgeContract = await HomeAMB.new()
+      ambBridgeContract = await deployProxy(HomeAMB)
       await ambBridgeContract.initialize(
         HOME_CHAIN_ID_HEX,
         FOREIGN_CHAIN_ID_HEX,
@@ -59,11 +55,11 @@ contract('HomeAMBErc677ToErc677', async accounts => {
         '1',
         owner
       )
-      mediatorContract = await ForeignAMBErc677ToErc677.new()
+      mediatorContract = await deployProxy(ForeignAMBErc677ToErc677)
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
       await erc677Token.mint(user, twoEthers, { from: owner }).should.be.fulfilled
 
-      homeBridge = await HomeAMBErc677ToErc677.new()
+      homeBridge = await deployProxy(HomeAMBErc677ToErc677)
       await homeBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
@@ -138,10 +134,10 @@ contract('HomeAMBErc677ToErc677', async accounts => {
     beforeEach(async () => {
       ambBridgeContract = await AMBMock.new()
       await ambBridgeContract.setMaxGasPerTx(maxGasPerTx)
-      mediatorContract = await ForeignAMBErc677ToErc677.new()
+      mediatorContract = await deployProxy(ForeignAMBErc677ToErc677)
       erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
 
-      homeBridge = await HomeAMBErc677ToErc677.new()
+      homeBridge = await deployProxy(HomeAMBErc677ToErc677)
       await homeBridge.initialize(
         ambBridgeContract.address,
         mediatorContract.address,
@@ -205,7 +201,7 @@ contract('HomeAMBErc677ToErc677', async accounts => {
         // Given
         erc677Token = await ERC677BridgeToken.new('test', 'TST', 18)
 
-        homeBridge = await HomeAMBErc677ToErc677.new()
+        homeBridge = await deployProxy(HomeAMBErc677ToErc677)
         await homeBridge.initialize(
           ambBridgeContract.address,
           mediatorContract.address,

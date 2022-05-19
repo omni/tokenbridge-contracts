@@ -324,7 +324,8 @@ contract('ForeignAMB', async accounts => {
         'approve(address,uint256)',
         'transferFrom(address,address,uint256)',
         'approveAndCall(address,uint256,bytes)',
-        'transferAndCall(address,uint256,bytes)'
+        'transferAndCall(address,uint256,bytes)',
+        'increaseAllowance(address,uint256)'
       ].map(web3.eth.abi.encodeFunctionSignature)
       for (const signature of blockedFunctions) {
         await foreignBridge.requireToPassMessage(accounts[7], signature, 10000).should.be.rejected

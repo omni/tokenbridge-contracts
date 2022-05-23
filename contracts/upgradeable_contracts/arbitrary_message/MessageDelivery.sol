@@ -49,13 +49,15 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         // * transferFrom(address,address,uint256)
         // * approveAndCall(address,uint256,bytes)
         // * transferAndCall(address,uint256,bytes)
+        // * increaseAllowance(address,uint256)
         // See https://medium.com/immunefi/xdai-stake-arbitrary-call-method-bug-postmortem-f80a90ac56e3 for more details
         require(
             selector != 0xa9059cbb &&
                 selector != 0x095ea7b3 &&
                 selector != 0x23b872dd &&
                 selector != 0x4000aea0 &&
-                selector != 0xcae9ca51
+                selector != 0xcae9ca51 &&
+                selector != 0x39509351
         );
 
         (bytes32 _messageId, bytes memory header) = _packHeader(_contract, _gas, _dataType);

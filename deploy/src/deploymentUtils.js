@@ -2,10 +2,26 @@
 const BigNumber = require('bignumber.js')
 const Web3 = require('web3')
 const Tx = require('ethereumjs-tx')
+const Transaction = require('@ethereumjs/tx').Transaction
+// const Common = require('ethereumjs-common').default
+const _Common =  require('@ethereumjs/common')
+const Common = _Common.default
 const Web3Utils = require('web3-utils')
 const fetch = require('node-fetch')
 const assert = require('assert')
 const promiseRetry = require('promise-retry')
+const http = require('http');
+// const httpAgent = new http.Agent({ keepAlive: true });
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  maxSockets: 1
+})
+
+const options = {
+  agent: httpAgent
+}
+
+const ethers = require('ethers')
 const {
   web3Home,
   web3Foreign,
@@ -19,9 +35,19 @@ const {
   HOME_EXPLORER_URL,
   FOREIGN_EXPLORER_URL,
   HOME_EXPLORER_API_KEY,
-  FOREIGN_EXPLORER_API_KEY
+  FOREIGN_EXPLORER_API_KEY,
 } = require('./web3')
 const verifier = require('./utils/verifier')
+
+const customCommon = Common.forCustomChain(
+  'mainnet',
+  {
+    name: 'axon',
+    networkId: 2022,
+    chainId: 2022,
+  },
+  'byzantium',
+)
 
 async function deployContract(contractJson, args, { from, network, nonce }) {
   let web3
@@ -35,12 +61,14 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     gasPrice = FOREIGN_DEPLOYMENT_GAS_PRICE
     apiUrl = FOREIGN_EXPLORER_URL
     apiKey = FOREIGN_EXPLORER_API_KEY
+    web3Ethers = new ethers.providers.JsonRpcProvider(FOREIGN_RPC_URL)
   } else {
     web3 = web3Home
     url = HOME_RPC_URL
     gasPrice = HOME_DEPLOYMENT_GAS_PRICE
     apiUrl = HOME_EXPLORER_URL
     apiKey = HOME_EXPLORER_API_KEY
+    web3Ethers = new ethers.providers.JsonRpcProvider(HOME_RPC_URL)
   }
   const options = {
     from
@@ -58,6 +86,7 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     to: null,
     privateKey: deploymentPrivateKey,
     url,
+    chainId: web3Ethers.getNetwork().chainId,
     gasPrice
   })
   if (Web3Utils.hexToNumber(tx.status) !== 1 && !tx.contractAddress) {
@@ -91,7 +120,7 @@ async function sendRawTxForeign(options) {
   })
 }
 
-async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) {
+async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value, chainId }) {
   try {
     const txToEstimateGas = {
       from: privateKeyToAddress(Web3Utils.bytesToHex(privateKey)),
@@ -102,12 +131,14 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) 
     const estimatedGas = BigNumber(await sendNodeRequest(url, 'eth_estimateGas', txToEstimateGas))
 
     const blockData = await sendNodeRequest(url, 'eth_getBlockByNumber', ['latest', false])
+    
+        // const blockGasLimit = BigNumber(0x64507)
     const blockGasLimit = BigNumber(blockData.gasLimit)
-    if (estimatedGas.isGreaterThan(blockGasLimit)) {
-      throw new Error(
-        `estimated gas greater (${estimatedGas.toString()}) than the block gas limit (${blockGasLimit.toString()})`
-      )
-    }
+    // if (estimatedGas.isGreaterThan(blockGasLimit)) {
+    //   throw new Error(
+    //     `estimated gas greater (${estimatedGas.toString()}) than the block gas limit (${blockGasLimit.toString()})`
+    //   )
+    // }
     let gas = estimatedGas.multipliedBy(BigNumber(1 + GAS_LIMIT_EXTRA))
     if (gas.isGreaterThan(blockGasLimit)) {
       gas = blockGasLimit
@@ -121,10 +152,13 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) 
       gasLimit: Web3Utils.toHex(gas),
       to,
       data,
-      value
+      value, 
+      chainId: web3Ethers.getNetwork().chainId
     }
 
-    const tx = new Tx(rawTx)
+    // const tx = new Tx(rawTx)
+    const tx = new Transaction(rawTx, { common: customCommon })
+    // const txEthers = new ethers
     tx.sign(privateKey)
     const serializedTx = tx.serialize()
     const txHash = await sendNodeRequest(url, 'eth_sendRawTransaction', `0x${serializedTx.toString('hex')}`)
@@ -142,21 +176,31 @@ async function sendNodeRequest(url, method, signedData) {
   const request = await fetch(url, {
     headers: {
       'Content-type': 'application/json'
-    },
+    },options,
     method: 'POST',
     body: JSON.stringify({
       jsonrpc: '2.0',
       method,
       params: signedData,
       id: 1
-    })
+    }),
+    keepAlive: true
   })
-  const json = await request.json()
+  // request.end()
+  // console.log("request", await request.clone().text())
+  var json = await request.text()
+  json = JSON.parse(JSON.stringify(json))
+  json = JSON.parse(json)
+  // console.log('json', json)
+  // json = JSON.parse(json)
+  console.log('json', json)
   if (typeof json.error === 'undefined' || json.error === null) {
     if (method === 'eth_sendRawTransaction') {
       assert.strictEqual(json.result.length, 66, `Tx wasn't sent ${json}`)
     }
+    console.log("json.result", json.result)
     return json.result
+
   }
   throw new Error(`web3 RPC failed: ${JSON.stringify(json.error)}`)
 }

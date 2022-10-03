@@ -1,0 +1,34 @@
+{
+    "compilerOptions": {
+    "baseUrl": ".",
+    // Target latest version of ECMAScript.
+    "target": "esnext",
+    // Search under node_modules for non-relative imports.
+    "moduleResolution": "node",
+    // Process & infer types from .js files.
+    "allowJs": true,
+    // Don"t emit; only do type-checking, leave trasformation to Babel.
+    "noEmit": true,
+    // Enable strictest settings like strictNullChecks & noImplicitAny.
+    "strict": true,
+    // Disallow features that require cross-file information for emit.
+    // Cross-file information is not supported by Babel.
+    "isolatedModules": true,
+    // Import non-ES modules as default imports.
+    "esModuleInterop": true,
+    // Allow default imports from modules with no default export (e.g 
+    // import React from "React")
+    "allowSyntheticDefaultImports": true,
+    // Support jsx in .tsx files (https://www.typescriptlang.org/docs/handbook/jsx.html)
+    "jsx": "preserve",
+    // Library files to be used in the project. 
+    // Tells the compiler that "DOM-APIs-" and new ECMAScript features are valid.
+    "lib": ["dom", "es2018"],
+    // Module aliases (if you use module aliases in webpack)
+    "paths": {
+    "yourModule": ["./some/modulefile.ts"]
+    }
+    },
+    "include": ["src"],
+    "exclude": ["node_modules"]
+    }

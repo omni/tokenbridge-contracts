@@ -36,6 +36,9 @@ async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
   let nonce = initialNonce
 
   const homeChainId = await web3Home.eth.getChainId()
+  console.log('\ninitializing Home Bridge with following parameters:\n ')
+
+
   const foreignChainId = await web3Foreign.eth.getChainId()
 
   console.log('\ninitializing Home Bridge with following parameters:\n')
@@ -75,7 +78,8 @@ async function deployHome() {
   console.log('========================================')
   console.log('Deploying Arbitrary Message Bridge at Home')
   console.log('========================================\n')
-
+  const homeChainId = await web3Home.eth.getChainId()
+  console.log('home chain id', homeChainId)
   let nonce = await web3Home.eth.getTransactionCount(DEPLOYMENT_ACCOUNT_ADDRESS)
 
   console.log('deploying storage for home validators')

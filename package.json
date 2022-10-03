@@ -20,18 +20,19 @@
   "author": "POA network",
   "license": "GPLv3",
   "dependencies": {
+    "@ethereumjs/tx": "3.5.2",
     "@opengsn/cli": "^2.2.2",
     "@opengsn/contracts": "^2.2.2",
-    "@opengsn/provider": "^2.2.2",
+    "@opengsn/provider": "3.0.0-beta.1",
     "array-flat-polyfill": "^1.0.1",
     "openzeppelin-solidity": "1.12.0",
-    "truffle": "^5.3.2",
+    "truffle": "5.1.65",
     "truffle-flattener": "^1.4.2",
-    "web3-provider-engine": "^14.0.6",
+    "web3-provider-engine": "16.0.4",
     "web3-utils": "^1.2.6"
   },
   "devDependencies": {
-    "@codechecks/client": "^0.1.9",
+    "@codechecks/client": "0.0.55",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "^0.1.1",
@@ -41,13 +42,16 @@
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-node": "^10.0.0",
     "eslint-plugin-prettier": "^3.0.1",
-    "eth-gas-reporter": "^0.2.11",
+    "eth-gas-reporter": "0.2.1",
     "ethereumjs-util": "5.2.0",
-    "nodemon": "^1.17.3",
+    "nodemon": "2.0.20",
     "prettier": "^1.18.2",
     "prettier-plugin-solidity": "1.0.0-alpha.32",
     "solhint": "2.2.0",
     "solhint-plugin-prettier": "0.0.3",
-    "solidity-coverage": "0.7.16"
+    "solidity-coverage": "0.8.2"
+  },
+  "exports": {
+    "./": "./dist/"
   }
 }

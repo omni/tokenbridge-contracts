@@ -20,7 +20,7 @@ cp .env.example .env
 
 5. Add funds to the deployment accounts in both the Home and Foreign networks.
 
-6. Run `npm run deploy`.
+ 6. Run `npm run deploy`.
 
 ## `ERC-TO-NATIVE` Bridge Mode Configuration Example.
 
@@ -171,7 +171,7 @@ BRIDGE_MODE=ARBITRARY_MESSAGE
 # funds from both networks.
 DEPLOYMENT_ACCOUNT_PRIVATE_KEY=67..14
 # Extra gas added to the estimated gas of a particular deployment/configuration transaction
-# E.g. if estimated gas returns 100000 and the parameter is 0.2,
+# E.g. if estimated gas returns 100000 and the **parameter** is 0.2,
 # the transaction gas limit will be (100000 + 100000 * 0.2) = 120000
 DEPLOYMENT_GAS_LIMIT_EXTRA=0.2
 # The "gasPrice" parameter set in every deployment/configuration transaction on

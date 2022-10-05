@@ -12,14 +12,14 @@ const assert = require('assert')
 const promiseRetry = require('promise-retry')
 const http = require('http');
 // const httpAgent = new http.Agent({ keepAlive: true });
-const httpAgent = new http.Agent({
-  keepAlive: true,
-  maxSockets: 1
-})
+// const httpAgent = new http.Agent({
+//   keepAlive: true,
+//   maxSockets: 1
+// })
 
-const options = {
-  agent: httpAgent
-}
+// const options = {
+//   agent: httpAgent
+// } 
 
 const ethers = require('ethers')
 const {
@@ -39,7 +39,50 @@ const {
 } = require('./web3')
 const verifier = require('./utils/verifier')
 
-const customCommon = Common.forCustomChain(
+// const customCommon = Common.forCustomChain(
+//   'mainnet',
+//   {
+//     name: 'axon',
+//     networkId: 2022,
+//     chainId: 2022,
+//   },
+//   'byzantium',
+// )
+
+// if (network === 'foreign') {
+//   let customCommon
+//   customCommon = Common.forCustomChain(
+//     'mainnet',
+//     {
+//       name: 'axon',
+//       networkId: 2022,
+//       chainId: 2022,
+//     },
+//     'byzantium',
+//   )
+// } else {
+//   customCommon = Common.forCustomChain(
+//     'mainnet',
+//     {
+//       name: 'godwoken-mainnet',
+//       networkId: 71402,
+//       chainId: 71402,
+//     },
+//     'byzantium',
+//   )
+// }
+
+// const customCommonForeign = Common.forCustomChain(
+//   'mainnet',
+//   {
+//     name: 'godwoken-mainnet',
+//     networkId: 71402,
+//     chainId: 71402,
+//   },
+//   'byzantium',
+// )
+
+const customCommonHome = Common.forCustomChain(
   'mainnet',
   {
     name: 'axon',
@@ -49,12 +92,14 @@ const customCommon = Common.forCustomChain(
   'byzantium',
 )
 
+
 async function deployContract(contractJson, args, { from, network, nonce }) {
   let web3
   let url
   let gasPrice
   let apiUrl
   let apiKey
+  let customCommon
   if (network === 'foreign') {
     web3 = web3Foreign
     url = FOREIGN_RPC_URL
@@ -62,6 +107,16 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     apiUrl = FOREIGN_EXPLORER_URL
     apiKey = FOREIGN_EXPLORER_API_KEY
     web3Ethers = new ethers.providers.JsonRpcProvider(FOREIGN_RPC_URL)
+    customCommon = Common.forCustomChain(
+      'mainnet',
+      {
+        name: 'godwoken-mainnet',
+        networkId: 71402,
+        chainId: 71402,
+      },
+      'byzantium',
+    )
+
   } else {
     web3 = web3Home
     url = HOME_RPC_URL
@@ -69,6 +124,15 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     apiUrl = HOME_EXPLORER_URL
     apiKey = HOME_EXPLORER_API_KEY
     web3Ethers = new ethers.providers.JsonRpcProvider(HOME_RPC_URL)
+    customCommon = Common.forCustomChain(
+      'mainnet',
+      {
+        name: 'axon',
+        networkId: 2022,
+        chainId: 2022,
+      },
+      'byzantium',
+    )
   }
   const options = {
     from
@@ -84,10 +148,11 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     data: result,
     nonce: Web3Utils.toHex(nonce),
     to: null,
-    privateKey: deploymentPrivateKey,
+    privateKey: Buffer.from(deploymentPrivateKey, 'hex'),
     url,
     chainId: web3Ethers.getNetwork().chainId,
-    gasPrice
+    gasPrice, 
+    customCommon
   })
   if (Web3Utils.hexToNumber(tx.status) !== 1 && !tx.contractAddress) {
     throw new Error('Tx failed')
@@ -109,18 +174,21 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
 async function sendRawTxHome(options) {
   return sendRawTx({
     ...options,
-    gasPrice: HOME_DEPLOYMENT_GAS_PRICE
+    gasPrice: HOME_DEPLOYMENT_GAS_PRICE,
+    customCommonHome
   })
 }
 
 async function sendRawTxForeign(options) {
   return sendRawTx({
     ...options,
-    gasPrice: FOREIGN_DEPLOYMENT_GAS_PRICE
+    gasPrice: FOREIGN_DEPLOYMENT_GAS_PRICE,
+    customCommonForeign
   })
 }
 
-async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value, chainId }) {
+async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value, chainId , customCommon}) {
+  console.log('customCommon', customCommon)
   try {
     const txToEstimateGas = {
       from: privateKeyToAddress(Web3Utils.bytesToHex(privateKey)),
@@ -153,14 +221,18 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value, ch
       to,
       data,
       value, 
-      chainId: web3Ethers.getNetwork().chainId
+      // chainId: web3Ethers.getNetwork().chainId
+      chainId
     }
 
     // const tx = new Tx(rawTx)
     const tx = new Transaction(rawTx, { common: customCommon })
     // const txEthers = new ethers
-    tx.sign(privateKey)
-    const serializedTx = tx.serialize()
+    const signedTx = tx.sign(privateKey)
+    console.log('tx', tx)
+    console.log('signedTx', signedTx)
+    const serializedTx = signedTx.serialize()
+    console.log('serializedTx', `0x${serializedTx.toString('hex')}`)
     const txHash = await sendNodeRequest(url, 'eth_sendRawTransaction', `0x${serializedTx.toString('hex')}`)
     console.log('pending txHash', txHash)
     return await getReceipt(txHash, url)
@@ -176,7 +248,7 @@ async function sendNodeRequest(url, method, signedData) {
   const request = await fetch(url, {
     headers: {
       'Content-type': 'application/json'
-    },options,
+    },
     method: 'POST',
     body: JSON.stringify({
       jsonrpc: '2.0',
@@ -188,11 +260,7 @@ async function sendNodeRequest(url, method, signedData) {
   })
   // request.end()
   // console.log("request", await request.clone().text())
-  var json = await request.text()
-  json = JSON.parse(JSON.stringify(json))
-  json = JSON.parse(json)
-  // console.log('json', json)
-  // json = JSON.parse(json)
+  const json = await request.json()
   console.log('json', json)
   if (typeof json.error === 'undefined' || json.error === null) {
     if (method === 'eth_sendRawTransaction') {
@@ -237,7 +305,7 @@ function logValidatorsAndRewardAccounts(validators, rewards) {
   })
 }
 
-async function upgradeProxy({ proxy, implementationAddress, version, nonce, url }) {
+async function upgradeProxy({ proxy, implementationAddress, version, nonce, url, customCommon }) {
   const data = await proxy.methods.upgradeTo(version, implementationAddress).encodeABI()
   const sendTx = getSendTxMethod(url)
   const result = await sendTx({
@@ -245,7 +313,8 @@ async function upgradeProxy({ proxy, implementationAddress, version, nonce, url 
     nonce,
     to: proxy.options.address,
     privateKey: deploymentPrivateKey,
-    url
+    url, 
+    customCommon
   })
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
@@ -254,7 +323,7 @@ async function upgradeProxy({ proxy, implementationAddress, version, nonce, url 
   }
 }
 
-async function transferProxyOwnership({ proxy, newOwner, nonce, url }) {
+async function transferProxyOwnership({ proxy, newOwner, nonce, url, customCommon }) {
   const data = await proxy.methods.transferProxyOwnership(newOwner).encodeABI()
   const sendTx = getSendTxMethod(url)
   const result = await sendTx({
@@ -262,7 +331,8 @@ async function transferProxyOwnership({ proxy, newOwner, nonce, url }) {
     nonce,
     to: proxy.options.address,
     privateKey: deploymentPrivateKey,
-    url
+    url,
+    customCommon
   })
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')
@@ -313,7 +383,8 @@ async function initializeValidators({
   rewardAccounts,
   owner,
   nonce,
-  url
+  url,
+  customCommon
 }) {
   let data
 
@@ -333,7 +404,8 @@ async function initializeValidators({
     nonce,
     to: contract.options.address,
     privateKey: deploymentPrivateKey,
-    url
+    url,
+    customCommon
   })
   if (result.status) {
     assert.strictEqual(Web3Utils.hexToNumber(result.status), 1, 'Transaction Failed')

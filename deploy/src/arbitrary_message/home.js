@@ -1,5 +1,7 @@
 const assert = require('assert')
 const Web3Utils = require('web3-utils')
+const _Common =  require('@ethereumjs/common')
+const Common = _Common.default
 
 const env = require('../loadEnv')
 const {
@@ -11,6 +13,16 @@ const {
   transferProxyOwnership,
   assertStateWithRetry
 } = require('../deploymentUtils')
+const customCommon = Common.forCustomChain(
+  'mainnet',
+  {
+    name: 'axon',
+    networkId: 2022,
+    chainId: 2022,
+  },
+  'byzantium',
+)
+
 const { web3Home, web3Foreign, deploymentPrivateKey, HOME_RPC_URL } = require('../web3')
 
 const {
@@ -104,7 +116,8 @@ async function deployHome() {
     implementationAddress: bridgeValidatorsHome.options.address,
     version: '1',
     nonce,
-    url: HOME_RPC_URL
+    url: HOME_RPC_URL,
+    customCommon
   })
   nonce++
 
@@ -118,7 +131,8 @@ async function deployHome() {
     rewardAccounts: [],
     owner: HOME_VALIDATORS_OWNER,
     nonce,
-    url: HOME_RPC_URL
+    url: HOME_RPC_URL,
+    customCommon
   })
   nonce++
 
@@ -127,7 +141,8 @@ async function deployHome() {
     proxy: storageValidatorsHome,
     newOwner: HOME_UPGRADEABLE_ADMIN,
     nonce,
-    url: HOME_RPC_URL
+    url: HOME_RPC_URL,
+    customCommon
   })
   nonce++
 
@@ -153,7 +168,8 @@ async function deployHome() {
     implementationAddress: homeBridgeImplementation.options.address,
     version: '1',
     nonce,
-    url: HOME_RPC_URL
+    url: HOME_RPC_URL,
+    customCommon
   })
   nonce++
 
@@ -161,7 +177,8 @@ async function deployHome() {
   nonce = await initializeBridge({
     validatorsBridge: storageValidatorsHome,
     bridge: homeBridgeImplementation,
-    initialNonce: nonce
+    initialNonce: nonce,
+    customCommon
   })
 
   console.log('transferring proxy ownership to multisig for Home bridge Proxy contract')
@@ -169,7 +186,8 @@ async function deployHome() {
     proxy: homeBridgeStorage,
     newOwner: HOME_UPGRADEABLE_ADMIN,
     nonce,
-    url: HOME_RPC_URL
+    url: HOME_RPC_URL,
+    customCommon
   })
 
   console.log('\nDeployment of Arbitrary Message Bridge at Home completed\n')

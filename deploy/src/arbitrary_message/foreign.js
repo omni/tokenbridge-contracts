@@ -1,6 +1,8 @@
 const assert = require('assert')
 const Web3Utils = require('web3-utils')
 const env = require('../loadEnv')
+const _Common =  require('@ethereumjs/common')
+const Common = _Common.default
 
 const {
   deployContract,
@@ -30,6 +32,15 @@ const {
   FOREIGN_REQUIRED_BLOCK_CONFIRMATIONS
 } = env
 
+const customCommon = Common.forCustomChain(
+  'mainnet',
+  {
+    name: 'godwoken-mainnet',
+    networkId: 71402,
+    chainId: 71402,
+  },
+  'byzantium',
+)
 const DEPLOYMENT_ACCOUNT_ADDRESS = privateKeyToAddress(DEPLOYMENT_ACCOUNT_PRIVATE_KEY)
 
 async function initializeBridge({ validatorsBridge, bridge, initialNonce }) {
@@ -102,7 +113,8 @@ async function deployForeign() {
     implementationAddress: bridgeValidatorsForeign.options.address,
     version: '1',
     nonce,
-    url: FOREIGN_RPC_URL
+    url: FOREIGN_RPC_URL,
+    customCommon
   })
   nonce++
 

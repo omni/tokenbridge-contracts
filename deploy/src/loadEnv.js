@@ -95,7 +95,9 @@ let validations = {
   FOREIGN_BRIDGE_OWNER: addressValidator(),
   FOREIGN_UPGRADEABLE_ADMIN: addressValidator(),
   HOME_MAX_AMOUNT_PER_TX: bigNumValidator(),
-  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator()
+  FOREIGN_MAX_AMOUNT_PER_TX: bigNumValidator(),
+  HOME_CHAIN_ID: envalid.num(),
+  FOREIGN_CHAIN_ID: envalid.num(),
 }
 
 if (BRIDGE_MODE.includes('AMB_')) {

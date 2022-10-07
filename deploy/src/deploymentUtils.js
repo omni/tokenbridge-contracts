@@ -19,7 +19,9 @@ const {
   HOME_EXPLORER_URL,
   FOREIGN_EXPLORER_URL,
   HOME_EXPLORER_API_KEY,
-  FOREIGN_EXPLORER_API_KEY
+  FOREIGN_EXPLORER_API_KEY,
+  HOME_CHAIN_ID,
+  FOREIGN_CHAIN_ID
 } = require('./web3')
 const verifier = require('./utils/verifier')
 
@@ -29,18 +31,21 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
   let gasPrice
   let apiUrl
   let apiKey
+  let chainId
   if (network === 'foreign') {
     web3 = web3Foreign
     url = FOREIGN_RPC_URL
     gasPrice = FOREIGN_DEPLOYMENT_GAS_PRICE
     apiUrl = FOREIGN_EXPLORER_URL
     apiKey = FOREIGN_EXPLORER_API_KEY
+    chainId = FOREIGN_CHAIN_ID
   } else {
     web3 = web3Home
     url = HOME_RPC_URL
     gasPrice = HOME_DEPLOYMENT_GAS_PRICE
     apiUrl = HOME_EXPLORER_URL
     apiKey = HOME_EXPLORER_API_KEY
+    chainId = HOME_CHAIN_ID
   }
   const options = {
     from
@@ -58,7 +63,8 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
     to: null,
     privateKey: deploymentPrivateKey,
     url,
-    gasPrice
+    gasPrice,
+    chainId
   })
   if (Web3Utils.hexToNumber(tx.status) !== 1 && !tx.contractAddress) {
     throw new Error('Tx failed')
@@ -80,6 +86,7 @@ async function deployContract(contractJson, args, { from, network, nonce }) {
 async function sendRawTxHome(options) {
   return sendRawTx({
     ...options,
+    chainId: HOME_CHAIN_ID,
     gasPrice: HOME_DEPLOYMENT_GAS_PRICE
   })
 }
@@ -87,11 +94,12 @@ async function sendRawTxHome(options) {
 async function sendRawTxForeign(options) {
   return sendRawTx({
     ...options,
+    chainId: FOREIGN_CHAIN_ID,
     gasPrice: FOREIGN_DEPLOYMENT_GAS_PRICE
   })
 }
 
-async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) {
+async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value, chainId }) {
   try {
     const txToEstimateGas = {
       from: privateKeyToAddress(Web3Utils.bytesToHex(privateKey)),
@@ -121,7 +129,8 @@ async function sendRawTx({ data, nonce, to, privateKey, url, gasPrice, value }) 
       gasLimit: Web3Utils.toHex(gas),
       to,
       data,
-      value
+      value,
+      chainId
     }
 
     const tx = new Tx(rawTx)

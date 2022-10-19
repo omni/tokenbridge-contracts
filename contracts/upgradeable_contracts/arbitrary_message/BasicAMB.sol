@@ -11,7 +11,8 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     bytes32 internal constant DESTINATION_CHAIN_ID = 0xbbd454018e72a3f6c02bbd785bacc49e46292744f3f6761276723823aa332320; // keccak256(abi.encodePacked("destinationChainId"))
     bytes32 internal constant DESTINATION_CHAIN_ID_LENGTH = 0xfb792ae4ad11102b93f26a51b3749c2b3667f8b561566a4806d4989692811594; // keccak256(abi.encodePacked("destinationChainIdLength"))
     bytes32 internal constant ALLOW_REENTRANT_REQUESTS = 0xffa3a5a0e192028fc343362a39c5688e5a60819a4dc5ab3ee70c25bc25b78dd6; // keccak256(abi.encodePacked("allowReentrantRequests"))
-
+    bytes32 internal constant OTHER_SIDE_AMB = 0x505bb243e166da54f8ca87ad5b5740ec5800cbe2e1d471148182b557032d228e; // keccak256(abi.encodePacked("otherSideAMB"))
+    bytes32 internal constant SUCCINCT_AMB = 0xed8b1390c671c6a4d967258af2d8fbd6791868cf6285d45f296f9bc1bca623df; // keccak256(abi.encodePacked("succinctAMB"))
     /**
      * Initializes AMB contract
      * @param _sourceChainId chain id of a network where this contract is deployed
@@ -190,5 +191,21 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      */
     function _isDestinationChainIdValid(uint256 _chainId) internal returns (bool res) {
         return _chainId == sourceChainId();
+    }
+
+    function setOtherSideAMBAddress(address otherSideAMB) external onlyOwner {
+        addressStorage[OTHER_SIDE_AMB] = otherSideAMB;
+    }
+
+    function otherSideAMBAddress() public view returns (address) {
+        return addressStorage[OTHER_SIDE_AMB];
+    }
+
+    function setSuccinctAMBAddress(address succinctAMBAddress) external onlyOwner {
+        addressStorage[SUCCINCT_AMB] = succinctAMBAddress;
+    }
+
+    function succinctAMBAddress() public view returns (address) {
+        return addressStorage[SUCCINCT_AMB];
     }
 }

@@ -6,6 +6,10 @@ import "./MessageProcessor.sol";
 import "../../libraries/ArbitraryMessage.sol";
 import "../../libraries/Bytes.sol";
 
+interface ISuccinctAMB {
+    function send(address receiver, uint16 chainId, uint256 gasLimit, bytes data) external returns (bytes32);
+}
+
 contract MessageDelivery is BasicAMB, MessageProcessor {
     using SafeMath for uint256;
 
@@ -61,6 +65,14 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         (bytes32 _messageId, bytes memory header) = _packHeader(_contract, _gas, _dataType);
 
         bytes memory eventData = abi.encodePacked(header, _data);
+
+        // Additions needed for sending to Succinct AMB
+        uint256 dstChainId = destinationChainId();
+        uint16 castChainId = uint16(dstChainId);
+        address otherSideAMB = otherSideAMBAddress();
+        address succinctAMB = succinctAMBAddress();
+        ISuccinctAMB(succinctAMB).send(otherSideAMB, castChainId, _gas, eventData);
+        // End additions needed for sending to Succinct AMB
 
         emitEventOnMessageRequest(_messageId, eventData);
         return _messageId;

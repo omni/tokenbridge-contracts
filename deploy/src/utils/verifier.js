@@ -7,7 +7,8 @@ const { EXPLORER_TYPES, REQUEST_STATUS } = require('../constants')
 
 const basePath = path.join(__dirname, '..', '..', '..', 'flats')
 
-const isBridgeToken = name => name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol' || name === 'PermittableToken.sol'
+const isBridgeToken = name =>
+  name === 'ERC677BridgeToken.sol' || name === 'ERC677BridgeTokenRewardable.sol' || name === 'PermittableToken.sol'
 const isValidators = name => name === 'BridgeValidators.sol' || name === 'RewardableValidators.sol'
 const isInterestReceiver = name => name === 'InterestReceiver.sol'
 
@@ -115,11 +116,17 @@ const verifier = async ({ artifact, address, constructorArguments, apiUrl, apiKe
     apiKey
   }
 
+  console.log('Verifying contract')
+  console.log('contract', contract)
+  console.log('params', params)
+  console.log('type', type)
+
   try {
     await promiseRetry(async retry => {
       const verified = await verifyContract(contract, params, type)
       if (!verified) {
-        retry()
+        console.log('Verification failed')
+        // retry()
       }
     })
   } catch (e) {

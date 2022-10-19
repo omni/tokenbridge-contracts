@@ -3,12 +3,14 @@
 In order to deploy bridge contracts you must run `npm install` to install all dependencies. For more information, see the [project README](../README.md).
 
 1. Compile the source contracts.
+
 ```
 cd ..
 npm run compile
 ```
 
 2. Create a `.env` file.
+
 ```
 cd deploy
 cp .env.example .env
@@ -21,6 +23,8 @@ cp .env.example .env
 5. Add funds to the deployment accounts in both the Home and Foreign networks.
 
 6. Run `npm run deploy`.
+
+7. For configuring the AMBs to recieve from Succinct, it's necesary to set the Succinct addresses, which can be done by running `node src/arbitrary_message/postDeploy.js`
 
 ## `ERC-TO-NATIVE` Bridge Mode Configuration Example.
 

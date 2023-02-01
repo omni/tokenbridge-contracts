@@ -1,4 +1,4 @@
-ragma solidity 0.4.24;
+pragma solidity 0.4.24;
 
 import "../BasicBridge.sol";
 import "./VersionableAMB.sol";

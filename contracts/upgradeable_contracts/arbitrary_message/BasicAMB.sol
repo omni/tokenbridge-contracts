@@ -12,6 +12,16 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     bytes32 internal constant DESTINATION_CHAIN_ID_LENGTH = 0xfb792ae4ad11102b93f26a51b3749c2b3667f8b561566a4806d4989692811594; // keccak256(abi.encodePacked("destinationChainIdLength"))
     bytes32 internal constant ALLOW_REENTRANT_REQUESTS = 0xffa3a5a0e192028fc343362a39c5688e5a60819a4dc5ab3ee70c25bc25b78dd6; // keccak256(abi.encodePacked("allowReentrantRequests"))
 
+    bytes32 internal constant HOME_OMNIBRIDGE_AMB = keccak256(abi.encodePacked("homeOmnibridgeAMB"));
+    bytes32 internal constant FOREIGN_OMNIBRIDGE_AMB = keccak256(abi.encodePacked("foreignOmnibridgeAMB"));
+
+    bytes32 internal constant HOME_TELEPATHY_SOURCE_AMB = keccak256(abi.encodePacked("homeTelepathySourceAMB"));
+    bytes32 internal constant HOME_TELEPATHY_TARGET_AMB = keccak256(abi.encodePacked("homeTelepathyTargetAMB"));
+    bytes32 internal constant FOREIGN_TELEPATHY_SOURCE_AMB = keccak256(abi.encodePacked("foreignTelepathySourceAMB"));
+    bytes32 internal constant FOREIGN_TELEPATHY_TARGET_AMB = keccak256(abi.encodePacked("foreignTelepathyTargetAMB"));
+
+    bytes32 internal constant HOME_TELEPATHY_VALIDATOR = keccak256(abi.encodePacked("homeTelepathyValidator"));
+
     /**
      * Initializes AMB contract
      * @param _sourceChainId chain id of a network where this contract is deployed
@@ -190,5 +200,61 @@ contract BasicAMB is BasicBridge, VersionableAMB {
      */
     function _isDestinationChainIdValid(uint256 _chainId) internal returns (bool res) {
         return _chainId == sourceChainId();
+    }
+
+    function setHomeOmnibridgeAMB(address addr) external onlyOwner {
+        addressStorage[HOME_OMNIBRIDGE_AMB] = addr;
+    }
+
+    function homeOmnibridgeAMB() public view returns (address) {
+        return addressStorage[HOME_OMNIBRIDGE_AMB];
+    }
+
+    function setForeignOmnibridgeAMB(address addr) external onlyOwner {
+        addressStorage[FOREIGN_OMNIBRIDGE_AMB] = addr;
+    }
+
+    function foreignOmnibridgeAMB() public view returns (address) {
+        return addressStorage[FOREIGN_OMNIBRIDGE_AMB];
+    }
+
+    function setHomeTelepathySourceAMB(address addr) external onlyOwner {
+        addressStorage[HOME_TELEPATHY_SOURCE_AMB] = addr;
+    }
+
+    function homeTelepathySourceAMB() public view returns (address) {
+        return addressStorage[HOME_TELEPATHY_SOURCE_AMB];
+    }
+
+    function setHomeTelepathyTargetAMB(address addr) external onlyOwner {
+        addressStorage[HOME_TELEPATHY_TARGET_AMB] = addr;
+    }
+
+    function homeTelepathyTargetAMB() public view returns (address) {
+        return addressStorage[HOME_TELEPATHY_TARGET_AMB];
+    }
+
+    function setForeignTelepathySourceAMB(address addr) external onlyOwner {
+        addressStorage[FOREIGN_TELEPATHY_SOURCE_AMB] = addr;
+    }
+
+    function foreignTelepathySourceAMB() public view returns (address) {
+        return addressStorage[FOREIGN_TELEPATHY_SOURCE_AMB];
+    }
+
+    function setForeignTelepathyTargetAMB(address addr) external onlyOwner {
+        addressStorage[FOREIGN_TELEPATHY_TARGET_AMB] = addr;
+    }
+
+    function foreignTelepathyTargetAMB() public view returns (address) {
+        return addressStorage[FOREIGN_TELEPATHY_TARGET_AMB];
+    }
+
+    function setHomeTelepathyValidator(address addr) external onlyOwner {
+        addressStorage[HOME_TELEPATHY_VALIDATOR] = addr;
+    }
+
+    function setHomeTelepathyValidator() public view returns (address) {
+        return addressStorage[HOME_TELEPATHY_VALIDATOR];
     }
 }

@@ -35,6 +35,7 @@ async function deployArbitraryMessage() {
   const preDeploy = require('./src/arbitrary_message/preDeploy')
   const deployHome = require('./src/arbitrary_message/home')
   const deployForeign = require('./src/arbitrary_message/foreign')
+
   await preDeploy()
   const { homeBridge } = await deployHome()
   const { foreignBridge } = await deployForeign()

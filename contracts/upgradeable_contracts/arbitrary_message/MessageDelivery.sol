@@ -5,6 +5,8 @@ import "./BasicAMB.sol";
 import "./MessageProcessor.sol";
 import "../../libraries/ArbitraryMessage.sol";
 import "../../libraries/Bytes.sol";
+import "../telepathy/Interfaces.sol";
+
 
 contract MessageDelivery is BasicAMB, MessageProcessor {
     using SafeMath for uint256;
@@ -61,6 +63,11 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         (bytes32 _messageId, bytes memory header) = _packHeader(_contract, _gas, _dataType);
 
         bytes memory eventData = abi.encodePacked(header, _data);
+
+        uint16 destChainId = uint16(destinationChainId());
+        address telepathySourceAMB = getTelepathySourceAMB();
+        address othersideTelepathyAgent = getOthersideTelepathyAgent(); 
+        ISourceAMB(telepathySourceAMB).send(othersideTelepathyAgent, destChainId, _gas, eventData);
 
         emitEventOnMessageRequest(_messageId, eventData);
         return _messageId;

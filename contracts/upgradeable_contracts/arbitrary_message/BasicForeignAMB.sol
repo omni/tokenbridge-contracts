@@ -5,6 +5,7 @@ import "../../libraries/ArbitraryMessage.sol";
 import "./BasicAMB.sol";
 import "./MessageDelivery.sol";
 import "../MessageRelay.sol";
+import "../telepathy/Interfaces.sol";
 
 contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
     /**
@@ -24,6 +25,10 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
         bytes memory data;
 
         (msgId, sender, executor, gasLimit, dataType, chainIds, data) = ArbitraryMessage.unpackData(_data);
+
+        address telepathyAgent = getTelepathyAgent();
+        bytes32 messageId = keccak256(_data);
+        require(ITelepathyForeignApprover(telepathyAgent).isApproved(messageId));
 
         _executeMessage(msgId, sender, executor, gasLimit, dataType, chainIds, data);
     }

@@ -65,8 +65,8 @@ contract MessageDelivery is BasicAMB, MessageProcessor {
         bytes memory eventData = abi.encodePacked(header, _data);
 
         uint16 destChainId = uint16(destinationChainId());
-        address othersideTelepathyAgent = othersideTelepathyAgent(); 
-        address telepathySourceAMB = telepathySourceAMB();
+        address telepathySourceAMB = getTelepathySourceAMB();
+        address othersideTelepathyAgent = getOthersideTelepathyAgent(); 
         ISourceAMB(telepathySourceAMB).send(othersideTelepathyAgent, destChainId, _gas, eventData);
 
         emitEventOnMessageRequest(_messageId, eventData);

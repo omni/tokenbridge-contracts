@@ -12,9 +12,9 @@ contract BasicAMB is BasicBridge, VersionableAMB {
     bytes32 internal constant DESTINATION_CHAIN_ID_LENGTH = 0xfb792ae4ad11102b93f26a51b3749c2b3667f8b561566a4806d4989692811594; // keccak256(abi.encodePacked("destinationChainIdLength"))
     bytes32 internal constant ALLOW_REENTRANT_REQUESTS = 0xffa3a5a0e192028fc343362a39c5688e5a60819a4dc5ab3ee70c25bc25b78dd6; // keccak256(abi.encodePacked("allowReentrantRequests"))
 
-    bytes32 internal constant TELEPATHY_SOURCE_AMB = keccak256(abi.encodePacked("telepathySourceAMB"));
-    bytes32 internal constant TELEPATHY_AGENT = keccak256(abi.encodePacked("telepathyAgent"));
-    bytes32 internal constant OTHERSIDE_TELEPATHY_AGENT = keccak256(abi.encodePacked("othersideTelepathyAgent"));
+    bytes32 internal constant TELEPATHY_SOURCE_AMB = bytes32(0);
+    bytes32 internal constant TELEPATHY_AGENT = bytes32(1);
+    bytes32 internal constant OTHERSIDE_TELEPATHY_AGENT = bytes32(2);
 
     /**
      * Initializes AMB contract
@@ -200,15 +200,15 @@ contract BasicAMB is BasicBridge, VersionableAMB {
         addressStorage[TELEPATHY_SOURCE_AMB] = addr;
     }
 
-    function telepathySourceAMB() public view returns (address) {
-        return addressStorage[HOME_OMNIBRIDGE_AMB];
+    function getTelepathySourceAMB() public view returns (address) {
+        return addressStorage[TELEPATHY_SOURCE_AMB];
     }
 
     function setTelepathyAgent(address addr) external onlyOwner {
         addressStorage[TELEPATHY_AGENT] = addr;
     }
 
-    function telepathyAgent() public view returns (address) {
+    function getTelepathyAgent() public view returns (address) {
         return addressStorage[TELEPATHY_AGENT];
     }
 
@@ -216,7 +216,7 @@ contract BasicAMB is BasicBridge, VersionableAMB {
         addressStorage[OTHERSIDE_TELEPATHY_AGENT] = addr;
     }
 
-    function othersideTelepathyAgent() public view returns (address) {
+    function getOthersideTelepathyAgent() public view returns (address) {
         return addressStorage[OTHERSIDE_TELEPATHY_AGENT];
     }
 }

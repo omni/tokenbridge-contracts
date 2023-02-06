@@ -1,20 +1,27 @@
 pragma solidity 0.4.24;
 
 contract TelepathyForeignApprover {
-    address telepathyTargetAMB;
-    address homeOmnibridgeAMB;
-
+    bool public initialized = false;
+    address public foreignTelepathyReceiver;
+    address public homeOmnibridgeAMB;
     mapping(bytes32 => bool) public approvals;
 
-    constructor(address _telepathyTargetAMB, address _homeOmnibridgeAMB) {
-        telepathyTargetAMB = _telepathyTargetAMB;
+    function initialize(address _foreignTelepathyReceiver, address _homeOmnibridgeAMB) external {
+        require(!initialized);
+        foreignTelepathyReceiver = _foreignTelepathyReceiver;
         homeOmnibridgeAMB = _homeOmnibridgeAMB;
+        initialized = true;
+    }
+
+    function isApproved(bytes32 messageId) public view returns (bool) {
+        return approvals[messageId];
     }
 
     function receiveSuccinct(address srcAddress, bytes message) external {
-        require(msg.sender == telepathyTargetAMB, "Only Succinct AMB can call this function");
-        require(srcAddress == homeOmnibridgeAMB, "Only other side AMB can pass a message call to this contract.");
+        require(msg.sender == foreignTelepathyReceiver);
+        require(srcAddress == homeOmnibridgeAMB);
         bytes32 messageId = keccak256(message);
         approvals[messageId] = true;
     }
+}
 }

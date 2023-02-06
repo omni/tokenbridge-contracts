@@ -1,23 +1,24 @@
 pragma solidity 0.4.24;
 
-interface IHomeOmnibridgeAMB {
-    function executeAffirmation(bytes message) external;
-}
+import "./Interfaces.sol";
 
 contract TelepathyHomeValidator {
-    address telepathyTargetAMB;
-    address homeOmnibridgeAMB;
-    address foreignOmnibridgeAMB;
+    bool public initialized = false;
+    address public homeTelepathyReceiver;
+    address public homeOmnibridgeAMB;
+    address public foreignOmnibridgeAMB;
 
-    constructor(address _telepathyTargetAMB, address _homeOmnibridgeAMB, address _foreignOmnibridgeAMB) {
-        telepathyTargetAMB = _telepathyTargetAMB;
+    function initialize(address _homeTelepathyReceiver, address _homeOmnibridgeAMB, address _foreignOmnibridgeAMB) {
+        require(!initialized);
+        homeTelepathyReceiver = _homeTelepathyReceiver;
         homeOmnibridgeAMB = _homeOmnibridgeAMB;
         foreignOmnibridgeAMB = _foreignOmnibridgeAMB;
+        initialized = true;
     }
 
     function receiveSuccinct(address srcAddress, bytes message) external {
-        require(msg.sender == telepathyTargetAMB, "Only Succinct AMB can call this function");
-        require(srcAddress == foreignOmnibridgeAMB, "Only other side AMB can pass a message call to this contract.");
+        require(msg.sender == homeTelepathyReceiver);
+        require(srcAddress == foreignOmnibridgeAMB);
         IHomeOmnibridgeAMB(homeOmnibridgeAMB).executeAffirmation(message);
     }
 }

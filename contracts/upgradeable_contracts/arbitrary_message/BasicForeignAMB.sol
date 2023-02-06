@@ -26,9 +26,9 @@ contract BasicForeignAMB is BasicAMB, MessageRelay, MessageDelivery {
 
         (msgId, sender, executor, gasLimit, dataType, chainIds, data) = ArbitraryMessage.unpackData(_data);
 
-        address telepathyAgent = telepathyAgent();
+        address telepathyAgent = getTelepathyAgent();
         bytes32 messageId = keccak256(_data);
-        require(ITelepathyForeignApprover(telepathyAgent).approvals(messageId) == true);
+        require(ITelepathyForeignApprover(telepathyAgent).isApproved(messageId));
 
         _executeMessage(msgId, sender, executor, gasLimit, dataType, chainIds, data);
     }

@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/poanetwork/tokenbridge-contracts/badge.svg?branch=master)](https://coveralls.io/github/poanetwork/tokenbridge-contracts?branch=master)
 
 # POA Bridge Smart Contracts
-These contracts provide the core functionality for the POA bridge. They implement the logic to relay assests between two EVM-based blockchain networks. The contracts collect bridge validator's signatures to approve and facilitate relay operations.
+These contracts provide the core functionality for the POA bridge. They implement the logic to relay assets between two EVM-based blockchain networks. The contracts collect bridge validator's signatures to approve and facilitate relay operations.
 
 The POA bridge smart contracts are intended to work with [the bridge process implemented on NodeJS](https://github.com/poanetwork/token-bridge).
 Please refer to the bridge process documentation to configure and deploy the bridge.

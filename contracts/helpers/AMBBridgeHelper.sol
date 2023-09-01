@@ -45,7 +45,7 @@ contract AMBBridgeHelper is Helper {
             mstore8(add(signatures, 32), signed)
         }
 
-        for (uint256 i = 0; i < signed; i++) {
+        for (uint256 i; i < signed; i++) {
             bytes memory sig = ambBridge.signature(msgHash, i);
             (bytes32 r, bytes32 s, uint8 v) = unpackSignature(sig);
             assembly {

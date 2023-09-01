@@ -16,7 +16,7 @@ contract ERC677BridgeTokenRewardable is ERC677MultiBridgeToken {
     /**
      * @dev Updates the address of the used block reward contract.
      * Only the token owner can call this method. 
-     * Even though this function is inteded only for the initialization purpose,
+     * Even though this function is intended only for the initialization purpose,
      * it is still possible to change the already used block reward contract.
      * In this case users of the old contract won't lose their accumulated rewards,
      * they can proceed with the withdrawal by calling the old block reward contract directly.
@@ -30,7 +30,7 @@ contract ERC677BridgeTokenRewardable is ERC677MultiBridgeToken {
     /**
      * @dev Updates the address of the used staking contract.
      * Only the token owner can call this method. 
-     * Even though this function is inteded only for the initialization purpose,
+     * Even though this function is intended only for the initialization purpose,
      * it is still possible to change the already used staking contract.
      * In this case users of the old staking contract won't lose their tokens,
      * they can proceed with the withdrawal by calling the old staking contract directly.

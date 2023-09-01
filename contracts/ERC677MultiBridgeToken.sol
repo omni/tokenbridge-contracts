@@ -86,7 +86,7 @@ contract ERC677MultiBridgeToken is PermittableToken {
     */
     function bridgeList() external view returns (address[]) {
         address[] memory list = new address[](bridgeCount);
-        uint256 counter = 0;
+        uint256 counter;
         address nextBridge = bridgePointers[F_ADDR];
         require(nextBridge != address(0));
 
@@ -102,7 +102,7 @@ contract ERC677MultiBridgeToken is PermittableToken {
     }
 
     /**
-    * @dev Checks if given address is included into bridge contracts list
+    * @dev Checks if given address is included in bridge contracts list
     * @param _address bridge contract address
     * @return bool true, if given address is a known bridge contract 
     */
